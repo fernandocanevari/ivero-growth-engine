@@ -9,8 +9,8 @@ const HeroSection = () => {
       {/* Background image with overlay */}
       <div className="absolute inset-0">
         <img src={heroBg} alt="Ivero - Inteligência para IAs Generativas" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-ivero-dark/60" />
-        <div className="absolute inset-0 bg-gradient-to-b from-ivero-dark/40 via-transparent to-ivero-dark" />
+        <div className="absolute inset-0 bg-ivero-dark/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ivero-dark/70 via-ivero-dark/50 to-ivero-dark" />
       </div>
 
       {/* Content */}
