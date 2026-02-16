@@ -1,22 +1,22 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { TrendingDown, Eye, Target, ArrowRight } from "lucide-react";
+import { EyeOff, ShieldAlert, TrendingDown, ArrowRight } from "lucide-react";
 
 const problems = [
   {
+    icon: EyeOff,
+    title: "Invisibilidade nas IAs",
+    description: "Quando alguém pergunta ao ChatGPT, Gemini ou Perplexity sobre seu setor, sua marca simplesmente não aparece.",
+  },
+  {
+    icon: ShieldAlert,
+    title: "Concorrentes sendo recomendados",
+    description: "Enquanto você não monitora, IAs generativas estão recomendando seus concorrentes em vez da sua marca.",
+  },
+  {
     icon: TrendingDown,
-    title: "Crescimento estagnado",
-    description: "Sem dados confiáveis, suas campanhas são tiros no escuro que drenam orçamento.",
-  },
-  {
-    icon: Eye,
-    title: "Concorrentes invisíveis",
-    description: "Você não sabe o que seus concorrentes estão fazendo — até já ser tarde demais.",
-  },
-  {
-    icon: Target,
-    title: "Público errado",
-    description: "Investir em audiências genéricas destrói seu ROI e sua credibilidade.",
+    title: "Decisões sem dados de IA",
+    description: "Sem entender como as IAs percebem sua marca, suas estratégias de conteúdo e posicionamento são cegas.",
   },
 ];
 
@@ -34,11 +34,11 @@ const ProblemSection = () => {
             O problema
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Sua marca está <span className="text-gradient">perdendo terreno?</span>
+            Sua marca existe para a <span className="text-gradient">IA generativa?</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Marcas que não usam inteligência geográfica estão ficando para trás. 
-            Veja os problemas que a Ivero resolve.
+            Bilhões de pessoas já usam IAs para tomar decisões. Se sua marca não aparece 
+            nessas respostas, você está perdendo relevância todos os dias.
           </p>
         </motion.div>
 
@@ -72,7 +72,7 @@ const ProblemSection = () => {
           className="text-center"
         >
           <Button variant="hero" size="lg" className="text-base px-8 py-6">
-            Resolver agora com a Ivero
+            Descubra como sua marca aparece na IA
             <ArrowRight className="ml-2" />
           </Button>
         </motion.div>

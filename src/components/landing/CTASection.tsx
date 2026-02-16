@@ -5,7 +5,6 @@ import { ArrowRight, Sparkles } from "lucide-react";
 const CTASection = () => {
   return (
     <section className="py-24 bg-ivero-dark relative overflow-hidden">
-      {/* Decorative gradients */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-ivero-purple/15 rounded-full blur-3xl" />
       <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/10 rounded-full blur-3xl" />
 
@@ -18,17 +17,17 @@ const CTASection = () => {
         >
           <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 border border-accent/20 px-4 py-1.5 mb-8">
             <Sparkles className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium text-accent">Oferta por tempo limitado</span>
+            <span className="text-sm font-medium text-accent">A era da IA já começou</span>
           </div>
 
           <h2 className="font-display text-4xl md:text-6xl font-bold mb-6">
-            <span className="text-primary-foreground">Pronto para </span>
-            <span className="text-gradient">transformar seu crescimento?</span>
+            <span className="text-primary-foreground">Sua marca será </span>
+            <span className="text-gradient">lembrada ou esquecida?</span>
           </h2>
 
           <p className="text-lg text-ivero-slate-light mb-10 max-w-xl mx-auto">
-            Junte-se a centenas de marcas que já usam a Ivero para tomar decisões 
-            baseadas em dados e escalar com confiança.
+            Milhões de decisões de compra já passam pelas IAs generativas. 
+            Garanta que sua marca esteja presente quando alguém perguntar.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

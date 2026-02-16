@@ -1,30 +1,30 @@
 import { motion } from "framer-motion";
-import { Building2, ShoppingBag, Megaphone, BarChart3 } from "lucide-react";
+import { Building2, Megaphone, ShoppingBag, Briefcase } from "lucide-react";
 
 const audiences = [
   {
     icon: Building2,
-    title: "Startups & Scale-ups",
-    description: "Encontre product-market fit geográfico e identifique regiões de alta demanda para expandir com eficiência.",
-    tag: "Growth",
-  },
-  {
-    icon: ShoppingBag,
-    title: "E-commerces",
-    description: "Otimize logística, identifique hubs de consumo e personalize ofertas por região.",
-    tag: "Vendas",
+    title: "Marcas & Empresas",
+    description: "Descubra como sua marca é percebida e recomendada por IAs generativas. Proteja sua reputação no novo canal de descoberta.",
+    tag: "Branding",
   },
   {
     icon: Megaphone,
     title: "Agências de Marketing",
-    description: "Entregue campanhas hipersegmentadas com dados geográficos reais para seus clientes.",
-    tag: "Performance",
+    description: "Ofereça GEO como serviço premium. Mostre aos seus clientes como eles performam nas respostas de IA vs concorrentes.",
+    tag: "Serviço",
   },
   {
-    icon: BarChart3,
-    title: "Franquias & Varejo",
-    description: "Analise potencial de novas localizações, monitore concorrência e otimize áreas de cobertura.",
-    tag: "Expansão",
+    icon: ShoppingBag,
+    title: "E-commerces & D2C",
+    description: "Quando alguém pergunta à IA 'qual o melhor produto X?', sua marca precisa estar na resposta. A Ivero garante isso.",
+    tag: "Vendas",
+  },
+  {
+    icon: Briefcase,
+    title: "Times de SEO & Conteúdo",
+    description: "GEO é o novo SEO. Adapte sua estratégia de conteúdo para ser citado por motores generativos, não apenas rankeado.",
+    tag: "Estratégia",
   },
 ];
 
@@ -43,7 +43,7 @@ const AudienceSection = () => {
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
             A Ivero é para quem quer{" "}
-            <span className="text-gradient">crescer com inteligência</span>
+            <span className="text-gradient">ser relevante na era da IA</span>
           </h2>
         </motion.div>
 
