@@ -6,6 +6,7 @@ import FeaturesSection from "@/components/landing/FeaturesSection";
 import CTASection from "@/components/landing/CTASection";
 import AudienceSection from "@/components/landing/AudienceSection";
 import InvestSection from "@/components/landing/InvestSection";
+import FAQSection from "@/components/landing/FAQSection";
 import Footer from "@/components/landing/Footer";
 
 const Index = () => {
@@ -19,6 +20,7 @@ const Index = () => {
       <CTASection />
       <AudienceSection />
       <InvestSection />
+      <FAQSection />
       <Footer />
     </div>
   );
