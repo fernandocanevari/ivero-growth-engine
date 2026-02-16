@@ -1,17 +1,21 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroBg from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background image with overlay */}
-      <div className="absolute inset-0">
-        <img src={heroBg} alt="Ivero - Inteligência para IAs Generativas" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-ivero-dark/80" />
-        <div className="absolute inset-0 bg-gradient-to-b from-ivero-dark/70 via-ivero-dark/50 to-ivero-dark" />
-      </div>
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-ivero-dark">
+      {/* Gradient background with subtle glow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(230,25%,6%)] via-ivero-dark to-[hsl(230,25%,6%)]" />
+      
+      {/* Subtle radial glow - purple */}
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.08] blur-[120px]" />
+      
+      {/* Subtle radial glow - pink/accent */}
+      <div className="absolute bottom-[-100px] right-[-50px] w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.06] blur-[100px]" />
+      
+      {/* Subtle light streak */}
+      <div className="absolute bottom-0 right-[10%] w-[2px] h-[60%] bg-gradient-to-t from-[hsl(265,60%,55%/0.3)] to-transparent" />
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-6 py-32">
