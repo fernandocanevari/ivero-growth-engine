@@ -1,36 +1,36 @@
 import { motion } from "framer-motion";
-import { Globe, Brain, Zap, Shield, LineChart, Users } from "lucide-react";
+import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell } from "lucide-react";
 
 const features = [
   {
-    icon: Globe,
-    title: "Mapeamento Geográfico",
-    description: "Visualize dados de mercado em mapas interativos com camadas de informação personalizáveis.",
+    icon: Bot,
+    title: "Monitoramento Multi-IA",
+    description: "Rastreie menções da sua marca no ChatGPT, Gemini, Perplexity, Claude e outros motores generativos simultaneamente.",
   },
   {
-    icon: Brain,
-    title: "IA Preditiva",
-    description: "Algoritmos que antecipam tendências e identificam janelas de oportunidade antes da concorrência.",
+    icon: GitCompare,
+    title: "Análise Comparativa",
+    description: "Compare sua visibilidade com concorrentes diretos. Saiba quem está sendo recomendado e por quê.",
   },
   {
-    icon: Zap,
-    title: "Automação GEO",
-    description: "Otimize automaticamente seus mecanismos de crescimento com base em dados geográficos em tempo real.",
+    icon: TrendingUp,
+    title: "Score de Visibilidade GEO",
+    description: "Métrica proprietária que quantifica o quão presente e bem posicionada sua marca está nas respostas de IA.",
   },
   {
     icon: Shield,
-    title: "Análise Competitiva",
-    description: "Monitore concorrentes, market share e movimentos de mercado com dashboards inteligentes.",
+    title: "Análise de Sentimento",
+    description: "Entenda se a IA fala da sua marca de forma positiva, neutra ou negativa — e o que influencia esse tom.",
   },
   {
-    icon: LineChart,
-    title: "Growth Analytics",
-    description: "Métricas de crescimento avançadas com relatórios customizáveis e exportáveis.",
+    icon: FileText,
+    title: "Planos de Ação Estratégicos",
+    description: "Receba recomendações prescritivas de conteúdo, SEO e posicionamento para melhorar sua presença em IA.",
   },
   {
-    icon: Users,
-    title: "Segmentação Inteligente",
-    description: "Descubra clusters de audiência de alta conversão com segmentação geodemográfica.",
+    icon: Bell,
+    title: "Alertas em Tempo Real",
+    description: "Seja notificado quando houver mudanças na forma como IAs citam sua marca ou seus concorrentes.",
   },
 ];
 
@@ -48,11 +48,11 @@ const FeaturesSection = () => {
             Recursos
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Tudo que você precisa para{" "}
+            Recursos da Ivero para{" "}
             <span className="text-gradient">impulsionar sua marca</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Ferramentas poderosas de geointeligência integradas em uma única plataforma.
+            Tudo que você precisa para entender, medir e otimizar a presença da sua marca nos motores de IA generativa.
           </p>
         </motion.div>
 
@@ -66,7 +66,6 @@ const FeaturesSection = () => {
               transition={{ delay: index * 0.1 }}
               className="group relative p-8 rounded-2xl border border-border bg-card hover:border-accent/30 transition-all duration-300 overflow-hidden"
             >
-              {/* Gradient hover effect */}
               <div className="absolute inset-0 bg-ivero-gradient-soft opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
               <div className="relative z-10">

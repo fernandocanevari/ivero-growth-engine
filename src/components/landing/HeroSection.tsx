@@ -8,9 +8,9 @@ const HeroSection = () => {
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background image with overlay */}
       <div className="absolute inset-0">
-        <img src={heroBg} alt="Ivero GeoIntelligence visualization" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-ivero-dark/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-ivero-dark/50 via-transparent to-ivero-dark" />
+        <img src={heroBg} alt="Ivero - Inteligência para IAs Generativas" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-ivero-dark/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ivero-dark/40 via-transparent to-ivero-dark" />
       </div>
 
       {/* Content */}
@@ -28,22 +28,22 @@ const HeroSection = () => {
             className="inline-flex items-center gap-2 rounded-full bg-ivero-purple/20 border border-ivero-purple/30 px-4 py-1.5 mb-8"
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            <span className="text-sm font-medium text-ivero-pink-light">Geointeligência & Otimização de Crescimento</span>
+            <span className="text-sm font-medium text-ivero-pink-light">Generative Engine Optimization</span>
           </motion.div>
 
           <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight mb-6">
-            <span className="text-primary-foreground">Domine o mercado com </span>
-            <span className="text-gradient">dados inteligentes</span>
+            <span className="text-primary-foreground">Sua marca aparece nas </span>
+            <span className="text-gradient">respostas da IA?</span>
           </h1>
 
           <p className="text-lg md:text-xl text-ivero-slate-light max-w-2xl mb-10 leading-relaxed">
-            A Ivero transforma dados geográficos e de mercado em estratégias de crescimento 
-            acionáveis. Descubra oportunidades invisíveis e escale sua marca com precisão.
+            A Ivero monitora como sua marca é citada (ou ignorada) por ChatGPT, Gemini, Perplexity 
+            e outras IAs — e transforma isso em inteligência estratégica para você agir.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Button variant="hero" size="lg" className="text-base px-8 py-6">
-              Comece gratuitamente
+              Descubra sua visibilidade em IA
               <ArrowRight className="ml-2" />
             </Button>
             <Button variant="hero-outline" size="lg" className="text-base px-8 py-6 border-ivero-pink-light/50 text-ivero-pink-light hover:bg-ivero-pink hover:text-primary-foreground">

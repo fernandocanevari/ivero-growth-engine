@@ -7,27 +7,27 @@ const plans = [
     name: "Starter",
     price: "Grátis",
     period: "",
-    description: "Ideal para explorar a plataforma",
+    description: "Explore sua visibilidade em IA",
     features: [
-      "1 projeto ativo",
-      "Mapeamento básico",
-      "500 consultas/mês",
-      "Suporte por email",
+      "1 marca monitorada",
+      "3 IAs rastreadas",
+      "Relatório mensal básico",
+      "Score GEO inicial",
     ],
     variant: "hero-outline" as const,
     highlighted: false,
   },
   {
     name: "Pro",
-    price: "R$ 297",
+    price: "R$ 497",
     period: "/mês",
-    description: "Para marcas em crescimento acelerado",
+    description: "Para marcas que querem dominar a IA",
     features: [
-      "Projetos ilimitados",
-      "IA Preditiva completa",
-      "Consultas ilimitadas",
-      "Análise competitiva",
-      "Relatórios customizáveis",
+      "Marcas ilimitadas",
+      "Todas as IAs rastreadas",
+      "Análise comparativa completa",
+      "Planos de ação estratégicos",
+      "Alertas em tempo real",
       "Suporte prioritário",
     ],
     variant: "hero" as const,
@@ -41,7 +41,7 @@ const plans = [
     features: [
       "Tudo do Pro",
       "API dedicada",
-      "SLA garantido",
+      "White-label para agências",
       "Onboarding personalizado",
       "Integrações customizadas",
       "Account manager",
@@ -68,11 +68,11 @@ const InvestSection = () => {
             Investimento
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
-            <span className="text-primary-foreground">Invista no </span>
-            <span className="text-gradient">crescimento certo</span>
+            <span className="text-primary-foreground">Invista na sua </span>
+            <span className="text-gradient">presença em IA</span>
           </h2>
           <p className="text-lg text-ivero-slate-light max-w-2xl mx-auto">
-            Escolha o plano ideal para o momento da sua marca.
+            Escolha o plano ideal para garantir que sua marca não fique invisível.
           </p>
         </motion.div>
 
