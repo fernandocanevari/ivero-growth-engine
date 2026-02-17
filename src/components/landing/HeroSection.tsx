@@ -57,7 +57,7 @@ const HeroSection = () => {
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-ivero-slate text-sm ml-5">Digite o site da sua marca e eu darei uma análise gratuita 🚀</p>
+              <p className="text-primary-foreground text-base font-medium ml-5">Digite o site da sua marca e eu darei uma análise gratuita 🚀</p>
             </div>
           </motion.div>
 
