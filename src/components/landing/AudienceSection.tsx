@@ -125,10 +125,22 @@ const AudienceSection = () => {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            {/* Purple glow behind chat */}
-            <div className="absolute -inset-6 rounded-3xl bg-[hsl(265,70%,28%,0.2)] blur-[50px] pointer-events-none" />
-            <div className="absolute -inset-3 rounded-3xl bg-[hsl(280,60%,50%,0.1)] blur-[30px] pointer-events-none" />
-            <div className="absolute inset-0 rounded-2xl bg-[hsl(330,85%,55%,0.05)] blur-[20px] pointer-events-none" />
+            {/* Purple glow behind chat - animated pulse */}
+            <motion.div
+              animate={{ opacity: [0.15, 0.3, 0.15], scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -inset-6 rounded-3xl bg-[hsl(265,70%,28%,0.2)] blur-[50px] pointer-events-none"
+            />
+            <motion.div
+              animate={{ opacity: [0.08, 0.18, 0.08], scale: [1, 1.03, 1] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="absolute -inset-3 rounded-3xl bg-[hsl(280,60%,50%,0.1)] blur-[30px] pointer-events-none"
+            />
+            <motion.div
+              animate={{ opacity: [0.04, 0.1, 0.04] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute inset-0 rounded-2xl bg-[hsl(330,85%,55%,0.05)] blur-[20px] pointer-events-none"
+            />
 
             <div className="relative rounded-2xl border border-[hsl(265,70%,40%,0.3)] bg-gradient-to-br from-ivero-dark via-ivero-dark-surface to-[hsl(265,70%,15%)] p-6 shadow-2xl shadow-ivero-purple/30 ring-1 ring-ivero-purple/20 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
               {/* Header bar */}

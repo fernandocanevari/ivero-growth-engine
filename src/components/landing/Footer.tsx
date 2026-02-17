@@ -13,71 +13,63 @@ const aiIcons = [
 
 const Footer = () => {
   return (
-    <footer className="py-8 bg-ivero-dark border-t border-ivero-purple/10">
+    <footer className="py-4 bg-ivero-dark border-t border-ivero-purple/10">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-start justify-center gap-12 mb-6">
-          {/* Logo + IAs + CTA */}
-          <div className="flex flex-col items-center gap-4">
-            <span className="font-display text-3xl font-bold text-gradient">Ivero</span>
-
-            <div className="flex flex-col items-center gap-2">
-              <p className="text-xs text-ivero-slate-light uppercase tracking-wider">IAs monitoradas</p>
-              <div className="flex items-center justify-center gap-4">
-                {aiIcons.map((ai) => (
-                  <img
-                    key={ai.name}
-                    src={ai.icon}
-                    alt={ai.name}
-                    title={ai.name}
-                    className="w-6 h-6 invert opacity-70 hover:opacity-100 transition-opacity"
-                  />
-                ))}
-              </div>
-            </div>
-
-            <p className="text-sm text-ivero-slate-light italic">Visibilidade constrói marcas duradoras.</p>
-
-            <Button variant="hero" size="default" className="px-6 text-sm w-fit" asChild>
-              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-                Fale direto com o fundador, o Fernando!
-                <ArrowRight className="ml-1.5 w-4 h-4" />
-              </a>
-            </Button>
+        {/* Top: centered branding block */}
+        <div className="flex flex-col items-center gap-1.5 mb-3">
+          <span className="font-display text-2xl font-bold text-gradient">Ivero</span>
+          <p className="text-[10px] text-ivero-slate-light uppercase tracking-wider">IAs monitoradas</p>
+          <div className="flex items-center justify-center gap-3">
+            {aiIcons.map((ai) => (
+              <img
+                key={ai.name}
+                src={ai.icon}
+                alt={ai.name}
+                title={ai.name}
+                className="w-5 h-5 invert opacity-70 hover:opacity-100 transition-opacity"
+              />
+            ))}
           </div>
+          <p className="text-xs text-ivero-slate-light italic">Visibilidade constrói marcas duradoras.</p>
+        </div>
 
-          {/* Mapa do Site */}
-          <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-semibold text-primary-foreground mb-0.5">Mapa do Site</h4>
-            <a href="#recursos" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Recursos</a>
-            <a href="#como-funciona" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Como funciona</a>
-            <a href="#para-quem" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Pra quem</a>
-            <a href="#precos" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Preços</a>
+        {/* Links row */}
+        <div className="flex flex-wrap items-start justify-center gap-10 mb-3 text-xs">
+          <div className="flex flex-col gap-0.5">
+            <h4 className="font-semibold text-primary-foreground mb-0.5">Mapa do Site</h4>
+            <a href="#recursos" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Recursos</a>
+            <a href="#como-funciona" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Como funciona</a>
+            <a href="#para-quem" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Pra quem</a>
+            <a href="#precos" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Preços</a>
           </div>
-
-          {/* Redes Sociais */}
-          <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-semibold text-primary-foreground mb-0.5">Redes Sociais</h4>
-            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Instagram</a>
-            <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">LinkedIn</a>
-            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">WhatsApp</a>
-            <a href="#" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
+          <div className="flex flex-col gap-0.5">
+            <h4 className="font-semibold text-primary-foreground mb-0.5">Redes Sociais</h4>
+            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Instagram</a>
+            <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">LinkedIn</a>
+            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">WhatsApp</a>
+            <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
           </div>
-
-          {/* Legal */}
-          <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-semibold text-primary-foreground mb-0.5">Legal</h4>
-            <a href="#" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Termos</a>
-            <a href="#" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Privacidade</a>
+          <div className="flex flex-col gap-0.5">
+            <h4 className="font-semibold text-primary-foreground mb-0.5">Legal</h4>
+            <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Termos</a>
+            <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Privacidade</a>
           </div>
         </div>
 
-        <div className="border-t border-ivero-purple/10 pt-4 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-sm text-ivero-slate-light">
-            © 2026 Ivero. Todos os direitos reservados.
-          </p>
-          <p className="text-sm text-ivero-slate-light">
-            Feito com o coração ❤️
-          </p>
+        {/* CTA button */}
+        <div className="flex justify-center mb-2">
+          <Button variant="hero" size="default" className="px-6 text-sm" asChild>
+            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
+              Fale direto com o fundador, o Fernando!
+              <ArrowRight className="ml-1.5 w-4 h-4" />
+            </a>
+          </Button>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-ivero-purple/10 pt-2 flex flex-col md:flex-row items-center justify-between gap-1">
+          <p className="text-xs text-ivero-slate-light">© 2026 Ivero. Todos os direitos reservados.</p>
+          <p className="text-xs text-ivero-slate-light">Feito com o coração ❤️</p>
         </div>
       </div>
     </footer>
