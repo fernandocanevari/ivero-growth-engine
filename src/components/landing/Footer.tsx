@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 
 const Footer = () => {
   return (
-    <footer className="py-10 bg-ivero-dark border-t border-ivero-purple/10">
+    <footer className="py-6 bg-ivero-dark border-t border-ivero-purple/10">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-start justify-center gap-16 mb-8">
+        <div className="flex flex-col md:flex-row items-start justify-center gap-16 mb-6">
           {/* Logo */}
           <div className="flex flex-col gap-3">
             <span className="font-display text-2xl font-bold text-gradient">Ivero</span>
