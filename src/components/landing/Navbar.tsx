@@ -18,7 +18,7 @@ const Navbar = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-ivero-dark/95 backdrop-blur-md border-b border-ivero-purple/15"
+      className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm"
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <a href="#" className="font-display text-2xl font-bold text-gradient">
@@ -31,7 +31,7 @@ const Navbar = () => {
             <a
               key={link.label}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors"
             >
               {link.label}
             </a>
@@ -43,7 +43,7 @@ const Navbar = () => {
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden text-foreground"
+          className="md:hidden text-ivero-dark"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle menu"
         >
@@ -56,14 +56,14 @@ const Navbar = () => {
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
-          className="md:hidden border-t border-border bg-background"
+          className="md:hidden border-t border-gray-200 bg-white"
         >
           <div className="container mx-auto px-6 py-4 flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+                className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors py-2"
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
