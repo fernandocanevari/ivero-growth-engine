@@ -12,7 +12,7 @@ const aiLogos = [
 
 const AILogosSection = () => {
   return (
-    <section className="py-10 bg-ivero-dark border-b border-ivero-purple/10">
+    <section className="py-10 bg-gradient-to-r from-[hsl(265,50%,12%)] via-[hsl(280,45%,15%)] to-[hsl(265,50%,12%)] border-y border-ivero-purple/20">
       <div className="container mx-auto px-6">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
