@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import heroIllustration from "@/assets/hero-illustration.png";
 import { useState } from "react";
 
@@ -33,7 +33,9 @@ const HeroSection = () => {
           >
             <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
               <span className="text-primary-foreground">A sua marca está sendo </span>
-              <span className="text-gradient">recomendada pelas IAs?</span>
+              <span className="text-gradient">recomendada</span>
+              <br />
+              <span className="text-gradient">pelas IAs?</span>
             </h1>
 
             <p className="text-lg md:text-xl text-ivero-slate-light max-w-2xl mb-10 leading-relaxed">
@@ -41,18 +43,21 @@ const HeroSection = () => {
               e outras IAs — e transforma isso em inteligência estratégica para você agir.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
-              <Input
-                type="url"
-                placeholder="Digite o site da sua marca"
-                value={siteUrl}
-                onChange={(e) => setSiteUrl(e.target.value)}
-                className="h-14 rounded-full bg-ivero-dark-surface border-ivero-purple/30 text-primary-foreground placeholder:text-ivero-slate px-6 text-base focus-visible:ring-ivero-purple"
-              />
-              <Button variant="hero" size="lg" className="text-base px-8 h-14 shrink-0">
-                Descubra sua visibilidade em IA
-                <ArrowRight className="ml-2" />
-              </Button>
+            <div className="flex flex-col gap-3 max-w-xl">
+              <div className="flex items-center h-14 rounded-full bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden pl-5 pr-1.5">
+                <input
+                  type="url"
+                  placeholder="Digite o site da sua marca"
+                  value={siteUrl}
+                  onChange={(e) => setSiteUrl(e.target.value)}
+                  className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-base outline-none border-none"
+                />
+                <Button variant="hero" size="lg" className="text-sm px-6 h-11 shrink-0 rounded-full">
+                  Descubra sua visibilidade em IA
+                  <ArrowRight className="ml-1.5 w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-ivero-slate text-sm ml-5">Digite o site da sua marca</p>
             </div>
           </motion.div>
 
