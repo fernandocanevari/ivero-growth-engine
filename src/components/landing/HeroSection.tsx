@@ -30,8 +30,8 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
-              <span className="text-primary-foreground">A sua marca está sendo </span>
-              <span className="text-gradient">recomendada</span>
+              <span className="text-primary-foreground">A sua marca está </span>
+              <span className="whitespace-nowrap"><span className="text-primary-foreground">sendo </span><span className="text-gradient">recomendada</span></span>
               <br />
               <span className="text-gradient">pelas IAs?</span>
             </h1>
