@@ -1,8 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-import heroIllustration from "@/assets/hero-illustration.png";
 import { useState } from "react";
 
 const HeroSection = () => {
@@ -61,18 +59,46 @@ const HeroSection = () => {
             </div>
           </motion.div>
 
-          {/* Right - Illustration */}
+          {/* Right - Signup Form */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             className="hidden lg:flex justify-center"
           >
-            <img
-              src={heroIllustration}
-              alt="Dashboard de monitoramento de marca em IAs generativas"
-              className="w-full max-w-lg drop-shadow-2xl"
-            />
+            <div className="w-full max-w-md bg-ivero-dark-surface border border-ivero-purple/20 rounded-2xl p-8 shadow-xl">
+              <h3 className="font-display text-xl font-semibold text-primary-foreground mb-2">
+                Descubra se sua marca já aparece nas respostas da IA.
+              </h3>
+              <p className="text-ivero-slate-light text-sm mb-6">Preencha os dados abaixo e comece agora.</p>
+
+              <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
+                <input
+                  type="text"
+                  placeholder="Nome"
+                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                />
+                <input
+                  type="email"
+                  placeholder="E-mail corporativo"
+                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                />
+                <input
+                  type="url"
+                  placeholder="Site da empresa"
+                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                />
+                <input
+                  type="tel"
+                  placeholder="Celular"
+                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                />
+                <Button variant="hero" size="lg" className="w-full h-12 text-sm mt-2">
+                  Começar agora
+                  <ArrowRight className="ml-1.5 w-4 h-4" />
+                </Button>
+              </form>
+            </div>
           </motion.div>
         </div>
       </div>
