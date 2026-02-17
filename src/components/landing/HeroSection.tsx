@@ -21,7 +21,7 @@ const HeroSection = () => {
       <div className="absolute bottom-0 right-[10%] w-[2px] h-[60%] bg-gradient-to-t from-[hsl(265,60%,55%/0.3)] to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 py-32">
+      <div className="relative z-10 container mx-auto px-6 py-32 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left - Text */}
           <motion.div
@@ -75,7 +75,7 @@ const HeroSection = () => {
                       src={ai.icon}
                       alt={ai.name}
                       title={ai.name}
-                      className="w-6 h-6 invert opacity-70 hover:opacity-100 transition-opacity"
+                      className="w-8 h-8 invert opacity-70 hover:opacity-100 transition-opacity"
                     />
                   ))}
                 </div>
