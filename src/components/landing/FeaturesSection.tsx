@@ -36,7 +36,7 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-24 bg-background">
+    <section className="py-16 bg-background">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -44,9 +44,6 @@ const FeaturesSection = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold uppercase tracking-widest text-accent mb-4 block">
-            Recursos
-          </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
             Recursos da Ivero para{" "}
             <span className="text-gradient">impulsionar sua marca</span>

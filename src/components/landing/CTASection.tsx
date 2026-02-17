@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, TrendingUp, Search, ShoppingCart } from "lucide-react";
+import { ArrowRight, TrendingUp, Search, ShoppingCart } from "lucide-react";
 
 const stats = [
   {
@@ -22,7 +22,7 @@ const stats = [
 
 const CTASection = () => {
   return (
-    <section className="py-24 bg-ivero-dark relative overflow-hidden">
+    <section className="py-16 bg-ivero-dark relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-ivero-purple/15 rounded-full blur-3xl" />
       <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/10 rounded-full blur-3xl" />
 
@@ -36,9 +36,6 @@ const CTASection = () => {
             transition={{ duration: 0.6 }}
             className="w-full lg:w-1/3 flex flex-col gap-6"
           >
-            <h3 className="font-display text-xl font-semibold text-primary-foreground">
-              Dados reais de mercado
-            </h3>
             {stats.map((stat, i) => (
               <div
                 key={i}
@@ -62,10 +59,6 @@ const CTASection = () => {
             viewport={{ once: true }}
             className="text-center flex-1 max-w-2xl"
           >
-            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 border border-accent/20 px-4 py-1.5 mb-8">
-              <Sparkles className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium text-accent">A era da IA já começou</span>
-            </div>
 
             <h2 className="font-display text-4xl md:text-6xl font-bold mb-6">
               <span className="text-primary-foreground">Sua marca será </span>
