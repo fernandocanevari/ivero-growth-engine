@@ -11,7 +11,7 @@ const aiLogos = [
 ];
 
 const LogoItem = ({ ai }: { ai: (typeof aiLogos)[number] }) => (
-  <div className="flex flex-col items-center gap-2 group shrink-0 px-4">
+  <div className="flex flex-col items-center gap-2 group shrink-0 px-10">
     <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-ivero-dark-surface border border-ivero-purple/10 group-hover:border-ivero-purple/30 transition-colors">
       <img
         src={ai.icon}
