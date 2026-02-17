@@ -51,7 +51,7 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section id="faq" className="py-24 bg-secondary/30">
+    <section id="faq" className="py-16 bg-secondary/30">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -60,9 +60,6 @@ const FAQSection = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold tracking-widest uppercase text-accent mb-4 block">
-            Tire suas dúvidas
-          </span>
           <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground mb-4">
             Perguntas Frequentes
           </h2>

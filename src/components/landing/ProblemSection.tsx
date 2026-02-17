@@ -22,7 +22,7 @@ const problems = [
 
 const ProblemSection = () => {
   return (
-    <section className="py-24 bg-background">
+    <section className="py-16 bg-background">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -30,9 +30,6 @@ const ProblemSection = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold uppercase tracking-widest text-accent mb-4 block">
-            O problema
-          </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
             Sua marca existe para a <span className="text-gradient">IA generativa?</span>
           </h2>

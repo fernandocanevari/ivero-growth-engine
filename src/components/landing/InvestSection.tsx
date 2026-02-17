@@ -53,7 +53,7 @@ const plans = [
 
 const InvestSection = () => {
   return (
-    <section className="py-24 bg-ivero-dark relative overflow-hidden">
+    <section className="py-16 bg-ivero-dark relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-ivero-purple/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
 
@@ -64,9 +64,6 @@ const InvestSection = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold uppercase tracking-widest text-accent mb-4 block">
-            Investimento
-          </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
             <span className="text-primary-foreground">Invista na sua </span>
             <span className="text-gradient">presença em IA</span>
