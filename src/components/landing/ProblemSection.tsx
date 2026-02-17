@@ -31,7 +31,7 @@ const ProblemSection = () => {
           className="text-center mb-16"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Se a IA não recomendar a sua marca, <span className="text-gradient">ela recomendará a do seu concorrente</span>
+            As IAs reconhecem <span className="text-gradient">sua marca?</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Quando a IA não cita sua marca, a escolha do seu cliente vai para outro lugar.

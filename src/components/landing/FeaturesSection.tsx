@@ -46,11 +46,8 @@ const FeaturesSection = () => {
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
             Recursos da Ivero para{" "}
-            <span className="text-gradient">aumentar sua visibilidade nas IAs</span>
+            <span className="text-gradient">a presença da sua marca nas IAs</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tudo o que você precisa para medir, entender e ampliar sua presença nas respostas das IAs.
-          </p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
