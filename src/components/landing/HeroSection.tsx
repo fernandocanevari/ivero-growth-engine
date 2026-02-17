@@ -42,7 +42,7 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col gap-3 max-w-xl">
-              <div className="flex items-center h-14 rounded-full bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden pl-5 pr-1.5">
+              <div className="flex items-center h-14 rounded-full bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden pl-5 pr-1.5 shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
                 <input
                   type="url"
                   placeholder="Digite o site da sua marca"
