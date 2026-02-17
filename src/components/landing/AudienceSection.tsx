@@ -119,17 +119,27 @@ const AudienceSection = () => {
             transition={{ duration: 0.6 }}
             className="order-2 lg:order-1"
           >
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-xl shadow-ivero-purple/5">
+            <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-ivero-purple/5 p-6 shadow-2xl shadow-ivero-purple/10 ring-1 ring-ivero-purple/5">
+              {/* Header bar */}
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
+                <div className="w-3 h-3 rounded-full bg-green-400/60" />
+                <span className="ml-auto text-[10px] font-medium text-muted-foreground/50 tracking-wider uppercase">Ivero AI</span>
+              </div>
+
               {/* Search bar with typing */}
-              <div className="flex items-center gap-3 rounded-xl bg-secondary/50 border border-border px-4 py-3 mb-5">
-                <Search className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-3 rounded-xl bg-secondary/60 border border-border/50 px-4 py-3 mb-5 backdrop-blur-sm">
+                <Search className="w-4 h-4 text-accent/70" />
                 <TypingText />
               </div>
 
               {/* AI response header */}
               <div className="flex items-center gap-2 mb-4 px-1">
-                <Sparkles className="w-4 h-4 text-accent" />
-                <span className="text-xs font-medium text-accent">IA recomenda</span>
+                <div className="w-6 h-6 rounded-lg bg-ivero-gradient flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
+                <span className="text-xs font-semibold text-accent">IA recomenda</span>
               </div>
 
               {/* Results */}
@@ -141,23 +151,25 @@ const AudienceSection = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3 + i * 0.1 }}
-                    className="rounded-xl bg-secondary/30 border border-border p-4"
+                    className="rounded-xl bg-secondary/30 border border-border/50 p-4 cursor-pointer hover:bg-accent/5 hover:border-accent/30 hover:shadow-md hover:shadow-accent/10 hover:-translate-y-0.5 transition-all duration-300 group/card"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-accent bg-accent/10 rounded-full px-2 py-0.5">
+                      <span className="text-xs font-bold text-primary-foreground bg-ivero-gradient rounded-full px-2.5 py-0.5">
                         #{i + 1}
                       </span>
-                      <h4 className="text-sm font-semibold text-foreground">{result.name}</h4>
+                      <h4 className="text-sm font-semibold text-foreground group-hover/card:text-accent transition-colors">{result.name}</h4>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed pl-8">{result.desc}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed pl-9">{result.desc}</p>
                   </motion.div>
                 ))}
               </div>
 
               {/* Input bar */}
-              <div className="flex items-center gap-3 rounded-xl bg-secondary/50 border border-border px-4 py-3">
+              <div className="flex items-center gap-3 rounded-xl bg-secondary/60 border border-border/50 px-4 py-3 backdrop-blur-sm">
                 <span className="text-sm text-muted-foreground/60 flex-1">Pergunte mais sobre esses produtos...</span>
-                <Send className="w-4 h-4 text-accent/50" />
+                <div className="w-8 h-8 rounded-lg bg-ivero-gradient flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                  <Send className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
               </div>
             </div>
           </motion.div>
@@ -183,7 +195,7 @@ const AudienceSection = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 + index * 0.1 }}
-                  className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-card hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 transition-all duration-300 group"
+                  className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-card hover:border-accent/40 hover:bg-accent/5 hover:shadow-xl hover:shadow-accent/10 hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 cursor-pointer group"
                 >
                   <div className="shrink-0 w-10 h-10 rounded-lg bg-ivero-gradient flex items-center justify-center">
                     <item.icon className="w-5 h-5 text-primary-foreground" />
