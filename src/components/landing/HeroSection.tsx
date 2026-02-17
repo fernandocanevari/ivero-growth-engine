@@ -32,7 +32,7 @@ const HeroSection = () => {
             <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
               <span className="text-primary-foreground">A sua marca está sendo </span>
               <span className="text-gradient">recomendada</span>
-              <br />
+              {" "}
               <span className="text-gradient">pelas IAs?</span>
             </h1>
 
