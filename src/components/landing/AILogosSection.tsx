@@ -18,7 +18,7 @@ const AILogosSection = () => {
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center text-sm font-medium text-ivero-slate-light mb-8 tracking-wide uppercase"
+          className="text-center text-base md:text-lg font-semibold text-primary-foreground mb-8 tracking-wide uppercase"
         >
           IAs monitoradas pela Ivero
         </motion.p>
@@ -27,7 +27,7 @@ const AILogosSection = () => {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="flex flex-wrap items-center justify-center gap-8 md:gap-12"
+          className="flex flex-wrap items-center justify-center gap-10 md:gap-16"
         >
           {aiLogos.map((ai, i) => (
             <motion.div
@@ -38,14 +38,14 @@ const AILogosSection = () => {
               transition={{ delay: i * 0.07 }}
               className="flex flex-col items-center gap-2 group"
             >
-              <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-ivero-dark-surface border border-ivero-purple/10 group-hover:border-ivero-purple/30 transition-colors">
+              <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-ivero-dark-surface border border-ivero-purple/10 group-hover:border-ivero-purple/30 transition-colors">
                 <img
                   src={ai.icon}
                   alt={ai.name}
-                  className="w-5 h-5 invert opacity-50 group-hover:opacity-90 transition-opacity"
+                  className="w-7 h-7 invert opacity-50 group-hover:opacity-90 transition-opacity"
                 />
               </div>
-              <span className="text-xs text-ivero-slate-light group-hover:text-primary-foreground transition-colors">
+              <span className="text-sm font-medium text-ivero-slate-light group-hover:text-primary-foreground transition-colors">
                 {ai.name}
               </span>
             </motion.div>
