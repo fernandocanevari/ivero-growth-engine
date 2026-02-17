@@ -56,6 +56,30 @@ const HeroSection = () => {
                 </Button>
               </div>
               <p className="text-primary-foreground text-base font-medium ml-5">Digite o site da sua marca e eu darei uma análise gratuita 🚀</p>
+              
+              {/* IAs monitoradas */}
+              <div className="mt-6 ml-1">
+                <p className="text-xs text-ivero-slate-light uppercase tracking-wider mb-3">IAs monitoradas</p>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {[
+                    { name: "ChatGPT", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" },
+                    { name: "Gemini", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" },
+                    { name: "Perplexity", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/perplexity.svg" },
+                    { name: "Claude", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/anthropic.svg" },
+                    { name: "Copilot", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/githubcopilot.svg" },
+                    { name: "Meta AI", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/meta.svg" },
+                    { name: "Grok", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" },
+                  ].map((ai) => (
+                    <img
+                      key={ai.name}
+                      src={ai.icon}
+                      alt={ai.name}
+                      title={ai.name}
+                      className="w-6 h-6 invert opacity-70 hover:opacity-100 transition-opacity"
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
 
