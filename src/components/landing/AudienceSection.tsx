@@ -122,14 +122,21 @@ const AudienceSection = () => {
             </h2>
 
             <div className="space-y-4">
-              {audiences.map((item, index) => (
+              {audiences.map((item, index) => {
+                const borderColors = [
+                  "border-[hsl(265_70%_28%/0.3)] hover:border-[hsl(265_70%_28%/0.6)] hover:shadow-[0_0_20px_hsl(265_70%_28%/0.15)]",
+                  "border-[hsl(280_60%_45%/0.3)] hover:border-[hsl(280_60%_45%/0.6)] hover:shadow-[0_0_20px_hsl(280_60%_45%/0.15)]",
+                  "border-[hsl(300_50%_50%/0.3)] hover:border-[hsl(300_50%_50%/0.6)] hover:shadow-[0_0_20px_hsl(300_50%_50%/0.15)]",
+                  "border-[hsl(330_85%_55%/0.3)] hover:border-[hsl(330_85%_55%/0.6)] hover:shadow-[0_0_20px_hsl(330_85%_55%/0.15)]",
+                ];
+                return (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 15 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 + index * 0.1 }}
-                  className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-card hover:border-accent/40 hover:bg-accent/5 hover:shadow-xl hover:shadow-accent/10 hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 cursor-pointer group"
+                  className={`flex items-center gap-4 px-5 py-4 rounded-xl border-2 bg-card hover:bg-accent/5 hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 cursor-pointer group ${borderColors[index]}`}
                 >
                   <div className="shrink-0 w-10 h-10 rounded-lg bg-ivero-gradient flex items-center justify-center">
                     <item.icon className="w-5 h-5 text-primary-foreground" />
@@ -138,7 +145,8 @@ const AudienceSection = () => {
                     {item.text}
                   </span>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
 
@@ -148,8 +156,12 @@ const AudienceSection = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="relative"
           >
-            <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-ivero-purple/5 p-6 shadow-2xl shadow-ivero-purple/10 ring-1 ring-ivero-purple/5 transform rotate-2 hover:rotate-0 transition-transform duration-500">
+            {/* Purple glow behind chat */}
+            <div className="absolute -inset-4 rounded-3xl bg-[hsl(265_70%_28%/0.15)] blur-[40px] pointer-events-none" />
+            <div className="absolute -inset-2 rounded-3xl bg-[hsl(280_60%_50%/0.08)] blur-[25px] pointer-events-none" />
+            <div className="relative rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-ivero-purple/5 p-6 shadow-2xl shadow-ivero-purple/20 ring-1 ring-ivero-purple/10 transform rotate-2 hover:rotate-0 transition-transform duration-500">
               {/* Header bar */}
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-3 h-3 rounded-full bg-destructive/60" />
