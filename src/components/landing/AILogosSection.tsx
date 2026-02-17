@@ -29,7 +29,7 @@ const AILogosSection = () => {
   const doubled = [...aiLogos, ...aiLogos];
 
   return (
-    <section className="py-10 bg-gradient-to-r from-[hsl(265,50%,12%)] via-[hsl(280,45%,15%)] to-[hsl(265,50%,12%)] border-y border-ivero-purple/20 overflow-hidden">
+    <section className="py-10 bg-gradient-to-r from-[hsl(265,30%,8%)] via-[hsl(275,25%,10%)] to-[hsl(265,30%,8%)] border-y border-ivero-purple/15 overflow-hidden">
       <div className="container mx-auto px-6">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -43,8 +43,8 @@ const AILogosSection = () => {
 
       <div className="relative">
         {/* Fade edges */}
-        <div className="absolute left-0 top-0 bottom-0 w-20 z-10 bg-gradient-to-r from-[hsl(265,50%,12%)] to-transparent pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-20 z-10 bg-gradient-to-l from-[hsl(265,50%,12%)] to-transparent pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-20 z-10 bg-gradient-to-r from-[hsl(265,30%,8%)] to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 z-10 bg-gradient-to-l from-[hsl(265,30%,8%)] to-transparent pointer-events-none" />
 
         <motion.div
           className="flex items-center w-max"
