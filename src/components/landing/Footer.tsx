@@ -56,6 +56,7 @@ const Footer = () => {
             <h4 className="text-sm font-semibold text-primary-foreground mb-0.5">Redes Sociais</h4>
             <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Instagram</a>
             <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">LinkedIn</a>
+            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">WhatsApp</a>
             <a href="#" className="text-sm text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
           </div>
 
