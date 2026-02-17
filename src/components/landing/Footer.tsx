@@ -8,11 +8,11 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-start justify-center gap-12 mb-4">
           {/* Logo */}
           <div className="flex flex-col gap-2">
-            <span className="font-display text-xl font-bold text-gradient">Ivero</span>
-            <Button variant="hero" size="sm" className="px-4 text-xs w-fit" asChild>
+            <span className="font-display text-3xl font-bold text-gradient">Ivero</span>
+            <Button variant="hero" size="default" className="px-6 text-sm w-fit" asChild>
               <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-                Fale direto com o fundador
-                <ArrowRight className="ml-1 w-3.5 h-3.5" />
+                Fale direto com o fundador, o Fernando!
+                <ArrowRight className="ml-1.5 w-4 h-4" />
               </a>
             </Button>
           </div>
