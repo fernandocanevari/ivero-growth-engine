@@ -63,10 +63,6 @@ const FAQSection = () => {
           <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground mb-4">
             Perguntas Frequentes
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Tudo o que você precisa saber sobre GEO e como a Ivero pode
-            transformar a visibilidade da sua marca nas IAs.
-          </p>
         </motion.div>
 
         <motion.div

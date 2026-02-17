@@ -31,11 +31,10 @@ const ProblemSection = () => {
           className="text-center mb-16"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Sua marca existe para a <span className="text-gradient">IA generativa?</span>
+            Se a IA não recomendar a sua marca, <span className="text-gradient">ela recomendará a do seu concorrente</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Bilhões de pessoas já usam IAs para tomar decisões. Se sua marca não aparece 
-            nessas respostas, você está perdendo relevância todos os dias.
+            Quando a IA não cita sua marca, a escolha do seu cliente vai para outro lugar.
           </p>
         </motion.div>
 

@@ -55,7 +55,7 @@ const HeroSection = () => {
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-primary-foreground text-base font-medium ml-5">Digite o site da sua marca e eu darei uma análise gratuita 🚀</p>
+              <p className="text-primary-foreground text-base font-medium ml-5">Veja análise instantânea da sua presença nas respostas da IA🚀</p>
               
             </div>
           </motion.div>
