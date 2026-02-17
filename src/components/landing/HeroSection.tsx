@@ -88,7 +88,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="hidden lg:flex justify-center"
+            className="hidden lg:flex justify-center -mt-2"
           >
             <div className="w-full max-w-md bg-ivero-dark-surface border border-ivero-purple/20 rounded-2xl p-8 shadow-xl">
               <h3 className="font-display text-xl font-semibold text-primary-foreground mb-2">
