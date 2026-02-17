@@ -50,7 +50,7 @@ const FeaturesSection = () => {
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -58,15 +58,19 @@ const FeaturesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="group relative p-8 rounded-2xl border border-border bg-card hover:border-accent/30 transition-all duration-300 overflow-hidden"
+              className="group relative p-8 rounded-2xl border border-border/60 bg-card hover:border-accent/40 hover:shadow-[0_8px_30px_hsl(330_85%_55%/0.08)] transition-all duration-500 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-ivero-gradient-soft opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Top accent line */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-ivero-gradient opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              {/* Soft radial glow on hover */}
+              <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-accent/5 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500" />
               
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-ivero-gradient-soft flex items-center justify-center mb-5">
-                  <feature.icon className="w-6 h-6 text-accent" />
+                <div className="w-14 h-14 rounded-2xl bg-ivero-gradient flex items-center justify-center mb-6 shadow-lg group-hover:shadow-accent/20 group-hover:scale-105 transition-all duration-300">
+                  <feature.icon className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <h3 className="font-display text-lg font-semibold text-card-foreground mb-2">
+                <h3 className="font-display text-xl font-bold text-card-foreground mb-3">
                   {feature.title}
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
