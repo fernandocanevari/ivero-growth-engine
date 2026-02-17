@@ -36,6 +36,9 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
+          <a href="/login" className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors">
+            Entrar
+          </a>
           <Button variant="hero" size="sm" className="px-6">
             Começar grátis
           </Button>
@@ -69,6 +72,9 @@ const Navbar = () => {
                 {link.label}
               </a>
             ))}
+            <a href="/login" className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors py-2">
+              Entrar
+            </a>
             <Button variant="hero" size="sm" className="px-6 w-fit">
               Começar grátis
             </Button>
