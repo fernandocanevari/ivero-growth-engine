@@ -75,9 +75,6 @@ const CTASection = () => {
                 Começar agora — é grátis
                 <ArrowRight className="ml-2" />
               </Button>
-              <Button variant="hero-outline" size="lg" className="text-base px-8 py-6 border-ivero-pink-light/50 text-ivero-pink-light hover:bg-ivero-pink hover:text-primary-foreground">
-                Falar com especialista
-              </Button>
             </div>
           </motion.div>
         </div>
