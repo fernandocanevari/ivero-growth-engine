@@ -12,77 +12,78 @@ const aiIcons = [
   { name: "Grok", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" },
 ];
 
-const NeuralLines = () => {
+const NeuralNetwork = () => {
   const count = aiIcons.length;
+  const positions = Array.from({ length: count }, (_, i) => ((i + 1) / (count + 1)) * 100);
   const svgWidth = 500;
   const svgHeight = 60;
   const centerX = svgWidth / 2;
-  const iconSpacing = svgWidth / (count + 1);
 
   return (
-    <svg
-      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-      className="w-full h-16"
-      fill="none"
-      preserveAspectRatio="xMidYMid meet"
-    >
-      {/* Glow layer */}
-      {aiIcons.map((_, i) => {
-        const endX = iconSpacing * (i + 1);
-        const cp1X = centerX + (endX - centerX) * 0.3;
-        const cp2X = centerX + (endX - centerX) * 0.7;
-        return (
-          <motion.path
-            key={`glow-${i}`}
-            d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
-            stroke="hsl(0, 0%, 75%)"
-            strokeWidth="5"
-            fill="none"
-            animate={{ strokeOpacity: [0.08, 0.2, 0.08] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+    <div className="flex flex-col items-center max-w-lg w-full mx-auto md:mx-0">
+      <p className="text-sm font-semibold text-ivero-slate-light uppercase tracking-widest mb-0">IAs monitoradas</p>
+      <svg
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        className="w-full h-16"
+        fill="none"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {positions.map((pct, i) => {
+          const endX = (pct / 100) * svgWidth;
+          const cp1X = centerX + (endX - centerX) * 0.3;
+          const cp2X = centerX + (endX - centerX) * 0.7;
+          return (
+            <g key={i}>
+              <motion.path
+                d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
+                stroke="hsl(0, 0%, 75%)"
+                strokeWidth="5"
+                fill="none"
+                animate={{ strokeOpacity: [0.08, 0.2, 0.08] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+              />
+              <motion.path
+                d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
+                stroke="hsl(0, 0%, 70%)"
+                strokeWidth="1.5"
+                fill="none"
+                animate={{ strokeOpacity: [0.3, 0.7, 0.3] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+              />
+              <motion.circle
+                cx={endX}
+                cy={svgHeight}
+                r="2.5"
+                fill="hsl(0, 0%, 75%)"
+                animate={{ opacity: [0.3, 0.8, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+              />
+            </g>
+          );
+        })}
+        <motion.circle
+          cx={centerX}
+          cy={0}
+          r="3"
+          fill="hsl(0, 0%, 80%)"
+          animate={{ opacity: [0.4, 0.9, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </svg>
+      {/* Icons positioned to match SVG endpoints */}
+      <div className="relative w-full h-8 -mt-1">
+        {aiIcons.map((ai, i) => (
+          <img
+            key={ai.name}
+            src={ai.icon}
+            alt={ai.name}
+            title={ai.name}
+            className="absolute w-8 h-8 invert opacity-70 hover:opacity-100 transition-opacity -translate-x-1/2"
+            style={{ left: `${positions[i]}%` }}
           />
-        );
-      })}
-      {/* Main lines */}
-      {aiIcons.map((_, i) => {
-        const endX = iconSpacing * (i + 1);
-        const cp1X = centerX + (endX - centerX) * 0.3;
-        const cp2X = centerX + (endX - centerX) * 0.7;
-        return (
-          <motion.path
-            key={i}
-            d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
-            stroke="hsl(0, 0%, 70%)"
-            strokeWidth="1.5"
-            fill="none"
-            animate={{ strokeOpacity: [0.3, 0.7, 0.3] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
-          />
-        );
-      })}
-      {aiIcons.map((_, i) => {
-        const endX = iconSpacing * (i + 1);
-        return (
-          <motion.circle
-            key={`dot-${i}`}
-            cx={endX}
-            cy={svgHeight}
-            r="2.5"
-            fill="hsl(0, 0%, 75%)"
-            animate={{ opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
-          />
-        );
-      })}
-      <motion.circle
-        cx={centerX}
-        cy={0}
-        r="3"
-        fill="hsl(0, 0%, 80%)"
-        animate={{ opacity: [0.4, 0.9, 0.4] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </svg>
+        ))}
+      </div>
+    </div>
   );
 };
 
@@ -101,21 +102,7 @@ const Footer = () => {
           </div>
 
           {/* Center - Neural network */}
-          <div className="flex flex-col items-center max-w-lg w-full mx-auto md:mx-0">
-            <p className="text-sm font-semibold text-ivero-slate-light uppercase tracking-widest mb-0">IAs monitoradas</p>
-            <NeuralLines />
-            <div className="flex items-center justify-center gap-6 -mt-1">
-              {aiIcons.map((ai) => (
-                <img
-                  key={ai.name}
-                  src={ai.icon}
-                  alt={ai.name}
-                  title={ai.name}
-                  className="w-8 h-8 invert opacity-70 hover:opacity-100 transition-opacity"
-                />
-              ))}
-            </div>
-          </div>
+          <NeuralNetwork />
 
           {/* Right - Links */}
           <div className="flex flex-wrap gap-10 text-sm shrink-0">
