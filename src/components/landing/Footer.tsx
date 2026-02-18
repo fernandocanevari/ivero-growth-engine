@@ -107,7 +107,13 @@ const Footer = () => {
           {/* Right - Links */}
           <div className="flex flex-wrap gap-10 text-sm shrink-0">
             <div className="flex flex-col gap-1">
-              <h4 className="font-semibold text-primary-foreground mb-1">Mapa do Site</h4>
+              <h4 className="font-semibold text-primary-foreground mb-1">Empresa</h4>
+              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Sobre</a>
+              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Blog</a>
+              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
+            </div>
+            <div className="flex flex-col gap-1">
+              <h4 className="font-semibold text-primary-foreground mb-1">Produto</h4>
               <a href="#recursos" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Recursos</a>
               <a href="#como-funciona" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Como funciona</a>
               <a href="#para-quem" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Pra quem</a>
@@ -118,12 +124,12 @@ const Footer = () => {
               <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Instagram</a>
               <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">LinkedIn</a>
               <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">WhatsApp</a>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
             </div>
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Legal</h4>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Termos</a>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Privacidade</a>
+              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">LGPD</a>
             </div>
           </div>
         </div>
