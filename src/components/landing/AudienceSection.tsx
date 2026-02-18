@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
 import { Building2, Megaphone, ShoppingBag, Store, Search, Send, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import productNike from "@/assets/product-nike.png";
+import productAdidas from "@/assets/product-adidas.png";
+import productNewBalance from "@/assets/product-newbalance.png";
 
 const audiences = [
   {
@@ -57,14 +60,17 @@ const chatResults = [
   {
     name: "Tênis Nike Air Max 90",
     desc: "Design icônico com amortecimento Air visível e conforto para o dia a dia.",
+    image: productNike,
   },
   {
     name: "Adidas Ultraboost 23",
     desc: "Retorno de energia incomparável com tecnologia Boost e malha Primeknit.",
+    image: productAdidas,
   },
   {
     name: "New Balance 550",
     desc: "Estilo retrô com construção premium em couro e ótimo custo-benefício.",
+    image: productNewBalance,
   },
 ];
 
@@ -150,18 +156,21 @@ const AudienceSection = () => {
               className="absolute inset-0 rounded-2xl bg-[hsl(330,85%,55%,0.05)] blur-[20px] pointer-events-none"
             />
 
-            <div className="relative rounded-2xl border border-[hsl(265,70%,40%,0.3)] bg-gradient-to-br from-ivero-dark via-ivero-dark-surface to-[hsl(265,70%,15%)] p-6 shadow-2xl shadow-ivero-purple/30 ring-1 ring-ivero-purple/20 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+            <div className="relative rounded-2xl border-2 border-[hsl(265,70%,70%,0.4)] bg-card p-6 shadow-2xl shadow-ivero-purple/10 ring-1 ring-[hsl(265,70%,80%,0.2)]">
+              {/* Top gradient accent line */}
+              <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-[hsl(265,70%,55%)] via-[hsl(300,60%,55%)] to-[hsl(330,85%,55%)]" />
+
               {/* Header bar */}
-              <div className="flex items-center gap-2 mb-5">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-[hsl(45,90%,55%,0.6)]" />
-                <div className="w-3 h-3 rounded-full bg-[hsl(140,60%,50%,0.6)]" />
-                <span className="ml-auto text-[10px] font-medium text-[hsl(0,0%,100%,0.4)] tracking-wider uppercase">Ivero AI</span>
+              <div className="flex items-center gap-2 mb-5 mt-1">
+                <div className="w-3 h-3 rounded-full bg-destructive/50" />
+                <div className="w-3 h-3 rounded-full bg-[hsl(45,90%,55%,0.5)]" />
+                <div className="w-3 h-3 rounded-full bg-[hsl(140,60%,50%,0.5)]" />
+                <span className="ml-auto text-[10px] font-medium text-muted-foreground/50 tracking-wider uppercase">Ivero AI</span>
               </div>
 
               {/* Search bar with typing */}
-              <div className="flex items-center gap-3 rounded-xl bg-[hsl(230,20%,16%)] border border-[hsl(265,70%,40%,0.2)] px-4 py-3 mb-5">
-                <Search className="w-4 h-4 text-accent/70" />
+              <div className="flex items-center gap-3 rounded-xl bg-secondary/60 border border-border px-4 py-3 mb-5">
+                <Search className="w-4 h-4 text-ivero-purple" />
                 <TypingText />
               </div>
 
@@ -175,7 +184,7 @@ const AudienceSection = () => {
                     <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
                   </motion.div>
                 </div>
-                <span className="text-xs font-semibold text-accent">IA recomenda</span>
+                <span className="text-xs font-semibold text-ivero-purple">IA recomenda</span>
               </div>
 
               {/* Results */}
@@ -187,33 +196,32 @@ const AudienceSection = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3 + i * 0.1 }}
-                    className="relative rounded-xl overflow-hidden cursor-pointer hover:-translate-y-0.5 transition-all duration-300 group/card"
+                    className="relative rounded-xl border border-[hsl(265,70%,70%,0.25)] bg-secondary/30 overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:border-[hsl(265,70%,60%,0.5)] hover:shadow-md hover:shadow-ivero-purple/5 transition-all duration-300 group/card"
                   >
-                    {/* Gradient border effect */}
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[hsl(265,70%,45%,0.4)] via-[hsl(300,60%,45%,0.3)] to-[hsl(330,85%,50%,0.4)] p-[1px]">
-                      <div className="w-full h-full rounded-xl bg-[hsl(230,25%,10%)]" />
-                    </div>
                     {/* Left accent bar */}
-                    <div className="absolute left-0 top-[15%] bottom-[15%] w-[2px] bg-gradient-to-b from-[hsl(265,70%,55%,0.6)] via-[hsl(300,60%,50%,0.8)] to-[hsl(330,85%,55%,0.6)] rounded-full group-hover/card:from-[hsl(265,70%,55%)] group-hover/card:via-[hsl(300,60%,50%)] group-hover/card:to-[hsl(330,85%,55%)] transition-all duration-300" />
-                    {/* Content */}
-                    <div className="relative p-4 group-hover/card:bg-[hsl(265,70%,20%,0.1)] transition-colors duration-300">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-xs font-bold text-primary-foreground bg-ivero-gradient rounded-full px-2.5 py-0.5">
-                          #{i + 1}
-                        </span>
-                        <h4 className="text-sm font-semibold text-[hsl(0,0%,92%)] group-hover/card:text-accent transition-colors">{result.name}</h4>
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[hsl(265,70%,60%)] via-[hsl(300,60%,55%)] to-[hsl(330,85%,60%)] opacity-40 group-hover/card:opacity-80 transition-opacity duration-300" />
+
+                    <div className="flex items-center gap-3 p-3 pl-4">
+                      {/* Product image */}
+                      <img src={result.image} alt={result.name} className="w-14 h-14 rounded-lg object-cover bg-secondary/50 shrink-0" />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-primary-foreground bg-ivero-gradient rounded-full px-2 py-0.5">
+                            #{i + 1}
+                          </span>
+                          <h4 className="text-sm font-semibold text-foreground group-hover/card:text-ivero-purple transition-colors truncate">{result.name}</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{result.desc}</p>
                       </div>
-                      <p className="text-xs text-[hsl(230,10%,55%)] leading-relaxed pl-9">{result.desc}</p>
                     </div>
-                    {/* Bottom glow */}
-                    <div className="absolute bottom-0 left-[20%] right-[20%] h-[1px] bg-gradient-to-r from-transparent via-[hsl(265,70%,50%,0.3)] to-transparent group-hover/card:via-[hsl(265,70%,55%,0.6)] transition-all duration-300" />
                   </motion.div>
                 ))}
               </div>
 
               {/* Input bar */}
-              <div className="flex items-center gap-3 rounded-xl bg-[hsl(230,20%,16%)] border border-[hsl(265,70%,40%,0.2)] px-4 py-3">
-                <span className="text-sm text-[hsl(230,10%,45%)] flex-1">Pergunte mais sobre esses produtos...</span>
+              <div className="flex items-center gap-3 rounded-xl bg-secondary/60 border border-border px-4 py-3">
+                <span className="text-sm text-muted-foreground/60 flex-1">Pergunte mais sobre esses produtos...</span>
                 <div className="w-8 h-8 rounded-lg bg-ivero-gradient flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
                   <Send className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
