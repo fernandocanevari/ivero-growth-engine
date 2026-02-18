@@ -221,7 +221,7 @@ const AudienceSection = () => {
 
               {/* Input bar */}
               <div className="flex items-center gap-3 rounded-xl bg-secondary/60 border border-border px-4 py-3">
-                <span className="text-sm text-muted-foreground/60 flex-1">Pergunte mais sobre esses produtos...</span>
+                <span className="text-sm text-foreground/50 flex-1">Pergunte mais sobre esses produtos...</span>
                 <div className="w-8 h-8 rounded-lg bg-ivero-gradient flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
                   <Send className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
@@ -245,10 +245,10 @@ const AudienceSection = () => {
               {audiences.map((item, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 + index * 0.1 }}
+                  initial={{ opacity: 0, y: 40, scale: 0.94 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-30px" }}
+                  transition={{ duration: 0.7, delay: 0.15 + index * 0.12, ease: [0.16, 1, 0.3, 1] }}
                   className="relative overflow-hidden rounded-xl cursor-pointer hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 group"
                 >
                   {/* Bottom border glow */}
