@@ -7,41 +7,49 @@ const audiences = [
     icon: Building2,
     text: (
       <>
-        <strong className="text-primary-foreground">Marcas</strong> que querem ser <strong className="text-primary-foreground">referências</strong>
+        <strong className="text-foreground">Marcas</strong> que querem ser <strong className="text-foreground">referências</strong>
       </>
     ),
-    gradient: "from-[hsl(265,70%,35%)] to-[hsl(265,70%,20%)]",
-    borderGlow: "bg-[hsl(265,70%,50%)]",
+    borderColor: "border-[hsl(265,70%,65%)]",
+    iconBg: "bg-[hsl(265,70%,95%)]",
+    iconColor: "text-[hsl(265,70%,45%)]",
+    glowColor: "bg-[hsl(265,70%,65%)]",
   },
   {
     icon: Megaphone,
     text: (
       <>
-        <strong className="text-primary-foreground">Agências de MKT</strong> que querem vender o <strong className="text-primary-foreground">futuro</strong>
+        <strong className="text-foreground">Agências de MKT</strong> que querem vender o <strong className="text-foreground">futuro</strong>
       </>
     ),
-    gradient: "from-[hsl(280,60%,40%)] to-[hsl(280,60%,22%)]",
-    borderGlow: "bg-[hsl(280,60%,55%)]",
+    borderColor: "border-[hsl(280,60%,65%)]",
+    iconBg: "bg-[hsl(280,60%,95%)]",
+    iconColor: "text-[hsl(280,60%,45%)]",
+    glowColor: "bg-[hsl(280,60%,65%)]",
   },
   {
     icon: ShoppingBag,
     text: (
       <>
-        <strong className="text-primary-foreground">E-commerce</strong> que querem ser <strong className="text-primary-foreground">recomendados</strong>
+        <strong className="text-foreground">E-commerce</strong> que querem ser <strong className="text-foreground">recomendados</strong>
       </>
     ),
-    gradient: "from-[hsl(300,50%,40%)] to-[hsl(300,50%,22%)]",
-    borderGlow: "bg-[hsl(300,50%,55%)]",
+    borderColor: "border-[hsl(300,50%,65%)]",
+    iconBg: "bg-[hsl(300,50%,95%)]",
+    iconColor: "text-[hsl(300,50%,45%)]",
+    glowColor: "bg-[hsl(300,50%,65%)]",
   },
   {
     icon: Store,
     text: (
       <>
-        <strong className="text-primary-foreground">Varejo</strong> que quer dominar a nova <strong className="text-primary-foreground">vitrine digital</strong>
+        <strong className="text-foreground">Varejo</strong> que quer dominar a nova <strong className="text-foreground">vitrine digital</strong>
       </>
     ),
-    gradient: "from-[hsl(330,85%,45%)] to-[hsl(330,85%,25%)]",
-    borderGlow: "bg-[hsl(330,85%,55%)]",
+    borderColor: "border-[hsl(330,85%,70%)]",
+    iconBg: "bg-[hsl(330,85%,95%)]",
+    iconColor: "text-[hsl(330,85%,45%)]",
+    glowColor: "bg-[hsl(330,85%,65%)]",
   },
 ];
 
@@ -224,15 +232,15 @@ const AudienceSection = () => {
                   transition={{ delay: 0.2 + index * 0.1 }}
                   className="relative overflow-hidden rounded-xl cursor-pointer hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 group"
                 >
-                  {/* Gradient bottom border glow */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${item.borderGlow} opacity-60 group-hover:opacity-100 group-hover:h-[3px] transition-all duration-300`} />
-                  <div className={`absolute bottom-0 left-[10%] right-[10%] h-[6px] ${item.borderGlow} opacity-30 blur-[6px] group-hover:opacity-60 transition-all duration-300`} />
+                  {/* Bottom border glow */}
+                  <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${item.glowColor} opacity-50 group-hover:opacity-100 group-hover:h-[3px] transition-all duration-300`} />
+                  <div className={`absolute bottom-0 left-[10%] right-[10%] h-[6px] ${item.glowColor} opacity-20 blur-[6px] group-hover:opacity-50 transition-all duration-300`} />
 
-                  <div className={`flex items-center gap-4 px-5 py-4 bg-gradient-to-r ${item.gradient} border border-[hsl(0,0%,100%,0.08)] rounded-xl`}>
-                    <div className="shrink-0 w-10 h-10 rounded-lg bg-[hsl(0,0%,100%,0.1)] flex items-center justify-center backdrop-blur-sm border border-[hsl(0,0%,100%,0.1)]">
-                      <item.icon className="w-5 h-5 text-primary-foreground" />
+                  <div className={`flex items-center gap-4 px-5 py-4 bg-card border-2 ${item.borderColor} rounded-xl hover:shadow-lg transition-shadow duration-300`}>
+                    <div className={`shrink-0 w-10 h-10 rounded-lg ${item.iconBg} flex items-center justify-center`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
-                    <span className="text-sm md:text-base font-medium text-[hsl(0,0%,80%)] group-hover:text-primary-foreground transition-colors">
+                    <span className="text-sm md:text-base font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                       {item.text}
                     </span>
                   </div>
