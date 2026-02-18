@@ -14,31 +14,19 @@ const aiIcons = [
 
 const NeuralLines = () => {
   const count = aiIcons.length;
-  const svgWidth = 420;
-  const svgHeight = 50;
+  const svgWidth = 500;
+  const svgHeight = 60;
   const centerX = svgWidth / 2;
   const iconSpacing = svgWidth / (count + 1);
 
   return (
     <svg
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-      className="w-full h-12"
+      className="w-full h-16"
       fill="none"
       preserveAspectRatio="xMidYMid meet"
     >
-      <defs>
-        <linearGradient id="neural-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="hsl(265, 70%, 50%)" stopOpacity="0.6" />
-          <stop offset="50%" stopColor="hsl(300, 60%, 50%)" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="hsl(330, 85%, 55%)" stopOpacity="0.6" />
-        </linearGradient>
-        <linearGradient id="neural-grad-glow" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="hsl(265, 70%, 60%)" stopOpacity="0.3" />
-          <stop offset="50%" stopColor="hsl(300, 60%, 60%)" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="hsl(330, 85%, 65%)" stopOpacity="0.3" />
-        </linearGradient>
-      </defs>
-      {/* Glow layer (thicker, blurred via filter) */}
+      {/* Glow layer */}
       {aiIcons.map((_, i) => {
         const endX = iconSpacing * (i + 1);
         const cp1X = centerX + (endX - centerX) * 0.3;
@@ -47,10 +35,10 @@ const NeuralLines = () => {
           <motion.path
             key={`glow-${i}`}
             d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
-            stroke="url(#neural-grad-glow)"
-            strokeWidth="4"
+            stroke="hsl(0, 0%, 75%)"
+            strokeWidth="5"
             fill="none"
-            animate={{ strokeOpacity: [0.2, 0.5, 0.2] }}
+            animate={{ strokeOpacity: [0.08, 0.2, 0.08] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
           />
         );
@@ -64,10 +52,10 @@ const NeuralLines = () => {
           <motion.path
             key={i}
             d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
-            stroke="url(#neural-grad)"
+            stroke="hsl(0, 0%, 70%)"
             strokeWidth="1.5"
             fill="none"
-            animate={{ strokeOpacity: [0.5, 1, 0.5] }}
+            animate={{ strokeOpacity: [0.3, 0.7, 0.3] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
           />
         );
@@ -79,8 +67,8 @@ const NeuralLines = () => {
             key={`dot-${i}`}
             cx={endX}
             cy={svgHeight}
-            r="2"
-            fill="hsl(265, 70%, 55%)"
+            r="2.5"
+            fill="hsl(0, 0%, 75%)"
             animate={{ opacity: [0.3, 0.8, 0.3] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
           />
@@ -89,8 +77,8 @@ const NeuralLines = () => {
       <motion.circle
         cx={centerX}
         cy={0}
-        r="2.5"
-        fill="hsl(330, 85%, 55%)"
+        r="3"
+        fill="hsl(0, 0%, 80%)"
         animate={{ opacity: [0.4, 0.9, 0.4] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -100,28 +88,30 @@ const NeuralLines = () => {
 
 const Footer = () => {
   return (
-    <footer className="py-6 bg-ivero-dark border-t border-ivero-purple/10">
+    <footer className="py-8 bg-ivero-dark border-t border-ivero-purple/10">
       <div className="container mx-auto px-6">
         {/* Top row: Ivero left, neural center, links right */}
-        <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-5">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-6">
           {/* Left - Branding */}
-          <div className="flex flex-col gap-1 shrink-0">
-            <span className="font-display text-5xl font-bold text-gradient leading-none">Ivero</span>
-            <p className="text-sm text-ivero-slate-light italic mt-1">Visibilidade constrói marcas duradoras.</p>
+          <div className="flex flex-col gap-2 shrink-0">
+            <span className="font-display text-7xl font-bold leading-none" style={{ background: "linear-gradient(90deg, hsl(265, 70%, 50%), hsl(300, 60%, 50%), hsl(330, 85%, 55%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              Ivero
+            </span>
+            <p className="text-lg text-ivero-slate-light italic">Visibilidade constrói marcas duradoras.</p>
           </div>
 
           {/* Center - Neural network */}
-          <div className="flex flex-col items-center max-w-sm w-full mx-auto md:mx-0">
-            <p className="text-xs text-ivero-slate-light uppercase tracking-widest mb-0">IAs monitoradas</p>
+          <div className="flex flex-col items-center max-w-lg w-full mx-auto md:mx-0">
+            <p className="text-sm font-semibold text-ivero-slate-light uppercase tracking-widest mb-0">IAs monitoradas</p>
             <NeuralLines />
-            <div className="flex items-center justify-center gap-5 -mt-1">
+            <div className="flex items-center justify-center gap-6 -mt-1">
               {aiIcons.map((ai) => (
                 <img
                   key={ai.name}
                   src={ai.icon}
                   alt={ai.name}
                   title={ai.name}
-                  className="w-6 h-6 invert opacity-70 hover:opacity-100 transition-opacity"
+                  className="w-8 h-8 invert opacity-70 hover:opacity-100 transition-opacity"
                 />
               ))}
             </div>
