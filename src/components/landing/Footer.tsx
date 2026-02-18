@@ -105,7 +105,7 @@ const Footer = () => {
           <NeuralNetwork />
 
           {/* Right - Links */}
-          <div className="flex flex-wrap gap-8 text-sm shrink-0">
+          <div className="grid grid-cols-4 gap-6 text-sm shrink-0">
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Empresa</h4>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Sobre</a>
