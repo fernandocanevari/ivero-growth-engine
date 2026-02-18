@@ -94,9 +94,8 @@ const HeroSection = () => {
                   placeholder="Celular"
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
-                <Button variant="hero" size="lg" className="w-full h-12 text-sm mt-2">
+                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2">
                   Começar agora
-                  <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
               </form>
             </div>
