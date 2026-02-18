@@ -92,7 +92,7 @@ const Footer = () => {
     <footer className="py-8 bg-ivero-dark border-t border-ivero-purple/10">
       <div className="container mx-auto px-6">
         {/* Top row: Ivero left, neural center, links right */}
-        <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-6">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-6">
           {/* Left - Branding */}
           <div className="flex flex-col gap-2 shrink-0">
             <span className="font-display text-7xl font-bold leading-none" style={{ background: "linear-gradient(90deg, hsl(265, 70%, 50%), hsl(300, 60%, 50%), hsl(330, 85%, 55%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -105,7 +105,7 @@ const Footer = () => {
           <NeuralNetwork />
 
           {/* Right - Links */}
-          <div className="flex flex-wrap gap-10 text-sm shrink-0">
+          <div className="flex flex-wrap gap-8 text-sm shrink-0">
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Empresa</h4>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Sobre</a>
