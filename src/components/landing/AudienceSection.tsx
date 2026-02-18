@@ -187,15 +187,26 @@ const AudienceSection = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3 + i * 0.1 }}
-                    className="rounded-xl bg-[hsl(230,20%,14%)] border border-[hsl(265,70%,40%,0.15)] p-4 cursor-pointer hover:bg-[hsl(265,70%,20%,0.2)] hover:border-[hsl(265,70%,50%,0.3)] hover:shadow-lg hover:shadow-ivero-purple/10 hover:-translate-y-0.5 transition-all duration-300 group/card"
+                    className="relative rounded-xl overflow-hidden cursor-pointer hover:-translate-y-0.5 transition-all duration-300 group/card"
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-primary-foreground bg-ivero-gradient rounded-full px-2.5 py-0.5">
-                        #{i + 1}
-                      </span>
-                      <h4 className="text-sm font-semibold text-[hsl(0,0%,92%)] group-hover/card:text-accent transition-colors">{result.name}</h4>
+                    {/* Gradient border effect */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[hsl(265,70%,45%,0.4)] via-[hsl(300,60%,45%,0.3)] to-[hsl(330,85%,50%,0.4)] p-[1px]">
+                      <div className="w-full h-full rounded-xl bg-[hsl(230,25%,10%)]" />
                     </div>
-                    <p className="text-xs text-[hsl(230,10%,55%)] leading-relaxed pl-9">{result.desc}</p>
+                    {/* Left accent bar */}
+                    <div className="absolute left-0 top-[15%] bottom-[15%] w-[2px] bg-gradient-to-b from-[hsl(265,70%,55%,0.6)] via-[hsl(300,60%,50%,0.8)] to-[hsl(330,85%,55%,0.6)] rounded-full group-hover/card:from-[hsl(265,70%,55%)] group-hover/card:via-[hsl(300,60%,50%)] group-hover/card:to-[hsl(330,85%,55%)] transition-all duration-300" />
+                    {/* Content */}
+                    <div className="relative p-4 group-hover/card:bg-[hsl(265,70%,20%,0.1)] transition-colors duration-300">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs font-bold text-primary-foreground bg-ivero-gradient rounded-full px-2.5 py-0.5">
+                          #{i + 1}
+                        </span>
+                        <h4 className="text-sm font-semibold text-[hsl(0,0%,92%)] group-hover/card:text-accent transition-colors">{result.name}</h4>
+                      </div>
+                      <p className="text-xs text-[hsl(230,10%,55%)] leading-relaxed pl-9">{result.desc}</p>
+                    </div>
+                    {/* Bottom glow */}
+                    <div className="absolute bottom-0 left-[20%] right-[20%] h-[1px] bg-gradient-to-r from-transparent via-[hsl(265,70%,50%,0.3)] to-transparent group-hover/card:via-[hsl(265,70%,55%,0.6)] transition-all duration-300" />
                   </motion.div>
                 ))}
               </div>
