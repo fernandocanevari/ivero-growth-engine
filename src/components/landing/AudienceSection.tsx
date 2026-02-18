@@ -156,7 +156,7 @@ const AudienceSection = () => {
               className="absolute inset-0 rounded-2xl bg-[hsl(330,85%,55%,0.05)] blur-[20px] pointer-events-none"
             />
 
-            <div className="relative rounded-2xl border-2 border-[hsl(265,70%,70%,0.4)] bg-card p-6 shadow-2xl shadow-ivero-purple/10 ring-1 ring-[hsl(265,70%,80%,0.2)]">
+            <div className="relative rounded-2xl border-2 border-[hsl(265,70%,70%,0.4)] bg-card p-6 shadow-[0_20px_60px_-10px_hsl(265,70%,50%,0.25),0_8px_24px_-6px_hsl(280,60%,50%,0.15)] ring-1 ring-[hsl(265,70%,80%,0.2)]">
               {/* Top gradient accent line */}
               <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-[hsl(265,70%,55%)] via-[hsl(300,60%,55%)] to-[hsl(330,85%,55%)]" />
 
@@ -203,7 +203,7 @@ const AudienceSection = () => {
 
                     <div className="flex items-center gap-3 p-3 pl-4">
                       {/* Product image */}
-                      <img src={result.image} alt={result.name} className="w-14 h-14 rounded-lg object-cover bg-secondary/50 shrink-0" />
+                      <img src={result.image} alt={result.name} className="w-16 h-16 rounded-lg object-cover bg-secondary/50 shrink-0" />
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
