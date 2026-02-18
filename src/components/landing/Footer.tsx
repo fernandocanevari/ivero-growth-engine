@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 const aiIcons = [
   { name: "ChatGPT", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" },
@@ -31,29 +32,68 @@ const NeuralLines = () => {
           <stop offset="50%" stopColor="hsl(300, 60%, 50%)" stopOpacity="0.8" />
           <stop offset="100%" stopColor="hsl(330, 85%, 55%)" stopOpacity="0.6" />
         </linearGradient>
+        <linearGradient id="neural-grad-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="hsl(265, 70%, 60%)" stopOpacity="0.3" />
+          <stop offset="50%" stopColor="hsl(300, 60%, 60%)" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="hsl(330, 85%, 65%)" stopOpacity="0.3" />
+        </linearGradient>
       </defs>
+      {/* Glow layer (thicker, blurred via filter) */}
       {aiIcons.map((_, i) => {
         const endX = iconSpacing * (i + 1);
         const cp1X = centerX + (endX - centerX) * 0.3;
         const cp2X = centerX + (endX - centerX) * 0.7;
         return (
-          <path
+          <motion.path
+            key={`glow-${i}`}
+            d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
+            stroke="url(#neural-grad-glow)"
+            strokeWidth="4"
+            fill="none"
+            animate={{ strokeOpacity: [0.2, 0.5, 0.2] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+          />
+        );
+      })}
+      {/* Main lines */}
+      {aiIcons.map((_, i) => {
+        const endX = iconSpacing * (i + 1);
+        const cp1X = centerX + (endX - centerX) * 0.3;
+        const cp2X = centerX + (endX - centerX) * 0.7;
+        return (
+          <motion.path
             key={i}
             d={`M ${centerX} 0 C ${cp1X} ${svgHeight * 0.6}, ${cp2X} ${svgHeight * 0.85}, ${endX} ${svgHeight}`}
             stroke="url(#neural-grad)"
             strokeWidth="1.5"
             fill="none"
+            animate={{ strokeOpacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
           />
         );
       })}
-      {/* Small glow dots at endpoints */}
       {aiIcons.map((_, i) => {
         const endX = iconSpacing * (i + 1);
         return (
-          <circle key={`dot-${i}`} cx={endX} cy={svgHeight} r="2" fill="hsl(265, 70%, 55%)" opacity="0.5" />
+          <motion.circle
+            key={`dot-${i}`}
+            cx={endX}
+            cy={svgHeight}
+            r="2"
+            fill="hsl(265, 70%, 55%)"
+            animate={{ opacity: [0.3, 0.8, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+          />
         );
       })}
-      <circle cx={centerX} cy={0} r="2.5" fill="hsl(330, 85%, 55%)" opacity="0.6" />
+      <motion.circle
+        cx={centerX}
+        cy={0}
+        r="2.5"
+        fill="hsl(330, 85%, 55%)"
+        animate={{ opacity: [0.4, 0.9, 0.4] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      />
     </svg>
   );
 };
@@ -62,16 +102,33 @@ const Footer = () => {
   return (
     <footer className="py-6 bg-ivero-dark border-t border-ivero-purple/10">
       <div className="container mx-auto px-6">
-        {/* Main row */}
-        <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-5">
+        {/* Top row: Ivero left, neural center, links right */}
+        <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-5">
           {/* Left - Branding */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 shrink-0">
             <span className="font-display text-5xl font-bold text-gradient leading-none">Ivero</span>
             <p className="text-sm text-ivero-slate-light italic mt-1">Visibilidade constrói marcas duradoras.</p>
           </div>
 
+          {/* Center - Neural network */}
+          <div className="flex flex-col items-center max-w-sm w-full mx-auto md:mx-0">
+            <p className="text-xs text-ivero-slate-light uppercase tracking-widest mb-0">IAs monitoradas</p>
+            <NeuralLines />
+            <div className="flex items-center justify-center gap-5 -mt-1">
+              {aiIcons.map((ai) => (
+                <img
+                  key={ai.name}
+                  src={ai.icon}
+                  alt={ai.name}
+                  title={ai.name}
+                  className="w-6 h-6 invert opacity-70 hover:opacity-100 transition-opacity"
+                />
+              ))}
+            </div>
+          </div>
+
           {/* Right - Links */}
-          <div className="flex flex-wrap gap-12 text-sm">
+          <div className="flex flex-wrap gap-10 text-sm shrink-0">
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Mapa do Site</h4>
               <a href="#recursos" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Recursos</a>
@@ -94,37 +151,18 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Center - Neural network + IAs */}
-        <div className="flex flex-col items-center mb-4 max-w-md mx-auto">
-          <p className="text-xs text-ivero-slate-light uppercase tracking-widest mb-0">IAs monitoradas</p>
-          <NeuralLines />
-          <div className="flex items-center justify-center gap-5 -mt-1">
-            {aiIcons.map((ai) => (
-              <img
-                key={ai.name}
-                src={ai.icon}
-                alt={ai.name}
-                title={ai.name}
-                className="w-6 h-6 invert opacity-70 hover:opacity-100 transition-opacity"
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* CTA button */}
-        <div className="flex justify-center mb-3">
-          <Button variant="hero" size="default" className="px-6 text-sm" asChild>
-            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-              Fale direto com o fundador, o Fernando!
-              <ArrowRight className="ml-1.5 w-4 h-4" />
-            </a>
-          </Button>
-        </div>
-
         {/* Bottom bar */}
-        <div className="border-t border-ivero-purple/10 pt-2 flex flex-col md:flex-row items-center justify-between gap-1">
+        <div className="border-t border-ivero-purple/10 pt-3 flex flex-col md:flex-row items-center justify-between gap-2">
           <p className="text-xs text-ivero-slate-light">© 2026 Ivero. Todos os direitos reservados.</p>
-          <p className="text-xs text-ivero-slate-light">Feito com o coração ❤️</p>
+          <div className="flex flex-col items-end gap-2">
+            <Button variant="hero" size="default" className="px-6 text-sm" asChild>
+              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
+                Fale direto com o fundador, o Fernando!
+                <ArrowRight className="ml-1.5 w-4 h-4" />
+              </a>
+            </Button>
+            <p className="text-xs text-ivero-slate-light">Feito com o coração ❤️</p>
+          </div>
         </div>
       </div>
     </footer>
