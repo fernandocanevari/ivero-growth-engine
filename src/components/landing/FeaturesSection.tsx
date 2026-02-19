@@ -260,14 +260,14 @@ const DominanceMockup = () => {
       {data.map((item) => (
         <div key={item.ai} className="space-y-1">
           <span className="text-xs text-foreground font-medium">{item.ai}</span>
-          <div className="space-y-1">
-            <div>
+          <div className="flex gap-3">
+            <div className="flex-1">
               <div className="h-2 rounded-full bg-muted">
                 <div className={`h-full rounded-full ${barColor(item.you)}`} style={{ width: `${item.you}%` }} />
               </div>
               <span className="text-[9px] text-muted-foreground">Você: {item.you} %</span>
             </div>
-            <div>
+            <div className="flex-1">
               <div className="h-2 rounded-full bg-muted">
                 <div className="h-full rounded-full bg-muted-foreground/25" style={{ width: `${item.competitor}%` }} />
               </div>
