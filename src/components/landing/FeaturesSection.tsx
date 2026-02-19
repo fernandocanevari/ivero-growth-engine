@@ -94,28 +94,32 @@ const MonitoringMockup = () => (
   </div>
 );
 
-const CompareMockup = () => (
-  <div className="w-full space-y-3">
-    {[
-      { name: "Sua marca", pct: 78, highlight: true },
-      { name: "Concorrente A", pct: 52 },
-      { name: "Concorrente B", pct: 34 },
-    ].map((item) => (
-      <div key={item.name} className="space-y-1">
-        <div className="flex justify-between text-xs">
-          <span className={item.highlight ? "text-foreground font-medium" : "text-muted-foreground"}>{item.name}</span>
-          <span className="text-muted-foreground">{item.pct}%</span>
+const CompareMockup = () => {
+  const barColor = (pct: number) =>
+    pct >= 70 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-400" : "bg-destructive";
+  return (
+    <div className="w-full space-y-3">
+      {[
+        { name: "Sua marca", pct: 78 },
+        { name: "Concorrente A", pct: 52 },
+        { name: "Concorrente B", pct: 34 },
+      ].map((item) => (
+        <div key={item.name} className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-foreground font-medium">{item.name}</span>
+            <span className="text-muted-foreground">{item.pct}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full ${barColor(item.pct)}`}
+              style={{ width: `${item.pct}%` }}
+            />
+          </div>
         </div>
-        <div className="h-2 rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full ${item.highlight ? "bg-ivero-gradient" : "bg-muted-foreground/30"}`}
-            style={{ width: `${item.pct}%` }}
-          />
-        </div>
-      </div>
-    ))}
-  </div>
-);
+      ))}
+    </div>
+  );
+};
 
 const ScoreMockup = () => (
   <div className="flex flex-col items-center gap-3 w-full">
