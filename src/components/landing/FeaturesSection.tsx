@@ -204,10 +204,11 @@ const PromptsMockup = () => (
           <Search className="w-3 h-3 text-muted-foreground" />
         </div>
         <span className="flex-1 text-foreground">{item.prompt}</span>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-          item.rank === "Ausente"
-            ? "bg-accent/10 text-accent"
-            : "bg-ivero-purple/10 text-ivero-purple"
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-primary-foreground ${
+          item.rank === "#1" ? "bg-emerald-500" :
+          item.rank === "#2" ? "bg-emerald-400" :
+          item.rank === "#4" ? "bg-amber-400" :
+          "bg-destructive"
         }`}>{item.rank}</span>
       </div>
     ))}
