@@ -33,7 +33,7 @@ const features = [
   {
     icon: FileText,
     title: "Planos de Ação Estratégicos",
-    description: "Receba recomendações prescritivas de conteúdo, SEO e posicionamento.",
+    description: "Receba recomendações prescritivas para melhorar sua presença em IA.",
     mockup: "actions",
   },
   {
