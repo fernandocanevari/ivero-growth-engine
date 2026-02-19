@@ -200,8 +200,18 @@ const PromptsMockup = () => (
       { prompt: "\"plataforma de gestão comercial\"", rank: "#4" },
     ].map((item, i) => (
       <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
-        <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0">
-          <Search className="w-3 h-3 text-muted-foreground" />
+        <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+          item.rank === "#1" ? "bg-emerald-500/15" :
+          item.rank === "#2" ? "bg-emerald-400/15" :
+          item.rank === "#4" ? "bg-amber-400/15" :
+          "bg-destructive/15"
+        }`}>
+          <Search className={`w-3 h-3 ${
+            item.rank === "#1" ? "text-emerald-500" :
+            item.rank === "#2" ? "text-emerald-400" :
+            item.rank === "#4" ? "text-amber-400" :
+            "text-destructive"
+          }`} />
         </div>
         <span className="flex-1 text-foreground">{item.prompt}</span>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-primary-foreground ${
