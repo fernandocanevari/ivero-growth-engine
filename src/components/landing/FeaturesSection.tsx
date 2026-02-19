@@ -407,7 +407,7 @@ const FeaturesSection = () => {
                       </p>
 
                       {/* Mockup */}
-                      <div className="mt-auto pt-2">
+                      <div className="pt-2">
                         <Mockup />
                       </div>
                     </div>
