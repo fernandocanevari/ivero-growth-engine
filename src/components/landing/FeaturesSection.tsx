@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight, Map, BarChart3, FlaskConical } from "lucide-react";
+import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight, Map, BarChart3, FlaskConical, Search } from "lucide-react";
 
 const AUTOPLAY_INTERVAL = 6000;
 const CARDS_PER_VIEW = { desktop: 3, tablet: 2, mobile: 1 };
@@ -194,18 +194,21 @@ const AlertsMockup = () => (
 const PromptsMockup = () => (
   <div className="w-full space-y-2">
     {[
-      { prompt: "Melhor tênis para corrida 2025", appears: true },
-      { prompt: "Marca mais confortável de calçados", appears: true },
-      { prompt: "Tênis custo-benefício para academia", appears: false },
-      { prompt: "Melhores marcas esportivas Brasil", appears: false },
+      { prompt: "\"melhor ferramenta de CRM\"", rank: "#2" },
+      { prompt: "\"software de vendas B2B\"", rank: "#1" },
+      { prompt: "\"alternativa ao Salesforce\"", rank: "Ausente" },
+      { prompt: "\"plataforma de gestão comercial\"", rank: "#4" },
     ].map((item, i) => (
-      <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-border/60 bg-background text-xs">
-        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-          item.appears ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"
-        }`}>
-          <span className="text-[8px] font-bold">{item.appears ? "✓" : "✗"}</span>
+      <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/60 bg-background text-xs">
+        <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0">
+          <Search className="w-3 h-3 text-muted-foreground" />
         </div>
-        <span className={`flex-1 ${item.appears ? "text-foreground" : "text-muted-foreground"}`}>{item.prompt}</span>
+        <span className="flex-1 text-foreground">{item.prompt}</span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+          item.rank === "Ausente"
+            ? "bg-accent/10 text-accent"
+            : "bg-ivero-purple/10 text-ivero-purple"
+        }`}>{item.rank}</span>
       </div>
     ))}
   </div>
