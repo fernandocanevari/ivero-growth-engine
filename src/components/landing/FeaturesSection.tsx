@@ -139,15 +139,15 @@ const ScoreMockup = () => (
 
 const SentimentMockup = () => (
   <div className="w-full space-y-3">
-    <div className="h-3 rounded-full overflow-hidden flex">
-      <div className="bg-accent" style={{ width: "64%" }} />
-      <div className="bg-muted-foreground/30" style={{ width: "28%" }} />
-      <div className="bg-destructive" style={{ width: "8%" }} />
+    <div className="h-4 rounded-full overflow-hidden flex gap-0.5">
+      <div className="bg-emerald-500 rounded-l-full" style={{ width: "62%" }} />
+      <div className="bg-amber-400" style={{ width: "25%" }} />
+      <div className="bg-destructive rounded-r-full" style={{ width: "13%" }} />
     </div>
     <div className="flex justify-between text-[10px] text-muted-foreground">
-      <span>Positivo 64%</span>
-      <span>Neutro 28%</span>
-      <span>Negativo 8%</span>
+      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />62 %</span>
+      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />25 %</span>
+      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" />13 %</span>
     </div>
   </div>
 );
