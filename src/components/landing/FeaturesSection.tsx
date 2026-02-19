@@ -130,8 +130,9 @@ const ScoreMockup = () => (
         />
         <defs>
           <linearGradient id="scoreGradCarousel" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(265 70% 45%)" />
-            <stop offset="100%" stopColor="hsl(330 85% 55%)" />
+            <stop offset="0%" stopColor="#ef4444" />
+            <stop offset="40%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#22c55e" />
           </linearGradient>
         </defs>
       </svg>
