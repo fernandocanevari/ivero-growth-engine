@@ -419,7 +419,7 @@ const FeaturesSection = () => {
                   return (
                     <div
                       key={feature.title}
-                      className="rounded-2xl border border-border/60 bg-card p-6 flex flex-col gap-5 transition-all duration-300 hover:border-accent/20 hover:shadow-[0_8px_30px_hsl(330_85%_55%/0.06)]"
+                      className="rounded-2xl border border-border/60 bg-card p-6 flex flex-col gap-5 transition-all duration-300 hover:border-accent/40 hover:shadow-[0_12px_40px_hsl(330_85%_55%/0.15)] hover:scale-[1.02] hover:bg-card/90"
                     >
                       {/* Header */}
                       <div className="flex items-start gap-3">
