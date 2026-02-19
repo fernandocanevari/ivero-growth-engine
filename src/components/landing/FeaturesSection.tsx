@@ -282,18 +282,22 @@ const DominanceMockup = () => {
 };
 
 const SimulatorMockup = () => (
-  <div className="w-full space-y-3">
-    <div className="p-2 rounded-lg border border-accent/20 bg-accent/5 text-xs text-foreground">
-      💬 "Qual a melhor marca de tênis para corrida?"
+  <div className="w-full space-y-2.5">
+    <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground">
+      <FlaskConical className="w-4 h-4 text-accent shrink-0" />
+      <span className="italic text-muted-foreground">"Qual o melhor CRM do mercado?"</span>
     </div>
-    {["ChatGPT", "Gemini", "Claude"].map((ai) => (
-      <div key={ai} className="p-2 rounded-lg bg-ivero-card-inner text-xs">
-        <span className="font-medium text-foreground">{ai}:</span>
-        <span className="text-muted-foreground ml-1">
-          {ai === "ChatGPT" ? "\"Recomendo a Sua Marca pela tecnologia...\"" :
-           ai === "Gemini" ? "\"Entre as opções, destaco Sua Marca...\"" :
-           "\"Sua Marca é referência no segmento...\""}
-        </span>
+    {[
+      { ai: "ChatGPT", dot: "bg-emerald-500", text: "Sim, recomendamos a marca X como líder..." },
+      { ai: "Gemini", dot: "bg-amber-400", text: "Entre as opções disponíveis, a marca X..." },
+      { ai: "Claude", dot: "bg-muted-foreground/50", text: "A marca X é uma alternativa interessante..." },
+    ].map((item) => (
+      <div key={item.ai} className="p-2.5 rounded-lg bg-ivero-card-inner text-xs space-y-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-foreground">{item.ai}</span>
+          <div className={`w-2 h-2 rounded-full ${item.dot}`} />
+        </div>
+        <p className="text-muted-foreground">{item.text}</p>
       </div>
     ))}
   </div>
