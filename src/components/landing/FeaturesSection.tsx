@@ -177,15 +177,27 @@ const ActionsMockup = () => (
 const AlertsMockup = () => (
   <div className="w-full space-y-2">
     {[
-      { msg: "Queda de visibilidade no Gemini", type: "alert" },
-      { msg: "Novo concorrente no ChatGPT", type: "info" },
-      { msg: "Sentimento positivo +72%", type: "info" },
+      { msg: "Queda de visibilidade no Gemini", type: "alert", label: "Alerta", time: "2 min" },
+      { msg: "Novo concorrente no ChatGPT", type: "alert", label: "Alerta", time: "15 min" },
+      { msg: "Sentimento positivo +72%", type: "info", label: "Informações", time: "1h" },
     ].map((alert, i) => (
-      <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
-        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-          alert.type === "alert" ? "bg-amber-400" : "bg-accent"
-        }`} />
-        <span className="text-foreground">{alert.msg}</span>
+      <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+          alert.type === "alert" ? "bg-amber-400/15" : "bg-sky-400/15"
+        }`}>
+          {alert.type === "alert" ? (
+            <span className="text-amber-500 text-[11px]">⚠</span>
+          ) : (
+            <span className="text-sky-500 text-[11px] font-bold">ⓘ</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className={`text-[10px] font-semibold ${alert.type === "alert" ? "text-amber-500" : "text-sky-500"}`}>{alert.label}</span>
+            <span className="text-[9px] text-muted-foreground">{alert.time}</span>
+          </div>
+          <span className="text-foreground">{alert.msg}</span>
+        </div>
       </div>
     ))}
   </div>
