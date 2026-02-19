@@ -247,25 +247,38 @@ const PromptsMockup = () => (
   </div>
 );
 
-const DominanceMockup = () => (
-  <div className="w-full space-y-2.5">
-    {["ChatGPT", "Gemini", "Claude"].map((ai) => (
-      <div key={ai} className="space-y-1">
-        <span className="text-[10px] text-muted-foreground font-medium">{ai}</span>
-        <div className="flex gap-1.5">
-          <div className="flex-1 space-y-0.5">
-            <div className="h-2 rounded-full bg-ivero-gradient" style={{ width: `${ai === "ChatGPT" ? 75 : ai === "Gemini" ? 60 : 82}%` }} />
-            <span className="text-[9px] text-accent">Sua marca</span>
-          </div>
-          <div className="flex-1 space-y-0.5">
-            <div className="h-2 rounded-full bg-muted-foreground/25" style={{ width: `${ai === "ChatGPT" ? 55 : ai === "Gemini" ? 70 : 40}%` }} />
-            <span className="text-[9px] text-muted-foreground">Concorrente</span>
+const DominanceMockup = () => {
+  const data = [
+    { ai: "ChatGPT", you: 72, competitor: 58 },
+    { ai: "Gemini", you: 45, competitor: 61 },
+    { ai: "Claude", you: 88, competitor: 34 },
+  ];
+  const barColor = (pct: number) =>
+    pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-emerald-400" : pct >= 40 ? "bg-amber-400" : "bg-destructive";
+  return (
+    <div className="w-full space-y-3">
+      {data.map((item) => (
+        <div key={item.ai} className="space-y-1">
+          <span className="text-xs text-foreground font-medium">{item.ai}</span>
+          <div className="space-y-1">
+            <div>
+              <div className="h-2 rounded-full bg-muted">
+                <div className={`h-full rounded-full ${barColor(item.you)}`} style={{ width: `${item.you}%` }} />
+              </div>
+              <span className="text-[9px] text-muted-foreground">Você: {item.you} %</span>
+            </div>
+            <div>
+              <div className="h-2 rounded-full bg-muted">
+                <div className="h-full rounded-full bg-muted-foreground/25" style={{ width: `${item.competitor}%` }} />
+              </div>
+              <span className="text-[9px] text-muted-foreground">Concorrente: {item.competitor} %</span>
+            </div>
           </div>
         </div>
-      </div>
-    ))}
-  </div>
-);
+      ))}
+    </div>
+  );
+};
 
 const SimulatorMockup = () => (
   <div className="w-full space-y-3">
