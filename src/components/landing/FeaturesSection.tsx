@@ -67,20 +67,30 @@ const features = [
 const MonitoringMockup = () => (
   <div className="grid grid-cols-2 gap-2.5 w-full">
     {[
-      { name: "ChatGPT", mentions: 142, status: "green" },
-      { name: "Gemini", mentions: 89, status: "green" },
-      { name: "Claude", mentions: 67, status: "yellow" },
-      { name: "Perplexity", mentions: 31, status: "green" },
-    ].map((ai) => (
-      <div key={ai.name} className="p-3 rounded-lg bg-ivero-card-inner">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-foreground">{ai.name}</span>
-          <div className={`w-2 h-2 rounded-full ${ai.status === "green" ? "bg-accent" : "bg-amber-400"}`} />
+      { name: "ChatGPT", mentions: 142 },
+      { name: "Gemini", mentions: 89 },
+      { name: "Claude", mentions: 67 },
+      { name: "Perplexity", mentions: 31 },
+    ].map((ai) => {
+      const color = ai.mentions >= 100 ? "text-emerald-500" :
+                    ai.mentions >= 70 ? "text-emerald-400" :
+                    ai.mentions >= 50 ? "text-amber-400" :
+                    "text-destructive";
+      const dot = ai.mentions >= 100 ? "bg-emerald-500" :
+                  ai.mentions >= 70 ? "bg-emerald-400" :
+                  ai.mentions >= 50 ? "bg-amber-400" :
+                  "bg-destructive";
+      return (
+        <div key={ai.name} className="p-3 rounded-lg bg-ivero-card-inner">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-foreground">{ai.name}</span>
+            <div className={`w-2 h-2 rounded-full ${dot}`} />
+          </div>
+          <span className={`text-xl font-bold ${color}`}>{ai.mentions}</span>
+          <span className="text-[10px] text-muted-foreground ml-1">menções</span>
         </div>
-        <span className="text-xl font-bold text-foreground">{ai.mentions}</span>
-        <span className="text-[10px] text-muted-foreground ml-1">menções</span>
-      </div>
-    ))}
+      );
+    })}
   </div>
 );
 
