@@ -78,35 +78,42 @@ const FAQSection = () => {
           </h2>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="max-w-3xl mx-auto"
-        >
-          <Accordion type="single" collapsible className="space-y-3">
-            {faqs.map((faq, index) => (
-              <AccordionItem
-                key={index}
-                value={`item-${index}`}
-                className="bg-card border border-border rounded-xl px-6 data-[state=open]:border-accent/30 data-[state=open]:shadow-[0_4px_20px_hsl(330_85%_55%/0.08)] transition-all duration-300"
-              >
-                <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline py-5 gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-ivero-gradient flex items-center justify-center shrink-0">
-                      <faq.icon className="w-4 h-4 text-primary-foreground" />
-                    </div>
-                    <span>{faq.question}</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground leading-relaxed pb-5 pl-11">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-6xl mx-auto">
+          {[faqs.slice(0, 4), faqs.slice(4, 8)].map((column, colIndex) => (
+            <motion.div
+              key={colIndex}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 + colIndex * 0.1 }}
+            >
+              <Accordion type="single" collapsible className="space-y-3">
+                {column.map((faq, index) => {
+                  const globalIndex = colIndex * 4 + index;
+                  return (
+                    <AccordionItem
+                      key={globalIndex}
+                      value={`item-${globalIndex}`}
+                      className="bg-card border border-border rounded-xl px-6 data-[state=open]:border-accent/30 data-[state=open]:shadow-[0_4px_20px_hsl(330_85%_55%/0.08)] transition-all duration-300"
+                    >
+                      <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline py-5 gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-ivero-gradient flex items-center justify-center shrink-0">
+                            <faq.icon className="w-4 h-4 text-primary-foreground" />
+                          </div>
+                          <span>{faq.question}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground leading-relaxed pb-5 pl-11">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
