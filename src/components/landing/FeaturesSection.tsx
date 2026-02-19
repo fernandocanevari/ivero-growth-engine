@@ -384,18 +384,18 @@ const FeaturesSection = () => {
         </motion.div>
 
         {/* Carousel */}
-        <div className="relative">
+        <div className="relative min-h-[420px]">
           {/* Nav arrows */}
           <button
             onClick={goPrev}
-            className="absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-border/60 bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-accent/30 transition-all shadow-sm"
+            className="absolute -left-4 lg:-left-6 top-[210px] z-20 w-10 h-10 rounded-full border border-border/60 bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-accent/30 transition-all shadow-sm"
             aria-label="Anterior"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={goNext}
-            className="absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-border/60 bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-accent/30 transition-all shadow-sm"
+            className="absolute -right-4 lg:-right-6 top-[210px] z-20 w-10 h-10 rounded-full border border-border/60 bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-accent/30 transition-all shadow-sm"
             aria-label="Próximo"
           >
             <ChevronRight className="w-5 h-5" />
@@ -410,7 +410,7 @@ const FeaturesSection = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -40 }}
                 transition={{ duration: 0.3 }}
-                className={`grid gap-6 ${
+                className={`grid gap-6 auto-rows-fr ${
                   cardsPerView === 3 ? "grid-cols-3" : cardsPerView === 2 ? "grid-cols-2" : "grid-cols-1"
                 }`}
               >
