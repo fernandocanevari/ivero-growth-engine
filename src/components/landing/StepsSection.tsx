@@ -52,7 +52,7 @@ const StepsSection = () => {
               className="relative group"
             >
               {index < 2 && (
-                <div className="hidden md:block absolute top-16 left-full w-full h-px bg-gradient-to-r from-ivero-purple/40 to-accent/40 z-0" />
+                <div className="hidden md:block absolute top-10 left-[calc(50%+48px)] right-[calc(-50%+48px)] h-[2px] bg-gradient-to-r from-accent/60 via-accent/30 to-accent/60 z-0 shadow-[0_0_8px_hsl(330_85%_55%/0.4)]" />
               )}
               
               <div className="relative z-10 text-center">
