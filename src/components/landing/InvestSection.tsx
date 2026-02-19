@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, ArrowRight, Lock, Bot, BarChart3, LayoutDashboard, Heart, Users, Map, Bell, Layers, FlaskConical } from "lucide-react";
+import { Check, ArrowRight, Lock, Bot, BarChart3, LayoutDashboard, Heart, Users, Map, Bell, Layers, FlaskConical } from "lucide-react";
 
 // 9 recursos da Ivero com ícones
 const ALL_RESOURCES = [
@@ -122,7 +122,6 @@ const InvestSection = () => {
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-6 relative z-10">
-        {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -138,7 +137,6 @@ const InvestSection = () => {
           </p>
         </motion.div>
 
-        {/* Cards Grid */}
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
@@ -164,7 +162,6 @@ const InvestSection = () => {
               )}
 
               <div className="p-7 flex flex-col flex-1">
-                {/* Header */}
                 <div className="mb-5">
                   <h3 className="font-display text-xl font-bold text-primary-foreground mb-1">
                     {plan.name}
@@ -173,13 +170,11 @@ const InvestSection = () => {
                   <p className="text-ivero-slate-light/70 text-xs leading-relaxed">{plan.description}</p>
                 </div>
 
-                {/* Price */}
                 <div className="mb-6">
                   <span className="font-display text-3xl font-bold text-primary-foreground">{plan.price}</span>
                   {plan.period && <span className="text-ivero-slate-light text-sm">{plan.period}</span>}
                 </div>
 
-                {/* Recursos Ivero incluídos */}
                 <div className="mb-5">
                   <p className="text-xs font-semibold text-ivero-slate-light uppercase tracking-wider mb-3">
                     Recursos Ivero ({plan.includedResources}/9)
@@ -203,7 +198,6 @@ const InvestSection = () => {
                   </div>
                 </div>
 
-                {/* Features incluídas */}
                 <ul className="space-y-2 mb-5 flex-1">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-xs text-ivero-slate-light">
@@ -219,7 +213,6 @@ const InvestSection = () => {
                   ))}
                 </ul>
 
-                {/* CTA */}
                 <Button
                   variant={plan.variant}
                   size="sm"
@@ -236,127 +229,6 @@ const InvestSection = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Comparison Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="mt-16 max-w-7xl mx-auto"
-        >
-          <h3 className="font-display text-2xl font-bold text-center text-primary-foreground mb-8">
-            Comparativo completo de{" "}
-            <span className="text-gradient">recursos</span>
-          </h3>
-
-          <div className="overflow-x-auto rounded-2xl border border-ivero-purple/20">
-            <table className="w-full text-sm">
-              {/* Header */}
-              <thead>
-                <tr className="border-b border-ivero-purple/20">
-                  <th className="text-left p-5 text-ivero-slate-light font-medium w-64 bg-ivero-dark-surface">
-                    Recurso
-                  </th>
-                  {plans.map((plan) => (
-                    <th
-                      key={plan.name}
-                      className={`p-5 text-center font-display font-bold text-base ${
-                        plan.highlighted
-                          ? "bg-accent/10 text-accent"
-                          : "bg-ivero-dark-surface text-primary-foreground"
-                      }`}
-                    >
-                      {plan.name}
-                      {plan.highlighted && (
-                        <span className="block text-[10px] font-normal text-accent/70 mt-0.5 uppercase tracking-wider">
-                          Recomendado
-                        </span>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              {/* Body */}
-              <tbody>
-                {ALL_RESOURCES.map((resource, i) => {
-                  const Icon = resource.icon;
-                  return (
-                    <tr
-                      key={resource.label}
-                      className={`border-b border-ivero-purple/10 transition-colors hover:bg-ivero-purple/5 ${
-                        i % 2 === 0 ? "bg-ivero-dark" : "bg-ivero-dark-surface/50"
-                      }`}
-                    >
-                      {/* Resource name */}
-                      <td className="p-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-lg bg-ivero-gradient flex items-center justify-center shrink-0">
-                            <Icon className="w-3.5 h-3.5 text-primary-foreground" />
-                          </div>
-                          <span className="text-ivero-slate-light text-xs font-medium">{resource.label}</span>
-                        </div>
-                      </td>
-
-                      {/* Plan columns */}
-                      {plans.map((plan) => {
-                        const included = i < plan.includedResources;
-                        return (
-                          <td
-                            key={plan.name}
-                            className={`p-5 text-center ${
-                              plan.highlighted ? "bg-accent/5" : ""
-                            }`}
-                          >
-                            {included ? (
-                              <div className="flex items-center justify-center">
-                                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-                                  <Check className="w-3.5 h-3.5 text-accent" />
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center">
-                                <div className="w-6 h-6 rounded-full bg-ivero-purple/10 flex items-center justify-center">
-                                  <X className="w-3.5 h-3.5 text-ivero-slate-light/30" />
-                                </div>
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-
-              {/* Footer CTA row */}
-              <tfoot>
-                <tr className="border-t border-ivero-purple/20">
-                  <td className="p-5 bg-ivero-dark-surface" />
-                  {plans.map((plan) => (
-                    <td
-                      key={plan.name}
-                      className={`p-5 text-center ${plan.highlighted ? "bg-accent/10" : "bg-ivero-dark-surface"}`}
-                    >
-                      <Button
-                        variant={plan.variant}
-                        size="sm"
-                        className={`text-xs px-4 py-4 ${
-                          plan.variant === "hero-outline"
-                            ? "border-ivero-purple/40 text-ivero-purple-light hover:bg-ivero-purple hover:text-primary-foreground"
-                            : ""
-                        }`}
-                      >
-                        {plan.cta}
-                      </Button>
-                    </td>
-                  ))}
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
