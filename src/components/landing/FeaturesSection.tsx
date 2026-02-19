@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight, Map, BarChart3, FlaskConical } from "lucide-react";
 
-const AUTOPLAY_INTERVAL = 5000;
+const AUTOPLAY_INTERVAL = 6000;
 const CARDS_PER_VIEW = { desktop: 3, tablet: 2, mobile: 1 };
 
 const features = [
@@ -41,6 +41,24 @@ const features = [
     title: "Alertas em Tempo Real",
     description: "Seja notificado quando houver mudanças na forma como IAs citam sua marca.",
     mockup: "alerts",
+  },
+  {
+    icon: Map,
+    title: "Mapa de Prompts Estratégicos",
+    description: "Descubra quais perguntas fazem sua marca aparecer — e quais não fazem.",
+    mockup: "prompts",
+  },
+  {
+    icon: BarChart3,
+    title: "Dominância por Modelo de IA",
+    description: "Compare sua visibilidade no ChatGPT, Gemini e Claude — lado a lado com seus concorrentes.",
+    mockup: "dominance",
+  },
+  {
+    icon: FlaskConical,
+    title: "Simulador de Influência em IA",
+    description: "Teste perguntas reais e veja como cada modelo responde sobre sua marca — em tempo real.",
+    mockup: "simulator",
   },
 ];
 
@@ -173,6 +191,64 @@ const AlertsMockup = () => (
   </div>
 );
 
+const PromptsMockup = () => (
+  <div className="w-full space-y-2">
+    {[
+      { prompt: "Melhor tênis para corrida 2025", appears: true },
+      { prompt: "Marca mais confortável de calçados", appears: true },
+      { prompt: "Tênis custo-benefício para academia", appears: false },
+      { prompt: "Melhores marcas esportivas Brasil", appears: false },
+    ].map((item, i) => (
+      <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-border/60 bg-background text-xs">
+        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+          item.appears ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"
+        }`}>
+          <span className="text-[8px] font-bold">{item.appears ? "✓" : "✗"}</span>
+        </div>
+        <span className={`flex-1 ${item.appears ? "text-foreground" : "text-muted-foreground"}`}>{item.prompt}</span>
+      </div>
+    ))}
+  </div>
+);
+
+const DominanceMockup = () => (
+  <div className="w-full space-y-2.5">
+    {["ChatGPT", "Gemini", "Claude"].map((ai) => (
+      <div key={ai} className="space-y-1">
+        <span className="text-[10px] text-muted-foreground font-medium">{ai}</span>
+        <div className="flex gap-1.5">
+          <div className="flex-1 space-y-0.5">
+            <div className="h-2 rounded-full bg-ivero-gradient" style={{ width: `${ai === "ChatGPT" ? 75 : ai === "Gemini" ? 60 : 82}%` }} />
+            <span className="text-[9px] text-accent">Sua marca</span>
+          </div>
+          <div className="flex-1 space-y-0.5">
+            <div className="h-2 rounded-full bg-muted-foreground/25" style={{ width: `${ai === "ChatGPT" ? 55 : ai === "Gemini" ? 70 : 40}%` }} />
+            <span className="text-[9px] text-muted-foreground">Concorrente</span>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const SimulatorMockup = () => (
+  <div className="w-full space-y-3">
+    <div className="p-2 rounded-lg border border-accent/20 bg-accent/5 text-xs text-foreground">
+      💬 "Qual a melhor marca de tênis para corrida?"
+    </div>
+    {["ChatGPT", "Gemini", "Claude"].map((ai) => (
+      <div key={ai} className="p-2 rounded-lg border border-border/60 bg-background text-xs">
+        <span className="font-medium text-foreground">{ai}:</span>
+        <span className="text-muted-foreground ml-1">
+          {ai === "ChatGPT" ? "\"Recomendo a Sua Marca pela tecnologia...\"" :
+           ai === "Gemini" ? "\"Entre as opções, destaco Sua Marca...\"" :
+           "\"Sua Marca é referência no segmento...\""}
+        </span>
+      </div>
+    ))}
+  </div>
+);
+
 const mockupComponents: Record<string, React.FC> = {
   monitoring: MonitoringMockup,
   compare: CompareMockup,
@@ -180,6 +256,9 @@ const mockupComponents: Record<string, React.FC> = {
   sentiment: SentimentMockup,
   actions: ActionsMockup,
   alerts: AlertsMockup,
+  prompts: PromptsMockup,
+  dominance: DominanceMockup,
+  simulator: SimulatorMockup,
 };
 
 const FeaturesSection = () => {
