@@ -1,18 +1,18 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, ArrowRight, Lock } from "lucide-react";
+import { Check, X, ArrowRight, Lock, Bot, BarChart3, LayoutDashboard, Heart, Users, Map, Bell, Layers, FlaskConical } from "lucide-react";
 
-// 9 recursos da Ivero distribuídos progressivamente por plano
+// 9 recursos da Ivero com ícones
 const ALL_RESOURCES = [
-  "Monitoramento Multi-IA",
-  "Score GEO de Visibilidade",
-  "Dashboard GEO",
-  "Análise de Sentimento",
-  "Comparativo Competitivo",
-  "Mapa de Prompts Estratégicos",
-  "Alertas em Tempo Real",
-  "Dominância por Modelo de IA",
-  "Simulador de Influência em IA",
+  { label: "Monitoramento Multi-IA", icon: Bot },
+  { label: "Score GEO de Visibilidade", icon: BarChart3 },
+  { label: "Dashboard GEO", icon: LayoutDashboard },
+  { label: "Análise de Sentimento", icon: Heart },
+  { label: "Comparativo Competitivo", icon: Users },
+  { label: "Mapa de Prompts Estratégicos", icon: Map },
+  { label: "Alertas em Tempo Real", icon: Bell },
+  { label: "Dominância por Modelo de IA", icon: Layers },
+  { label: "Simulador de Influência em IA", icon: FlaskConical },
 ];
 
 const plans = [
@@ -47,7 +47,7 @@ const plans = [
     description: "Monitoramento ativo com capacidade de ação em tempo real.",
     price: "Consulte",
     period: "",
-    cta: "Ativar inteligência em tempo real",
+    cta: "Ativar inteligência",
     highlighted: false,
     variant: "hero-outline" as const,
     includedResources: 5,
@@ -71,7 +71,7 @@ const plans = [
     description: "Transforme o Slack no centro estratégico da sua marca.",
     price: "Consulte",
     period: "",
-    cta: "Dominar minha presença em IA",
+    cta: "Dominar minha presença",
     highlighted: true,
     variant: "hero" as const,
     includedResources: 7,
@@ -93,7 +93,7 @@ const plans = [
   {
     name: "Enterprise",
     badge: "🔴 Estratégico",
-    tagline: "Ideal para empresas que tratam marca como ativo estratégico",
+    tagline: "Ideal para quem trata marca como ativo estratégico",
     description: "Infraestrutura completa de inteligência de presença em IA.",
     price: "Custom",
     period: "",
@@ -106,7 +106,7 @@ const plans = [
       "Concorrentes ilimitados",
       "Evolução histórica + projeções futuras",
       "Múltiplos workspaces de Slack",
-      "Alertas segmentados por área (PR, Marketing, Produto)",
+      "Alertas segmentados por área",
       "Score preditivo de risco reputacional",
       "Webhooks personalizados",
       "SLA dedicado",
@@ -122,6 +122,7 @@ const InvestSection = () => {
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-6 relative z-10">
+        {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -137,6 +138,7 @@ const InvestSection = () => {
           </p>
         </motion.div>
 
+        {/* Cards Grid */}
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
@@ -187,14 +189,14 @@ const InvestSection = () => {
                       const included = i < plan.includedResources;
                       return (
                         <span
-                          key={resource}
+                          key={resource.label}
                           className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             included
                               ? "bg-accent/15 text-accent border border-accent/30"
                               : "bg-ivero-purple/10 text-ivero-slate-light/40 border border-ivero-purple/15 line-through"
                           }`}
                         >
-                          {resource}
+                          {resource.label}
                         </span>
                       );
                     })}
@@ -209,8 +211,6 @@ const InvestSection = () => {
                       {feature}
                     </li>
                   ))}
-
-                  {/* Itens bloqueados */}
                   {plan.locked.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-xs text-ivero-slate-light/40">
                       <Lock className="w-3 h-3 shrink-0 mt-0.5" />
@@ -236,6 +236,127 @@ const InvestSection = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Comparison Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="mt-16 max-w-7xl mx-auto"
+        >
+          <h3 className="font-display text-2xl font-bold text-center text-primary-foreground mb-8">
+            Comparativo completo de{" "}
+            <span className="text-gradient">recursos</span>
+          </h3>
+
+          <div className="overflow-x-auto rounded-2xl border border-ivero-purple/20">
+            <table className="w-full text-sm">
+              {/* Header */}
+              <thead>
+                <tr className="border-b border-ivero-purple/20">
+                  <th className="text-left p-5 text-ivero-slate-light font-medium w-64 bg-ivero-dark-surface">
+                    Recurso
+                  </th>
+                  {plans.map((plan) => (
+                    <th
+                      key={plan.name}
+                      className={`p-5 text-center font-display font-bold text-base ${
+                        plan.highlighted
+                          ? "bg-accent/10 text-accent"
+                          : "bg-ivero-dark-surface text-primary-foreground"
+                      }`}
+                    >
+                      {plan.name}
+                      {plan.highlighted && (
+                        <span className="block text-[10px] font-normal text-accent/70 mt-0.5 uppercase tracking-wider">
+                          Recomendado
+                        </span>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {/* Body */}
+              <tbody>
+                {ALL_RESOURCES.map((resource, i) => {
+                  const Icon = resource.icon;
+                  return (
+                    <tr
+                      key={resource.label}
+                      className={`border-b border-ivero-purple/10 transition-colors hover:bg-ivero-purple/5 ${
+                        i % 2 === 0 ? "bg-ivero-dark" : "bg-ivero-dark-surface/50"
+                      }`}
+                    >
+                      {/* Resource name */}
+                      <td className="p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-lg bg-ivero-gradient flex items-center justify-center shrink-0">
+                            <Icon className="w-3.5 h-3.5 text-primary-foreground" />
+                          </div>
+                          <span className="text-ivero-slate-light text-xs font-medium">{resource.label}</span>
+                        </div>
+                      </td>
+
+                      {/* Plan columns */}
+                      {plans.map((plan) => {
+                        const included = i < plan.includedResources;
+                        return (
+                          <td
+                            key={plan.name}
+                            className={`p-5 text-center ${
+                              plan.highlighted ? "bg-accent/5" : ""
+                            }`}
+                          >
+                            {included ? (
+                              <div className="flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
+                                  <Check className="w-3.5 h-3.5 text-accent" />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-full bg-ivero-purple/10 flex items-center justify-center">
+                                  <X className="w-3.5 h-3.5 text-ivero-slate-light/30" />
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+
+              {/* Footer CTA row */}
+              <tfoot>
+                <tr className="border-t border-ivero-purple/20">
+                  <td className="p-5 bg-ivero-dark-surface" />
+                  {plans.map((plan) => (
+                    <td
+                      key={plan.name}
+                      className={`p-5 text-center ${plan.highlighted ? "bg-accent/10" : "bg-ivero-dark-surface"}`}
+                    >
+                      <Button
+                        variant={plan.variant}
+                        size="sm"
+                        className={`text-xs px-4 py-4 ${
+                          plan.variant === "hero-outline"
+                            ? "border-ivero-purple/40 text-ivero-purple-light hover:bg-ivero-purple hover:text-primary-foreground"
+                            : ""
+                        }`}
+                      >
+                        {plan.cta}
+                      </Button>
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
