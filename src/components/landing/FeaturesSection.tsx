@@ -72,7 +72,7 @@ const MonitoringMockup = () => (
       { name: "Claude", mentions: 67, status: "yellow" },
       { name: "Perplexity", mentions: 31, status: "green" },
     ].map((ai) => (
-      <div key={ai.name} className="p-3 rounded-lg border border-border/60 bg-background">
+      <div key={ai.name} className="p-3 rounded-lg bg-ivero-card-inner">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-foreground">{ai.name}</span>
           <div className={`w-2 h-2 rounded-full ${ai.status === "green" ? "bg-accent" : "bg-amber-400"}`} />
@@ -159,7 +159,7 @@ const ActionsMockup = () => (
       { action: "Atualizar FAQ", priority: "Alta", done: false },
       { action: "Schema markup", priority: "Média", done: true },
     ].map((item, i) => (
-      <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-border/60 bg-background text-xs">
+      <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
           item.done ? "border-accent bg-accent/10" : "border-muted-foreground/30"
         }`}>
@@ -181,7 +181,7 @@ const AlertsMockup = () => (
       { msg: "Novo concorrente no ChatGPT", type: "info" },
       { msg: "Sentimento positivo +72%", type: "info" },
     ].map((alert, i) => (
-      <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-border/60 bg-background text-xs">
+      <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
           alert.type === "alert" ? "bg-amber-400" : "bg-accent"
         }`} />
@@ -199,7 +199,7 @@ const PromptsMockup = () => (
       { prompt: "\"alternativa ao Salesforce\"", rank: "Ausente" },
       { prompt: "\"plataforma de gestão comercial\"", rank: "#4" },
     ].map((item, i) => (
-      <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/60 bg-background text-xs">
+      <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
         <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0">
           <Search className="w-3 h-3 text-muted-foreground" />
         </div>
@@ -240,7 +240,7 @@ const SimulatorMockup = () => (
       💬 "Qual a melhor marca de tênis para corrida?"
     </div>
     {["ChatGPT", "Gemini", "Claude"].map((ai) => (
-      <div key={ai} className="p-2 rounded-lg border border-border/60 bg-background text-xs">
+      <div key={ai} className="p-2 rounded-lg bg-ivero-card-inner text-xs">
         <span className="font-medium text-foreground">{ai}:</span>
         <span className="text-muted-foreground ml-1">
           {ai === "ChatGPT" ? "\"Recomendo a Sua Marca pela tecnologia...\"" :

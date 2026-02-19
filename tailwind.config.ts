@@ -60,6 +60,7 @@ export default {
           "slate-light": "hsl(var(--ivero-slate-light))",
           dark: "hsl(var(--ivero-dark))",
           "dark-surface": "hsl(var(--ivero-dark-surface))",
+          "card-inner": "hsl(var(--ivero-card-inner))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
