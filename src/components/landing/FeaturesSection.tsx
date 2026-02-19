@@ -130,7 +130,7 @@ const ScoreMockup = () => (
         <span className="text-[10px] text-muted-foreground">/100</span>
       </div>
     </div>
-    <div className="flex items-center gap-1 text-xs text-accent font-medium">
+    <div className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
       <TrendingUp className="w-3 h-3" />
       <span>+12 pts</span>
     </div>
