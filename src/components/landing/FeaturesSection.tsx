@@ -155,19 +155,19 @@ const SentimentMockup = () => (
 const ActionsMockup = () => (
   <div className="w-full space-y-2">
     {[
-      { action: "Criar artigo otimizado", priority: "Alta", done: false },
-      { action: "Atualizar FAQ", priority: "Alta", done: false },
-      { action: "Schema markup", priority: "Média", done: true },
+      { action: "Criar artigo sobre IA generativa", priority: "Alta", done: false },
+      { action: "Otimizar FAQ do site", priority: "Alta", done: false },
+      { action: "Atualizar página 'Sobre'", priority: "Média", done: true },
     ].map((item, i) => (
       <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-ivero-card-inner text-xs">
-        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-          item.done ? "border-accent bg-accent/10" : "border-muted-foreground/30"
+        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+          item.done ? "bg-emerald-500/15" : "border border-muted-foreground/30"
         }`}>
-          {item.done && <span className="text-accent text-[8px]">✓</span>}
+          {item.done && <span className="text-emerald-500 text-[10px]">✓</span>}
         </div>
         <span className={`flex-1 ${item.done ? "text-muted-foreground line-through" : "text-foreground"}`}>{item.action}</span>
-        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
-          item.priority === "Alta" ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold text-primary-foreground ${
+          item.priority === "Alta" ? "bg-destructive" : "bg-amber-400"
         }`}>{item.priority}</span>
       </div>
     ))}
