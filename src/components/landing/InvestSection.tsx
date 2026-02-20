@@ -264,7 +264,7 @@ const InvestSection = () => {
                       )}
                     </motion.div>
                     {isAnnual && !isCustom && plan.annualSaving && (
-                      <p className="text-accent/80 text-[11px] font-semibold mt-1">
+                      <p className="text-accent/80 text-sm font-bold mt-1">
                         ✦ Economia de {plan.annualSaving}/ano
                       </p>
                     )}
