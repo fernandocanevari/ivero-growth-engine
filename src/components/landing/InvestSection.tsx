@@ -183,44 +183,51 @@ const InvestSection = () => {
 
                 <div className="flex flex-col flex-1">
                   {/* Plan name + tagline — header visual */}
-                  <div className={`relative px-7 pt-6 pb-5 mb-1 ${
+                  <div className={`relative px-7 pt-7 pb-6 mb-1 overflow-hidden ${
                     plan.highlighted
-                      ? "bg-gradient-to-br from-accent/10 via-ivero-dark-surface to-ivero-dark-surface"
-                      : "bg-gradient-to-br from-primary/8 via-ivero-dark-surface to-ivero-dark-surface"
+                      ? "bg-gradient-to-br from-accent/20 via-accent/5 to-ivero-dark-surface"
+                      : "bg-gradient-to-br from-ivero-purple/20 via-ivero-purple/5 to-ivero-dark-surface"
                   }`}>
-                    {/* Linha de luz lateral */}
-                    <div className={`absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full ${
-                      plan.highlighted
-                        ? "bg-gradient-to-b from-accent via-accent/60 to-transparent"
-                        : "bg-gradient-to-b from-primary/60 via-primary/30 to-transparent"
+                    {/* Glow de fundo no canto superior esquerdo */}
+                    <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full blur-2xl opacity-60 ${
+                      plan.highlighted ? "bg-accent" : "bg-ivero-purple-light"
                     }`} />
 
-                    {/* Indicador + nome */}
-                    <div className="flex items-center gap-2 mb-2">
+                    {/* Linha de luz lateral mais grossa */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      plan.highlighted
+                        ? "bg-gradient-to-b from-accent via-accent/80 to-accent/10"
+                        : "bg-gradient-to-b from-ivero-purple-light via-ivero-purple/60 to-transparent"
+                    }`} />
+
+                    {/* Nome do plano */}
+                    <div className="relative flex items-center gap-2 mb-3">
                       {plan.highlighted && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0 shadow-[0_0_8px_hsl(var(--accent))]" />
                       )}
-                      <h3 className={`font-display text-xl font-extrabold tracking-widest uppercase ${
-                        plan.highlighted ? "text-gradient" : "text-primary-foreground"
+                      <h3 className={`font-display text-2xl font-black tracking-widest uppercase leading-none ${
+                        plan.highlighted
+                          ? "text-gradient drop-shadow-[0_0_12px_hsl(var(--accent)/0.6)]"
+                          : "text-white drop-shadow-[0_0_8px_hsl(var(--ivero-purple-light)/0.8)]"
                       }`}>
                         {plan.name}
                       </h3>
                     </div>
 
-                    {/* Tagline */}
-                    <p className={`text-sm leading-snug font-medium ${
+                    {/* Tagline com destaque */}
+                    <p className={`relative text-sm leading-snug font-semibold ${
                       plan.highlighted
-                        ? "text-primary-foreground/90"
-                        : "text-primary-foreground/65"
+                        ? "text-white"
+                        : "text-ivero-slate-light"
                     }`}>
                       {plan.tagline}
                     </p>
 
-                    {/* Linha separadora com fade */}
-                    <div className={`absolute bottom-0 left-7 right-7 h-px ${
+                    {/* Linha separadora brilhante */}
+                    <div className={`absolute bottom-0 left-0 right-0 h-px ${
                       plan.highlighted
-                        ? "bg-gradient-to-r from-accent/50 via-accent/20 to-transparent"
-                        : "bg-gradient-to-r from-primary/30 via-primary/10 to-transparent"
+                        ? "bg-gradient-to-r from-accent via-accent/40 to-transparent"
+                        : "bg-gradient-to-r from-ivero-purple-light/60 via-ivero-purple/20 to-transparent"
                     }`} />
                   </div>
 
