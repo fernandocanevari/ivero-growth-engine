@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight, Lock } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 
 const plans = [
   {
@@ -10,7 +10,7 @@ const plans = [
     tagline: "Descubra se as IAs reconhecem sua marca",
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
-    cta: "Começar agora",
+    cta: "Quero começar agora →",
     highlighted: false,
     variant: "hero-outline" as const,
     features: [
@@ -18,7 +18,7 @@ const plans = [
       "Comparação com até 2 concorrentes",
       "Evolução básica de menções (30 dias)",
       "Relatório semanal por e-mail",
-      "Monitoramento Multi-IA",
+      "Monitoramento de menções IA",
       "Score GEO de Visibilidade",
       "Dashboard GEO",
     ],
@@ -36,7 +36,7 @@ const plans = [
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
-    cta: "Ativar inteligência",
+    cta: "Ativar minha inteligência →",
     highlighted: false,
     variant: "hero-outline" as const,
     features: [
@@ -63,7 +63,7 @@ const plans = [
     tagline: "Sua marca citada quando o cliente está decidindo",
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
-    cta: "Dominar minha presença em IA",
+    cta: "Dominar minha presença em IA →",
     highlighted: true,
     variant: "hero" as const,
     features: [
@@ -87,7 +87,7 @@ const plans = [
     tagline: "Presença em IA como vantagem competitiva real",
     monthlyPrice: "Custom",
     annualPrice: "Custom",
-    cta: "Falar com especialista",
+    cta: "Falar com um especialista →",
     highlighted: false,
     variant: "hero-outline" as const,
     features: [
@@ -243,8 +243,13 @@ const InvestSection = () => {
                     }`}
                   >
                     {plan.cta}
-                    <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
                   </Button>
+
+                  <p className="text-center text-[10px] text-ivero-slate-light/40 mt-3">
+                    {plan.name === "Enterprise"
+                      ? "Entre em contato e receba uma proposta personalizada."
+                      : "Sem contrato. Cancele quando quiser."}
+                  </p>
                 </div>
               </motion.div>
             );
