@@ -60,25 +60,50 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section id="faq" className="py-16 bg-background relative overflow-hidden">
+    <section id="faq" className="py-14 sm:py-16 bg-background relative overflow-hidden">
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-ivero-purple/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent/3 rounded-full blur-3xl" />
 
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
             Perguntas{" "}
             <span className="text-gradient">Frequentes</span>
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-6xl mx-auto">
+        {/* Mobile: lista única. Desktop: 2 colunas */}
+        <div className="block md:hidden max-w-2xl mx-auto">
+          <Accordion type="single" collapsible className="space-y-3">
+            {faqs.map((faq, index) => (
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="bg-card border border-border rounded-xl px-4 sm:px-6 data-[state=open]:border-accent/30 data-[state=open]:shadow-[0_4px_20px_hsl(330_85%_55%/0.08)] transition-all duration-300"
+              >
+                <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline py-4 gap-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-ivero-gradient flex items-center justify-center shrink-0">
+                      <faq.icon className="w-3.5 h-3.5 text-primary-foreground" />
+                    </div>
+                    <span>{faq.question}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed pb-4 pl-10 text-sm">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+
+        <div className="hidden md:grid grid-cols-2 gap-4 max-w-6xl mx-auto">
           {[faqs.slice(0, 4), faqs.slice(4, 8)].map((column, colIndex) => (
             <motion.div
               key={colIndex}

@@ -22,23 +22,23 @@ const problems = [
 
 const ProblemSection = () => {
   return (
-    <section className="py-16 bg-background">
-      <div className="container mx-auto px-6">
+    <section className="py-14 sm:py-16 bg-background">
+      <div className="container mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
             As IAs reconhecem <span className="text-gradient">sua marca?</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Quando a IA não cita sua marca, a escolha do seu cliente vai para outro lugar.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-8 mb-10 sm:mb-16">
           {problems.map((problem, index) => (
             <motion.div
               key={problem.title}
@@ -46,22 +46,19 @@ const ProblemSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.15 }}
-              className="group relative p-8 rounded-2xl border border-border/60 bg-card hover:border-accent/40 hover:shadow-[0_8px_30px_hsl(330_85%_55%/0.08)] transition-all duration-500 overflow-hidden"
+              className="group relative p-6 sm:p-8 rounded-2xl border border-border/60 bg-card hover:border-accent/40 hover:shadow-[0_8px_30px_hsl(330_85%_55%/0.08)] transition-all duration-500 overflow-hidden"
             >
-              {/* Top accent line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-ivero-gradient opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              {/* Soft radial glow on hover */}
               <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-accent/5 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500" />
 
               <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-ivero-gradient flex items-center justify-center mb-6 shadow-lg group-hover:shadow-accent/20 group-hover:scale-105 transition-all duration-300">
-                  <problem.icon className="w-7 h-7 text-primary-foreground" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-ivero-gradient flex items-center justify-center mb-5 sm:mb-6 shadow-lg group-hover:shadow-accent/20 group-hover:scale-105 transition-all duration-300">
+                  <problem.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
                 </div>
-                <h3 className="font-display text-xl font-bold text-card-foreground mb-3">
+                <h3 className="font-display text-lg sm:text-xl font-bold text-card-foreground mb-2 sm:mb-3">
                   {problem.title}
                 </h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   {problem.description}
                 </p>
               </div>
@@ -75,7 +72,7 @@ const ProblemSection = () => {
           viewport={{ once: true }}
           className="text-center"
         >
-          <Button variant="hero" size="lg" className="text-base px-8 py-6">
+          <Button variant="hero" size="lg" className="text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto">
             Descubra como sua marca aparece na IA
             <ArrowRight className="ml-2" />
           </Button>
