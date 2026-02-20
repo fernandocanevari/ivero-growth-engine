@@ -105,7 +105,7 @@ const InvestSection = () => {
             <span className="text-primary-foreground">Nossos </span>
             <span className="text-gradient">Planos</span>
           </h2>
-          <p className="text-lg text-ivero-slate-light max-w-2xl mx-auto mb-8">
+          <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
             Escolha o plano ideal e garanta que sua marca seja vista pelas IAs que o mundo usa.
           </p>
 
@@ -206,9 +206,7 @@ const InvestSection = () => {
                       </h3>
                     </div>
 
-                    <p className={`relative text-sm leading-snug font-semibold ${
-                      plan.highlighted ? "text-white" : "text-ivero-slate-light"
-                    }`}>
+                    <p className="relative text-sm leading-snug font-semibold text-white/80">
                       {plan.tagline}
                     </p>
 
@@ -233,7 +231,7 @@ const InvestSection = () => {
                           {price}
                         </span>
                         {!isCustom && (
-                          <span className="text-ivero-slate-light text-xs ml-1">/mês</span>
+                          <span className="text-white/60 text-xs ml-1">/mês</span>
                         )}
                       </motion.div>
                       {isAnnual && !isCustom && plan.annualSaving && (
@@ -249,11 +247,7 @@ const InvestSection = () => {
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className={`grid grid-cols-2 gap-3 mb-5 p-4 rounded-xl border ${
-                      plan.highlighted
-                        ? "border-accent/20 bg-accent/5"
-                        : "border-ivero-purple/15 bg-ivero-purple/5"
-                    }`}>
+                    <div className="grid grid-cols-2 gap-3 mb-5 p-4 rounded-xl border border-accent/20 bg-accent/5">
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
@@ -262,8 +256,8 @@ const InvestSection = () => {
                             <span className="text-xl font-bold leading-none text-primary-foreground">
                               {metric.value}
                             </span>
-                            <span className="text-xs text-ivero-slate-light/70 leading-tight">
-                              {metric.label}
+                            <span className="text-xs text-white/70 leading-tight">
+                               {metric.label}
                             </span>
                           </div>
                         );
@@ -273,7 +267,7 @@ const InvestSection = () => {
                     {/* Diferenciais exclusivos */}
                     <ul className="space-y-1.5 mb-6 flex-1">
                       {plan.highlights.map((highlight) => (
-                        <li key={highlight} className="flex items-start gap-2 text-xs text-ivero-slate-light">
+                        <li key={highlight} className="flex items-start gap-2 text-xs text-white/80">
                           <span className={`shrink-0 mt-0.5 font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
                           {highlight}
                         </li>
