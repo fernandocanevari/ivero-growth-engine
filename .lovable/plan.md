@@ -1,96 +1,53 @@
 
-## Animações de Scroll Suave — Abordagem Minimalista
+## Fix: Botão "Descubra sua visibilidade em IA" — preencher totalmente no desktop
 
-### Diagnóstico atual
+### Diagnóstico preciso
 
-Todos os componentes já importam e usam `framer-motion`. A base está ótima — o que falta é refinar a qualidade das animações existentes e adicionar dois efeitos específicos solicitados:
+No arquivo `src/components/landing/HeroSection.tsx`, linha 63, o wrapper do input pill tem `sm:max-w-xl` como largura máxima no desktop. Dentro dele (linha 65), o container flex usa `sm:flex-row` com `sm:pl-5 sm:pr-1.5`.
 
-1. **Parallax no HeroSection** — os elementos de fundo (glows, streak) se movem levemente enquanto o usuário scrolla, criando profundidade sem chamar atenção para si mesmos.
-2. **Transições mais elaboradas nos cards da InvestSection** — entrada escalonada mais sofisticada ao entrar na viewport.
-3. **Scroll suave global** — garantir que o `scroll-behavior: smooth` esteja ativo para os links de âncora do Navbar.
+O problema está na distribuição interna do espaço:
+- O `input` tem `flex-1` — correto, expande para preencher
+- O `Button` (linha 73) tem `shrink-0` — não encolhe, mas também **não cresce**
 
----
+No desktop (`sm:flex-row`), o botão fica com seu tamanho intrínseco (apenas o suficiente para o texto), e o `input` pega todo o `flex-1`. O botão não preenche até a borda direita do container porque o `pr-1.5` do container cria um gap e o botão não se expande.
 
-### O que será tocado (apenas 3 arquivos)
+A solução não é `w-full` (que quebraria o desktop), mas sim remover o `sm:max-w-xl` do wrapper externo e garantir que o botão se ajuste corretamente ao container pill — ou, alternativamente, deixar o botão ser `flex-shrink-0` com um `min-w` fixo que garanta ele tocar a borda.
 
-**1. `src/index.css`** — adicionar `scroll-behavior: smooth` no `html`, que ativa o scroll suave nos links `#recursos`, `#como-funciona`, etc. do Navbar. Uma linha só.
+### Causa raiz
 
-**2. `src/components/landing/HeroSection.tsx`** — parallax sutil nos elementos decorativos de fundo usando `useScroll` + `useTransform` do Framer Motion:
-- O glow roxo (`bottom-0 right-0`) se move `+30px` no Y conforme o usuário desce
-- O glow pink se move `+20px` no Y (velocidade diferente = sensação de profundidade)
-- A "light streak" se move `-15px` (sobe levemente, efeito oposto)
-- O conteúdo principal (`motion.div` com o texto) se move `-10px` suavemente (efeito de flutuar para cima ao scrollar — clássico e elegante)
-- Nenhum `transform` agressivo, tudo dentro de `[0, 300]` pixels de scroll
+O container pill no desktop tem `sm:pr-1.5` (padding interno de 6px à direita) para que o botão fique com um pequeno respiro da borda. O botão usa apenas `shrink-0` + tamanho intrínseco. O `input` com `flex-1` "empurra" o botão para a direita, mas o botão não cresce lateralmente para tocar a borda interna do container — ele simplesmente para no seu tamanho natural.
 
-**3. `src/components/landing/InvestSection.tsx`** — transição de entrada dos 4 cards mais sofisticada:
-- Substituir o simples `y: 30 → 0` atual por uma combinação de `y + opacity + scale` (de `0.97` para `1`)
-- Usar `viewport={{ once: true, margin: "-80px" }}` para que o trigger seja um pouco antes de entrar na viewport (mais orgânico)
-- Delay escalonado ligeiramente maior entre os cards (`0.12s`) para o efeito de "cascata" ficar perceptível mas não dramático
-- Adicionar `transition: { type: "spring", stiffness: 80, damping: 20 }` — spring physics deixa a chegada mais natural que `easeOut` linear
+### Solução cirúrgica
 
----
+**Linha 63** — remover `sm:max-w-xl` do wrapper div para que o container do input ocupe a largura total disponível da coluna esquerda do grid. Isso faz o pill se estender completamente, e o input + botão preenchem toda a largura.
 
-### O que NÃO será feito (para manter o minimalismo)
+**Linha 73** — no Button, substituir `shrink-0` por nada (o botão já não precisa de shrink-0 quando o input tem flex-1) e confirmar que não há `w-auto` limitando.
 
-- Sem parallax no texto/conteúdo principal do Hero (preserva legibilidade)
-- Sem animações de hover adicionais (já existem e estão boas)
-- Sem mudança nas demais seções (ProblemSection, StepsSection já têm `whileInView` adequados)
-- Sem efeitos de "blur no scroll" ou transformações de opacidade agressivas
-- Sem bibliotecas adicionais
-
----
-
-### Implementação técnica — HeroSection (parallax)
+**Mudanças:**
 
 ```tsx
-// Hooks adicionados
-import { useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+// Linha 63 — ANTES
+<div className="flex flex-col gap-3 w-full sm:max-w-xl">
 
-const sectionRef = useRef(null);
-const { scrollYProgress } = useScroll({
-  target: sectionRef,
-  offset: ["start start", "end start"],
-});
-
-// Transforms individuais por velocidade
-const glowPurpleY  = useTransform(scrollYProgress, [0, 1], [0, 80]);
-const glowPinkY    = useTransform(scrollYProgress, [0, 1], [0, 50]);
-const streakY      = useTransform(scrollYProgress, [0, 1], [0, -40]);
-const contentY     = useTransform(scrollYProgress, [0, 1], [0, -30]);
+// Linha 63 — DEPOIS
+<div className="flex flex-col gap-3 w-full">
 ```
-
-Os `motion.div` dos glows recebem `style={{ y: glowPurpleY }}` etc. O conteúdo principal recebe `style={{ y: contentY }}`.
-
----
-
-### Implementação técnica — InvestSection (cards)
 
 ```tsx
-// Antes (simples)
-initial={{ opacity: 0, y: 30 }}
-whileInView={{ opacity: 1, y: 0 }}
-transition={{ delay: index * 0.1 }}
+// Linha 73 — ANTES
+className="text-sm px-5 sm:px-6 h-12 sm:h-11 shrink-0 sm:rounded-full rounded-none rounded-b-2xl sm:rounded-b-none mx-0"
 
-// Depois (spring + scale sutil)
-initial={{ opacity: 0, y: 24, scale: 0.97 }}
-whileInView={{ opacity: 1, y: 0, scale: 1 }}
-viewport={{ once: true, margin: "-80px" }}
-transition={{ 
-  type: "spring", 
-  stiffness: 80, 
-  damping: 20, 
-  delay: index * 0.12 
-}}
+// Linha 73 — DEPOIS
+className="text-sm px-5 sm:px-6 h-12 sm:h-11 w-full sm:w-auto sm:rounded-full rounded-none rounded-b-2xl sm:rounded-b-none mx-0"
 ```
 
----
+### Por que funciona
 
-### Resultado esperado
+- Sem `sm:max-w-xl`, o pill ocupa toda a largura da coluna esquerda do grid (`lg:grid-cols-2`)
+- O `input` com `flex-1` preenche o espaço disponível dinamicamente
+- O botão com `w-full sm:w-auto` fica `w-full` no mobile (empilhado) e `w-auto` no desktop (tamanho intrínseco ao lado do input)
+- O container pill já tem `overflow-hidden` que garante que o botão respeite os cantos arredondados
 
-Ao scrollar pela landing, o usuário perceberá:
-- Os glows do Hero se movendo em velocidades diferentes (profundidade tridimensional discreta)
-- Os cards de planos "chegando" com uma física de mola natural, não mecânica
-- Os links do Navbar (#recursos, #precos etc.) scrollando suavemente até a âncora
+### Arquivo alterado
 
-Tudo dentro da filosofia que você definiu: **o movimento serve ao conteúdo, nunca compete com ele**.
+- `src/components/landing/HeroSection.tsx` — apenas 2 linhas modificadas (63 e 73)
