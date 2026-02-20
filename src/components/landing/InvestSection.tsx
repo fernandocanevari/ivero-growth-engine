@@ -41,7 +41,6 @@ const plans = [
     ],
     highlights: [
       "Análise de Sentimento",
-      "Alertas estratégicos no Slack",
     ],
   },
   {
@@ -61,7 +60,6 @@ const plans = [
     ],
     highlights: [
       "Mapa de Prompts Estratégicos",
-      "Múltiplos canais Slack conectados",
     ],
   },
   {
@@ -257,12 +255,12 @@ const InvestSection = () => {
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
-                          <div key={metric.label} className="flex flex-col items-center text-center gap-1 py-2">
-                            <Icon className={`w-5 h-5 mb-1 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
-                            <span className="text-base font-bold leading-none text-primary-foreground">
+                          <div key={metric.label} className="flex flex-col items-center text-center gap-1.5 py-3">
+                            <Icon className={`w-6 h-6 mb-1 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
+                            <span className="text-xl font-bold leading-none text-primary-foreground">
                               {metric.value}
                             </span>
-                            <span className="text-[10px] text-ivero-slate-light/70 leading-tight">
+                            <span className="text-xs text-ivero-slate-light/70 leading-tight">
                               {metric.label}
                             </span>
                           </div>
@@ -303,8 +301,8 @@ const InvestSection = () => {
           viewport={{ once: true }}
           className="mt-8 text-center"
         >
-          <p className="text-xs text-ivero-slate-light/60">
-            <span className="text-accent/70 font-bold">✦</span>{" "}
+          <p className="text-sm font-medium text-ivero-slate-light/80">
+            <span className="text-accent font-bold">✦</span>{" "}
             Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
         </motion.div>
