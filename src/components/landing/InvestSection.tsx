@@ -7,7 +7,7 @@ const plans = [
   {
     name: "Essencial",
     badge: null,
-    tagline: "Ideal para marcas que estão começando",
+    tagline: "Descubra se as IAs reconhecem sua marca",
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
     cta: "Começar agora",
@@ -33,7 +33,7 @@ const plans = [
   {
     name: "Profissional",
     badge: null,
-    tagline: "Ideal para times de marketing ágeis",
+    tagline: "Monitore, reaja e não perca espaço para concorrentes",
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
     cta: "Ativar inteligência",
@@ -60,7 +60,7 @@ const plans = [
   {
     name: "PRO",
     badge: "🔥 Recomendado",
-    tagline: "Ideal para empresas que querem dominar a IA",
+    tagline: "Sua marca citada quando o cliente está decidindo",
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
     cta: "Dominar minha presença em IA",
@@ -84,7 +84,7 @@ const plans = [
   {
     name: "Enterprise",
     badge: "🔴 Estratégico",
-    tagline: "Ideal para quem trata marca como ativo estratégico",
+    tagline: "Presença em IA como vantagem competitiva real",
     monthlyPrice: "Custom",
     annualPrice: "Custom",
     cta: "Falar com especialista",
