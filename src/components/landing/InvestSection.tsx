@@ -207,7 +207,7 @@ const InvestSection = () => {
                       )}
                       <h3 className={`font-display text-2xl font-black tracking-widest uppercase leading-none ${
                         plan.highlighted
-                          ? "text-gradient drop-shadow-[0_0_12px_hsl(var(--accent)/0.6)]"
+                          ? "text-white drop-shadow-[0_2px_16px_hsl(var(--accent)/0.9)] [text-shadow:0_0_20px_hsl(var(--accent)/0.5)]"
                           : "text-white drop-shadow-[0_0_8px_hsl(var(--ivero-purple-light)/0.8)]"
                       }`}>
                         {plan.name}
