@@ -186,19 +186,20 @@ const InvestSection = () => {
                     : "shadow-[inset_0_0_20px_hsl(var(--ivero-purple-light)/0.1)]"
                 }`} />
 
-                {plan.badge && (
-                  <div className={`text-center text-xs font-bold uppercase tracking-wider py-2 px-4 ${
-                    plan.highlighted
+                {/* Badge — altura fixa para manter alinhamento dos preços */}
+                <div className={`text-center text-xs font-bold uppercase tracking-wider py-2 px-4 ${
+                  plan.badge
+                    ? plan.highlighted
                       ? "bg-ivero-gradient text-primary-foreground"
                       : "bg-ivero-purple/20 text-primary-foreground"
-                  }`}>
-                    {plan.badge}
-                  </div>
-                )}
+                    : "opacity-0 pointer-events-none"
+                }`}>
+                  {plan.badge ?? "‌"}
+                </div>
 
                 <div className="flex flex-col flex-1">
-                  {/* Plan name + tagline — header visual */}
-                  <div className={`relative px-7 pt-7 pb-6 mb-1 overflow-hidden ${
+                  {/* Plan name + tagline — header visual com altura mínima fixa para alinhar preços */}
+                  <div className={`relative px-7 pt-7 pb-6 mb-1 overflow-hidden min-h-[120px] ${
                     plan.highlighted
                       ? "bg-gradient-to-br from-accent/20 via-accent/5 to-ivero-dark-surface"
                       : "bg-gradient-to-br from-ivero-purple/20 via-ivero-purple/5 to-ivero-dark-surface"
