@@ -309,7 +309,8 @@ const InvestSection = () => {
             Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
           </p>
           {/* Linha de features comuns */}
-          <p className="text-xs text-ivero-slate-light/70">
+          <p className="text-sm font-semibold text-primary-foreground drop-shadow-[0_0_12px_hsl(var(--accent)/0.6)] [text-shadow:0_0_16px_hsl(var(--accent)/0.4)]">
+            <span className="text-accent font-bold">✦</span>{" "}
             Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
         </motion.div>
