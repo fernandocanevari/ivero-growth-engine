@@ -50,7 +50,6 @@ const plans = [
       "Comparativo Competitivo",
     ],
     locked: [
-      "Ivero Bot completo",
       "Alertas ilimitados",
       "Mapa de Prompts Estratégicos",
       "Dominância por Modelo de IA",
@@ -73,7 +72,6 @@ const plans = [
       "Evolução histórica completa de menções",
       "Alertas ilimitados no Slack",
       "Múltiplos canais conectados",
-      "Ivero Bot (/status, /concorrente, /tendências)",
       "Mapa de Prompts Estratégicos",
     ],
     locked: [
@@ -177,18 +175,30 @@ const InvestSection = () => {
                   <div className={`text-center text-xs font-bold uppercase tracking-wider py-2 px-4 ${
                     plan.highlighted
                       ? "bg-ivero-gradient text-primary-foreground"
-                      : "bg-ivero-purple/20 text-ivero-purple-light"
+                      : "bg-ivero-purple/20 text-primary-foreground"
                   }`}>
                     {plan.badge}
                   </div>
                 )}
 
                 <div className="p-7 flex flex-col flex-1">
+                  {/* Plan name + tagline com design melhorado */}
                   <div className="mb-5">
-                    <h3 className="font-display text-xl font-bold text-primary-foreground mb-1">
-                      {plan.name}
-                    </h3>
-                    <p className="text-ivero-slate-light text-xs mb-3">{plan.tagline}</p>
+                    <div className={`inline-flex items-center gap-2 mb-2`}>
+                      {plan.highlighted && (
+                        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                      )}
+                      <h3 className={`font-display text-2xl font-extrabold tracking-tight ${
+                        plan.highlighted
+                          ? "text-gradient"
+                          : "text-primary-foreground"
+                      }`}>
+                        {plan.name}
+                      </h3>
+                    </div>
+                    <p className="text-ivero-slate-light/80 text-xs leading-relaxed">{plan.tagline}</p>
+                    {/* Divider decorativo */}
+                    <div className={`mt-3 h-px w-10 rounded-full ${plan.highlighted ? "bg-accent/60" : "bg-ivero-purple/30"}`} />
                   </div>
 
                   {/* Preço */}
@@ -213,20 +223,24 @@ const InvestSection = () => {
                     )}
                   </div>
 
-                  {/* Features + Recursos misturados */}
+                  {/* Features */}
                   <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature, i) => {
                       const isInheritLine = i === 0 && feature.startsWith("Tudo do");
                       return (
-                        <li key={feature} className={`flex items-start gap-2 text-xs ${isInheritLine ? "text-ivero-purple-light font-semibold mb-1" : "text-ivero-slate-light"}`}>
+                        <li key={feature} className={`flex items-start gap-2 text-xs ${
+                          isInheritLine
+                            ? "text-accent/90 font-semibold mb-1"
+                            : "text-ivero-slate-light"
+                        }`}>
                           {!isInheritLine && <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />}
-                          {isInheritLine && <span className="text-ivero-purple-light">↳</span>}
+                          {isInheritLine && <span className="text-accent/90">↳</span>}
                           {feature}
                         </li>
                       );
                     })}
                     {plan.locked.map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-xs text-ivero-slate-light/40">
+                      <li key={item} className="flex items-start gap-2 text-xs text-ivero-slate-light/30">
                         <Lock className="w-3 h-3 shrink-0 mt-0.5" />
                         <span className="line-through">{item}</span>
                       </li>
@@ -245,7 +259,7 @@ const InvestSection = () => {
                     {plan.cta}
                   </Button>
 
-                  <p className="text-center text-[10px] text-ivero-slate-light/40 mt-3">
+                  <p className="text-center text-[10px] text-ivero-slate-light/60 mt-3">
                     {plan.name === "Enterprise"
                       ? "Entre em contato e receba uma proposta personalizada."
                       : "Sem contrato. Cancele quando quiser."}
