@@ -62,15 +62,15 @@ const HeroSection = () => {
 
             <div className="flex flex-col gap-3 w-full">
               {/* Input pill — empilhado no mobile */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden sm:pl-5 sm:pr-0 shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
                 <input
                   type="url"
                   placeholder="Digite o site da sua marca"
                   value={siteUrl}
                   onChange={(e) => setSiteUrl(e.target.value)}
-                  className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:p-0"
+                  className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-5 sm:py-0"
                 />
-                <Button variant="hero" size="lg" className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-b-none sm:rounded-r-full mx-0 shrink-0">
+                <Button variant="hero" size="lg" className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0">
                   Descubra sua visibilidade em IA
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
