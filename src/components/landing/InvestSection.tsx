@@ -301,11 +301,16 @@ const InvestSection = () => {
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-8 text-center"
+          className="mt-10 text-center space-y-3"
         >
-          <p className="text-sm font-medium text-ivero-slate-light/80">
+          {/* Frase de herança — destaque visual */}
+          <p className="text-sm font-semibold text-primary-foreground drop-shadow-[0_0_12px_hsl(var(--accent)/0.6)] [text-shadow:0_0_16px_hsl(var(--accent)/0.4)]">
             <span className="text-accent font-bold">✦</span>{" "}
-            Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato · Cancele quando quiser
+            Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
+          </p>
+          {/* Linha de features comuns */}
+          <p className="text-xs text-ivero-slate-light/70">
+            Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
         </motion.div>
       </div>
