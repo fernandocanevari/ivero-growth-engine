@@ -60,7 +60,7 @@ const HeroSection = () => {
               e outras IAs — e transforma isso em inteligência estratégica para você agir.
             </p>
 
-            <div className="flex flex-col gap-3 w-full sm:max-w-xl">
+            <div className="flex flex-col gap-3 w-full">
               {/* Input pill — empilhado no mobile */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden sm:pl-5 sm:pr-1.5 shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
                 <input
@@ -70,7 +70,7 @@ const HeroSection = () => {
                   onChange={(e) => setSiteUrl(e.target.value)}
                   className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:p-0"
                 />
-                <Button variant="hero" size="lg" className="text-sm px-5 sm:px-6 h-12 sm:h-11 shrink-0 sm:rounded-full rounded-none rounded-b-2xl sm:rounded-b-none mx-0">
+                <Button variant="hero" size="lg" className="text-sm px-5 sm:px-6 h-12 sm:h-11 w-full sm:w-auto sm:rounded-full rounded-none rounded-b-2xl sm:rounded-b-none mx-0">
                   Descubra sua visibilidade em IA
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
