@@ -1,81 +1,96 @@
 
-# Simplificar os Cards de Planos
+## Animações de Scroll Suave — Abordagem Minimalista
 
-## Objetivo
+### Diagnóstico atual
 
-Reduzir a poluição visual dos cards de planos, substituindo a longa lista de features por:
+Todos os componentes já importam e usam `framer-motion`. A base está ótima — o que falta é refinar a qualidade das animações existentes e adicionar dois efeitos específicos solicitados:
 
-1. **Faixa de métricas-chave** (logo abaixo do preço) com ícones e valores concretos por plano
-2. **Apenas 1-2 diferenciais exclusivos** por plano (o que torna aquele tier único)
-3. **Remover os itens bloqueados** (locked) — eles aumentam o tamanho sem agregar valor
-4. **Rodapé comum** abaixo dos 4 cards com as features que todos os planos têm
+1. **Parallax no HeroSection** — os elementos de fundo (glows, streak) se movem levemente enquanto o usuário scrolla, criando profundidade sem chamar atenção para si mesmos.
+2. **Transições mais elaboradas nos cards da InvestSection** — entrada escalonada mais sofisticada ao entrar na viewport.
+3. **Scroll suave global** — garantir que o `scroll-behavior: smooth` esteja ativo para os links de âncora do Navbar.
 
 ---
 
-## Estrutura Nova de Cada Card
+### O que será tocado (apenas 3 arquivos)
 
-```text
-┌──────────────────────────────┐
-│  BADGE (fixo para alinhamento)│
-├──────────────────────────────┤
-│  NOME DO PLANO               │
-│  Tagline                     │
-├──────────────────────────────┤
-│  PREÇO / Economia anual      │
-├──────────────────────────────┤
-│  MÉTRICAS-CHAVE (ícones)     │
-│  📡 X IAs monitoradas        │
-│  🔔 X Avisos/mês             │
-│  🔍 X Prompts monitorados    │
-│  📊 X Consultas/mês          │
-├──────────────────────────────┤
-│  DIFERENCIAIS (1-2 itens)    │
-│  ✦ Diferencial exclusivo     │
-├──────────────────────────────┤
-│  [ BOTÃO CTA ]               │
-│  Sem contrato. Cancele...    │
-└──────────────────────────────┘
+**1. `src/index.css`** — adicionar `scroll-behavior: smooth` no `html`, que ativa o scroll suave nos links `#recursos`, `#como-funciona`, etc. do Navbar. Uma linha só.
+
+**2. `src/components/landing/HeroSection.tsx`** — parallax sutil nos elementos decorativos de fundo usando `useScroll` + `useTransform` do Framer Motion:
+- O glow roxo (`bottom-0 right-0`) se move `+30px` no Y conforme o usuário desce
+- O glow pink se move `+20px` no Y (velocidade diferente = sensação de profundidade)
+- A "light streak" se move `-15px` (sobe levemente, efeito oposto)
+- O conteúdo principal (`motion.div` com o texto) se move `-10px` suavemente (efeito de flutuar para cima ao scrollar — clássico e elegante)
+- Nenhum `transform` agressivo, tudo dentro de `[0, 300]` pixels de scroll
+
+**3. `src/components/landing/InvestSection.tsx`** — transição de entrada dos 4 cards mais sofisticada:
+- Substituir o simples `y: 30 → 0` atual por uma combinação de `y + opacity + scale` (de `0.97` para `1`)
+- Usar `viewport={{ once: true, margin: "-80px" }}` para que o trigger seja um pouco antes de entrar na viewport (mais orgânico)
+- Delay escalonado ligeiramente maior entre os cards (`0.12s`) para o efeito de "cascata" ficar perceptível mas não dramático
+- Adicionar `transition: { type: "spring", stiffness: 80, damping: 20 }` — spring physics deixa a chegada mais natural que `easeOut` linear
+
+---
+
+### O que NÃO será feito (para manter o minimalismo)
+
+- Sem parallax no texto/conteúdo principal do Hero (preserva legibilidade)
+- Sem animações de hover adicionais (já existem e estão boas)
+- Sem mudança nas demais seções (ProblemSection, StepsSection já têm `whileInView` adequados)
+- Sem efeitos de "blur no scroll" ou transformações de opacidade agressivas
+- Sem bibliotecas adicionais
+
+---
+
+### Implementação técnica — HeroSection (parallax)
+
+```tsx
+// Hooks adicionados
+import { useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
+
+const sectionRef = useRef(null);
+const { scrollYProgress } = useScroll({
+  target: sectionRef,
+  offset: ["start start", "end start"],
+});
+
+// Transforms individuais por velocidade
+const glowPurpleY  = useTransform(scrollYProgress, [0, 1], [0, 80]);
+const glowPinkY    = useTransform(scrollYProgress, [0, 1], [0, 50]);
+const streakY      = useTransform(scrollYProgress, [0, 1], [0, -40]);
+const contentY     = useTransform(scrollYProgress, [0, 1], [0, -30]);
+```
+
+Os `motion.div` dos glows recebem `style={{ y: glowPurpleY }}` etc. O conteúdo principal recebe `style={{ y: contentY }}`.
+
+---
+
+### Implementação técnica — InvestSection (cards)
+
+```tsx
+// Antes (simples)
+initial={{ opacity: 0, y: 30 }}
+whileInView={{ opacity: 1, y: 0 }}
+transition={{ delay: index * 0.1 }}
+
+// Depois (spring + scale sutil)
+initial={{ opacity: 0, y: 24, scale: 0.97 }}
+whileInView={{ opacity: 1, y: 0, scale: 1 }}
+viewport={{ once: true, margin: "-80px" }}
+transition={{ 
+  type: "spring", 
+  stiffness: 80, 
+  damping: 20, 
+  delay: index * 0.12 
+}}
 ```
 
 ---
 
-## Métricas por Plano
+### Resultado esperado
 
-| Métrica             | Presença | Influência | Autoridade | Domínio    |
-|---------------------|----------|------------|------------|------------|
-| IAs monitoradas     | 2        | 3          | 4          | 5          |
-| Avisos/mês          | 50       | 200        | Ilimitados | Ilimitados |
-| Prompts monitorados | 10       | 30         | 100        | Ilimitados |
-| Consultas/mês       | 500      | 2.000      | 10.000     | Ilimitadas |
+Ao scrollar pela landing, o usuário perceberá:
+- Os glows do Hero se movendo em velocidades diferentes (profundidade tridimensional discreta)
+- Os cards de planos "chegando" com uma física de mola natural, não mecânica
+- Os links do Navbar (#recursos, #precos etc.) scrollando suavemente até a âncora
 
----
-
-## Diferenciais Exclusivos (1-2 por plano)
-
-- **Presença**: Score GEO de Visibilidade + Relatório semanal por e-mail
-- **Influência**: Análise de Sentimento + Alertas no Slack
-- **Autoridade**: Mapa de Prompts Estratégicos + Múltiplos canais Slack
-- **Domínio**: Dominância por Modelo de IA + Simulador de Influência em IA
-
----
-
-## Rodapé comum (abaixo dos 4 cards)
-
-Uma linha de texto sutil listando o que todos os planos incluem:
-
-> ✦ Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato
-
----
-
-## Alterações Técnicas
-
-**Arquivo:** `src/components/landing/InvestSection.tsx`
-
-- Adicionar campo `metrics` ao objeto de cada plano (array com `{ icon, label, value }`)
-- Adicionar campo `highlights` (1-2 diferenciais exclusivos, substituindo a lista de features)
-- Remover campo `locked` (não será mais exibido)
-- Remover o campo `features` com lista longa
-- No JSX, substituir a `<ul>` de features por:
-  1. Grid 2x2 de métricas com ícone + valor em destaque + label abaixo
-  2. Lista curta de diferenciais (máx. 2 itens)
-- Adicionar bloco de rodapé comum abaixo do grid de cards
+Tudo dentro da filosofia que você definiu: **o movimento serve ao conteúdo, nunca compete com ele**.
