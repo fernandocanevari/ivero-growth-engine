@@ -107,7 +107,7 @@ const plans = [
 ];
 
 const InvestSection = () => {
-  const [isAnnual, setIsAnnual] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(true);
 
   return (
     <section className="py-20 bg-ivero-dark relative overflow-hidden">
