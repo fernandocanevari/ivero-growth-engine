@@ -41,6 +41,7 @@ const plans = [
     ],
     highlights: [
       "Análise de Sentimento",
+      "Análise Comparativa com concorrentes",
     ],
   },
   {
@@ -60,6 +61,7 @@ const plans = [
     ],
     highlights: [
       "Mapa de Prompts Estratégicos",
+      "Plano de Ação Estratégico",
     ],
   },
   {
