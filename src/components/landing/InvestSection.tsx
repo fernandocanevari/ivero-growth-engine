@@ -8,7 +8,6 @@ const plans = [
     name: "Essencial",
     badge: null,
     tagline: "Ideal para marcas que estão começando",
-    description: "Diagnóstico estratégico inicial da sua marca no ecossistema de IA.",
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
     cta: "Começar agora",
@@ -25,7 +24,6 @@ const plans = [
     ],
     locked: [
       "Análise de Sentimento",
-      "Alertas em tempo real",
       "Integração com Slack",
       "Mapa de Prompts Estratégicos",
       "Dominância por Modelo de IA",
@@ -36,21 +34,18 @@ const plans = [
     name: "Profissional",
     badge: null,
     tagline: "Ideal para times de marketing ágeis",
-    description: "Monitoramento ativo com capacidade de ação em tempo real.",
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
     cta: "Ativar inteligência",
     highlighted: false,
     variant: "hero-outline" as const,
     features: [
+      "Tudo do Essencial, mais:",
       "Monitoramento de até 3 IAs",
       "Comparação com até 5 concorrentes",
       "Evolução de menções (90 dias)",
       "Alertas estratégicos no Slack (limitado)",
       "1 canal conectado",
-      "Monitoramento Multi-IA",
-      "Score GEO de Visibilidade",
-      "Dashboard GEO",
       "Análise de Sentimento",
       "Comparativo Competitivo",
     ],
@@ -66,29 +61,22 @@ const plans = [
     name: "PRO",
     badge: "🔥 Recomendado",
     tagline: "Ideal para empresas que querem dominar a IA",
-    description: "Transforme o Slack no centro estratégico da sua marca.",
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
     cta: "Dominar minha presença em IA",
     highlighted: true,
     variant: "hero" as const,
     features: [
+      "Tudo do Profissional, mais:",
       "Monitoramento de até 4 IAs",
       "Comparação com até 10 concorrentes",
       "Evolução histórica completa de menções",
       "Alertas ilimitados no Slack",
       "Múltiplos canais conectados",
       "Ivero Bot (/status, /concorrente, /tendências)",
-      "Monitoramento Multi-IA",
-      "Score GEO de Visibilidade",
-      "Dashboard GEO",
-      "Análise de Sentimento",
-      "Comparativo Competitivo",
       "Mapa de Prompts Estratégicos",
-      "Alertas em Tempo Real",
     ],
     locked: [
-      "Múltiplos workspaces",
       "Dominância por Modelo de IA",
       "Simulador de Influência em IA",
     ],
@@ -97,27 +85,18 @@ const plans = [
     name: "Enterprise",
     badge: "🔴 Estratégico",
     tagline: "Ideal para quem trata marca como ativo estratégico",
-    description: "Infraestrutura completa de inteligência de presença em IA.",
     monthlyPrice: "Custom",
     annualPrice: "Custom",
     cta: "Falar com especialista",
     highlighted: false,
     variant: "hero-outline" as const,
     features: [
+      "Tudo do PRO, mais:",
       "Monitoramento de 5 IAs",
       "Concorrentes ilimitados",
-      "Evolução histórica + projeções futuras",
-      "Múltiplos workspaces de Slack",
-      "Alertas segmentados por área",
+      "Evolução histórica completa de menções",
+      "Múltiplos workspaces",
       "Webhooks personalizados",
-      "SLA dedicado",
-      "Monitoramento Multi-IA",
-      "Score GEO de Visibilidade",
-      "Dashboard GEO",
-      "Análise de Sentimento",
-      "Comparativo Competitivo",
-      "Mapa de Prompts Estratégicos",
-      "Alertas em Tempo Real",
       "Dominância por Modelo de IA",
       "Simulador de Influência em IA",
     ],
@@ -210,7 +189,6 @@ const InvestSection = () => {
                       {plan.name}
                     </h3>
                     <p className="text-ivero-slate-light text-xs mb-3">{plan.tagline}</p>
-                    <p className="text-ivero-slate-light/70 text-xs leading-relaxed">{plan.description}</p>
                   </div>
 
                   {/* Preço */}
@@ -237,12 +215,16 @@ const InvestSection = () => {
 
                   {/* Features + Recursos misturados */}
                   <ul className="space-y-2 mb-6 flex-1">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-xs text-ivero-slate-light">
-                        <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
-                        {feature}
-                      </li>
-                    ))}
+                    {plan.features.map((feature, i) => {
+                      const isInheritLine = i === 0 && feature.startsWith("Tudo do");
+                      return (
+                        <li key={feature} className={`flex items-start gap-2 text-xs ${isInheritLine ? "text-ivero-purple-light font-semibold mb-1" : "text-ivero-slate-light"}`}>
+                          {!isInheritLine && <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />}
+                          {isInheritLine && <span className="text-ivero-purple-light">↳</span>}
+                          {feature}
+                        </li>
+                      );
+                    })}
                     {plan.locked.map((item) => (
                       <li key={item} className="flex items-start gap-2 text-xs text-ivero-slate-light/40">
                         <Lock className="w-3 h-3 shrink-0 mt-0.5" />
