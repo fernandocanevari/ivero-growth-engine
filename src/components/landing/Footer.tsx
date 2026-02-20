@@ -70,7 +70,6 @@ const NeuralNetwork = () => {
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
       </svg>
-      {/* Icons positioned to match SVG endpoints */}
       <div className="relative w-full h-8 -mt-1">
         {aiIcons.map((ai, i) => (
           <img
@@ -90,22 +89,24 @@ const NeuralNetwork = () => {
 const Footer = () => {
   return (
     <footer className="py-8 bg-ivero-dark border-t border-ivero-purple/10">
-      <div className="container mx-auto px-6">
-        {/* Top row: Ivero left, neural center, links right */}
+      <div className="container mx-auto px-4 sm:px-6">
+        {/* Top: mobile stack, desktop row */}
         <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-6">
-          {/* Left - Branding */}
+          {/* Branding */}
           <div className="flex flex-col gap-2 shrink-0">
-            <span className="font-display text-7xl font-bold leading-none" style={{ background: "linear-gradient(90deg, hsl(265, 70%, 50%), hsl(300, 60%, 50%), hsl(330, 85%, 55%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <span className="font-display text-5xl sm:text-7xl font-bold leading-none" style={{ background: "linear-gradient(90deg, hsl(265, 70%, 50%), hsl(300, 60%, 50%), hsl(330, 85%, 55%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               Ivero
             </span>
-            <p className="text-lg text-ivero-slate-light italic">Visibilidade constrói marcas duradoras.</p>
+            <p className="text-base sm:text-lg text-ivero-slate-light italic">Visibilidade constrói marcas duradoras.</p>
           </div>
 
-          {/* Center - Neural network */}
-          <NeuralNetwork />
+          {/* Neural network — oculto no mobile */}
+          <div className="hidden md:block w-full max-w-xs lg:max-w-lg mx-auto">
+            <NeuralNetwork />
+          </div>
 
-          {/* Right - Links */}
-          <div className="grid grid-cols-4 gap-6 text-sm shrink-0">
+          {/* Links — grid 2x2 no mobile, 4 cols no desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm w-full md:w-auto shrink-0">
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Empresa</h4>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Sobre</a>
@@ -135,10 +136,10 @@ const Footer = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-ivero-purple/10 pt-3 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-ivero-slate-light">© 2026 Ivero. Todos os direitos reservados.</p>
-          <div className="flex flex-col items-end gap-2">
-            <Button variant="hero" size="default" className="px-6 text-sm" asChild>
+        <div className="border-t border-ivero-purple/10 pt-4 flex flex-col md:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-ivero-slate-light text-center md:text-left">© 2026 Ivero. Todos os direitos reservados.</p>
+          <div className="flex flex-col items-center md:items-end gap-2">
+            <Button variant="hero" size="default" className="px-5 text-sm w-full sm:w-auto" asChild>
               <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
                 Fale direto com o fundador, o Fernando!
                 <ArrowRight className="ml-1.5 w-4 h-4" />

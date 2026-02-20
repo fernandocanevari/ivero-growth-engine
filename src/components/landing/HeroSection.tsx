@@ -24,13 +24,13 @@ const HeroSection = () => {
       {/* Parallax: glow roxo */}
       <motion.div
         style={{ y: glowPurpleY }}
-        className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.08] blur-[120px] pointer-events-none"
+        className="absolute bottom-0 right-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.08] blur-[120px] pointer-events-none"
       />
       
       {/* Parallax: glow pink */}
       <motion.div
         style={{ y: glowPinkY }}
-        className="absolute bottom-[-100px] right-[-50px] w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.06] blur-[100px] pointer-events-none"
+        className="absolute bottom-[-100px] right-[-50px] w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.06] blur-[100px] pointer-events-none"
       />
       
       {/* Parallax: light streak */}
@@ -40,45 +40,48 @@ const HeroSection = () => {
       />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 py-32 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-28 pb-16 sm:py-32 sm:pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-start">
           {/* Left - Text */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+            <h1 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-5 sm:mb-6">
               <span className="text-primary-foreground">A sua marca está </span>
               <span className="whitespace-nowrap"><span className="text-primary-foreground">sendo </span><span className="text-gradient">recomendada</span></span>
               <br />
               <span className="text-gradient">pelas IAs?</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-ivero-slate-light max-w-2xl mb-10 leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-ivero-slate-light max-w-2xl mb-8 sm:mb-10 leading-relaxed">
               A Ivero monitora como sua marca é citada (ou ignorada) por ChatGPT, Gemini, Perplexity 
               e outras IAs — e transforma isso em inteligência estratégica para você agir.
             </p>
 
-            <div className="flex flex-col gap-3 max-w-xl">
-              <div className="flex items-center h-14 rounded-full bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden pl-5 pr-1.5 shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
+            <div className="flex flex-col gap-3 w-full sm:max-w-xl">
+              {/* Input pill — empilhado no mobile */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden sm:pl-5 sm:pr-1.5 shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
                 <input
                   type="url"
                   placeholder="Digite o site da sua marca"
                   value={siteUrl}
                   onChange={(e) => setSiteUrl(e.target.value)}
-                  className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-base outline-none border-none"
+                  className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:p-0"
                 />
-                <Button variant="hero" size="lg" className="text-sm px-6 h-11 shrink-0 rounded-full">
+                <Button variant="hero" size="lg" className="text-sm px-5 sm:px-6 h-12 sm:h-11 shrink-0 sm:rounded-full rounded-none rounded-b-2xl sm:rounded-b-none mx-0">
                   Descubra sua visibilidade em IA
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-primary-foreground text-base font-medium ml-5">Veja análise instantânea da sua presença nas respostas da IA🚀</p>
+              <p className="text-primary-foreground text-sm sm:text-base font-medium ml-1 sm:ml-5">
+                Veja análise instantânea da sua presença nas respostas da IA 🚀
+              </p>
             </div>
           </motion.div>
 
-          {/* Right - Signup Form */}
+          {/* Right - Signup Form (desktop only) */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
