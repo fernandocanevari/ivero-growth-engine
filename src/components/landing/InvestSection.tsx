@@ -71,7 +71,7 @@ const plans = [
     monthlyPrice: "Custom",
     annualPrice: "Custom",
     annualSaving: null,
-    cta: "Falar com especialista →",
+    cta: "Receber uma proposta personalizada →",
     highlighted: false,
     metrics: [
       { icon: Cpu, label: "IAs monitoradas", value: "5" },
@@ -249,7 +249,7 @@ const InvestSection = () => {
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className={`grid grid-cols-2 gap-2 mb-5 p-3 rounded-xl border ${
+                    <div className={`grid grid-cols-2 gap-3 mb-5 p-4 rounded-xl border ${
                       plan.highlighted
                         ? "border-accent/20 bg-accent/5"
                         : "border-ivero-purple/15 bg-ivero-purple/5"
@@ -257,14 +257,12 @@ const InvestSection = () => {
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
-                          <div key={metric.label} className="flex flex-col items-center text-center gap-0.5 py-1">
-                            <Icon className={`w-3.5 h-3.5 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
-                            <span className={`text-sm font-bold leading-none ${
-                              plan.highlighted ? "text-primary-foreground" : "text-primary-foreground"
-                            }`}>
+                          <div key={metric.label} className="flex flex-col items-center text-center gap-1 py-2">
+                            <Icon className={`w-5 h-5 mb-1 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
+                            <span className="text-base font-bold leading-none text-primary-foreground">
                               {metric.value}
                             </span>
-                            <span className="text-[9px] text-ivero-slate-light/70 leading-tight">
+                            <span className="text-[10px] text-ivero-slate-light/70 leading-tight">
                               {metric.label}
                             </span>
                           </div>
@@ -290,13 +288,7 @@ const InvestSection = () => {
                       {plan.cta}
                     </Button>
 
-                    <div className="mt-3 text-center">
-                      <p className="text-[10px] text-primary-foreground/60">
-                        {plan.name === "Domínio"
-                          ? "Entre em contato e receba uma proposta personalizada."
-                          : "Sem contrato. Cancele quando quiser."}
-                      </p>
-                    </div>
+                    
                   </div>
                 </div>
               </motion.div>
@@ -313,7 +305,7 @@ const InvestSection = () => {
         >
           <p className="text-xs text-ivero-slate-light/60">
             <span className="text-accent/70 font-bold">✦</span>{" "}
-            Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato
+            Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
         </motion.div>
       </div>
