@@ -182,13 +182,18 @@ const InvestSection = () => {
                 )}
 
                 <div className="p-7 flex flex-col flex-1">
-                  {/* Plan name + tagline com design melhorado */}
+                  {/* Plan name + tagline */}
                   <div className="mb-5">
-                    <div className={`inline-flex items-center gap-2 mb-2`}>
+                    {/* Nome do plano com fundo decorativo */}
+                    <div className={`inline-flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg ${
+                      plan.highlighted
+                        ? "bg-accent/10 border border-accent/25"
+                        : "bg-primary/10 border border-primary/20"
+                    }`}>
                       {plan.highlighted && (
-                        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                       )}
-                      <h3 className={`font-display text-2xl font-extrabold tracking-tight ${
+                      <h3 className={`font-display text-xl font-extrabold tracking-wide uppercase ${
                         plan.highlighted
                           ? "text-gradient"
                           : "text-primary-foreground"
@@ -196,9 +201,12 @@ const InvestSection = () => {
                         {plan.name}
                       </h3>
                     </div>
-                    <p className="text-ivero-slate-light/80 text-xs leading-relaxed">{plan.tagline}</p>
+                    {/* Tagline com destaque */}
+                    <p className={`text-sm font-medium leading-snug ${
+                      plan.highlighted ? "text-primary-foreground/90" : "text-primary-foreground/70"
+                    }`}>{plan.tagline}</p>
                     {/* Divider decorativo */}
-                    <div className={`mt-3 h-px w-10 rounded-full ${plan.highlighted ? "bg-accent/60" : "bg-ivero-purple/30"}`} />
+                    <div className={`mt-3 h-0.5 w-12 rounded-full ${plan.highlighted ? "bg-accent/70" : "bg-primary/30"}`} />
                   </div>
 
                   {/* Preço */}
@@ -259,11 +267,18 @@ const InvestSection = () => {
                     {plan.cta}
                   </Button>
 
-                  <p className="text-center text-[10px] text-ivero-slate-light/60 mt-3">
-                    {plan.name === "Enterprise"
-                      ? "Entre em contato e receba uma proposta personalizada."
-                      : "Sem contrato. Cancele quando quiser."}
-                  </p>
+                  <div className="mt-3 text-center space-y-0.5">
+                    <p className="text-[10px] text-primary-foreground/60">
+                      {plan.name === "Enterprise"
+                        ? "Entre em contato e receba uma proposta personalizada."
+                        : "Sem contrato. Cancele quando quiser."}
+                    </p>
+                    {plan.name !== "Enterprise" && (
+                      <p className="text-[10px] text-accent/80 font-medium">
+                        ✦ Atendimento prioritário em todos os planos
+                      </p>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );
