@@ -5,14 +5,14 @@ import { Check, Lock } from "lucide-react";
 
 const plans = [
   {
-    name: "Essencial",
+    name: "Presença",
     badge: null,
     tagline: "Descubra se as IAs reconhecem sua marca",
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
-    cta: "Quero começar agora →",
+    cta: "Garantir minha presença →",
     highlighted: false,
-    variant: "hero-outline" as const,
+    variant: "hero" as const,
     features: [
       "Monitoramento de até 2 IAs",
       "Comparação com até 2 concorrentes",
@@ -31,16 +31,16 @@ const plans = [
     ],
   },
   {
-    name: "Profissional",
+    name: "Influência",
     badge: null,
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
-    cta: "Ativar minha inteligência →",
+    cta: "Ampliar minha influência →",
     highlighted: false,
-    variant: "hero-outline" as const,
+    variant: "hero" as const,
     features: [
-      "Tudo do Essencial, mais:",
+      "Tudo do Presença, mais:",
       "Monitoramento de até 3 IAs",
       "Comparação com até 5 concorrentes",
       "Evolução de menções (90 dias)",
@@ -57,16 +57,16 @@ const plans = [
     ],
   },
   {
-    name: "PRO",
+    name: "Autoridade",
     badge: "🔥 Recomendado",
     tagline: "Sua marca citada quando o cliente está decidindo",
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
-    cta: "Dominar minha presença em IA →",
+    cta: "Consolidar minha autoridade →",
     highlighted: true,
     variant: "hero" as const,
     features: [
-      "Tudo do Profissional, mais:",
+      "Tudo do Influência, mais:",
       "Monitoramento de até 4 IAs",
       "Comparação com até 10 concorrentes",
       "Evolução histórica completa de menções",
@@ -80,16 +80,16 @@ const plans = [
     ],
   },
   {
-    name: "Enterprise",
+    name: "Domínio",
     badge: "🔴 Estratégico",
     tagline: "Presença em IA como vantagem competitiva real",
     monthlyPrice: "Custom",
     annualPrice: "Custom",
-    cta: "Falar com um especialista →",
+    cta: "Falar com especialista →",
     highlighted: false,
-    variant: "hero-outline" as const,
+    variant: "hero" as const,
     features: [
-      "Tudo do PRO, mais:",
+      "Tudo do Autoridade, mais:",
       "Monitoramento de 5 IAs",
       "Concorrentes ilimitados",
       "Evolução histórica completa de menções",
@@ -280,24 +280,20 @@ const InvestSection = () => {
                   </ul>
 
                   <Button
-                    variant={plan.variant}
+                    variant="hero"
                     size="sm"
-                    className={`w-full mt-auto text-xs py-5 ${
-                      plan.variant === "hero-outline"
-                        ? "border-ivero-purple/40 text-ivero-purple-light hover:bg-ivero-purple hover:text-primary-foreground"
-                        : ""
-                    }`}
+                    className="w-full mt-auto text-xs py-5"
                   >
                     {plan.cta}
                   </Button>
 
                   <div className="mt-3 text-center space-y-0.5">
                     <p className="text-[10px] text-primary-foreground/60">
-                      {plan.name === "Enterprise"
+                      {plan.name === "Domínio"
                         ? "Entre em contato e receba uma proposta personalizada."
                         : "Sem contrato. Cancele quando quiser."}
                     </p>
-                    {plan.name !== "Enterprise" && (
+                    {plan.name !== "Domínio" && (
                       <p className="text-[10px] text-accent/80 font-medium">
                         ✦ Atendimento prioritário em todos os planos
                       </p>
