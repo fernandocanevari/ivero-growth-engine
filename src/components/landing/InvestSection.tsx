@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, Lock } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2 } from "lucide-react";
 
 const plans = [
   {
@@ -13,22 +13,15 @@ const plans = [
     annualSaving: "R$ 480",
     cta: "Garantir minha presença →",
     highlighted: false,
-    variant: "hero" as const,
-    features: [
-      "Monitoramento de até 2 IAs",
-      "Comparação com até 2 concorrentes",
-      "Evolução básica de menções (30 dias)",
-      "Relatório semanal por e-mail",
-      "Monitoramento de menções IA",
-      "Score GEO de Visibilidade",
-      "Dashboard GEO",
+    metrics: [
+      { icon: Cpu, label: "IAs monitoradas", value: "2" },
+      { icon: Bell, label: "Avisos/mês", value: "50" },
+      { icon: Search, label: "Prompts monitorados", value: "10" },
+      { icon: BarChart2, label: "Consultas/mês", value: "500" },
     ],
-    locked: [
-      "Análise de Sentimento",
-      "Integração com Slack",
-      "Mapa de Prompts Estratégicos",
-      "Dominância por Modelo de IA",
-      "Simulador de Influência em IA",
+    highlights: [
+      "Score GEO de Visibilidade",
+      "Relatório semanal por e-mail",
     ],
   },
   {
@@ -40,22 +33,15 @@ const plans = [
     annualSaving: "R$ 960",
     cta: "Ampliar minha influência →",
     highlighted: false,
-    variant: "hero" as const,
-    features: [
-      "Tudo do Presença, mais:",
-      "Monitoramento de até 3 IAs",
-      "Comparação com até 5 concorrentes",
-      "Evolução de menções (90 dias)",
-      "Alertas estratégicos no Slack (limitado)",
-      "1 canal conectado",
-      "Análise de Sentimento",
-      "Comparativo Competitivo",
+    metrics: [
+      { icon: Cpu, label: "IAs monitoradas", value: "3" },
+      { icon: Bell, label: "Avisos/mês", value: "200" },
+      { icon: Search, label: "Prompts monitorados", value: "30" },
+      { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
     ],
-    locked: [
-      "Alertas ilimitados",
-      "Mapa de Prompts Estratégicos",
-      "Dominância por Modelo de IA",
-      "Simulador de Influência em IA",
+    highlights: [
+      "Análise de Sentimento",
+      "Alertas estratégicos no Slack",
     ],
   },
   {
@@ -67,19 +53,15 @@ const plans = [
     annualSaving: "R$ 1.680",
     cta: "Consolidar minha autoridade →",
     highlighted: true,
-    variant: "hero" as const,
-    features: [
-      "Tudo do Influência, mais:",
-      "Monitoramento de até 4 IAs",
-      "Comparação com até 10 concorrentes",
-      "Evolução histórica completa de menções",
-      "Alertas ilimitados no Slack",
-      "Múltiplos canais conectados",
-      "Mapa de Prompts Estratégicos",
+    metrics: [
+      { icon: Cpu, label: "IAs monitoradas", value: "4" },
+      { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
+      { icon: Search, label: "Prompts monitorados", value: "100" },
+      { icon: BarChart2, label: "Consultas/mês", value: "10.000" },
     ],
-    locked: [
-      "Dominância por Modelo de IA",
-      "Simulador de Influência em IA",
+    highlights: [
+      "Mapa de Prompts Estratégicos",
+      "Múltiplos canais Slack conectados",
     ],
   },
   {
@@ -91,18 +73,16 @@ const plans = [
     annualSaving: null,
     cta: "Falar com especialista →",
     highlighted: false,
-    variant: "hero" as const,
-    features: [
-      "Tudo do Autoridade, mais:",
-      "Monitoramento de 5 IAs",
-      "Concorrentes ilimitados",
-      "Evolução histórica completa de menções",
-      "Múltiplos workspaces",
-      "Webhooks personalizados",
+    metrics: [
+      { icon: Cpu, label: "IAs monitoradas", value: "5" },
+      { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
+      { icon: Search, label: "Prompts monitorados", value: "Ilimitados" },
+      { icon: BarChart2, label: "Consultas/mês", value: "Ilimitadas" },
+    ],
+    highlights: [
       "Dominância por Modelo de IA",
       "Simulador de Influência em IA",
     ],
-    locked: [],
   },
 ];
 
@@ -186,7 +166,7 @@ const InvestSection = () => {
                     : "shadow-[inset_0_0_20px_hsl(var(--ivero-purple-light)/0.1)]"
                 }`} />
 
-                {/* Badge — altura fixa para manter alinhamento dos preços */}
+                {/* Badge — altura fixa para manter alinhamento */}
                 <div className={`text-center text-xs font-bold uppercase tracking-wider py-2 px-4 ${
                   plan.badge
                     ? plan.highlighted
@@ -198,25 +178,21 @@ const InvestSection = () => {
                 </div>
 
                 <div className="flex flex-col flex-1">
-                  {/* Plan name + tagline — header visual com altura mínima fixa para alinhar preços */}
+                  {/* Plan name + tagline */}
                   <div className={`relative px-7 pt-7 pb-6 mb-1 overflow-hidden min-h-[120px] ${
                     plan.highlighted
                       ? "bg-gradient-to-br from-accent/20 via-accent/5 to-ivero-dark-surface"
                       : "bg-gradient-to-br from-ivero-purple/20 via-ivero-purple/5 to-ivero-dark-surface"
                   }`}>
-                    {/* Glow de fundo no canto superior esquerdo */}
                     <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full blur-2xl opacity-60 ${
                       plan.highlighted ? "bg-accent" : "bg-ivero-purple-light"
                     }`} />
-
-                    {/* Linha de luz lateral mais grossa */}
                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${
                       plan.highlighted
                         ? "bg-gradient-to-b from-accent via-accent/80 to-accent/10"
                         : "bg-gradient-to-b from-ivero-purple-light via-ivero-purple/60 to-transparent"
                     }`} />
 
-                    {/* Nome do plano */}
                     <div className="relative flex items-center gap-2 mb-3">
                       {plan.highlighted && (
                         <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0 shadow-[0_0_8px_hsl(var(--accent))]" />
@@ -230,16 +206,12 @@ const InvestSection = () => {
                       </h3>
                     </div>
 
-                    {/* Tagline com destaque */}
                     <p className={`relative text-sm leading-snug font-semibold ${
-                      plan.highlighted
-                        ? "text-white"
-                        : "text-ivero-slate-light"
+                      plan.highlighted ? "text-white" : "text-ivero-slate-light"
                     }`}>
                       {plan.tagline}
                     </p>
 
-                    {/* Linha separadora brilhante */}
                     <div className={`absolute bottom-0 left-0 right-0 h-px ${
                       plan.highlighted
                         ? "bg-gradient-to-r from-accent via-accent/40 to-transparent"
@@ -249,83 +221,101 @@ const InvestSection = () => {
 
                   <div className="px-7 pt-5 pb-7 flex flex-col flex-1">
 
-                  {/* Preço — altura fixa para alinhar horizontalmente */}
-                  <div className="mb-6 h-16 flex flex-col justify-start">
-                    <motion.div
-                      key={price}
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <span className="font-display text-3xl font-bold text-primary-foreground">
-                        {price}
-                      </span>
-                      {!isCustom && (
-                        <span className="text-ivero-slate-light text-xs ml-1">/mês</span>
+                    {/* Preço */}
+                    <div className="mb-5 h-16 flex flex-col justify-start">
+                      <motion.div
+                        key={price}
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <span className="font-display text-3xl font-bold text-primary-foreground">
+                          {price}
+                        </span>
+                        {!isCustom && (
+                          <span className="text-ivero-slate-light text-xs ml-1">/mês</span>
+                        )}
+                      </motion.div>
+                      {isAnnual && !isCustom && plan.annualSaving && (
+                        <p className="text-accent/80 text-sm font-bold mt-1">
+                          ✦ Economia de {plan.annualSaving}/ano
+                        </p>
                       )}
-                    </motion.div>
-                    {isAnnual && !isCustom && plan.annualSaving && (
-                      <p className="text-accent/80 text-sm font-bold mt-1">
-                        ✦ Economia de {plan.annualSaving}/ano
-                      </p>
-                    )}
-                    {isAnnual && isCustom && (
-                      <p className="text-ivero-slate-light/60 text-[10px] mt-1">
-                        Proposta personalizada
-                      </p>
-                    )}
-                  </div>
+                      {isAnnual && isCustom && (
+                        <p className="text-ivero-slate-light/60 text-[10px] mt-1">
+                          Proposta personalizada
+                        </p>
+                      )}
+                    </div>
 
-                  {/* Features */}
-                  <ul className="space-y-2 mb-6 flex-1">
-                    {plan.features.map((feature, i) => {
-                      const isInheritLine = i === 0 && feature.startsWith("Tudo do");
-                      return (
-                        <li key={feature} className={`flex items-start gap-2 text-xs ${
-                          isInheritLine
-                            ? "text-accent/90 font-semibold mb-1"
-                            : "text-ivero-slate-light"
-                        }`}>
-                          {!isInheritLine && <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />}
-                          {isInheritLine && <span className="text-accent/90">↳</span>}
-                          {feature}
+                    {/* Métricas-chave — grid 2x2 */}
+                    <div className={`grid grid-cols-2 gap-2 mb-5 p-3 rounded-xl border ${
+                      plan.highlighted
+                        ? "border-accent/20 bg-accent/5"
+                        : "border-ivero-purple/15 bg-ivero-purple/5"
+                    }`}>
+                      {plan.metrics.map((metric) => {
+                        const Icon = metric.icon;
+                        return (
+                          <div key={metric.label} className="flex flex-col items-center text-center gap-0.5 py-1">
+                            <Icon className={`w-3.5 h-3.5 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
+                            <span className={`text-sm font-bold leading-none ${
+                              plan.highlighted ? "text-primary-foreground" : "text-primary-foreground"
+                            }`}>
+                              {metric.value}
+                            </span>
+                            <span className="text-[9px] text-ivero-slate-light/70 leading-tight">
+                              {metric.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Diferenciais exclusivos */}
+                    <ul className="space-y-1.5 mb-6 flex-1">
+                      {plan.highlights.map((highlight) => (
+                        <li key={highlight} className="flex items-start gap-2 text-xs text-ivero-slate-light">
+                          <span className={`shrink-0 mt-0.5 font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
+                          {highlight}
                         </li>
-                      );
-                    })}
-                    {plan.locked.map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-xs text-ivero-slate-light/30">
-                        <Lock className="w-3 h-3 shrink-0 mt-0.5" />
-                        <span className="line-through">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                      ))}
+                    </ul>
 
-                  <Button
-                    variant="hero"
-                    size="sm"
-                    className="w-full mt-auto text-xs py-5"
-                  >
-                    {plan.cta}
-                  </Button>
+                    <Button
+                      variant="hero"
+                      size="sm"
+                      className="w-full mt-auto text-xs py-5"
+                    >
+                      {plan.cta}
+                    </Button>
 
-                  <div className="mt-3 text-center space-y-0.5">
-                    <p className="text-[10px] text-primary-foreground/60">
-                      {plan.name === "Domínio"
-                        ? "Entre em contato e receba uma proposta personalizada."
-                        : "Sem contrato. Cancele quando quiser."}
-                    </p>
-                    {plan.name !== "Domínio" && (
-                      <p className="text-[10px] text-accent/80 font-medium">
-                        ✦ Atendimento prioritário em todos os planos
+                    <div className="mt-3 text-center">
+                      <p className="text-[10px] text-primary-foreground/60">
+                        {plan.name === "Domínio"
+                          ? "Entre em contato e receba uma proposta personalizada."
+                          : "Sem contrato. Cancele quando quiser."}
                       </p>
-                    )}
-                  </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             );
           })}
         </div>
+
+        {/* Rodapé comum */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-8 text-center"
+        >
+          <p className="text-xs text-ivero-slate-light/60">
+            <span className="text-accent/70 font-bold">✦</span>{" "}
+            Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato
+          </p>
+        </motion.div>
       </div>
     </section>
   );
