@@ -1,136 +1,114 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, X, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Lock } from "lucide-react";
+
+const ALL_RESOURCES = [
+  "Monitoramento Multi-IA",
+  "Score GEO de Visibilidade",
+  "Dashboard GEO",
+  "Análise de Sentimento",
+  "Comparativo Competitivo",
+  "Mapa de Prompts Estratégicos",
+  "Alertas em Tempo Real",
+  "Dominância por Modelo de IA",
+  "Simulador de Influência em IA",
+];
 
 const plans = [
   {
     name: "Essencial",
     badge: null,
     tagline: "Ideal para marcas que estão começando",
+    description: "Diagnóstico estratégico inicial da sua marca no ecossistema de IA.",
     price: "Consulte",
     cta: "Começar agora",
     highlighted: false,
     variant: "hero-outline" as const,
+    includedResources: 3,
+    features: [
+      "Monitoramento de até 2 IAs",
+      "Comparação com até 2 concorrentes",
+      "Evolução básica de menções (30 dias)",
+      "Relatório semanal por e-mail",
+    ],
+    locked: [
+      "Alertas em tempo real",
+      "Integração com Slack",
+      "Tendências emergentes",
+      "Comparativo avançado",
+    ],
   },
   {
     name: "Profissional",
     badge: null,
     tagline: "Ideal para times de marketing ágeis",
+    description: "Monitoramento ativo com capacidade de ação em tempo real.",
     price: "Consulte",
     cta: "Ativar inteligência",
     highlighted: false,
     variant: "hero-outline" as const,
+    includedResources: 5,
+    features: [
+      "Monitoramento de até 3 IAs",
+      "Comparação com até 5 concorrentes",
+      "Evolução de menções (90 dias)",
+      "Alertas estratégicos no Slack (limitado)",
+      "1 canal conectado",
+    ],
+    locked: [
+      "Ivero Bot completo",
+      "Alertas ilimitados",
+      "Análise preditiva",
+    ],
   },
   {
     name: "PRO",
     badge: "🔥 Recomendado",
     tagline: "Ideal para empresas que querem dominar a IA",
+    description: "Transforme o Slack no centro estratégico da sua marca.",
     price: "Consulte",
-    cta: "Dominar minha presença",
+    cta: "Dominar minha presença em IA",
     highlighted: true,
     variant: "hero" as const,
+    includedResources: 7,
+    features: [
+      "Monitoramento de até 4 IAs",
+      "Comparação com até 10 concorrentes",
+      "Evolução histórica completa de menções",
+      "Alertas ilimitados no Slack",
+      "Múltiplos canais conectados",
+      "Ivero Bot (/status, /concorrente, /tendências)",
+      "Alertas de tendências emergentes",
+      "Comparativo avançado de posicionamento",
+    ],
+    locked: [
+      "Múltiplos workspaces",
+      "Score preditivo de risco reputacional",
+    ],
   },
   {
     name: "Enterprise",
     badge: "🔴 Estratégico",
     tagline: "Ideal para quem trata marca como ativo estratégico",
+    description: "Infraestrutura completa de inteligência de presença em IA.",
     price: "Custom",
     cta: "Falar com especialista",
     highlighted: false,
     variant: "hero-outline" as const,
+    includedResources: 9,
+    features: [
+      "Monitoramento de 5 IAs",
+      "Concorrentes ilimitados",
+      "Evolução histórica + projeções futuras",
+      "Múltiplos workspaces de Slack",
+      "Alertas segmentados por área",
+      "Score preditivo de risco reputacional",
+      "Webhooks personalizados",
+      "SLA dedicado",
+    ],
+    locked: [],
   },
 ];
-
-type FeatureValue = boolean | string;
-
-interface FeatureRow {
-  label: string;
-  values: [FeatureValue, FeatureValue, FeatureValue, FeatureValue];
-}
-
-interface FeatureGroup {
-  group: string;
-  rows: FeatureRow[];
-}
-
-const featureGroups: FeatureGroup[] = [
-  {
-    group: "Monitoramento",
-    rows: [
-      { label: "Monitoramento Multi-IA", values: ["2 IAs", "3 IAs", "4 IAs", "5 IAs"] },
-      { label: "Concorrentes comparados", values: ["Até 2", "Até 5", "Até 10", "Ilimitados"] },
-      { label: "Histórico de menções", values: ["30 dias", "90 dias", "Completo", "Completo + projeções"] },
-      { label: "Relatório por e-mail", values: [true, true, true, true] },
-    ],
-  },
-  {
-    group: "9 Recursos Ivero",
-    rows: [
-      { label: "Monitoramento Multi-IA (recurso)", values: [true, true, true, true] },
-      { label: "Score GEO de Visibilidade", values: [true, true, true, true] },
-      { label: "Dashboard GEO", values: [true, true, true, true] },
-      { label: "Análise de Sentimento", values: [false, true, true, true] },
-      { label: "Comparativo Competitivo", values: [false, true, true, true] },
-      { label: "Mapa de Prompts Estratégicos", values: [false, false, true, true] },
-      { label: "Alertas em Tempo Real", values: [false, "Limitado", "Ilimitado", "Ilimitado"] },
-      { label: "Dominância por Modelo de IA", values: [false, false, true, true] },
-      { label: "Simulador de Influência em IA", values: [false, false, false, true] },
-    ],
-  },
-  {
-    group: "Integrações",
-    rows: [
-      { label: "Alertas no Slack", values: [false, "Limitado", "Ilimitado", "Segmentado"] },
-      { label: "Ivero Bot (/status, /concorrente…)", values: [false, false, true, true] },
-      { label: "Múltiplos canais Slack", values: [false, false, true, true] },
-      { label: "Múltiplos workspaces", values: [false, false, false, true] },
-      { label: "Webhooks personalizados", values: [false, false, false, true] },
-    ],
-  },
-  {
-    group: "Suporte & SLA",
-    rows: [
-      { label: "Tendências emergentes", values: [false, false, true, true] },
-      { label: "Score preditivo de risco reputacional", values: [false, false, false, true] },
-      { label: "Alertas segmentados por área", values: [false, false, false, true] },
-      { label: "SLA dedicado", values: [false, false, false, true] },
-    ],
-  },
-];
-
-const Cell = ({ value, highlighted }: { value: FeatureValue; highlighted: boolean }) => {
-  const base = highlighted ? "bg-accent/5" : "";
-  if (typeof value === "boolean") {
-    return (
-      <td className={`p-4 text-center ${base}`}>
-        {value ? (
-          <div className="flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-              <Check className="w-3.5 h-3.5 text-accent" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full bg-ivero-purple/10 flex items-center justify-center">
-              <X className="w-3.5 h-3.5 text-ivero-slate-light/30" />
-            </div>
-          </div>
-        )}
-      </td>
-    );
-  }
-  return (
-    <td className={`p-4 text-center ${base}`}>
-      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-        highlighted
-          ? "bg-accent/20 text-accent"
-          : "bg-ivero-purple/15 text-ivero-slate-light"
-      }`}>
-        {value}
-      </span>
-    </td>
-  );
-};
 
 const InvestSection = () => {
   return (
@@ -139,12 +117,11 @@ const InvestSection = () => {
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-6 relative z-10">
-        {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          className="text-center mb-16"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
             <span className="text-primary-foreground">Nossos </span>
@@ -155,8 +132,7 @@ const InvestSection = () => {
           </p>
         </motion.div>
 
-        {/* Simplified Cards */}
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-7xl mx-auto mb-14">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -179,14 +155,58 @@ const InvestSection = () => {
                   {plan.badge}
                 </div>
               )}
-              <div className="p-7 flex flex-col flex-1 items-center text-center">
-                <h3 className="font-display text-xl font-bold text-primary-foreground mb-2">
-                  {plan.name}
-                </h3>
-                <p className="text-ivero-slate-light text-xs mb-6 leading-relaxed">{plan.tagline}</p>
-                <div className="mb-7">
+
+              <div className="p-7 flex flex-col flex-1">
+                <div className="mb-5">
+                  <h3 className="font-display text-xl font-bold text-primary-foreground mb-1">
+                    {plan.name}
+                  </h3>
+                  <p className="text-ivero-slate-light text-xs mb-3">{plan.tagline}</p>
+                  <p className="text-ivero-slate-light/70 text-xs leading-relaxed">{plan.description}</p>
+                </div>
+
+                <div className="mb-6">
                   <span className="font-display text-3xl font-bold text-primary-foreground">{plan.price}</span>
                 </div>
+
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-ivero-slate-light uppercase tracking-wider mb-3">
+                    Recursos Ivero ({plan.includedResources}/9)
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ALL_RESOURCES.map((resource, i) => {
+                      const included = i < plan.includedResources;
+                      return (
+                        <span
+                          key={resource}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                            included
+                              ? "bg-accent/15 text-accent border border-accent/30"
+                              : "bg-ivero-purple/10 text-ivero-slate-light/40 border border-ivero-purple/15 line-through"
+                          }`}
+                        >
+                          {resource}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <ul className="space-y-2 mb-5 flex-1">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-xs text-ivero-slate-light">
+                      <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                      {feature}
+                    </li>
+                  ))}
+                  {plan.locked.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-xs text-ivero-slate-light/40">
+                      <Lock className="w-3 h-3 shrink-0 mt-0.5" />
+                      <span className="line-through">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
                 <Button
                   variant={plan.variant}
                   size="sm"
@@ -203,97 +223,6 @@ const InvestSection = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Comparison Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.15 }}
-          className="max-w-7xl mx-auto overflow-x-auto rounded-2xl border border-ivero-purple/20"
-        >
-          <table className="w-full text-sm">
-            {/* Sticky header with plan names */}
-            <thead>
-              <tr className="border-b border-ivero-purple/20">
-                <th className="text-left p-5 text-ivero-slate-light font-medium w-64 bg-ivero-dark-surface" />
-                {plans.map((plan) => (
-                  <th
-                    key={plan.name}
-                    className={`p-5 text-center font-display font-bold text-base ${
-                      plan.highlighted
-                        ? "bg-accent/10 text-accent"
-                        : "bg-ivero-dark-surface text-primary-foreground"
-                    }`}
-                  >
-                    {plan.name}
-                    {plan.highlighted && (
-                      <span className="block text-[10px] font-normal text-accent/70 mt-0.5 uppercase tracking-wider">
-                        Recomendado
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {featureGroups.map((group, gi) => (
-                <>
-                  {/* Group header */}
-                  <tr key={`group-${gi}`}>
-                    <td
-                      colSpan={5}
-                      className="px-5 pt-5 pb-2 text-xs font-bold uppercase tracking-widest text-ivero-purple-light bg-ivero-dark"
-                    >
-                      {group.group}
-                    </td>
-                  </tr>
-
-                  {/* Feature rows */}
-                  {group.rows.map((row, ri) => (
-                    <tr
-                      key={`${gi}-${ri}`}
-                      className="border-b border-ivero-purple/10 hover:bg-ivero-purple/5 transition-colors"
-                    >
-                      <td className="p-4 pl-5 text-xs text-ivero-slate-light bg-ivero-dark">
-                        {row.label}
-                      </td>
-                      {row.values.map((val, pi) => (
-                        <Cell key={pi} value={val} highlighted={plans[pi].highlighted} />
-                      ))}
-                    </tr>
-                  ))}
-                </>
-              ))}
-            </tbody>
-
-            {/* CTA footer row */}
-            <tfoot>
-              <tr className="border-t border-ivero-purple/20">
-                <td className="p-5 bg-ivero-dark-surface" />
-                {plans.map((plan) => (
-                  <td
-                    key={plan.name}
-                    className={`p-5 text-center ${plan.highlighted ? "bg-accent/10" : "bg-ivero-dark-surface"}`}
-                  >
-                    <Button
-                      variant={plan.variant}
-                      size="sm"
-                      className={`text-xs px-4 py-4 ${
-                        plan.variant === "hero-outline"
-                          ? "border-ivero-purple/40 text-ivero-purple-light hover:bg-ivero-purple hover:text-primary-foreground"
-                          : ""
-                      }`}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </td>
-                ))}
-              </tr>
-            </tfoot>
-          </table>
-        </motion.div>
       </div>
     </section>
   );
