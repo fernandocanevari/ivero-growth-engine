@@ -1,24 +1,43 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const HeroSection = () => {
   const [siteUrl, setSiteUrl] = useState("");
+  const sectionRef = useRef(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+
+  const glowPurpleY = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const glowPinkY   = useTransform(scrollYProgress, [0, 1], [0, 50]);
+  const streakY     = useTransform(scrollYProgress, [0, 1], [0, -40]);
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-ivero-dark">
-      {/* Gradient background with subtle glow */}
+    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden bg-ivero-dark">
+      {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[hsl(230,25%,6%)] via-ivero-dark to-[hsl(230,25%,6%)]" />
       
-      {/* Subtle radial glow - purple */}
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.08] blur-[120px]" />
+      {/* Parallax: glow roxo */}
+      <motion.div
+        style={{ y: glowPurpleY }}
+        className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.08] blur-[120px] pointer-events-none"
+      />
       
-      {/* Subtle radial glow - pink/accent */}
-      <div className="absolute bottom-[-100px] right-[-50px] w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.06] blur-[100px]" />
+      {/* Parallax: glow pink */}
+      <motion.div
+        style={{ y: glowPinkY }}
+        className="absolute bottom-[-100px] right-[-50px] w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.06] blur-[100px] pointer-events-none"
+      />
       
-      {/* Subtle light streak */}
-      <div className="absolute bottom-0 right-[10%] w-[2px] h-[60%] bg-gradient-to-t from-[hsl(265,60%,55%/0.3)] to-transparent" />
+      {/* Parallax: light streak */}
+      <motion.div
+        style={{ y: streakY }}
+        className="absolute bottom-0 right-[10%] w-[2px] h-[60%] bg-gradient-to-t from-[hsl(265,60%,55%/0.3)] to-transparent pointer-events-none"
+      />
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-6 py-32 pb-16">
@@ -56,7 +75,6 @@ const HeroSection = () => {
                 </Button>
               </div>
               <p className="text-primary-foreground text-base font-medium ml-5">Veja análise instantânea da sua presença nas respostas da IA🚀</p>
-              
             </div>
           </motion.div>
 
