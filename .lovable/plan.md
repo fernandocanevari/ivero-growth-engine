@@ -1,37 +1,81 @@
 
+# Simplificar os Cards de Planos
 
-## Redesign completo da AudienceSection
+## Objetivo
 
-O arquivo `src/components/landing/AudienceSection.tsx` sera completamente reescrito com o novo layout de duas colunas, ja com os textos corrigidos conforme solicitado.
+Reduzir a poluição visual dos cards de planos, substituindo a longa lista de features por:
 
-### Estrutura
+1. **Faixa de métricas-chave** (logo abaixo do preço) com ícones e valores concretos por plano
+2. **Apenas 1-2 diferenciais exclusivos** por plano (o que torna aquele tier único)
+3. **Remover os itens bloqueados** (locked) — eles aumentam o tamanho sem agregar valor
+4. **Rodapé comum** abaixo dos 4 cards com as features que todos os planos têm
 
-**Duas colunas** (grid `lg:grid-cols-2`):
+---
 
-- **Coluna esquerda**: Mockup de chat de IA simulado (busca + 3 resultados de produtos + input inferior), construido com HTML/CSS via Tailwind
-- **Coluna direita**: Titulo + 4 pilulas com icones
+## Estrutura Nova de Cada Card
 
-### Textos finais (com acentos corretos)
+```text
+┌──────────────────────────────┐
+│  BADGE (fixo para alinhamento)│
+├──────────────────────────────┤
+│  NOME DO PLANO               │
+│  Tagline                     │
+├──────────────────────────────┤
+│  PREÇO / Economia anual      │
+├──────────────────────────────┤
+│  MÉTRICAS-CHAVE (ícones)     │
+│  📡 X IAs monitoradas        │
+│  🔔 X Avisos/mês             │
+│  🔍 X Prompts monitorados    │
+│  📊 X Consultas/mês          │
+├──────────────────────────────┤
+│  DIFERENCIAIS (1-2 itens)    │
+│  ✦ Diferencial exclusivo     │
+├──────────────────────────────┤
+│  [ BOTÃO CTA ]               │
+│  Sem contrato. Cancele...    │
+└──────────────────────────────┘
+```
 
-**Titulo:** "A Ivero é para marcas que querem ser relevante nas IA's"
+---
 
-**Pilulas:**
-1. Marcas que querem ser referências (icone: Building2)
-2. Agências de MKT que querem vender o futuro (icone: Megaphone)
-3. E-commerce que querem ser recomendados (icone: ShoppingBag)
-4. Varejo que quer dominar a nova vitrine digital (icone: Store)
+## Métricas por Plano
 
-### Estilo visual
+| Métrica             | Presença | Influência | Autoridade | Domínio    |
+|---------------------|----------|------------|------------|------------|
+| IAs monitoradas     | 2        | 3          | 4          | 5          |
+| Avisos/mês          | 50       | 200        | Ilimitados | Ilimitados |
+| Prompts monitorados | 10       | 30         | 100        | Ilimitados |
+| Consultas/mês       | 500      | 2.000      | 10.000     | Ilimitadas |
 
-- Fundo escuro e limpo com gradientes sutis roxo/rosa (sem elementos tecnologicos pesados)
-- Mockup do chat com fundo semi-transparente e bordas suaves
-- Pilulas com icone, borda sutil e hover com `border-accent/30`
-- Animacoes framer-motion mantidas
+---
 
-### Detalhes tecnicos
+## Diferenciais Exclusivos (1-2 por plano)
 
-- Arquivo editado: `src/components/landing/AudienceSection.tsx`
-- Icone `Store` importado de `lucide-react` (substituindo `Briefcase`)
-- Chat mockup: divs estilizados com Tailwind simulando interface de IA
-- Gradiente radial sutil no fundo da secao via divs com posicao absoluta
+- **Presença**: Score GEO de Visibilidade + Relatório semanal por e-mail
+- **Influência**: Análise de Sentimento + Alertas no Slack
+- **Autoridade**: Mapa de Prompts Estratégicos + Múltiplos canais Slack
+- **Domínio**: Dominância por Modelo de IA + Simulador de Influência em IA
 
+---
+
+## Rodapé comum (abaixo dos 4 cards)
+
+Uma linha de texto sutil listando o que todos os planos incluem:
+
+> ✦ Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Suporte prioritário · Sem contrato
+
+---
+
+## Alterações Técnicas
+
+**Arquivo:** `src/components/landing/InvestSection.tsx`
+
+- Adicionar campo `metrics` ao objeto de cada plano (array com `{ icon, label, value }`)
+- Adicionar campo `highlights` (1-2 diferenciais exclusivos, substituindo a lista de features)
+- Remover campo `locked` (não será mais exibido)
+- Remover o campo `features` com lista longa
+- No JSX, substituir a `<ul>` de features por:
+  1. Grid 2x2 de métricas com ícone + valor em destaque + label abaixo
+  2. Lista curta de diferenciais (máx. 2 itens)
+- Adicionar bloco de rodapé comum abaixo do grid de cards
