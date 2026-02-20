@@ -10,7 +10,7 @@ const plans = [
     tagline: "Descubra se as IAs reconhecem sua marca",
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
-    annualSaving: "R$ 40",
+    annualSaving: "R$ 480",
     cta: "Garantir minha presença →",
     highlighted: false,
     variant: "hero" as const,
@@ -37,7 +37,7 @@ const plans = [
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
-    annualSaving: "R$ 80",
+    annualSaving: "R$ 960",
     cta: "Ampliar minha influência →",
     highlighted: false,
     variant: "hero" as const,
@@ -64,7 +64,7 @@ const plans = [
     tagline: "Sua marca citada quando o cliente está decidindo",
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
-    annualSaving: "R$ 140",
+    annualSaving: "R$ 1.680",
     cta: "Consolidar minha autoridade →",
     highlighted: true,
     variant: "hero" as const,
@@ -265,7 +265,7 @@ const InvestSection = () => {
                     </motion.div>
                     {isAnnual && !isCustom && plan.annualSaving && (
                       <p className="text-accent/80 text-[11px] font-semibold mt-1">
-                        ✦ Economia de {plan.annualSaving}/mês · cobrado anualmente
+                        ✦ Economia de {plan.annualSaving}/ano
                       </p>
                     )}
                     {isAnnual && isCustom && (
