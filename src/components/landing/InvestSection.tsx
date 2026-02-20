@@ -181,33 +181,50 @@ const InvestSection = () => {
                   </div>
                 )}
 
-                <div className="p-7 flex flex-col flex-1">
-                  {/* Plan name + tagline */}
-                  <div className="mb-5">
-                    {/* Nome do plano com fundo decorativo */}
-                    <div className={`inline-flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg ${
+                <div className="flex flex-col flex-1">
+                  {/* Plan name + tagline — header visual */}
+                  <div className={`relative px-7 pt-6 pb-5 mb-1 ${
+                    plan.highlighted
+                      ? "bg-gradient-to-br from-accent/10 via-ivero-dark-surface to-ivero-dark-surface"
+                      : "bg-gradient-to-br from-primary/8 via-ivero-dark-surface to-ivero-dark-surface"
+                  }`}>
+                    {/* Linha de luz lateral */}
+                    <div className={`absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full ${
                       plan.highlighted
-                        ? "bg-accent/10 border border-accent/25"
-                        : "bg-primary/10 border border-primary/20"
-                    }`}>
+                        ? "bg-gradient-to-b from-accent via-accent/60 to-transparent"
+                        : "bg-gradient-to-b from-primary/60 via-primary/30 to-transparent"
+                    }`} />
+
+                    {/* Indicador + nome */}
+                    <div className="flex items-center gap-2 mb-2">
                       {plan.highlighted && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
                       )}
-                      <h3 className={`font-display text-xl font-extrabold tracking-wide uppercase ${
-                        plan.highlighted
-                          ? "text-gradient"
-                          : "text-primary-foreground"
+                      <h3 className={`font-display text-xl font-extrabold tracking-widest uppercase ${
+                        plan.highlighted ? "text-gradient" : "text-primary-foreground"
                       }`}>
                         {plan.name}
                       </h3>
                     </div>
-                    {/* Tagline com destaque */}
-                    <p className={`text-sm font-medium leading-snug ${
-                      plan.highlighted ? "text-primary-foreground/90" : "text-primary-foreground/70"
-                    }`}>{plan.tagline}</p>
-                    {/* Divider decorativo */}
-                    <div className={`mt-3 h-0.5 w-12 rounded-full ${plan.highlighted ? "bg-accent/70" : "bg-primary/30"}`} />
+
+                    {/* Tagline */}
+                    <p className={`text-sm leading-snug font-medium ${
+                      plan.highlighted
+                        ? "text-primary-foreground/90"
+                        : "text-primary-foreground/65"
+                    }`}>
+                      {plan.tagline}
+                    </p>
+
+                    {/* Linha separadora com fade */}
+                    <div className={`absolute bottom-0 left-7 right-7 h-px ${
+                      plan.highlighted
+                        ? "bg-gradient-to-r from-accent/50 via-accent/20 to-transparent"
+                        : "bg-gradient-to-r from-primary/30 via-primary/10 to-transparent"
+                    }`} />
                   </div>
+
+                  <div className="px-7 pt-5 pb-7 flex flex-col flex-1">
 
                   {/* Preço */}
                   <div className="mb-6">
@@ -278,6 +295,7 @@ const InvestSection = () => {
                         ✦ Atendimento prioritário em todos os planos
                       </p>
                     )}
+                  </div>
                   </div>
                 </div>
               </motion.div>
