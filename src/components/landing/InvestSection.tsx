@@ -10,6 +10,7 @@ const plans = [
     tagline: "Descubra se as IAs reconhecem sua marca",
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
+    annualSaving: "R$ 40",
     cta: "Garantir minha presença →",
     highlighted: false,
     variant: "hero" as const,
@@ -36,6 +37,7 @@ const plans = [
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
+    annualSaving: "R$ 80",
     cta: "Ampliar minha influência →",
     highlighted: false,
     variant: "hero" as const,
@@ -62,6 +64,7 @@ const plans = [
     tagline: "Sua marca citada quando o cliente está decidindo",
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
+    annualSaving: "R$ 140",
     cta: "Consolidar minha autoridade →",
     highlighted: true,
     variant: "hero" as const,
@@ -85,6 +88,7 @@ const plans = [
     tagline: "Presença em IA como vantagem competitiva real",
     monthlyPrice: "Custom",
     annualPrice: "Custom",
+    annualSaving: null,
     cta: "Falar com especialista →",
     highlighted: false,
     variant: "hero" as const,
@@ -153,7 +157,7 @@ const InvestSection = () => {
           </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-7xl mx-auto items-start">
           {plans.map((plan, index) => {
             const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
             const isCustom = price === "Custom";
@@ -165,12 +169,23 @@ const InvestSection = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className={`relative flex flex-col rounded-2xl border transition-all duration-300 overflow-hidden ${
+                whileHover={{
+                  scale: 1.03,
+                  transition: { duration: 0.2 },
+                }}
+                className={`group relative flex flex-col rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer ${
                   plan.highlighted
-                    ? "border-accent/50 bg-ivero-dark-surface shadow-2xl shadow-accent/15 scale-[1.02]"
-                    : "border-ivero-purple/20 bg-ivero-dark-surface hover:border-ivero-purple/40"
+                    ? "border-accent/50 bg-ivero-dark-surface shadow-2xl shadow-accent/15 scale-[1.02] hover:border-accent/80 hover:shadow-accent/30"
+                    : "border-ivero-purple/20 bg-ivero-dark-surface hover:border-ivero-purple/60 hover:shadow-xl hover:shadow-ivero-purple/20"
                 }`}
               >
+                {/* Brilho de borda no hover */}
+                <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ${
+                  plan.highlighted
+                    ? "shadow-[inset_0_0_20px_hsl(var(--accent)/0.15)]"
+                    : "shadow-[inset_0_0_20px_hsl(var(--ivero-purple-light)/0.1)]"
+                }`} />
+
                 {plan.badge && (
                   <div className={`text-center text-xs font-bold uppercase tracking-wider py-2 px-4 ${
                     plan.highlighted
@@ -233,8 +248,8 @@ const InvestSection = () => {
 
                   <div className="px-7 pt-5 pb-7 flex flex-col flex-1">
 
-                  {/* Preço */}
-                  <div className="mb-6">
+                  {/* Preço — altura fixa para alinhar horizontalmente */}
+                  <div className="mb-6 h-16 flex flex-col justify-start">
                     <motion.div
                       key={price}
                       initial={{ opacity: 0, y: -6 }}
@@ -248,9 +263,14 @@ const InvestSection = () => {
                         <span className="text-ivero-slate-light text-xs ml-1">/mês</span>
                       )}
                     </motion.div>
-                    {isAnnual && !isCustom && (
+                    {isAnnual && !isCustom && plan.annualSaving && (
+                      <p className="text-accent/80 text-[11px] font-semibold mt-1">
+                        ✦ Economia de {plan.annualSaving}/mês · cobrado anualmente
+                      </p>
+                    )}
+                    {isAnnual && isCustom && (
                       <p className="text-ivero-slate-light/60 text-[10px] mt-1">
-                        Cobrado anualmente · economia de 20%
+                        Proposta personalizada
                       </p>
                     )}
                   </div>
