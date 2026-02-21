@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -11,7 +12,7 @@ export default function MonitoramentoPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold font-display text-foreground">Monitoramento Multi-IA</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground flex items-center">Monitoramento Multi-IA <InfoTooltip text="Mostra quantas vezes cada IA menciona sua marca. Identifique onde você já tem presença forte e onde precisa investir para ser mais recomendado." /></h1>
         <p className="text-muted-foreground mt-1">Acompanhe menções da sua marca em cada modelo de IA.</p>
       </motion.div>
 

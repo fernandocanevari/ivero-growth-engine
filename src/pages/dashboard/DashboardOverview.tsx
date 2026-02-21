@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap } from "lucide-react";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ export default function DashboardOverview() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Score GEO</p>
+                  <p className="text-sm text-muted-foreground flex items-center">Score GEO <InfoTooltip text="Mede o quanto sua marca é visível e relevante nas respostas das IAs. Quanto maior, mais você é recomendado." /></p>
                   <p className="text-4xl font-bold font-display text-foreground mt-1">{geoScore.current}</p>
                 </div>
                 <Badge variant={geoScore.trend === "up" ? "default" : "destructive"} className={geoScore.trend === "up" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : ""}>
@@ -109,7 +110,7 @@ export default function DashboardOverview() {
           {/* Cards por modelo */}
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/dashboard/monitoramento")}>
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground mb-4">Menções por Modelo de IA</p>
+              <p className="text-sm text-muted-foreground mb-4 flex items-center">Menções por Modelo de IA <InfoTooltip text="Mostra quantas vezes cada IA menciona sua marca. Identifique onde investir para ser mais recomendado." /></p>
               <div className="grid grid-cols-2 gap-3">
                 {monitoringData.models.map((m) => (
                   <div key={m.name} className="p-3 rounded-lg bg-secondary/50">
@@ -192,7 +193,7 @@ export default function DashboardOverview() {
             {topPrompt && (
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/dashboard/prompts")}>
                 <CardContent className="p-5">
-                  <p className="text-sm text-muted-foreground mb-2">Oportunidade de Prompt</p>
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center">Oportunidade de Prompt <InfoTooltip text="Prompts onde sua marca pode subir de posição. Otimize seu conteúdo para conquistar essas recomendações." /></p>
                   <p className="text-sm font-medium text-foreground">"{topPrompt.prompt}"</p>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge variant="outline" className="text-[10px]">{topPrompt.model}</Badge>

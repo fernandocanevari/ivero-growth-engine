@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ export default function SimuladorPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold font-display text-foreground">Simulador de Influência em IA</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground flex items-center">Simulador de Influência em IA <InfoTooltip text="Simule perguntas reais e veja se as IAs recomendam sua marca. Ideal para testar narrativas antes de lançar campanhas e ajustar seu posicionamento." /></h1>
         <p className="text-muted-foreground mt-1">Teste como os modelos de IA respondem sobre sua marca.</p>
       </motion.div>
 

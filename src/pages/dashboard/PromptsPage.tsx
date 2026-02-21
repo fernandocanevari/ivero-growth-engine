@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +12,7 @@ export default function PromptsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold font-display text-foreground">Mapa de Prompts</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground flex items-center">Mapa de Prompts <InfoTooltip text="Descubra como as IAs percebem sua marca, valide seu posicionamento e antecipe o impacto de campanhas. Cada prompt revela oportunidades reais de influenciar a narrativa a seu favor." /></h1>
         <p className="text-muted-foreground mt-1">Prompts estratégicos e sua posição em cada modelo de IA.</p>
       </motion.div>
 
