@@ -23,6 +23,7 @@ import NovaCampanhaPage from "./pages/dashboard/NovaCampanhaPage";
 import PromptTesterPage from "./pages/dashboard/PromptTesterPage";
 import RelatoriosPage from "./pages/dashboard/RelatoriosPage";
 import ConfiguracoesPage from "./pages/dashboard/ConfiguracoesPage";
+import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="prompt-tester" element={<PromptTesterPage />} />
             <Route path="relatorios" element={<RelatoriosPage />} />
             <Route path="configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="admin/respostas" element={<AdminRespostasPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

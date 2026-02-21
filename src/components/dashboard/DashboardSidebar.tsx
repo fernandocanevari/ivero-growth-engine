@@ -1,13 +1,14 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
-  Download, Settings, LogOut,
+  Download, Settings, LogOut, Users,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { alertsData } from "@/lib/mock-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Sidebar,
   SidebarContent,
@@ -68,6 +69,7 @@ const menuGroups = [
 export function DashboardSidebar() {
   const navigate = useNavigate();
   const { data: settings } = useBrandSettings();
+  const { isAdmin } = useUserRole();
   const displayName = settings?.brand_name || "Minha Marca";
 
   const handleLogout = async () => {
@@ -115,6 +117,30 @@ export function DashboardSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-3 mb-1">
+              Admin
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/admin/respostas"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <Users className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Respostas Clientes</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-border">
