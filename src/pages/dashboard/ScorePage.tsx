@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,7 +13,7 @@ export default function ScorePage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold font-display text-foreground">Score de Visibilidade GEO</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground flex items-center">Score de Visibilidade GEO <InfoTooltip text="Mede o quanto sua marca é visível e relevante nas respostas das IAs. Quanto maior o score, mais as IAs recomendam você ao invés dos concorrentes." /></h1>
         <p className="text-muted-foreground mt-1">Sua pontuação geral de presença nas IAs generativas.</p>
       </motion.div>
 

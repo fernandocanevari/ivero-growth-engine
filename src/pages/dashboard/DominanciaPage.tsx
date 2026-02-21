@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { dominanceData, brandName, competitorName } from "@/lib/mock-data";
@@ -7,7 +8,7 @@ export default function DominanciaPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold font-display text-foreground">Dominância por Modelo</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground flex items-center">Dominância por Modelo <InfoTooltip text="Revela a fatia de voz que sua marca ocupa nas respostas de cada IA frente aos concorrentes. Use para direcionar esforços onde você pode liderar a narrativa." /></h1>
         <p className="text-muted-foreground mt-1">Participação da sua marca nas respostas de cada IA.</p>
       </motion.div>
 

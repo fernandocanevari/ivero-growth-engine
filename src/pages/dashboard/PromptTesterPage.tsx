@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ export default function PromptTesterPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold font-display text-foreground">Prompt Tester</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground flex items-center">Prompt Tester <InfoTooltip text="Teste rapidamente qualquer pergunta e descubra em quais IAs sua marca aparece. Use para validar estratégias de conteúdo e garantir que você está presente onde importa." /></h1>
         <p className="text-muted-foreground mt-1">Teste rapidamente se sua marca aparece em respostas de IA.</p>
       </motion.div>
 
