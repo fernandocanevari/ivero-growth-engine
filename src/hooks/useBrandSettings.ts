@@ -15,13 +15,16 @@ export function useBrandSettings() {
   return useQuery({
     queryKey: ["brand_settings"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("brand_settings")
         .select("*")
+        .eq("user_id", user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data as BrandSettings;
+      return data as BrandSettings | null;
     },
   });
 }
@@ -31,7 +34,9 @@ export function useUpdateBrandSettings() {
   return useMutation({
     mutationFn: async (values: Partial<BrandSettings> & { id: string }) => {
       const { id, ...rest } = values;
-      const { error } = await supabase.from("brand_settings").update(rest).eq("id", id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("brand_settings").update(rest).eq("id", id).eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {
