@@ -143,12 +143,15 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
 
         {/* Footer */}
         <div className="px-8 pb-8 flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
             {step > 0 && (
               <Button variant="ghost" size="sm" onClick={goBack}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
               </Button>
             )}
+            <Button variant="link" size="sm" className="text-muted-foreground" onClick={onComplete}>
+              Responder mais tarde
+            </Button>
           </div>
           <Button
             onClick={goNext}
