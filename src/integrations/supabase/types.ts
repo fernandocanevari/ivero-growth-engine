@@ -95,6 +95,39 @@ export type Database = {
         }
         Relationships: []
       }
+      client_onboarding: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          question_1: string
+          question_2: string
+          question_3: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          question_1?: string
+          question_2?: string
+          question_3?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          question_1?: string
+          question_2?: string
+          question_3?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

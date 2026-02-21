@@ -1,8 +1,16 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
+import OnboardingWizard from "./OnboardingWizard";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function DashboardLayout() {
+  const { needsOnboarding, isLoading } = useOnboarding();
+  const [dismissed, setDismissed] = useState(false);
+
+  const showOnboarding = needsOnboarding && !dismissed && !isLoading;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -20,6 +28,7 @@ export default function DashboardLayout() {
           </main>
         </div>
       </div>
+      {showOnboarding && <OnboardingWizard onComplete={() => setDismissed(true)} />}
     </SidebarProvider>
   );
 }
