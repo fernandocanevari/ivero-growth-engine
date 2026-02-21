@@ -1,147 +1,70 @@
 
 
-## Painel do Cliente Ivero — Dashboard com Tema Claro
+## Conectar Backend Real ao Supabase -- Campanhas e Configuracoes
 
-### Filosofia do Dashboard
+### O que sera feito
 
-O painel nao sera um "dashboard cheio de graficos". Sera um painel executivo que responde imediatamente a uma pergunta central:
+Criar as tabelas no Supabase para persistir dados de **campanhas** e **configuracoes da marca**, substituindo os dados mockados por dados reais do banco. Como a autenticacao sera implementada depois, as tabelas terao RLS desabilitado temporariamente.
 
-**"Estou ganhando ou perdendo espaco nas IAs?"**
+### Tabelas a criar
 
-Estruturado em 3 blocos visuais que respondem:
+**1. brand_settings** (configuracoes da marca)
 
-```text
-+------------------------------------------+
-|  COMO MINHA MARCA ESTA SENDO PERCEBIDA?  |  Bloco 1: Percepcao
-|  Score GEO + Sentimento + Alertas        |
-+------------------------------------------+
-|  ONDE ESTOU GANHANDO OU PERDENDO?        |  Bloco 2: Posicionamento
-|  Monitoramento + Comparativo + Dominancia|
-+------------------------------------------+
-|  O QUE EU FACO AGORA?                    |  Bloco 3: Acao
-|  Plano de Acao + Prompts + Simulador     |
-+------------------------------------------+
-```
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid (PK) | Identificador unico |
+| brand_name | text | Nome da marca |
+| website | text | URL do site |
+| sector | text | Setor de atuacao |
+| main_competitor | text | Concorrente principal |
+| other_competitors | text | Outros concorrentes (separados por virgula) |
+| created_at | timestamptz | Data de criacao |
+| updated_at | timestamptz | Data de atualizacao |
 
-### Estrutura de Rotas
+**2. campaigns** (campanhas)
 
-```text
-/dashboard                    -> Visao geral (os 3 blocos acima)
-/dashboard/monitoramento      -> Monitoramento Multi-IA
-/dashboard/comparativo        -> Analise Comparativa
-/dashboard/score              -> Score de Visibilidade GEO
-/dashboard/sentimento         -> Analise de Sentimento
-/dashboard/acoes              -> Planos de Acao Estrategicos
-/dashboard/alertas            -> Alertas em Tempo Real
-/dashboard/prompts            -> Mapa de Prompts Estrategicos
-/dashboard/dominancia         -> Dominancia por Modelo de IA
-/dashboard/simulador          -> Simulador de Influencia em IA
-/dashboard/campanhas          -> Lista de Campanhas
-/dashboard/campanhas/nova     -> Criar Nova Campanha
-/dashboard/prompt-tester      -> Prompt Tester
-/dashboard/relatorios         -> Relatorios e Exports
-/dashboard/configuracoes      -> Configuracoes da conta/marca
-```
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid (PK) | Identificador unico |
+| name | text | Nome da campanha |
+| objective | text | Objetivo da campanha |
+| status | text | Status: draft, active, completed |
+| start_date | date | Data inicio |
+| end_date | date | Data fim |
+| keywords | text | Palavras-chave |
+| mentions | integer | Total de mencoes (default 0) |
+| score | integer | Score da campanha (default 0) |
+| created_at | timestamptz | Data de criacao |
+| updated_at | timestamptz | Data de atualizacao |
 
-### Menu Lateral (Sidebar)
+### Dados iniciais
 
-Organizado em grupos logicos:
+Inserir um registro de `brand_settings` com os dados mockados atuais (TechNova) e os 4 registros de campanhas ja existentes no mock.
 
-**Visao Geral**
-- Dashboard (icone: LayoutDashboard)
+### Alteracoes no codigo
 
-**Inteligencia**
-- Monitoramento Multi-IA (icone: Radar)
-- Analise Comparativa (icone: GitCompare)
-- Dominancia por Modelo (icone: BarChart3)
-- Score GEO (icone: TrendingUp)
-- Analise de Sentimento (icone: Shield)
+**Novos arquivos:**
+- `src/hooks/useBrandSettings.ts` -- hook com React Query para buscar/atualizar configuracoes da marca
+- `src/hooks/useCampaigns.ts` -- hook com React Query para CRUD de campanhas
 
-**Acoes**
-- Planos de Acao (icone: FileText)
-- Mapa de Prompts (icone: Map)
-- Alertas (icone: Bell) com badge de contagem
+**Arquivos modificados:**
+- `src/pages/dashboard/ConfiguracoesPage.tsx` -- substituir inputs estaticos por formulario controlado que salva no Supabase
+- `src/pages/dashboard/CampanhasPage.tsx` -- buscar campanhas do banco ao inves do mock-data
+- `src/pages/dashboard/NovaCampanhaPage.tsx` -- salvar nova campanha no Supabase
+- `src/pages/dashboard/DashboardOverview.tsx` -- buscar dados reais de campanhas/marca para os cards de resumo
 
-**Ferramentas**
-- Simulador de Influencia (icone: FlaskConical)
-- Prompt Tester (icone: Terminal)
-- Campanhas (icone: Megaphone)
+### Seguranca (temporario)
 
-**Extras sugeridos**
-- Relatorios (icone: Download) — exportar PDFs e CSVs com resumo mensal
-- Configuracoes (icone: Settings) — gerenciar marca, concorrentes monitorados, notificacoes
+Como a autenticacao ainda nao foi implementada:
+- RLS ficara **desabilitado** temporariamente nas duas tabelas
+- Quando implementarmos login, adicionaremos uma coluna `user_id` e politicas RLS para cada usuario ver apenas seus dados
 
-### Design: Tema Claro
+### Ordem de implementacao
 
-- Fundo principal: branco (#FFFFFF) com cards em cinza muito claro (#F8F9FC)
-- Textos: cinza escuro para leitura confortavel de dados
-- Sidebar: fundo branco com borda lateral sutil, icones cinza, item ativo com fundo roxo suave e texto roxo
-- Gradiente Ivero (roxo-para-pink) usado apenas em destaques: Score GEO gauge, CTAs, badges importantes
-- Sombras suaves em cards, sem bordas pesadas
-- Cores semanticas mantidas: verde (bom), amarelo (atencao), vermelho (ruim)
-
-### Pagina Principal — Visao Geral
-
-Nao sera um dashboard generico. Tera 3 secoes com titulos claros:
-
-**Secao 1: "Como sua marca esta sendo percebida?"**
-- Card grande com Score GEO (gauge circular) + tendencia (subindo/descendo)
-- Mini card de Sentimento (barra positivo/neutro/negativo)
-- Ultimos 3 alertas com timestamp
-
-**Secao 2: "Onde voce esta ganhando ou perdendo?"**
-- Cards por modelo de IA (ChatGPT, Gemini, Claude, Perplexity) com indicador de tendencia
-- Mini comparativo com principal concorrente (barra lado a lado)
-
-**Secao 3: "O que fazer agora?"**
-- Top 3 acoes priorizadas com checkbox
-- Prompt com maior oportunidade de melhoria
-- Botao para acessar o Simulador
-
-### Detalhes Tecnicos
-
-**Arquivos a criar:**
-
-Layout e navegacao:
-- `src/components/dashboard/DashboardLayout.tsx` — SidebarProvider + Sidebar + header + Outlet
-- `src/components/dashboard/DashboardSidebar.tsx` — Menu lateral com grupos e NavLink
-
-Paginas:
-- `src/pages/dashboard/DashboardOverview.tsx` — Visao geral com os 3 blocos
-- `src/pages/dashboard/MonitoramentoPage.tsx`
-- `src/pages/dashboard/ComparativoPage.tsx`
-- `src/pages/dashboard/ScorePage.tsx`
-- `src/pages/dashboard/SentimentoPage.tsx`
-- `src/pages/dashboard/AcoesPage.tsx`
-- `src/pages/dashboard/AlertasPage.tsx`
-- `src/pages/dashboard/PromptsPage.tsx`
-- `src/pages/dashboard/DominanciaPage.tsx`
-- `src/pages/dashboard/SimuladorPage.tsx`
-- `src/pages/dashboard/CampanhasPage.tsx`
-- `src/pages/dashboard/NovaCampanhaPage.tsx`
-- `src/pages/dashboard/PromptTesterPage.tsx`
-- `src/pages/dashboard/RelatoriosPage.tsx`
-- `src/pages/dashboard/ConfiguracoesPage.tsx`
-
-Dados:
-- `src/lib/mock-data.ts` — Dados ficticios centralizados para todas as paginas
-
-**Modificacoes:**
-- `src/App.tsx` — Adicionar rotas `/dashboard/*` com layout aninhado usando React Router Outlet
-
-**Tecnologias utilizadas (ja instaladas):**
-- `recharts` para graficos de linha, area e barras (usado com moderacao)
-- `framer-motion` para transicoes entre paginas e micro-animacoes
-- `lucide-react` para iconografia
-- shadcn/ui: Card, Badge, Tabs, Progress, Table, Button, Sidebar
-
-### Ordem de Implementacao
-
-1. Criar dados mockados centralizados (`mock-data.ts`)
-2. Criar layout do dashboard (sidebar + header + area principal) com tema claro
-3. Criar pagina de Visao Geral com os 3 blocos-resposta
-4. Criar as 9 paginas de recursos individuais
-5. Criar as 3 paginas extras (Campanhas, Prompt Tester, Relatorios)
-6. Criar pagina de Configuracoes
-7. Conectar rotas no App.tsx
+1. Criar as tabelas no Supabase via migration
+2. Inserir dados iniciais (mock -> banco)
+3. Criar hooks React Query (useBrandSettings, useCampaigns)
+4. Atualizar ConfiguracoesPage para ler/salvar do Supabase
+5. Atualizar CampanhasPage para listar do Supabase
+6. Atualizar NovaCampanhaPage para inserir no Supabase
 
