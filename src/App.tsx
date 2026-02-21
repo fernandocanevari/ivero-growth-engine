@@ -24,6 +24,7 @@ import PromptTesterPage from "./pages/dashboard/PromptTesterPage";
 import RelatoriosPage from "./pages/dashboard/RelatoriosPage";
 import ConfiguracoesPage from "./pages/dashboard/ConfiguracoesPage";
 import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
+import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="relatorios" element={<RelatoriosPage />} />
             <Route path="configuracoes" element={<ConfiguracoesPage />} />
             <Route path="admin/respostas" element={<AdminRespostasPage />} />
+            <Route path="admin" element={<AdminDashboardPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
