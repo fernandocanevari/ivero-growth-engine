@@ -2,11 +2,12 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
-import { campaignsData } from "@/lib/mock-data";
+import { useCampaigns } from "@/hooks/useCampaigns";
 import { useNavigate } from "react-router-dom";
 
-const statusMap = {
+const statusMap: Record<string, { label: string; class: string }> = {
   active: { label: "Ativa", class: "bg-emerald-100 text-emerald-700" },
   completed: { label: "Concluída", class: "bg-secondary text-muted-foreground" },
   draft: { label: "Rascunho", class: "bg-amber-100 text-amber-700" },
@@ -14,6 +15,7 @@ const statusMap = {
 
 export default function CampanhasPage() {
   const navigate = useNavigate();
+  const { data: campaigns, isLoading } = useCampaigns();
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -27,25 +29,34 @@ export default function CampanhasPage() {
         </Button>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {campaignsData.map((c) => (
-          <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <p className="text-base font-semibold text-foreground">{c.name}</p>
-                <Badge className={`${statusMap[c.status].class} text-[10px] hover:bg-opacity-100`}>{statusMap[c.status].label}</Badge>
-              </div>
-              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                <span>{c.startDate} → {c.endDate}</span>
-              </div>
-              <div className="flex items-center gap-6 mt-3">
-                <div><p className="text-xl font-bold font-display">{c.mentions}</p><p className="text-xs text-muted-foreground">Menções</p></div>
-                <div><p className="text-xl font-bold font-display text-primary">{c.score}</p><p className="text-xs text-muted-foreground">Score</p></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-36 w-full" />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {campaigns?.map((c) => {
+            const s = statusMap[c.status] ?? statusMap.draft;
+            return (
+              <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <p className="text-base font-semibold text-foreground">{c.name}</p>
+                    <Badge className={`${s.class} text-[10px] hover:bg-opacity-100`}>{s.label}</Badge>
+                  </div>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <span>{c.start_date} → {c.end_date}</span>
+                  </div>
+                  <div className="flex items-center gap-6 mt-3">
+                    <div><p className="text-xl font-bold font-display">{c.mentions}</p><p className="text-xs text-muted-foreground">Menções</p></div>
+                    <div><p className="text-xl font-bold font-display text-primary">{c.score}</p><p className="text-xs text-muted-foreground">Score</p></div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
