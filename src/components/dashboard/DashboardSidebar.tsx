@@ -1,10 +1,13 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
-  Download, Settings,
+  Download, Settings, LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { alertsData } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
 import {
   Sidebar,
   SidebarContent,
@@ -63,6 +66,15 @@ const menuGroups = [
 ];
 
 export function DashboardSidebar() {
+  const navigate = useNavigate();
+  const { data: settings } = useBrandSettings();
+  const displayName = settings?.brand_name || "Minha Marca";
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <Sidebar className="border-r border-border">
       <SidebarHeader className="p-4 border-b border-border">
@@ -108,12 +120,15 @@ export function DashboardSidebar() {
       <SidebarFooter className="p-4 border-t border-border">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-            T
+            {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">TechNova</p>
+            <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
             <p className="text-xs text-muted-foreground">Plano Pro</p>
           </div>
+          <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title="Sair">
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </SidebarFooter>
     </Sidebar>

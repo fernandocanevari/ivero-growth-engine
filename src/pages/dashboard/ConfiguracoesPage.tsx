@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBrandSettings, useUpdateBrandSettings } from "@/hooks/useBrandSettings";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
@@ -32,9 +35,22 @@ export default function ConfiguracoesPage() {
     }
   }, [settings]);
 
-  const handleSave = () => {
-    if (!settings) return;
-    updateMutation.mutate({ id: settings.id, ...form });
+  const qc = useQueryClient();
+
+  const handleSave = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    if (settings) {
+      updateMutation.mutate({ id: settings.id, ...form });
+    } else {
+      const { error } = await supabase.from("brand_settings").insert({ ...form, user_id: user.id });
+      if (error) {
+        toast({ title: "Erro ao salvar", variant: "destructive" });
+      } else {
+        qc.invalidateQueries({ queryKey: ["brand_settings"] });
+        toast({ title: "Configurações salvas!" });
+      }
+    }
   };
 
   if (isLoading) {

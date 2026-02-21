@@ -19,9 +19,12 @@ export function useCampaigns() {
   return useQuery({
     queryKey: ["campaigns"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("campaigns")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Campaign[];
@@ -33,7 +36,9 @@ export function useCreateCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: Omit<Campaign, "id" | "mentions" | "score" | "created_at">) => {
-      const { error } = await supabase.from("campaigns").insert(values);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("campaigns").insert({ ...values, user_id: user.id });
       if (error) throw error;
     },
     onSuccess: () => {
