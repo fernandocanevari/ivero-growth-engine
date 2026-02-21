@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, Search, ShoppingCart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const stats = [
   {
@@ -21,6 +22,7 @@ const stats = [
 ];
 
 const CTASection = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-14 sm:py-16 bg-ivero-dark relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-ivero-purple/15 rounded-full blur-3xl" />
@@ -70,7 +72,7 @@ const CTASection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg" className="text-sm sm:text-base px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto">
+              <Button variant="hero" size="lg" className="text-sm sm:text-base px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto" onClick={() => navigate("/dashboard")}>
                 Começar agora — é grátis
                 <ArrowRight className="ml-2" />
               </Button>

@@ -2,9 +2,11 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
   const [siteUrl, setSiteUrl] = useState("");
+  const navigate = useNavigate();
   const sectionRef = useRef(null);
 
   const { scrollYProgress } = useScroll({
@@ -115,7 +117,7 @@ const HeroSection = () => {
                   placeholder="Celular"
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
-                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2">
+                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="button" onClick={() => navigate("/dashboard")}>
                   Começar agora
                 </Button>
               </form>
