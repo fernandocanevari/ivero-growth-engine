@@ -5,6 +5,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import DashboardLayout from "./components/dashboard/DashboardLayout";
+import DashboardOverview from "./pages/dashboard/DashboardOverview";
+import MonitoramentoPage from "./pages/dashboard/MonitoramentoPage";
+import ComparativoPage from "./pages/dashboard/ComparativoPage";
+import ScorePage from "./pages/dashboard/ScorePage";
+import SentimentoPage from "./pages/dashboard/SentimentoPage";
+import AcoesPage from "./pages/dashboard/AcoesPage";
+import AlertasPage from "./pages/dashboard/AlertasPage";
+import PromptsPage from "./pages/dashboard/PromptsPage";
+import DominanciaPage from "./pages/dashboard/DominanciaPage";
+import SimuladorPage from "./pages/dashboard/SimuladorPage";
+import CampanhasPage from "./pages/dashboard/CampanhasPage";
+import NovaCampanhaPage from "./pages/dashboard/NovaCampanhaPage";
+import PromptTesterPage from "./pages/dashboard/PromptTesterPage";
+import RelatoriosPage from "./pages/dashboard/RelatoriosPage";
+import ConfiguracoesPage from "./pages/dashboard/ConfiguracoesPage";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +32,23 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<DashboardOverview />} />
+            <Route path="monitoramento" element={<MonitoramentoPage />} />
+            <Route path="comparativo" element={<ComparativoPage />} />
+            <Route path="score" element={<ScorePage />} />
+            <Route path="sentimento" element={<SentimentoPage />} />
+            <Route path="acoes" element={<AcoesPage />} />
+            <Route path="alertas" element={<AlertasPage />} />
+            <Route path="prompts" element={<PromptsPage />} />
+            <Route path="dominancia" element={<DominanciaPage />} />
+            <Route path="simulador" element={<SimuladorPage />} />
+            <Route path="campanhas" element={<CampanhasPage />} />
+            <Route path="campanhas/nova" element={<NovaCampanhaPage />} />
+            <Route path="prompt-tester" element={<PromptTesterPage />} />
+            <Route path="relatorios" element={<RelatoriosPage />} />
+            <Route path="configuracoes" element={<ConfiguracoesPage />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
