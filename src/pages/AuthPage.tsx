@@ -63,7 +63,7 @@ export default function AuthPage() {
         </div>
 
         <div className="relative z-10">
-          <h1 className="text-3xl font-display font-bold text-white">Ivero</h1>
+          <h1 className="text-5xl font-display font-bold text-white">Ivero</h1>
         </div>
 
         <div className="relative z-10 space-y-6">
@@ -72,10 +72,10 @@ export default function AuthPage() {
             Inteligência de marca para IA
           </div>
           <h2 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight">
-            Saiba como sua marca aparece nas respostas da IA.
+            Seu painel de inteligência está a um login de distância.
           </h2>
           <p className="text-lg text-white/70 max-w-md">
-            Monitore, compare e otimize a presença da sua marca em ChatGPT, Gemini, Perplexity e outras IAs.
+            Acompanhe métricas, alertas e insights sobre como as IAs falam da sua marca — tudo em tempo real.
           </p>
         </div>
 
