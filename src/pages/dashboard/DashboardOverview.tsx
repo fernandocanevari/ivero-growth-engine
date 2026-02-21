@@ -9,12 +9,15 @@ import {
   geoScore, sentimentData, alertsData, monitoringData,
   comparativeData, actionsData, promptsData, brandName, competitorName,
 } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
 export default function DashboardOverview() {
   const navigate = useNavigate();
+  const { data: settings } = useBrandSettings();
   const topActions = actionsData.filter((a) => !a.completed).slice(0, 3);
+  const displayName = settings?.brand_name || brandName;
   const topPrompt = promptsData.find((p) => p.opportunity === "high" && p.position > 2);
   const recentAlerts = alertsData.slice(0, 3);
 
@@ -30,7 +33,7 @@ export default function DashboardOverview() {
       {/* Header */}
       <motion.div {...fade}>
         <h1 className="text-2xl font-bold font-display text-foreground">
-          Olá, {brandName} 👋
+          Olá, {displayName} 👋
         </h1>
         <p className="text-muted-foreground mt-1">
           Resumo da sua presença nas IAs — atualizado em tempo real.
