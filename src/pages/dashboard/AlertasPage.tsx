@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Info, Bell } from "lucide-react";
 import { alertsData } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 const iconMap = {
   success: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
@@ -12,6 +14,24 @@ const iconMap = {
 };
 
 export default function AlertasPage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasData = false;
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<Bell className="h-12 w-12" />}
+        title="Alertas"
+        subtitle="Notificações sobre mudanças na sua presença nas IAs."
+        message="Nenhum alerta disponível ainda"
+        hasBrand={hasBrand}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>

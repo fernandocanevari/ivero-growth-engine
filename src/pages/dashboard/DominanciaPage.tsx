@@ -2,9 +2,34 @@ import { motion } from "framer-motion";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { dominanceData, brandName, competitorName } from "@/lib/mock-data";
+import { Target } from "lucide-react";
+import { dominanceData } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 export default function DominanciaPage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasCompetitor = !!settings?.main_competitor;
+  const hasData = false;
+
+  const displayName = settings?.brand_name || "Sua marca";
+  const displayCompetitor = settings?.main_competitor || "Concorrente";
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<Target className="h-12 w-12" />}
+        title="Dominância por Modelo"
+        subtitle="Participação da sua marca nas respostas de cada IA."
+        message={!hasCompetitor ? "Adicione um concorrente nas configurações para ver a dominância" : "Nenhum dado de dominância disponível ainda"}
+        hasBrand={hasBrand}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
@@ -21,8 +46,8 @@ export default function DominanciaPage() {
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Legend />
-                <Bar dataKey="brandShare" name={brandName} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="competitorShare" name={competitorName} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="brandShare" name={displayName} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="competitorShare" name={displayCompetitor} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="othersShare" name="Outros" fill="hsl(var(--border))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

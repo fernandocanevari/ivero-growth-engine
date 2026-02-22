@@ -1,12 +1,33 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Search } from "lucide-react";
 import { sentimentData } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 const sentimentColor = { positive: "bg-emerald-100 text-emerald-700", neutral: "bg-amber-100 text-amber-700", negative: "bg-red-100 text-red-600" };
 const sentimentLabel = { positive: "Positivo", neutral: "Neutro", negative: "Negativo" };
 
 export default function SentimentoPage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasData = false;
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<Search className="h-12 w-12" />}
+        title="Análise de Sentimento"
+        subtitle="Como as IAs falam sobre sua marca — tom positivo, neutro ou negativo."
+        message="Nenhum dado de sentimento disponível ainda"
+        hasBrand={hasBrand}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>

@@ -1,13 +1,33 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { geoScore } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 export default function ScorePage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasData = false; // Will be replaced with real data check
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<BarChart3 className="h-12 w-12" />}
+        title="Score de Visibilidade GEO"
+        subtitle="Sua pontuação geral de presença nas IAs generativas."
+        message="Nenhum dado de score disponível ainda"
+        hasBrand={hasBrand}
+      />
+    );
+  }
+
   const diff = geoScore.current - geoScore.previous;
 
   return (

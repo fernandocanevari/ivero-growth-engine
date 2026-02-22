@@ -1,12 +1,32 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { monitoringData } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 export default function MonitoramentoPage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasData = false;
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<BarChart3 className="h-12 w-12" />}
+        title="Monitoramento Multi-IA"
+        subtitle="Acompanhe menções da sua marca em cada modelo de IA."
+        message="Nenhum dado de monitoramento disponível ainda"
+        hasBrand={hasBrand}
+      />
+    );
+  }
+
   const totalMentions = monitoringData.models.reduce((s, m) => s + m.mentions, 0);
 
   return (

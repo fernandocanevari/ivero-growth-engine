@@ -3,10 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { CheckCheck } from "lucide-react";
 import { actionsData } from "@/lib/mock-data";
 import { useState } from "react";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 export default function AcoesPage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasData = false;
+
   const [actions, setActions] = useState(actionsData);
   const completed = actions.filter((a) => a.completed).length;
   const total = actions.length;
@@ -14,6 +21,20 @@ export default function AcoesPage() {
   const toggle = (id: number) => {
     setActions((prev) => prev.map((a) => a.id === id ? { ...a, completed: !a.completed } : a));
   };
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<CheckCheck className="h-12 w-12" />}
+        title="Planos de Ação"
+        subtitle="Tarefas priorizadas para melhorar sua presença nas IAs."
+        message="Nenhuma ação disponível ainda"
+        hasBrand={hasBrand}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl">
