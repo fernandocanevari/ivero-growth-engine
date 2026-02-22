@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Upload, Building2 } from "lucide-react";
 import { useBrandSettings, useUpdateBrandSettings } from "@/hooks/useBrandSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +16,8 @@ import { toast } from "@/hooks/use-toast";
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
   const updateMutation = useUpdateBrandSettings();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     brand_name: "",
@@ -21,6 +25,10 @@ export default function ConfiguracoesPage() {
     sector: "",
     main_competitor: "",
     other_competitors: "",
+    contact_name: "",
+    contact_email: "",
+    contact_phone: "",
+    logo_url: "",
   });
 
   useEffect(() => {
@@ -31,11 +39,45 @@ export default function ConfiguracoesPage() {
         sector: settings.sector,
         main_competitor: settings.main_competitor,
         other_competitors: settings.other_competitors,
+        contact_name: settings.contact_name || "",
+        contact_email: settings.contact_email || "",
+        contact_phone: settings.contact_phone || "",
+        logo_url: settings.logo_url || "",
       });
     }
   }, [settings]);
 
   const qc = useQueryClient();
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${user.id}/logo.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("brand-logos")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Erro ao enviar logo", variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("brand-logos")
+      .getPublicUrl(filePath);
+
+    setForm((p) => ({ ...p, logo_url: urlData.publicUrl }));
+    setUploading(false);
+    toast({ title: "Logo enviado com sucesso!" });
+  };
 
   const handleSave = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -69,15 +111,59 @@ export default function ConfiguracoesPage() {
         <p className="text-muted-foreground mt-1">Gerencie sua marca e preferências.</p>
       </motion.div>
 
+      {/* Logo & Brand */}
       <Card>
         <CardContent className="p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Dados da Marca</h2>
+          
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16 border-2 border-border">
+              {form.logo_url ? (
+                <AvatarImage src={form.logo_url} alt="Logo" />
+              ) : null}
+              <AvatarFallback className="bg-secondary">
+                <Building2 className="h-6 w-6 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="gap-2"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {uploading ? "Enviando..." : "Enviar Logo"}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG até 2MB</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+            </div>
+          </div>
+
           <div><Label>Nome da Marca</Label><Input value={form.brand_name} onChange={(e) => setForm((p) => ({ ...p, brand_name: e.target.value }))} className="mt-1" /></div>
           <div><Label>Website</Label><Input value={form.website} onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))} className="mt-1" /></div>
           <div><Label>Setor</Label><Input value={form.sector} onChange={(e) => setForm((p) => ({ ...p, sector: e.target.value }))} className="mt-1" /></div>
         </CardContent>
       </Card>
 
+      {/* Contact Info */}
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <h2 className="text-base font-semibold text-foreground">Dados de Contato</h2>
+          <div><Label>Nome do Contato</Label><Input value={form.contact_name} onChange={(e) => setForm((p) => ({ ...p, contact_name: e.target.value }))} className="mt-1" placeholder="Nome completo" /></div>
+          <div><Label>E-mail</Label><Input type="email" value={form.contact_email} onChange={(e) => setForm((p) => ({ ...p, contact_email: e.target.value }))} className="mt-1" placeholder="email@empresa.com" /></div>
+          <div><Label>Celular</Label><Input type="tel" value={form.contact_phone} onChange={(e) => setForm((p) => ({ ...p, contact_phone: e.target.value }))} className="mt-1" placeholder="(11) 99999-9999" /></div>
+        </CardContent>
+      </Card>
+
+      {/* Competitors */}
       <Card>
         <CardContent className="p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Concorrentes Monitorados</h2>
@@ -86,6 +172,7 @@ export default function ConfiguracoesPage() {
         </CardContent>
       </Card>
 
+      {/* Notifications */}
       <Card>
         <CardContent className="p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Notificações</h2>
