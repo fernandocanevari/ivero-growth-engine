@@ -8,13 +8,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Check existing session first
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthenticated(!!session);
       setLoading(false);
       if (!session) navigate("/login", { replace: true });
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Then listen for changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthenticated(!!session);
       setLoading(false);
       if (!session) navigate("/login", { replace: true });
