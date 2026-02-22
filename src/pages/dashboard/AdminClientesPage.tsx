@@ -46,6 +46,10 @@ interface ClientRow {
     sector: string;
     website: string;
     main_competitor: string;
+    contact_name: string;
+    contact_email: string;
+    contact_phone: string;
+    logo_url: string;
   } | null;
   campaigns_count: number;
 }
@@ -167,6 +171,9 @@ export default function AdminClientesPage() {
     if (!filtered?.length) return;
     const rows = filtered.map((c) => ({
       Nome: c.display_name || "Sem nome",
+      "Contato": c.brand?.contact_name || "—",
+      "E-mail": c.brand?.contact_email || "—",
+      "Celular": c.brand?.contact_phone || "—",
       Marca: c.brand?.brand_name || "—",
       Setor: c.brand?.sector || "—",
       Site: c.brand?.website || "—",
@@ -339,6 +346,7 @@ export default function AdminClientesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Contato</TableHead>
                 <TableHead>Marca / Setor</TableHead>
                 <TableHead className="text-center">Diagnóstico</TableHead>
                 <TableHead className="text-center">Campanhas</TableHead>
@@ -349,8 +357,22 @@ export default function AdminClientesPage() {
             <TableBody>
               {filtered.map((c) => (
                 <TableRow key={c.user_id}>
-                  <TableCell className="font-medium text-foreground">
-                    {c.display_name || "Sem nome"}
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {c.brand?.logo_url ? (
+                        <img src={c.brand.logo_url} alt="" className="h-7 w-7 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
+                          {(c.brand?.brand_name || c.display_name || "?")[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span className="font-medium text-foreground">{c.display_name || "Sem nome"}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-foreground">{c.brand?.contact_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{c.brand?.contact_email || ""}</div>
+                    <div className="text-xs text-muted-foreground">{c.brand?.contact_phone || ""}</div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-foreground">{c.brand?.brand_name || "—"}</div>
@@ -394,17 +416,53 @@ export default function AdminClientesPage() {
           {selectedClient && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl">
+                <DialogTitle className="text-xl flex items-center gap-3">
+                  {selectedClient.brand?.logo_url ? (
+                    <img src={selectedClient.brand.logo_url} alt="" className="h-10 w-10 rounded-full object-cover border border-border" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-muted-foreground">
+                      {(selectedClient.brand?.brand_name || selectedClient.display_name || "?")[0]?.toUpperCase()}
+                    </div>
+                  )}
                   {selectedClient.display_name || "Sem nome"}
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-6 mt-4">
+                {/* Contact */}
+                <Card className="border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" /> Contato
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Nome:</span>{" "}
+                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_name || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">E-mail:</span>{" "}
+                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_email || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Celular:</span>{" "}
+                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_phone || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Cadastro:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        {new Date(selectedClient.created_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Profile */}
                 <Card className="border-border">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      <Users className="h-4 w-4 text-primary" /> Perfil
+                      <BarChart3 className="h-4 w-4 text-primary" /> Marca
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-3 text-sm">
@@ -427,12 +485,6 @@ export default function AdminClientesPage() {
                     <div>
                       <span className="text-muted-foreground">Campanhas:</span>{" "}
                       <span className="font-semibold text-foreground">{selectedClient.campaigns_count}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Cadastro:</span>{" "}
-                      <span className="font-medium text-foreground">
-                        {new Date(selectedClient.created_at).toLocaleDateString("pt-BR")}
-                      </span>
                     </div>
                   </CardContent>
                 </Card>
