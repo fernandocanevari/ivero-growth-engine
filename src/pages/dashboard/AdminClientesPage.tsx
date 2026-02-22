@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminKPICard } from "@/components/admin/AdminKPICard";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -207,7 +208,10 @@ export default function AdminClientesPage() {
         <div className="flex items-center gap-3">
           <Users className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-1">
+              Clientes
+              <InfoTooltip text="Gerencie perfis, diagnósticos de onboarding e dados estratégicos de cada cliente. Exporte tudo em Excel para análise externa." />
+            </h1>
             <p className="text-sm text-muted-foreground">
               Perfis, diagnósticos e análises — {total} cliente(s)
             </p>
