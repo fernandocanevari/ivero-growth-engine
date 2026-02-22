@@ -4,6 +4,7 @@ import {
   Download, Settings, LogOut, Crown, Users,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { alertsData } from "@/lib/mock-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -120,8 +121,9 @@ export function DashboardSidebar() {
 
         {isAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-3 mb-1">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-3 mb-1 flex items-center gap-1">
               Administração
+              <InfoTooltip text="Área exclusiva para gestão do negócio Ivero: métricas financeiras, de produto, estratégicas, risco e gestão de clientes." />
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>

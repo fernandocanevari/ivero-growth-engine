@@ -5,6 +5,7 @@ import { AdminSectionNegocio } from "@/components/admin/AdminSectionNegocio";
 import { AdminSectionProduto } from "@/components/admin/AdminSectionProduto";
 import { AdminSectionEstrategica } from "@/components/admin/AdminSectionEstrategica";
 import { AdminSectionRisco } from "@/components/admin/AdminSectionRisco";
+import { InfoTooltip } from "@/components/InfoTooltip";
 
 export default function AdminDashboardPage() {
   const { isAdmin, isLoading } = useUserRole();
@@ -32,7 +33,10 @@ export default function AdminDashboardPage() {
       <div className="flex items-center gap-3">
         <Crown className="h-6 w-6 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-1">
+            Painel Administrativo
+            <InfoTooltip text="Visão centralizada do negócio Ivero com métricas de receita, produto, estratégia e risco. Dados mock para demonstração." />
+          </h1>
           <p className="text-sm text-muted-foreground">Visão completa do negócio — dados mock</p>
         </div>
       </div>
