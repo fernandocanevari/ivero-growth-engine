@@ -17,8 +17,12 @@ export type Database = {
       brand_settings: {
         Row: {
           brand_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string
           created_at: string
           id: string
+          logo_url: string
           main_competitor: string
           other_competitors: string
           sector: string
@@ -28,8 +32,12 @@ export type Database = {
         }
         Insert: {
           brand_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string
           created_at?: string
           id?: string
+          logo_url?: string
           main_competitor?: string
           other_competitors?: string
           sector?: string
@@ -39,8 +47,12 @@ export type Database = {
         }
         Update: {
           brand_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string
           created_at?: string
           id?: string
+          logo_url?: string
           main_competitor?: string
           other_competitors?: string
           sector?: string
