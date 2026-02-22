@@ -72,7 +72,12 @@ const HeroSection = () => {
                   onChange={(e) => setSiteUrl(e.target.value)}
                   className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-5 sm:py-0"
                 />
-                <Button variant="hero" size="lg" className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
+                  onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
+                >
                   Descubra sua visibilidade em IA
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
@@ -117,7 +122,7 @@ const HeroSection = () => {
                   placeholder="Celular"
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
-                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="button" onClick={() => navigate("/dashboard")}>
+                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="button" onClick={() => navigate("/preview")}>
                   Começar agora
                 </Button>
               </form>
