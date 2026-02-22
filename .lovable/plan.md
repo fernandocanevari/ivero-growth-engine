@@ -1,70 +1,102 @@
 
+# Roadmap de Implementação — Ivero
 
-## Conectar Backend Real ao Supabase -- Campanhas e Configuracoes
+## Status dos Módulos
 
-### O que sera feito
+### ✅ Concluídos
+- [x] Autenticação (login/cadastro com Supabase Auth)
+- [x] Onboarding Diagnóstico (3 perguntas estratégicas)
+- [x] Configurações da Marca (brand_settings no Supabase)
+- [x] Campanhas (CRUD no Supabase)
+- [x] Painel Admin (4 camadas: Negócio, Produto, Estratégica, Risco)
+- [x] Estados vazios em todas as páginas (progressivo conforme dados)
 
-Criar as tabelas no Supabase para persistir dados de **campanhas** e **configuracoes da marca**, substituindo os dados mockados por dados reais do banco. Como a autenticacao sera implementada depois, as tabelas terao RLS desabilitado temporariamente.
+### 🔲 Próximos — 9 Recursos Core da Ivero
 
-### Tabelas a criar
+Cada item abaixo precisa de backend real (edge functions + tabelas) para substituir os mocks.
 
-**1. brand_settings** (configuracoes da marca)
+#### 1. Simulador de Influência em IA
+- **Status:** 🔲 Pendente (primeiro a implementar)
+- **O que falta:** Edge function que consulta APIs de IA (OpenAI, Gemini, Perplexity, Claude) em tempo real
+- **Tabelas:** `simulation_results` (histórico de simulações)
+- **Página:** `/dashboard/simulador`
 
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| id | uuid (PK) | Identificador unico |
-| brand_name | text | Nome da marca |
-| website | text | URL do site |
-| sector | text | Setor de atuacao |
-| main_competitor | text | Concorrente principal |
-| other_competitors | text | Outros concorrentes (separados por virgula) |
-| created_at | timestamptz | Data de criacao |
-| updated_at | timestamptz | Data de atualizacao |
+#### 2. Prompt Tester
+- **Status:** 🔲 Pendente
+- **O que falta:** Edge function similar ao Simulador, mas focada em teste rápido de presença
+- **Tabelas:** `prompt_tests` (histórico de testes)
+- **Página:** `/dashboard/prompt-tester`
 
-**2. campaigns** (campanhas)
+#### 3. Monitoramento Multi-IA (Menções)
+- **Status:** 🔲 Pendente
+- **O que falta:** Edge function com cron job para coletar menções periodicamente
+- **Tabelas:** `mentions` (menções por modelo, data, contexto)
+- **Flag no Dashboard:** `hasMonitoringData`
+- **Página:** `/dashboard/monitoramento`
 
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| id | uuid (PK) | Identificador unico |
-| name | text | Nome da campanha |
-| objective | text | Objetivo da campanha |
-| status | text | Status: draft, active, completed |
-| start_date | date | Data inicio |
-| end_date | date | Data fim |
-| keywords | text | Palavras-chave |
-| mentions | integer | Total de mencoes (default 0) |
-| score | integer | Score da campanha (default 0) |
-| created_at | timestamptz | Data de criacao |
-| updated_at | timestamptz | Data de atualizacao |
+#### 4. Score de Visibilidade GEO
+- **Status:** 🔲 Pendente
+- **O que falta:** Algoritmo de scoring baseado em menções, sentimento e posição
+- **Tabelas:** `geo_scores` (score histórico por período)
+- **Flag no Dashboard:** `hasScoreData`
+- **Página:** `/dashboard/score`
 
-### Dados iniciais
+#### 5. Análise de Sentimento
+- **Status:** 🔲 Pendente
+- **O que falta:** Classificação de sentimento (positivo/neutro/negativo) via IA
+- **Tabelas:** `sentiment_analysis` (sentimento por menção)
+- **Flag no Dashboard:** `hasSentimentData`
+- **Página:** `/dashboard/sentimento`
 
-Inserir um registro de `brand_settings` com os dados mockados atuais (TechNova) e os 4 registros de campanhas ja existentes no mock.
+#### 6. Análise Comparativa
+- **Status:** 🔲 Pendente
+- **O que falta:** Coleta de menções do concorrente para comparação
+- **Depende de:** Monitoramento (#3) implementado
+- **Flag no Dashboard:** `hasMonitoringData && hasCompetitor`
+- **Página:** `/dashboard/comparativo`
 
-### Alteracoes no codigo
+#### 7. Dominância por Modelo
+- **Status:** 🔲 Pendente
+- **O que falta:** Cálculo de share of voice por modelo de IA
+- **Depende de:** Monitoramento (#3) implementado
+- **Página:** `/dashboard/dominancia`
 
-**Novos arquivos:**
-- `src/hooks/useBrandSettings.ts` -- hook com React Query para buscar/atualizar configuracoes da marca
-- `src/hooks/useCampaigns.ts` -- hook com React Query para CRUD de campanhas
+#### 8. Alertas em Tempo Real
+- **Status:** 🔲 Pendente
+- **O que falta:** Sistema de detecção de mudanças significativas (queda de score, nova menção negativa, etc.)
+- **Tabelas:** `alerts` (alertas gerados automaticamente)
+- **Flag no Dashboard:** `hasAlerts`
+- **Página:** `/dashboard/alertas`
 
-**Arquivos modificados:**
-- `src/pages/dashboard/ConfiguracoesPage.tsx` -- substituir inputs estaticos por formulario controlado que salva no Supabase
-- `src/pages/dashboard/CampanhasPage.tsx` -- buscar campanhas do banco ao inves do mock-data
-- `src/pages/dashboard/NovaCampanhaPage.tsx` -- salvar nova campanha no Supabase
-- `src/pages/dashboard/DashboardOverview.tsx` -- buscar dados reais de campanhas/marca para os cards de resumo
+#### 9. Planos de Ação
+- **Status:** 🔲 Pendente
+- **O que falta:** Motor de recomendações baseado nos dados coletados
+- **Tabelas:** `actions` (ações sugeridas por cliente)
+- **Flag no Dashboard:** `hasActions`
+- **Página:** `/dashboard/acoes`
 
-### Seguranca (temporario)
+### 📊 Outros pendentes
+- [ ] Mapa de Prompts Estratégicos (tabela `strategic_prompts`, flag `hasPrompts`)
+- [ ] Relatórios exportáveis (PDF/CSV com dados reais)
 
-Como a autenticacao ainda nao foi implementada:
-- RLS ficara **desabilitado** temporariamente nas duas tabelas
-- Quando implementarmos login, adicionaremos uma coluna `user_id` e politicas RLS para cada usuario ver apenas seus dados
+---
 
-### Ordem de implementacao
+## Ordem Recomendada de Implementação
 
-1. Criar as tabelas no Supabase via migration
-2. Inserir dados iniciais (mock -> banco)
-3. Criar hooks React Query (useBrandSettings, useCampaigns)
-4. Atualizar ConfiguracoesPage para ler/salvar do Supabase
-5. Atualizar CampanhasPage para listar do Supabase
-6. Atualizar NovaCampanhaPage para inserir no Supabase
+```
+1. Simulador de Influência ← primeiro recurso funcional
+2. Prompt Tester ← reutiliza infra do Simulador
+3. Monitoramento Multi-IA ← coleta automatizada
+4. Score GEO ← depende do Monitoramento
+5. Análise de Sentimento ← depende do Monitoramento
+6. Análise Comparativa ← depende do Monitoramento
+7. Dominância por Modelo ← depende do Monitoramento
+8. Alertas em Tempo Real ← depende de Score + Sentimento
+9. Planos de Ação ← depende de todos os anteriores
+```
 
+## Notas Técnicas
+
+- Cada módulo implementado deve trocar o flag `false` correspondente no `DashboardOverview.tsx` por uma query real
+- APIs de IA necessárias: OpenAI, Gemini, Perplexity, Claude (secrets a configurar)
+- Edge functions serão deployadas automaticamente pelo Lovable
