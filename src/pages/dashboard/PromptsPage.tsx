@@ -3,12 +3,33 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Map } from "lucide-react";
 import { promptsData } from "@/lib/mock-data";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 const oppColor = { high: "bg-emerald-100 text-emerald-700", medium: "bg-amber-100 text-amber-700", low: "bg-secondary text-muted-foreground" };
 const oppLabel = { high: "Alta", medium: "Média", low: "Baixa" };
 
 export default function PromptsPage() {
+  const { data: settings, isLoading } = useBrandSettings();
+  const hasBrand = !!settings?.brand_name;
+  const hasData = false;
+
+  if (isLoading) return null;
+
+  if (!hasData) {
+    return (
+      <EmptyStatePage
+        icon={<Map className="h-12 w-12" />}
+        title="Mapa de Prompts"
+        subtitle="Prompts estratégicos e sua posição em cada modelo de IA."
+        message="Nenhum dado de prompts disponível ainda"
+        hasBrand={hasBrand}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
