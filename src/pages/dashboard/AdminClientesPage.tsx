@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import {
   ShieldAlert, Users, Download, Search, TrendingUp, TrendingDown,
-  AlertTriangle, Clock, UserCheck, UserX, BarChart3, Eye,
+  AlertTriangle, Clock, UserCheck, UserX, BarChart3, Eye, Filter,
+  CalendarIcon, X,
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +53,10 @@ export default function AdminClientesPage() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
+  const [diagFilter, setDiagFilter] = useState<string>("all");
+  const [sectorFilter, setSectorFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ["admin_clients_full"],
@@ -95,14 +109,51 @@ export default function AdminClientesPage() {
     },
   });
 
+  // Unique sectors for filter
+  const sectors = useMemo(() => {
+    const set = new Set<string>();
+    clients?.forEach((c) => {
+      if (c.brand?.sector) set.add(c.brand.sector);
+    });
+    return Array.from(set).sort();
+  }, [clients]);
+
+  const hasActiveFilters = diagFilter !== "all" || sectorFilter !== "all" || !!dateFrom || !!dateTo;
+
+  const clearFilters = () => {
+    setDiagFilter("all");
+    setSectorFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setSearch("");
+  };
+
   const filtered = clients?.filter((c) => {
+    // Text search
     const term = search.toLowerCase();
-    if (!term) return true;
-    return (
+    if (term && !(
       (c.display_name?.toLowerCase().includes(term)) ||
       (c.brand?.brand_name?.toLowerCase().includes(term)) ||
       (c.brand?.sector?.toLowerCase().includes(term))
-    );
+    )) return false;
+
+    // Diagnostic filter
+    if (diagFilter === "completed" && !c.onboarding?.completed) return false;
+    if (diagFilter === "pending" && c.onboarding?.completed) return false;
+
+    // Sector filter
+    if (sectorFilter !== "all" && c.brand?.sector !== sectorFilter) return false;
+
+    // Date range
+    const created = new Date(c.created_at);
+    if (dateFrom && created < dateFrom) return false;
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      if (created > end) return false;
+    }
+
+    return true;
   });
 
   // Analytics
@@ -193,15 +244,88 @@ export default function AdminClientesPage() {
         />
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome, marca ou setor..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        {/* Search */}
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar nome, marca, setor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {/* Diagnostic status */}
+        <div className="w-[180px]">
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Diagnóstico</label>
+          <Select value={diagFilter} onValueChange={setDiagFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="completed">Concluído</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Sector */}
+        <div className="w-[180px]">
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Setor</label>
+          <Select value={sectorFilter} onValueChange={setSectorFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {sectors.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date from */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">De</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Início"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Date to */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Até</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateTo ? format(dateTo, "dd/MM/yyyy") : "Fim"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Clear filters */}
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
+            <X className="h-3.5 w-3.5" /> Limpar filtros
+          </Button>
+        )}
       </div>
 
       {/* Table */}
