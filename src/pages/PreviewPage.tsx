@@ -102,7 +102,8 @@ const iveroFeatures = [
 function SoftBlur({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative">
-      <div className="blur-[2px] select-none pointer-events-none">{children}</div>
+      <div className="blur-[1.5px] opacity-60 select-none pointer-events-none">{children}</div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80 rounded-xl" />
     </div>
   );
 }
@@ -110,11 +111,15 @@ function SoftBlur({ children }: { children: React.ReactNode }) {
 /* ── Blurred overlay for locked sections ── */
 function BlurredOverlay() {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-card/50 backdrop-blur-[4px]">
-      <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-lg">
-        <Lock className="w-4 h-4 text-primary-foreground" />
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl">
+      {/* Multi-layer frosted glass */}
+      <div className="absolute inset-0 backdrop-blur-[3px] bg-gradient-to-b from-card/30 via-card/50 to-card/70 rounded-xl" />
+      {/* Badge */}
+      <div className="relative z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.35)]">
+        <Lock className="w-3.5 h-3.5 text-primary-foreground" />
         <span className="text-sm font-medium text-primary-foreground">Disponível em nossos planos</span>
       </div>
+      <p className="relative z-20 text-xs text-muted-foreground/70">Desbloqueie o relatório completo</p>
     </div>
   );
 }
@@ -473,7 +478,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                   return (
                     <div key={i} className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
                       isBlurred
-                        ? "blur-[2px] select-none pointer-events-none bg-muted/30 border-border/40"
+                        ? "blur-[1.5px] opacity-50 select-none pointer-events-none bg-muted/20 border-border/30"
                         : item.status === "strong"
                           ? "bg-emerald-50/50 border-emerald-200/40"
                           : "bg-amber-50/50 border-amber-200/40"
