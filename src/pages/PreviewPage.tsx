@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
-  ChevronRight, Lock, Target, Eye, Lightbulb, Rocket,
+  Lock, Target, Eye, Rocket, Download,
+  Activity, ShieldCheck, LineChart, MessageSquare, Gauge, Radio,
 } from "lucide-react";
+import {
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  ResponsiveContainer,
+} from "recharts";
 
 /* ── Loading steps ── */
 const loadingSteps = [
@@ -33,13 +38,39 @@ const clarezaItems = [
   { label: "Benefício vs. Característica", status: "strong" as const, detail: "Boa ênfase nos resultados para o cliente." },
 ];
 
-/* ── Blurred overlay ── */
+const radarData = [
+  { subject: "Clareza", value: 82, fullMark: 100 },
+  { subject: "Autoridade", value: 35, fullMark: 100 },
+  { subject: "Conversão", value: 58, fullMark: 100 },
+  { subject: "Posicionamento", value: 64, fullMark: 100 },
+  { subject: "Experiência", value: 71, fullMark: 100 },
+];
+
+const iveroFeatures = [
+  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Claude, Gemini e mais" },
+  { icon: Gauge, label: "Score GEO em Tempo Real", desc: "Índice de visibilidade atualizado continuamente" },
+  { icon: LineChart, label: "Análise Comparativa", desc: "Benchmark contra concorrentes do seu setor" },
+  { icon: Radio, label: "Alertas Inteligentes", desc: "Notificações quando sua marca é mencionada" },
+  { icon: ShieldCheck, label: "Proteção de Reputação", desc: "Monitoramento de sentimento e riscos" },
+  { icon: MessageSquare, label: "Otimização de Prompts", desc: "Estratégias para dominar respostas de IA" },
+];
+
+/* ── Soft blur overlay (for Resumo / Diagnóstico Final) ── */
+function SoftBlur({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <div className="blur-[2px] select-none pointer-events-none">{children}</div>
+    </div>
+  );
+}
+
+/* ── Blurred overlay for locked sections ── */
 function BlurredOverlay() {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-background/60 backdrop-blur-md border border-border">
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-background/40 backdrop-blur-[4px] border border-border">
       <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border">
         <Lock className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm font-medium text-muted-foreground">Disponível no plano completo</span>
+        <span className="text-sm font-medium text-muted-foreground">Disponível em nossos planos</span>
       </div>
     </div>
   );
@@ -140,7 +171,6 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
     return () => cancelAnimationFrame(frame);
   }, [score]);
 
-  // Color interpolation: red (0) → amber (50) → green (100)
   const getScoreColor = (val: number) => {
     if (val < 40) return "hsl(0, 72%, 51%)";
     if (val < 70) return "hsl(38, 92%, 50%)";
@@ -173,8 +203,6 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
           <p className="text-sm font-medium text-foreground">Score de Presença GEO</p>
           <p className="text-xs text-muted-foreground mt-1">Índice de visibilidade da sua marca nas IAs generativas</p>
         </div>
-
-        {/* Benchmark comparison */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Sua marca</span>
@@ -189,7 +217,6 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
               transition={{ duration: 2, ease: "easeOut" }}
             />
           </div>
-
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Média do setor</span>
             <span className="font-medium text-foreground">{benchmark}%</span>
@@ -202,7 +229,6 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
               transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
             />
           </div>
-
           <p className="text-xs text-destructive font-medium mt-1">
             ⚠ {Math.abs(score - benchmark)} pontos abaixo da média do setor
           </p>
@@ -216,6 +242,10 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
   const navigate = useNavigate();
 
+  const handleDownloadPDF = () => {
+    window.print();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -224,19 +254,25 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       className="min-h-screen bg-background"
     >
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md print:hidden">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="text-xl font-display font-bold text-gradient">
             Ivero
           </button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/preview")}>
-            Nova Análise
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-1.5" />
+              Baixar PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/preview")}>
+              Nova Análise
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 sm:px-6 py-8 max-w-3xl space-y-8">
-        {/* Subtitle */}
+        {/* Title */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
           <p className="text-xs uppercase tracking-widest text-primary font-medium">Diagnóstico Estratégico</p>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
@@ -254,7 +290,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         >
           <ScoreCircle score={37} benchmark={58} />
 
-          {/* AI Engine badges */}
           <div className="pt-4 border-t border-border space-y-3">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Presença nas IAs</p>
             <div className="flex flex-wrap gap-2">
@@ -277,6 +312,47 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
               <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200">
                 Sentimento Misto
               </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Radar Estratégico ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+          className="rounded-2xl border border-border bg-card p-6 space-y-4"
+        >
+          <div className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-primary" />
+            <h2 className="font-display text-lg font-bold text-foreground">Radar Estratégico</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">Visão macro dos 5 pilares de presença em IA</p>
+
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: "hsl(var(--foreground))" }} />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar
+                  name="Sua Marca"
+                  dataKey="value"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-center">
+              <p className="text-xs text-muted-foreground">Principal ponto forte</p>
+              <p className="text-sm font-bold text-emerald-700 mt-1">Clareza</p>
+            </div>
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-center">
+              <p className="text-xs text-muted-foreground">Maior ponto de melhoria</p>
+              <p className="text-sm font-bold text-amber-700 mt-1">Autoridade</p>
             </div>
           </div>
         </motion.div>
@@ -310,17 +386,20 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             ))}
           </div>
 
-          <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-2">
-            <p className="text-xs font-medium text-foreground uppercase tracking-wide">Resumo</p>
-            <div className="flex gap-4 text-sm">
-              <span className="text-emerald-600 font-medium">2 pontos fortes</span>
-              <span className="text-amber-500 font-medium">2 pontos de atenção</span>
+          {/* Resumo — soft blur */}
+          <SoftBlur>
+            <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-2">
+              <p className="text-xs font-medium text-foreground uppercase tracking-wide">Resumo</p>
+              <div className="flex gap-4 text-sm">
+                <span className="text-emerald-600 font-medium">2 pontos fortes</span>
+                <span className="text-amber-500 font-medium">2 pontos de atenção</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Sua comunicação de benefícios é eficaz, mas a diferenciação e proposta única precisam ser reforçadas
+                para que o visitante entenda instantaneamente por que escolher sua marca.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Sua comunicação de benefícios é eficaz, mas a diferenciação e proposta única precisam ser reforçadas
-              para que o visitante entenda instantaneamente por que escolher sua marca.
-            </p>
-          </div>
+          </SoftBlur>
         </motion.div>
 
         {/* ── Posicionamento Estratégico ── */}
@@ -348,29 +427,32 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             ))}
           </div>
 
-          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
-            <p className="text-xs font-medium text-primary uppercase tracking-wide mb-2">Diagnóstico Final</p>
-            <p className="text-sm text-foreground leading-relaxed">
-              Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
-              decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
-              reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
-              contextuais.
-            </p>
-          </div>
+          {/* Diagnóstico Final — soft blur */}
+          <SoftBlur>
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
+              <p className="text-xs font-medium text-primary uppercase tracking-wide mb-2">Diagnóstico Final</p>
+              <p className="text-sm text-foreground leading-relaxed">
+                Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
+                decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
+                reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
+                contextuais.
+              </p>
+            </div>
+          </SoftBlur>
         </motion.div>
 
-        {/* ── Diagnóstico (BLURRED) ── */}
+        {/* ── Diagnóstico Detalhado (BLURRED — lighter) ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
           className="relative"
         >
           <BlurredOverlay />
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              <h2 className="font-display text-lg font-bold text-foreground">Diagnóstico Detalhado</h2>
+              <h2 className="font-display text-base font-bold text-foreground">Diagnóstico Detalhado</h2>
             </div>
-            <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-2">
+            <div className="rounded-xl bg-muted/50 border border-border p-3 space-y-1.5">
               <p className="text-sm font-medium text-foreground">Principais Problemas Detectados:</p>
               {["Baixa visibilidade em respostas do ChatGPT", "Marca não mencionada em comparativos do setor", "Conteúdo não otimizado para indexação por IA"].map((p, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -381,21 +463,21 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </div>
         </motion.div>
 
-        {/* ── Plano de Ação (BLURRED) ── */}
+        {/* ── Plano de Ação (BLURRED — lighter) ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="relative"
         >
           <BlurredOverlay />
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
-              <h2 className="font-display text-lg font-bold text-foreground">Plano de Ação Recomendado</h2>
+              <h2 className="font-display text-base font-bold text-foreground">Plano de Ação Recomendado</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação com concorrentes", "Desenvolver backlinks autoritativos", "Monitorar menções em tempo real"].map((a, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/50 border border-border p-4">
-                  <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-ivero-gradient text-primary-foreground text-sm font-bold shrink-0">{i + 1}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
+                <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/50 border border-border p-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
                   <span className="text-sm text-muted-foreground">{a}</span>
                 </div>
               ))}
@@ -403,67 +485,93 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </div>
         </motion.div>
 
-        {/* ── Previsão de Impacto (BLURRED) ── */}
+        {/* ── Previsão de Impacto (BLURRED — lighter) ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
           className="relative"
         >
           <BlurredOverlay />
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <Rocket className="w-5 h-5 text-primary" />
-              <h2 className="font-display text-lg font-bold text-foreground">🔮 Previsão de Impacto</h2>
+              <h2 className="font-display text-base font-bold text-foreground">🔮 Previsão de Impacto</h2>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Implantando as melhorias recomendadas, sua marca pode:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {[
                 { metric: "+180%", label: "Menções em IAs" },
                 { metric: "Top 3", label: "Posição no setor" },
                 { metric: "+65%", label: "Tráfego qualificado" },
               ].map((item, i) => (
-                <div key={i} className="rounded-xl bg-muted/50 border border-border p-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">{item.metric}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                <div key={i} className="rounded-xl bg-muted/50 border border-border p-3 text-center">
+                  <p className="text-xl font-bold text-foreground">{item.metric}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
                 </div>
               ))}
             </div>
           </div>
         </motion.div>
 
-        {/* ── CTA Final ── */}
+        {/* ── Ivero Features + CTA "Conheça nossos planos" ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="rounded-2xl border border-primary/30 bg-card p-6 space-y-5"
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
+          className="rounded-2xl border border-border bg-card p-6 space-y-5"
         >
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="font-display text-lg font-bold text-foreground">Sua marca merece ser encontrada</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">Sua marca merece ser lembrada</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            Este é apenas um resumo. O diagnóstico completo inclui análise de 15+ prompts estratégicos,
-            mapeamento de concorrentes e um plano de ação personalizado para dominar as IAs.
+            Com a Ivero, você tem tudo para dominar a presença da sua marca nas IAs generativas:
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              variant="hero"
-              size="lg"
-              className="flex-1 text-base py-6"
-              onClick={() => navigate("/login")}
-            >
-              Quero dominar as IAs
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="flex-1 text-base py-6"
-              onClick={() => navigate("/")}
-            >
-              Conhecer os planos
-            </Button>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {iveroFeatures.map((feat, i) => {
+              const Icon = feat.icon;
+              return (
+                <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/50 border border-border p-4">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 shrink-0">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{feat.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{feat.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          <Button
+            variant="hero"
+            size="lg"
+            className="w-full text-base py-6"
+            onClick={() => navigate("/")}
+          >
+            Conheça nossos planos
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+        </motion.div>
+
+        {/* ── CTA de impacto separado ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}
+          className="rounded-2xl border border-primary/30 bg-ivero-gradient p-6 text-center space-y-4"
+        >
+          <h2 className="font-display text-xl font-bold text-primary-foreground">
+            Enquanto você lê isso, a IA já decidiu quem indicar.
+          </h2>
+          <p className="text-sm text-primary-foreground/80">
+            Não deixe seus concorrentes dominarem as respostas. Comece agora.
+          </p>
+          <Button
+            variant="outline"
+            size="lg"
+            className="bg-white text-foreground hover:bg-white/90 border-white/20 text-base py-6 px-8"
+            onClick={() => navigate("/login")}
+          >
+            Começar agora — é rápido
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
         </motion.div>
       </div>
     </motion.div>
