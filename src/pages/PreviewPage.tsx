@@ -122,10 +122,10 @@ function BlurredOverlay() {
 /* ── Loading Screen ── */
 function LoadingScreen({ currentStep, progress }: { currentStep: number; progress: number }) {
   return (
-    <div className="min-h-screen bg-ivero-dark flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
       {/* Background glows */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.06] blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.04] blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.04] blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.03] blur-[120px] pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -144,7 +144,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
             transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
           />
           {/* Outer ring mask */}
-          <div className="absolute inset-[3px] rounded-full bg-ivero-dark" />
+          <div className="absolute inset-[3px] rounded-full bg-background" />
 
           {/* Inner ring */}
           <motion.div
@@ -155,7 +155,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
             animate={{ rotate: -360 }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           />
-          <div className="absolute inset-[19px] rounded-full bg-ivero-dark" />
+          <div className="absolute inset-[19px] rounded-full bg-background" />
 
           {/* Core glow */}
           <motion.div
@@ -164,7 +164,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-base tracking-widest drop-shadow-lg">GEO</span>
+            <span className="text-primary-foreground font-display font-bold text-base tracking-widest">GEO</span>
           </div>
         </div>
 
@@ -182,7 +182,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
                 const StepIcon = loadingSteps[currentStep]?.icon || Search;
                 return <StepIcon className="w-5 h-5 text-ivero-pink shrink-0" />;
               })()}
-              <span className="text-primary-foreground font-display text-lg font-medium">
+              <span className="text-foreground font-display text-lg font-medium">
                 {loadingSteps[currentStep]?.text}
               </span>
             </motion.div>
@@ -190,7 +190,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
         </div>
 
         <div className="space-y-3">
-          <div className="h-2 rounded-full bg-ivero-dark-surface overflow-hidden border border-ivero-purple/20">
+          <div className="h-2 rounded-full bg-muted overflow-hidden border border-primary/20">
             <motion.div
               className="h-full rounded-full bg-ivero-gradient"
               initial={{ width: 0 }}
@@ -198,7 +198,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
               transition={{ duration: 0.4, ease: "easeOut" }}
             />
           </div>
-          <span className="text-sm text-ivero-slate-light font-display">{Math.round(progress)}%</span>
+          <span className="text-sm text-muted-foreground font-display">{Math.round(progress)}%</span>
         </div>
 
         <div className="space-y-2.5">
@@ -219,7 +219,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
               ) : (
                 <div className="w-4 h-4 rounded-full border border-ivero-slate/30 shrink-0" />
               )}
-              <span className={i <= currentStep ? "text-primary-foreground" : "text-ivero-slate"}>
+              <span className={i <= currentStep ? "text-foreground" : "text-muted-foreground/50"}>
                 {step.text}
               </span>
             </motion.div>
@@ -615,50 +615,12 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── Ivero Features + CTA ── */}
-        <AnimatedSection delay={0.38}>
-          <PremiumCard glow>
-            <div className="space-y-6">
-              <SectionHeader icon={Sparkles} title="Sua marca merece ser lembrada" subtitle="Com a Ivero, você tem tudo para dominar a presença da sua marca nas IAs generativas" />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {iveroFeatures.map((feat, i) => {
-                  const Icon = feat.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
-                        <Icon className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{feat.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <Button
-                variant="hero"
-                size="lg"
-                className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
-                onClick={() => navigate("/")}
-              >
-                Conheça nossos planos
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
-
         {/* ── CTA de impacto ── */}
-        <AnimatedSection delay={0.42}>
+        <AnimatedSection delay={0.38}>
           <div className="relative rounded-2xl overflow-hidden">
-            {/* Background with gradient */}
             <div className="absolute inset-0 bg-ivero-gradient" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
-
             <div className="relative z-10 p-8 sm:p-10 text-center space-y-5">
               <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
                 Enquanto você lê isso, a IA já decidiu quem indicar.
@@ -676,6 +638,40 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
               </Button>
             </div>
           </div>
+        </AnimatedSection>
+
+        {/* ── Ivero Features ── */}
+        <AnimatedSection delay={0.42}>
+          <PremiumCard glow>
+            <div className="space-y-6">
+              <SectionHeader icon={Sparkles} title="Sua marca merece ser lembrada" subtitle="Com a Ivero, você tem tudo para dominar a presença da sua marca nas IAs generativas" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {iveroFeatures.map((feat, i) => {
+                  const Icon = feat.icon;
+                  return (
+                    <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
+                        <Icon className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{feat.label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Button
+                variant="hero"
+                size="lg"
+                className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
+                onClick={() => navigate("/")}
+              >
+                Conheça nossos planos
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </div>
+          </PremiumCard>
         </AnimatedSection>
       </div>
     </motion.div>
