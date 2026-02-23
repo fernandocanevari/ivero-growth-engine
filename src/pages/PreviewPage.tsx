@@ -85,10 +85,30 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md px-6 space-y-8 text-center"
       >
-        <div className="relative mx-auto w-20 h-20">
-          <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse-glow" />
+        <div className="relative mx-auto w-24 h-24">
+          {/* Outer rotating ring */}
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-transparent"
+            style={{ borderTopColor: "hsl(var(--primary))", borderRightColor: "hsl(var(--accent))" }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          />
+          {/* Middle pulsing ring */}
+          <motion.div
+            className="absolute inset-2 rounded-full border-2 border-transparent"
+            style={{ borderBottomColor: "hsl(var(--accent))", borderLeftColor: "hsl(var(--primary))" }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          />
+          {/* Inner glow */}
+          <motion.div
+            className="absolute inset-4 rounded-full bg-ivero-gradient"
+            animate={{ scale: [0.85, 1, 0.85], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Center logo text */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <span className="text-primary-foreground font-display font-bold text-sm tracking-wider">GEO</span>
           </div>
         </div>
 
@@ -371,19 +391,22 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </p>
 
           <div className="space-y-3">
-            {clarezaItems.map((item, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border">
-                {item.status === "strong" ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>
+          {clarezaItems.map((item, i) => {
+              const isBlurred = item.label === "Proposta única de valor" || item.label === "Benefício vs. Característica";
+              return (
+                <div key={i} className={`flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border ${isBlurred ? "blur-[2px] select-none pointer-events-none" : ""}`}>
+                  {item.status === "strong" ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Resumo — soft blur */}
