@@ -469,19 +469,21 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
           className="relative"
         >
-          <BlurredOverlay />
           <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
               <h2 className="font-display text-base font-bold text-foreground">Diagnóstico Detalhado</h2>
             </div>
-            <div className="rounded-xl bg-muted/50 border border-border p-3 space-y-1.5">
-              <p className="text-sm font-medium text-foreground">Principais Problemas Detectados:</p>
-              {["Baixa visibilidade em respostas do ChatGPT", "Marca não mencionada em comparativos do setor", "Conteúdo não otimizado para indexação por IA"].map((p, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary mt-0.5">•</span><span>{p}</span>
-                </div>
-              ))}
+            <div className="relative">
+              <BlurredOverlay />
+              <div className="rounded-xl bg-muted/50 border border-border p-3 space-y-1.5">
+                <p className="text-sm font-medium text-foreground">Principais Problemas Detectados:</p>
+                {["Baixa visibilidade em respostas do ChatGPT", "Marca não mencionada em comparativos do setor", "Conteúdo não otimizado para indexação por IA"].map((p, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <span className="text-primary mt-0.5">•</span><span>{p}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -491,19 +493,21 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="relative"
         >
-          <BlurredOverlay />
           <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               <h2 className="font-display text-base font-bold text-foreground">Plano de Ação Recomendado</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/50 border border-border p-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
-                  <span className="text-sm text-muted-foreground">{a}</span>
-                </div>
-              ))}
+            <div className="relative">
+              <BlurredOverlay />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
+                  <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/50 border border-border p-3">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
+                    <span className="text-sm text-muted-foreground">{a}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -513,23 +517,25 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
           className="relative"
         >
-          <BlurredOverlay />
           <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <Rocket className="w-5 h-5 text-primary" />
               <h2 className="font-display text-base font-bold text-foreground">🔮 Previsão de Impacto</h2>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { metric: "+180%", label: "Menções em IAs" },
-                { metric: "Top 3", label: "Posição no setor" },
-                { metric: "+65%", label: "Tráfego qualificado" },
-              ].map((item, i) => (
-                <div key={i} className="rounded-xl bg-muted/50 border border-border p-3 text-center">
-                  <p className="text-xl font-bold text-foreground">{item.metric}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-                </div>
-              ))}
+            <div className="relative">
+              <BlurredOverlay />
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { metric: "+180%", label: "Menções em IAs" },
+                  { metric: "Top 3", label: "Posição no setor" },
+                  { metric: "+65%", label: "Tráfego qualificado" },
+                ].map((item, i) => (
+                  <div key={i} className="rounded-xl bg-muted/50 border border-border p-3 text-center">
+                    <p className="text-xl font-bold text-foreground">{item.metric}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
