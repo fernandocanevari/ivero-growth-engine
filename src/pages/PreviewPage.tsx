@@ -91,6 +91,59 @@ const radarData = [
   { subject: "Experiência", value: 71, fullMark: 100 },
 ];
 
+const pillarDetails = [
+  {
+    name: "Clareza",
+    score: 82,
+    icon: Eye,
+    color: "emerald",
+    status: "Forte" as const,
+    summary: "Sua marca comunica de forma direta o que faz e para quem.",
+    strengths: ["Headline objetiva e funcional", "Benefícios claros na comunicação"],
+    recommendation: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
+  },
+  {
+    name: "Autoridade",
+    score: 35,
+    icon: ShieldCheck,
+    color: "red",
+    status: "Crítico" as const,
+    summary: "Baixa presença de sinais de autoridade reconhecidos por IAs.",
+    strengths: ["Presença digital existente"],
+    recommendation: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado para construir autoridade.",
+  },
+  {
+    name: "Conversão",
+    score: 58,
+    icon: Target,
+    color: "amber",
+    status: "Moderado" as const,
+    summary: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
+    strengths: ["CTAs visíveis na página", "Formulário de contato acessível"],
+    recommendation: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
+  },
+  {
+    name: "Posicionamento",
+    score: 64,
+    icon: Rocket,
+    color: "amber",
+    status: "Moderado" as const,
+    summary: "Posicionamento técnico sólido, mas falta diferenciação emocional.",
+    strengths: ["Linguagem profissional e consistente", "Foco em valor vs preço"],
+    recommendation: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas sobre sua marca.",
+  },
+  {
+    name: "Experiência",
+    score: 71,
+    icon: Sparkles,
+    color: "emerald",
+    status: "Bom" as const,
+    summary: "Boa experiência geral, com oportunidades de refinamento.",
+    strengths: ["Navegação intuitiva", "Design consistente"],
+    recommendation: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
+  },
+];
+
 const iveroFeatures = [
   { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Claude, Gemini e mais" },
   { icon: Gauge, label: "Score GEO em Tempo Real", desc: "Índice de visibilidade atualizado continuamente" },
@@ -475,89 +528,86 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── Clareza da Proposta de Valor ── */}
-        <AnimatedSection delay={0.15}>
-          <PremiumCard>
-            <div className="space-y-5">
-              <SectionHeader icon={Eye} title="Clareza da Proposta de Valor" subtitle={`"Em 5 segundos eu entendo o que essa empresa faz?"`} />
+        {/* ── 5 Pilares Detalhados ── */}
+        {pillarDetails.map((pillar, idx) => {
+          const PillarIcon = pillar.icon;
+          const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
+          const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
+          const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
 
-              <div className="space-y-3">
-                {clarezaItems.map((item, i) => {
-                  const isBlurred = item.label === "Proposta única de valor" || item.label === "Benefício vs. Característica";
-                  return (
-                    <div key={i} className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
-                      isBlurred
-                        ? "blur-[1.5px] opacity-50 select-none pointer-events-none bg-muted/20 border-border/30"
-                        : item.status === "strong"
-                          ? "bg-emerald-50/50 border-emerald-200/40"
-                          : "bg-amber-50/50 border-amber-200/40"
-                    }`}>
-                      {item.status === "strong" ? (
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 shrink-0">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 shrink-0">
-                          <AlertTriangle className="w-4 h-4 text-amber-500" />
-                        </div>
-                      )}
+          return (
+            <AnimatedSection key={pillar.name} delay={0.15 + idx * 0.06}>
+              <PremiumCard>
+                <div className="space-y-5">
+                  {/* Header with score */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm">
+                        <PillarIcon className="w-5 h-5 text-primary-foreground" />
+                      </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.detail}</p>
+                        <h3 className="text-base font-display font-bold text-foreground">{pillar.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">{pillar.summary}</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Resumo — soft blur */}
-              <SoftBlur>
-                <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-2">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-widest">Resumo</p>
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-emerald-600 font-semibold">2 pontos fortes</span>
-                    <span className="text-amber-500 font-semibold">2 pontos de atenção</span>
+                    <div className="text-right shrink-0">
+                      <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
+                      <span className="text-xs text-muted-foreground">/100</span>
+                      <div className={`mt-1 inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusBg}`}>
+                        {pillar.status}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Sua comunicação de benefícios é eficaz, mas a diferenciação e proposta única precisam ser reforçadas
-                    para que o visitante entenda instantaneamente por que escolher sua marca.
-                  </p>
+
+                  {/* Score bar */}
+                  <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${barColor}`}
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${pillar.score}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.2, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  {/* Strengths */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Pontos fortes</p>
+                    <div className="space-y-1.5">
+                      {pillar.strengths.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span className="text-foreground">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Recommendation — blurred */}
+                  <SoftBlur>
+                    <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-1.5">
+                      <p className="text-xs font-semibold text-primary uppercase tracking-widest">Recomendação</p>
+                      <p className="text-sm text-foreground leading-relaxed">{pillar.recommendation}</p>
+                    </div>
+                  </SoftBlur>
                 </div>
-              </SoftBlur>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
+              </PremiumCard>
+            </AnimatedSection>
+          );
+        })}
 
-        {/* ── Posicionamento Estratégico ── */}
-        <AnimatedSection delay={0.2}>
+        {/* ── Diagnóstico Final ── */}
+        <AnimatedSection delay={0.5}>
           <PremiumCard>
-            <div className="space-y-5">
-              <SectionHeader icon={Target} title="Posicionamento Estratégico" />
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Linguagem", value: "Racional", sub: "vs emocional" },
-                  { label: "Foco", value: "Valor", sub: "vs preço" },
-                  { label: "Comunicação", value: "Técnica", sub: "vs aspiracional" },
-                  { label: "Público implícito", value: "B2B", sub: "decisores" },
-                ].map((item, i) => (
-                  <div key={i} className="rounded-xl bg-muted/40 border border-border/50 p-4 text-center hover:border-primary/20 hover:bg-primary/5 transition-all">
-                    <p className="text-xs text-muted-foreground font-medium">{item.label}</p>
-                    <p className="text-base font-display font-bold text-foreground mt-1">{item.value}</p>
-                    <p className="text-xs text-muted-foreground">{item.sub}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Diagnóstico Final — soft blur */}
+            <div className="space-y-4">
+              <SectionHeader icon={Brain} title="Diagnóstico Final" />
               <SoftBlur>
                 <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">Diagnóstico Final</p>
                   <p className="text-sm text-foreground leading-relaxed">
                     Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
                     decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
                     reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
-                    contextuais.
+                    contextuais. Os pilares de Autoridade e Conversão são os que mais precisam de atenção imediata.
                   </p>
                 </div>
               </SoftBlur>
