@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -639,13 +640,15 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 Enquanto você lê isso, a IA já decidiu quem indicar.
               </h2>
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
                   const form = e.target as HTMLFormElement;
-                  const email = (form.elements.namedItem("cta_email") as HTMLInputElement)?.value;
-                  if (email) {
-                    navigate(`/login?email=${encodeURIComponent(email)}`);
-                  }
+                  const email = (form.elements.namedItem("cta_email") as HTMLInputElement)?.value?.trim();
+                  if (!email) return;
+                  try {
+                    await supabase.from("leads").upsert({ email, source: "preview_cta" } as any, { onConflict: "email" });
+                  } catch (_) { /* silently continue */ }
+                  navigate(`/login?email=${encodeURIComponent(email)}`);
                 }}
                 className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto"
               >
