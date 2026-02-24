@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
-  Lock, Target, Eye, Rocket, Download,
+  Lock, Target, Eye, Rocket, Download, Mail,
   Activity, ShieldCheck, LineChart, MessageSquare, Gauge, Radio,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer,
@@ -633,21 +634,44 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="absolute inset-0 bg-ivero-gradient" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
-            <div className="relative z-10 p-8 sm:p-10 text-center space-y-5">
+            <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
               <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
                 Enquanto você lê isso, a IA já decidiu quem indicar.
               </h2>
               <p className="text-sm text-primary-foreground/80 max-w-md mx-auto">
-                Não deixe seus concorrentes dominarem as respostas. Comece agora.
+                Receba seu diagnóstico completo e descubra como dominar as respostas da IA.
               </p>
-              <Button
-                size="lg"
-                className="bg-white text-foreground hover:bg-white/90 border-0 text-base py-6 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all"
-                onClick={() => navigate("/login")}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const email = (form.elements.namedItem("cta_email") as HTMLInputElement)?.value;
+                  if (email) {
+                    navigate(`/login?email=${encodeURIComponent(email)}`);
+                  }
+                }}
+                className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto"
               >
-                Começar agora — é rápido
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+                <div className="relative flex-1 w-full">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    name="cta_email"
+                    type="email"
+                    required
+                    placeholder="Seu melhor e-mail"
+                    className="pl-10 h-12 rounded-full bg-white/95 border-0 text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:ring-white/50"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full sm:w-auto"
+                >
+                  Desbloquear relatório
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </form>
+              <p className="text-xs text-primary-foreground/60">Gratuito • Sem cartão de crédito</p>
             </div>
           </div>
         </AnimatedSection>
