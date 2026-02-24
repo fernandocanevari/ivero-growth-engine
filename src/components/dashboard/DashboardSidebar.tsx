@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
-  Download, Settings, LogOut, Crown, Users,
+  Download, Settings, LogOut, Crown, Users, Mail,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -148,6 +148,18 @@ export function DashboardSidebar() {
                     >
                       <Users className="h-4 w-4 shrink-0" />
                       <span className="truncate">Clientes</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/admin/leads"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <Mail className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Leads</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
