@@ -638,9 +638,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
               <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
                 Enquanto você lê isso, a IA já decidiu quem indicar.
               </h2>
-              <p className="text-sm text-primary-foreground/80 max-w-md mx-auto">
-                Receba seu diagnóstico completo e descubra como dominar as respostas da IA.
-              </p>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -671,7 +668,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </form>
-              <p className="text-xs text-primary-foreground/60">Gratuito • Sem cartão de crédito</p>
+              <p className="text-xs text-primary-foreground/60">7 dias gratuitos • Sem cartão de crédito</p>
             </div>
           </div>
         </AnimatedSection>
