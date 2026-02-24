@@ -101,9 +101,16 @@ const iveroFeatures = [
 /* ── Soft blur overlay (for Resumo / Diagnóstico Final) ── */
 function SoftBlur({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative">
-      <div className="blur-[1.5px] opacity-60 select-none pointer-events-none">{children}</div>
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80 rounded-xl" />
+    <div className="relative group/soft cursor-default">
+      <div className="blur-[1.5px] opacity-60 select-none pointer-events-none transition-all duration-500 group-hover/soft:blur-[3px] group-hover/soft:opacity-40">{children}</div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80 rounded-xl transition-opacity duration-500 group-hover/soft:to-card/90" />
+      {/* Badge on hover */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/soft:opacity-100 transition-all duration-400 z-10">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-ivero-gradient shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.45)] scale-90 group-hover/soft:scale-100 transition-transform duration-400">
+          <Lock className="w-3.5 h-3.5 text-primary-foreground" />
+          <span className="text-xs font-medium text-primary-foreground">Conteúdo premium</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -111,15 +118,15 @@ function SoftBlur({ children }: { children: React.ReactNode }) {
 /* ── Blurred overlay for locked sections ── */
 function BlurredOverlay() {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl">
-      {/* Multi-layer frosted glass */}
-      <div className="absolute inset-0 backdrop-blur-[3px] bg-gradient-to-b from-card/30 via-card/50 to-card/70 rounded-xl" />
-      {/* Badge */}
-      <div className="relative z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.35)]">
-        <Lock className="w-3.5 h-3.5 text-primary-foreground" />
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl group/locked cursor-default">
+      {/* Multi-layer frosted glass — intensifies on hover */}
+      <div className="absolute inset-0 backdrop-blur-[3px] bg-gradient-to-b from-card/30 via-card/50 to-card/70 rounded-xl transition-all duration-500 group-hover/locked:backdrop-blur-[6px] group-hover/locked:from-card/40 group-hover/locked:via-card/60 group-hover/locked:to-card/80" />
+      {/* Badge — scales up on hover */}
+      <div className="relative z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.35)] transition-all duration-400 group-hover/locked:scale-110 group-hover/locked:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)]">
+        <Lock className="w-3.5 h-3.5 text-primary-foreground transition-transform duration-400 group-hover/locked:rotate-[-12deg]" />
         <span className="text-sm font-medium text-primary-foreground">Disponível em nossos planos</span>
       </div>
-      <p className="relative z-20 text-xs text-muted-foreground/70">Desbloqueie o relatório completo</p>
+      <p className="relative z-20 text-xs text-muted-foreground/70 transition-all duration-400 group-hover/locked:text-muted-foreground">Desbloqueie o relatório completo</p>
     </div>
   );
 }
