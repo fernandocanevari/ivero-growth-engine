@@ -29,6 +29,7 @@ import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
 import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
+import PilaresPage from "./pages/dashboard/PilaresPage";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
+            <Route path="pilares" element={<PilaresPage />} />
             <Route path="monitoramento" element={<MonitoramentoPage />} />
             <Route path="comparativo" element={<ComparativoPage />} />
             <Route path="score" element={<ScorePage />} />
