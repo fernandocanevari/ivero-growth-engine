@@ -8,6 +8,7 @@ import {
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
   Lock, Target, Eye, Rocket, Download, Mail,
   Activity, ShieldCheck, LineChart, MessageSquare, Gauge, Radio,
+  Phone,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,7 +37,6 @@ function AnimatedSection({ children, delay = 0, className = "" }: { children: Re
 function PremiumCard({ children, className = "", glow = false }: { children: React.ReactNode; className?: string; glow?: boolean }) {
   return (
     <div className={`relative rounded-2xl border border-border/60 bg-card shadow-[0_2px_24px_-4px_hsl(var(--primary)/0.08)] overflow-hidden ${glow ? "shadow-[0_4px_40px_-8px_hsl(var(--primary)/0.15)]" : ""} ${className}`}>
-      {/* Subtle gradient accent on top */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-ivero-gradient opacity-60" />
       <div className="p-6">{children}</div>
     </div>
@@ -76,13 +76,6 @@ const aiEngines = [
   { name: "Perplexity", found: false },
 ];
 
-const clarezaItems = [
-  { label: "Clareza da headline", status: "strong" as const, detail: "Sua headline comunica o core business de forma direta." },
-  { label: "Diferenciação", status: "weak" as const, detail: "Não há um diferencial claro em relação à concorrência." },
-  { label: "Proposta única de valor", status: "weak" as const, detail: "O visitante não entende por que escolher você em 5 segundos." },
-  { label: "Benefício vs. Característica", status: "strong" as const, detail: "Boa ênfase nos resultados para o cliente." },
-];
-
 const radarData = [
   { subject: "Clareza", value: 82, fullMark: 100 },
   { subject: "Autoridade", value: 35, fullMark: 100 },
@@ -99,7 +92,10 @@ const pillarDetails = [
     color: "emerald",
     status: "Forte" as const,
     summary: "Sua marca comunica de forma direta o que faz e para quem.",
-    strengths: ["Headline objetiva e funcional", "Benefícios claros na comunicação"],
+    strengths: [
+      "Headline objetiva → IA compreende o core business rapidamente",
+      "Benefícios claros → Aumenta chances de recomendação contextual",
+    ],
     recommendation: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
   },
   {
@@ -108,8 +104,15 @@ const pillarDetails = [
     icon: ShieldCheck,
     color: "red",
     status: "Crítico" as const,
-    summary: "Baixa presença de sinais de autoridade reconhecidos por IAs.",
-    strengths: ["Presença digital existente"],
+    summary: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
+    strengths: [
+      "Domínio registrado → Base mínima de presença online identificada",
+    ],
+    weaknesses: [
+      "Ausência de backlinks de qualidade → IA não reconhece referências externas",
+      "Sem menções em mídia especializada → Reduz credibilidade algorítmica",
+      "Conteúdo técnico insuficiente → Limita profundidade de indexação por IA",
+    ],
     recommendation: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado para construir autoridade.",
   },
   {
@@ -119,7 +122,14 @@ const pillarDetails = [
     color: "amber",
     status: "Moderado" as const,
     summary: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
-    strengths: ["CTAs visíveis na página", "Formulário de contato acessível"],
+    strengths: [
+      "CTAs visíveis → Caminho de conversão existente",
+      "Formulário acessível → Ponto de contato disponível",
+    ],
+    weaknesses: [
+      "Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas",
+      "Ausência de prova social contextual → Reduz taxa de conversão em 40%",
+    ],
     recommendation: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
   },
   {
@@ -128,8 +138,15 @@ const pillarDetails = [
     icon: Rocket,
     color: "amber",
     status: "Moderado" as const,
-    summary: "Posicionamento técnico sólido, mas falta diferenciação emocional.",
-    strengths: ["Linguagem profissional e consistente", "Foco em valor vs preço"],
+    summary: "Posicionamento técnico sólido, mas falta diferenciação emocional que IAs valorizam.",
+    strengths: [
+      "Linguagem profissional → Consistência na comunicação",
+      "Foco em valor → Diferenciação por benefício detectada",
+    ],
+    weaknesses: [
+      "Sem storytelling → IA gera respostas genéricas sobre sua marca",
+      "Elementos aspiracionais ausentes → Reduz engajamento nas recomendações",
+    ],
     recommendation: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas sobre sua marca.",
   },
   {
@@ -138,11 +155,38 @@ const pillarDetails = [
     icon: Sparkles,
     color: "emerald",
     status: "Bom" as const,
-    summary: "Boa experiência geral, com oportunidades de refinamento.",
-    strengths: ["Navegação intuitiva", "Design consistente"],
+    summary: "Estrutura técnica funcional com oportunidades de otimização para crawlers de IA.",
+    strengths: [
+      "Navegação intuitiva → Facilita compreensão da estrutura pela IA",
+      "Design consistente → Sinal de profissionalismo para algoritmos",
+    ],
+    weaknesses: [
+      "Dados estruturados ausentes → IA não consegue extrair informações semânticas",
+      "Velocidade de carregamento → Impacta indexação por motores de IA",
+    ],
     recommendation: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
   },
 ];
+
+/* ── Dynamic phrase for weakest pillar ── */
+function getWeakestPillarPhrase(): string {
+  const weakest = [...radarData].sort((a, b) => a.value - b.value)[0];
+  const phrases: Record<string, string> = {
+    Clareza: "Falta de clareza diminui a compreensão da IA sobre sua proposta de valor.",
+    Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
+    Conversão: "Baixa conversão significa que visitantes vindos de IA não se tornam clientes.",
+    Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
+    Experiência: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
+  };
+  return phrases[weakest.subject] || phrases["Autoridade"];
+}
+
+/* ── Score level helper ── */
+function getScoreLevel(score: number) {
+  if (score <= 40) return { label: "Invisível", color: "red", emoji: "🔴", message: "Sua marca está sendo pouco recomendada nas IAs da sua categoria." };
+  if (score <= 70) return { label: "Competindo", color: "amber", emoji: "🟡", message: "Você está abaixo do nível competitivo ideal para recomendação em IA." };
+  return { label: "Influenciando", color: "emerald", emoji: "🟢", message: "Sua marca já tem forte presença nas IAs — agora é hora de consolidar liderança." };
+}
 
 const iveroFeatures = [
   { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Claude, Gemini e mais" },
@@ -153,17 +197,16 @@ const iveroFeatures = [
   { icon: MessageSquare, label: "Otimização de Prompts", desc: "Estratégias para dominar respostas de IA" },
 ];
 
-/* ── Soft blur overlay (for Resumo / Diagnóstico Final) ── */
-function SoftBlur({ children }: { children: React.ReactNode }) {
+/* ── Soft blur overlay ── */
+function SoftBlur({ children, label }: { children: React.ReactNode; label?: string }) {
   return (
     <div className="relative group/soft cursor-default">
       <div className="blur-[1.5px] opacity-60 select-none pointer-events-none transition-all duration-500 group-hover/soft:blur-[3px] group-hover/soft:opacity-40">{children}</div>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80 rounded-xl transition-opacity duration-500 group-hover/soft:to-card/90" />
-      {/* Badge on hover */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/soft:opacity-100 transition-all duration-400 z-10">
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-ivero-gradient shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.45)] scale-90 group-hover/soft:scale-100 transition-transform duration-400">
           <Lock className="w-3.5 h-3.5 text-primary-foreground" />
-          <span className="text-xs font-medium text-primary-foreground">Conteúdo premium</span>
+          <span className="text-xs font-medium text-primary-foreground">{label || "💜 Queremos você como nosso cliente."}</span>
         </div>
       </div>
     </div>
@@ -171,17 +214,15 @@ function SoftBlur({ children }: { children: React.ReactNode }) {
 }
 
 /* ── Blurred overlay for locked sections ── */
-function BlurredOverlay() {
+function BlurredOverlay({ title }: { title?: string }) {
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl group/locked cursor-default">
-      {/* Multi-layer frosted glass — intensifies on hover */}
       <div className="absolute inset-0 backdrop-blur-[3px] bg-gradient-to-b from-card/30 via-card/50 to-card/70 rounded-xl transition-all duration-500 group-hover/locked:backdrop-blur-[6px] group-hover/locked:from-card/40 group-hover/locked:via-card/60 group-hover/locked:to-card/80" />
-      {/* Badge — scales up on hover */}
       <div className="relative z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.35)] transition-all duration-400 group-hover/locked:scale-110 group-hover/locked:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)]">
         <Lock className="w-3.5 h-3.5 text-primary-foreground transition-transform duration-400 group-hover/locked:rotate-[-12deg]" />
-        <span className="text-sm font-medium text-primary-foreground">Disponível em nossos planos</span>
+        <span className="text-sm font-medium text-primary-foreground">{title || "🔒 Plano de Domínio Estratégico"}</span>
       </div>
-      <p className="relative z-20 text-xs text-muted-foreground/70 transition-all duration-400 group-hover/locked:text-muted-foreground">Desbloqueie o relatório completo</p>
+      <p className="relative z-20 text-xs text-muted-foreground/70 transition-all duration-400 group-hover/locked:text-muted-foreground">💜 Queremos você como nosso cliente.</p>
     </div>
   );
 }
@@ -190,7 +231,6 @@ function BlurredOverlay() {
 function LoadingScreen({ currentStep, progress }: { currentStep: number; progress: number }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-      {/* Background glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.04] blur-[150px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.03] blur-[120px] pointer-events-none" />
 
@@ -201,30 +241,20 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
       >
         {/* Animated logo */}
         <div className="relative mx-auto w-32 h-32">
-          {/* Outer ring */}
           <motion.div
             className="absolute inset-0 rounded-full"
-            style={{
-              background: "conic-gradient(from 0deg, hsl(265 70% 28% / 0.6), hsl(330 85% 55% / 0.6), hsl(265 70% 28% / 0.1), hsl(265 70% 28% / 0.6))",
-            }}
+            style={{ background: "conic-gradient(from 0deg, hsl(265 70% 28% / 0.6), hsl(330 85% 55% / 0.6), hsl(265 70% 28% / 0.1), hsl(265 70% 28% / 0.6))" }}
             animate={{ rotate: 360 }}
             transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
           />
-          {/* Outer ring mask */}
           <div className="absolute inset-[3px] rounded-full bg-background" />
-
-          {/* Inner ring */}
           <motion.div
             className="absolute inset-4 rounded-full"
-            style={{
-              background: "conic-gradient(from 180deg, hsl(330 85% 55% / 0.5), hsl(265 70% 28% / 0.5), hsl(330 85% 55% / 0.1), hsl(330 85% 55% / 0.5))",
-            }}
+            style={{ background: "conic-gradient(from 180deg, hsl(330 85% 55% / 0.5), hsl(265 70% 28% / 0.5), hsl(330 85% 55% / 0.1), hsl(330 85% 55% / 0.5))" }}
             animate={{ rotate: -360 }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           />
           <div className="absolute inset-[19px] rounded-full bg-background" />
-
-          {/* Core glow */}
           <motion.div
             className="absolute inset-8 rounded-full bg-ivero-gradient"
             animate={{ scale: [0.85, 1, 0.85], opacity: [0.5, 0.9, 0.5] }}
@@ -301,6 +331,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
 function ScoreCircle({ score, benchmark }: { score: number; benchmark: number }) {
   const circumference = 2 * Math.PI * 45;
   const [animatedScore, setAnimatedScore] = useState(0);
+  const level = getScoreLevel(score);
 
   useEffect(() => {
     let frame: number;
@@ -318,76 +349,96 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
   }, [score]);
 
   const getScoreColor = (val: number) => {
-    if (val < 40) return "hsl(0, 72%, 51%)";
-    if (val < 70) return "hsl(38, 92%, 50%)";
+    if (val <= 40) return "hsl(0, 72%, 51%)";
+    if (val <= 70) return "hsl(38, 92%, 50%)";
     return "hsl(142, 71%, 45%)";
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-8">
-      <div className="relative w-36 h-36 shrink-0">
-        {/* Glow behind circle */}
-        <div className="absolute inset-0 rounded-full bg-primary/5 blur-xl" />
-        <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90 relative z-10">
-          <circle cx="60" cy="60" r="45" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
-          <motion.circle
-            cx="60" cy="60" r="45" fill="none"
-            stroke={getScoreColor(animatedScore)}
-            strokeWidth="7" strokeLinecap="round"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: circumference * (1 - animatedScore / 100) }}
-            transition={{ duration: 2, ease: "easeOut" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-          <span className="text-4xl font-display font-bold text-foreground">{animatedScore}</span>
-          <span className="text-xs text-muted-foreground font-medium">/100</span>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-center gap-8">
+        <div className="relative w-36 h-36 shrink-0">
+          <div className="absolute inset-0 rounded-full bg-primary/5 blur-xl" />
+          <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90 relative z-10">
+            <circle cx="60" cy="60" r="45" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+            <motion.circle
+              cx="60" cy="60" r="45" fill="none"
+              stroke={getScoreColor(animatedScore)}
+              strokeWidth="7" strokeLinecap="round"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: circumference * (1 - animatedScore / 100) }}
+              transition={{ duration: 2, ease: "easeOut" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+            <span className="text-4xl font-display font-bold text-foreground">{animatedScore}</span>
+            <span className="text-xs text-muted-foreground font-medium">/100</span>
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-4 text-center sm:text-left">
+          <div>
+            <p className="text-base font-display font-semibold text-foreground">Score de Presença GEO</p>
+            <p className="text-xs text-muted-foreground mt-1">Índice de influência da sua marca nas IAs generativas</p>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-muted-foreground">Sua marca</span>
+                <span className="font-semibold text-foreground">{score}%</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: getScoreColor(score) }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${score}%` }}
+                  transition={{ duration: 2, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-muted-foreground">Média do setor</span>
+                <span className="font-semibold text-foreground">{benchmark}%</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-muted-foreground/30"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${benchmark}%` }}
+                  transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 text-center sm:text-left">
-        <div>
-          <p className="text-base font-display font-semibold text-foreground">Score de Presença GEO</p>
-          <p className="text-xs text-muted-foreground mt-1">Índice de visibilidade da sua marca nas IAs generativas</p>
-        </div>
-        <div className="space-y-3">
+      {/* Score level interpretation — always show consequence */}
+      <div className={`rounded-xl p-4 border ${
+        level.color === "red" ? "bg-red-50/80 border-red-200/60" :
+        level.color === "amber" ? "bg-amber-50/80 border-amber-200/60" :
+        "bg-emerald-50/80 border-emerald-200/60"
+      }`}>
+        <div className="flex items-start gap-3">
+          <span className="text-lg">{level.emoji}</span>
           <div>
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-muted-foreground">Sua marca</span>
-              <span className="font-semibold text-foreground">{score}%</span>
-            </div>
-            <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ backgroundColor: getScoreColor(score) }}
-                initial={{ width: 0 }}
-                animate={{ width: `${score}%` }}
-                transition={{ duration: 2, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-muted-foreground">Média do setor</span>
-              <span className="font-semibold text-foreground">{benchmark}%</span>
-            </div>
-            <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-muted-foreground/30"
-                initial={{ width: 0 }}
-                animate={{ width: `${benchmark}%` }}
-                transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-destructive/10 border border-destructive/20">
-              <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
-              <span className="text-xs font-medium text-destructive">
-                {Math.abs(score - benchmark)} pontos abaixo da média
-              </span>
-            </div>
+            <p className={`text-sm font-display font-bold ${
+              level.color === "red" ? "text-red-700" :
+              level.color === "amber" ? "text-amber-700" :
+              "text-emerald-700"
+            }`}>
+              {level.label}
+            </p>
+            <p className={`text-sm mt-1 leading-relaxed ${
+              level.color === "red" ? "text-red-600/80" :
+              level.color === "amber" ? "text-amber-600/80" :
+              "text-emerald-600/80"
+            }`}>
+              {level.message}
+            </p>
           </div>
         </div>
       </div>
@@ -398,10 +449,7 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 /* ── Diagnostic Report ── */
 function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
   const navigate = useNavigate();
-
-  const handleDownloadPDF = () => {
-    window.print();
-  };
+  const handleDownloadPDF = () => { window.print(); };
 
   return (
     <motion.div
@@ -429,19 +477,24 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       </header>
 
       <div className="container mx-auto px-4 sm:px-6 py-10 max-w-3xl space-y-8">
-        {/* Title */}
+        {/* Title — Diagnóstico de Influência em IA */}
         <AnimatedSection>
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs uppercase tracking-widest text-primary font-semibold">Diagnóstico Estratégico</span>
+              <Brain className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs uppercase tracking-widest text-primary font-semibold">Diagnóstico de Influência em IA</span>
             </div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
               {siteUrl || "Seu site"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Análise automatizada de presença e posicionamento em IAs generativas
+              A IA está decidindo quem recomendar. Veja onde sua marca se posiciona.
             </p>
+            {/* Plan indicator */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/60 mt-2">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-xs font-medium text-amber-700">🔒 Desbloqueie o Plano de Domínio Estratégico</span>
+            </div>
           </div>
         </AnimatedSection>
 
@@ -483,7 +536,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         <AnimatedSection delay={0.12}>
           <PremiumCard>
             <div className="space-y-5">
-              <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Visão macro dos 5 pilares de presença em IA" />
+              <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Os 5 pilares que determinam se a IA recomenda sua marca" />
 
               <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -512,23 +565,41 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 </ResponsiveContainer>
               </div>
 
+              {/* Dynamic phrase for weakest pillar */}
+              <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                  <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase()}</p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
                   <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
                   <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
                   <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
                 </div>
-                <div className="rounded-xl bg-amber-50/80 border border-amber-200/60 p-4 text-center shadow-sm">
-                  <p className="text-xs text-muted-foreground font-medium">Maior ponto de melhoria</p>
-                  <p className="text-base font-display font-bold text-amber-700 mt-1">Autoridade</p>
-                  <p className="text-xs text-amber-600/70 mt-0.5">Score: 35/100</p>
+                <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
+                  <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
+                  <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
+                  <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
                 </div>
               </div>
             </div>
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── 5 Pilares Detalhados ── */}
+        {/* ── 5 Pilares Detalhados (Diagnóstico Detalhado) ── */}
+        <AnimatedSection delay={0.18}>
+          <div className="space-y-2 mb-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Diagnóstico Detalhado
+            </h2>
+            <p className="text-xs text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
+          </div>
+        </AnimatedSection>
+
         {pillarDetails.map((pillar, idx) => {
           const PillarIcon = pillar.icon;
           const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
@@ -536,7 +607,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
 
           return (
-            <AnimatedSection key={pillar.name} delay={0.15 + idx * 0.06}>
+            <AnimatedSection key={pillar.name} delay={0.2 + idx * 0.06}>
               <PremiumCard>
                 <div className="space-y-5">
                   {/* Header with score */}
@@ -570,9 +641,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     />
                   </div>
 
-                  {/* Strengths */}
+                  {/* Strengths — strategic analysis */}
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Pontos fortes</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
                     <div className="space-y-1.5">
                       {pillar.strengths.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
@@ -583,10 +654,25 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     </div>
                   </div>
 
+                  {/* Weaknesses — impact analysis */}
+                  {pillar.weaknesses && pillar.weaknesses.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Impacto competitivo</p>
+                      <div className="space-y-1.5">
+                        {pillar.weaknesses.map((w, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                            <span className="text-foreground">{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Recommendation — blurred */}
                   <SoftBlur>
                     <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-1.5">
-                      <p className="text-xs font-semibold text-primary uppercase tracking-widest">Recomendação</p>
+                      <p className="text-xs font-semibold text-primary uppercase tracking-widest">Estratégia de Domínio</p>
                       <p className="text-sm text-foreground leading-relaxed">{pillar.recommendation}</p>
                     </div>
                   </SoftBlur>
@@ -596,18 +682,38 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           );
         })}
 
-        {/* ── Diagnóstico Final ── */}
-        <AnimatedSection delay={0.5}>
-          <PremiumCard>
+        {/* ── CTA WhatsApp — after pillar analysis ── */}
+        <AnimatedSection delay={0.55}>
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center space-y-3">
+            <a
+              href="https://wa.me/5511999999999?text=Quero%20entender%20como%20aumentar%20meu%20Score%20GEO"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-semibold text-sm shadow-[0_4px_20px_-4px_hsl(142,70%,45%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(142,70%,45%/0.5)] transition-all"
+            >
+              <Phone className="w-4 h-4" />
+              🟣 Chamar a Ivero no WhatsApp
+            </a>
+            <p className="text-xs text-muted-foreground">Converse com um especialista e entenda como aumentar seu score.</p>
+          </div>
+        </AnimatedSection>
+
+        {/* ── Diagnóstico Final (Premium) ── */}
+        <AnimatedSection delay={0.58}>
+          <PremiumCard glow>
             <div className="space-y-4">
-              <SectionHeader icon={Brain} title="Diagnóstico Final" />
-              <SoftBlur>
-                <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
-                  <p className="text-sm text-foreground leading-relaxed">
+              <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
+              <SoftBlur label="🔒 Estratégia para Superar Seus Concorrentes">
+                <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
+                  <p className="text-sm text-foreground leading-relaxed font-medium">
                     Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
                     decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
                     reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
-                    contextuais. Os pilares de Autoridade e Conversão são os que mais precisam de atenção imediata.
+                    contextuais.
+                  </p>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    Os pilares de <strong>Autoridade</strong> e <strong>Conversão</strong> são os que mais limitam sua capacidade de ser
+                    recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
                   </p>
                 </div>
               </SoftBlur>
@@ -615,33 +721,13 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── Diagnóstico Detalhado (BLURRED) ── */}
-        <AnimatedSection delay={0.25}>
-          <PremiumCard>
-            <div className="space-y-4">
-              <SectionHeader icon={AlertTriangle} title="Diagnóstico Detalhado" />
-              <div className="relative">
-                <BlurredOverlay />
-                <div className="rounded-xl bg-muted/30 border border-border/40 p-4 space-y-2">
-                  <p className="text-sm font-semibold text-foreground">Principais Problemas Detectados:</p>
-                  {["Baixa visibilidade em respostas do ChatGPT", "Marca não mencionada em comparativos do setor", "Conteúdo não otimizado para indexação por IA"].map((p, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <span className="text-primary mt-0.5">•</span><span>{p}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
-
         {/* ── Plano de Ação (BLURRED) ── */}
-        <AnimatedSection delay={0.3}>
+        <AnimatedSection delay={0.62}>
           <PremiumCard>
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
               <div className="relative">
-                <BlurredOverlay />
+                <BlurredOverlay title="🔒 Plano de Domínio Estratégico" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
                     <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
@@ -656,12 +742,12 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         </AnimatedSection>
 
         {/* ── Previsão de Impacto (BLURRED) ── */}
-        <AnimatedSection delay={0.35}>
+        <AnimatedSection delay={0.66}>
           <PremiumCard>
             <div className="space-y-4">
               <SectionHeader icon={Rocket} title="Previsão de Impacto" />
               <div className="relative">
-                <BlurredOverlay />
+                <BlurredOverlay title="🔒 Estratégia para Superar Seus Concorrentes" />
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { metric: "+180%", label: "Menções em IAs" },
@@ -680,14 +766,14 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         </AnimatedSection>
 
         {/* ── CTA de impacto ── */}
-        <AnimatedSection delay={0.38}>
+        <AnimatedSection delay={0.7}>
           <div className="relative rounded-2xl overflow-hidden">
             <div className="absolute inset-0 bg-ivero-gradient" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
             <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
               <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
-                Enquanto você lê isso, a IA já decidiu quem indicar.
+                💜 Enquanto você lê isso, a IA já está recomendando seus concorrentes.
               </h2>
               <form
                 onSubmit={async (e) => {
@@ -727,10 +813,10 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         </AnimatedSection>
 
         {/* ── Ivero Features ── */}
-        <AnimatedSection delay={0.42}>
+        <AnimatedSection delay={0.74}>
           <PremiumCard glow>
             <div className="space-y-6">
-              <SectionHeader icon={Sparkles} title="Sua marca merece ser lembrada" subtitle="Com a Ivero, você tem tudo para dominar a presença da sua marca nas IAs generativas" />
+              <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {iveroFeatures.map((feat, i) => {
                   const Icon = feat.icon;
