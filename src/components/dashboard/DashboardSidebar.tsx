@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
-  Download, Settings, LogOut, Crown, Users, Mail,
+  Download, Settings, LogOut, Crown, Users, Mail, Brain,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -30,6 +30,7 @@ const menuGroups = [
     label: "Visão Geral",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain },
     ],
   },
   {
