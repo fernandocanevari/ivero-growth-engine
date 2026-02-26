@@ -201,15 +201,16 @@ const iveroFeatures = [
 ];
 
 /* ── Soft blur overlay with lead form ── */
-function SoftBlur({ children, label, onUnlock }: { children: React.ReactNode; label?: string; onUnlock?: () => void }) {
+function SoftBlur({ children, label, onUnlock, unlocked = false }: { children: React.ReactNode; label?: string; onUnlock?: () => void; unlocked?: boolean }) {
+  if (unlocked) return <>{children}</>;
   return (
     <div className="relative group/soft cursor-default" onClick={onUnlock}>
       <div className="blur-[1.5px] opacity-60 select-none pointer-events-none transition-all duration-500 group-hover/soft:blur-[3px] group-hover/soft:opacity-40">{children}</div>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80 rounded-xl transition-opacity duration-500 group-hover/soft:to-card/90" />
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/soft:opacity-100 transition-all duration-400 z-10">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-ivero-gradient shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.45)] scale-90 group-hover/soft:scale-100 transition-transform duration-400 cursor-pointer">
+        <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.45)] scale-90 group-hover/soft:scale-100 transition-transform duration-400 cursor-pointer">
           <Lock className="w-3.5 h-3.5 text-primary-foreground" />
-          <span className="text-xs font-medium text-primary-foreground">{label || "Ver recomendações completas"}</span>
+          <span className="text-sm font-medium text-primary-foreground">{label || "Ver recomendações completas"}</span>
         </div>
       </div>
     </div>
@@ -217,15 +218,14 @@ function SoftBlur({ children, label, onUnlock }: { children: React.ReactNode; la
 }
 
 /* ── Blurred overlay for locked sections ── */
-function BlurredOverlay({ title }: { title?: string }) {
+function BlurredOverlay({ title, onUnlock }: { title?: string; onUnlock?: () => void }) {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl group/locked cursor-default">
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl group/locked cursor-pointer" onClick={onUnlock}>
       <div className="absolute inset-0 backdrop-blur-[3px] bg-gradient-to-b from-card/30 via-card/50 to-card/70 rounded-xl transition-all duration-500 group-hover/locked:backdrop-blur-[6px] group-hover/locked:from-card/40 group-hover/locked:via-card/60 group-hover/locked:to-card/80" />
       <div className="relative z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-ivero-gradient shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.35)] transition-all duration-400 group-hover/locked:scale-110 group-hover/locked:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)]">
         <Lock className="w-3.5 h-3.5 text-primary-foreground transition-transform duration-400 group-hover/locked:rotate-[-12deg]" />
-        <span className="text-sm font-medium text-primary-foreground">{title || "🔒 Plano de Domínio Estratégico"}</span>
+        <span className="text-sm font-medium text-primary-foreground">{title || "Ver recomendações completas"}</span>
       </div>
-      <p className="relative z-20 text-xs text-muted-foreground/70 transition-all duration-400 group-hover/locked:text-muted-foreground">💜 Queremos você como nosso cliente.</p>
     </div>
   );
 }
@@ -595,11 +595,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <p className="text-sm text-muted-foreground">
               A IA está decidindo quem recomendar. Veja onde sua marca se posiciona.
             </p>
-            {/* Plan indicator */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/60 mt-2">
-              <Lock className="w-3.5 h-3.5 text-amber-600" />
-              <span className="text-xs font-medium text-amber-700">🔒 Relatório Estratégico Completo disponível para clientes Ivero</span>
-            </div>
+            {/* Plan indicator removed — avoid impression everything is locked */}
           </div>
         </AnimatedSection>
 
@@ -757,7 +753,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                         </div>
                       ))}
                       {pillar.strengths.length > 1 && (
-                        <SoftBlur onUnlock={() => setShowLeadForm(true)}>
+                      <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
                           {pillar.strengths.slice(1).map((s, i) => (
                             <div key={i} className="flex items-center gap-2 text-sm">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -781,7 +777,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                           </div>
                         ))}
                         {pillar.weaknesses.length > 1 && (
-                          <SoftBlur onUnlock={() => setShowLeadForm(true)}>
+                          <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
                             {pillar.weaknesses.slice(1).map((w, i) => (
                               <div key={i} className="flex items-center gap-2 text-sm">
                                 <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
@@ -795,7 +791,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                   )}
 
                   {/* Recommendation — blurred */}
-                  <SoftBlur onUnlock={() => setShowLeadForm(true)}>
+                  <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
                     <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-1.5">
                       <p className="text-xs font-semibold text-primary uppercase tracking-widest">Estratégia de Domínio</p>
                       <p className="text-sm text-foreground leading-relaxed">{pillar.recommendation}</p>
@@ -809,20 +805,20 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
 
         {/* ── CTA WhatsApp — after pillar analysis ── */}
         <AnimatedSection delay={0.55}>
-          <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-8 text-center space-y-4">
-            <p className="text-lg font-display font-bold text-foreground">
+          <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
+            <p className="text-2xl sm:text-3xl font-display font-bold text-foreground">
               💜 Queremos você como nosso cliente
             </p>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            <p className="text-base text-muted-foreground max-w-md mx-auto">
               Sua marca merece aparecer nas respostas das IAs. Fale com a gente e descubra como.
             </p>
             <a
               href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-semibold text-sm shadow-[0_4px_20px_-4px_hsl(142,70%,45%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(142,70%,45%/0.5)] transition-all"
+              className="inline-flex items-center gap-3 px-10 py-4.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-bold text-base shadow-[0_4px_24px_-4px_hsl(142,70%,45%/0.45)] hover:shadow-[0_8px_36px_-4px_hsl(142,70%,45%/0.55)] transition-all hover:scale-105"
             >
-              <Phone className="w-4 h-4" />
+              <Phone className="w-5 h-5" />
               Falar com a Ivero no WhatsApp
             </a>
           </div>
@@ -833,7 +829,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           <PremiumCard glow>
             <div className="space-y-4">
               <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
-              <SoftBlur label="🔒 Estratégia para Superar Seus Concorrentes" onUnlock={() => setShowLeadForm(true)}>
+              <SoftBlur label="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
                 <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
                   <p className="text-sm text-foreground leading-relaxed font-medium">
                     Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
@@ -857,7 +853,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
               <div className="relative">
-                <BlurredOverlay title="🔒 Relatório Estratégico Completo" />
+                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
                     <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
@@ -877,7 +873,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={Rocket} title="Previsão de Impacto" />
               <div className="relative">
-                <BlurredOverlay title="🔒 Estratégia para Superar Seus Concorrentes" />
+                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { metric: "+180%", label: "Menções em IAs" },
