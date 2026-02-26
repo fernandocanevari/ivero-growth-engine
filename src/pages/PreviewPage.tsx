@@ -722,10 +722,12 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                         <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
-                      <span className="text-xs text-muted-foreground">/100</span>
-                      <div className={`mt-1 inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
+                    <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                      <div>
+                        <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
+                        <span className="text-xs text-muted-foreground">/100</span>
+                      </div>
+                      <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
                         {pillar.status}
                       </div>
                     </div>
@@ -955,7 +957,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 variant="hero"
                 size="lg"
                 className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
-                onClick={() => navigate("/#planos")}
+                onClick={() => { navigate("/"); setTimeout(() => { document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" }); }, 300); }}
               >
                 Conheça nossos planos
                 <ArrowRight className="ml-2 w-5 h-5" />
