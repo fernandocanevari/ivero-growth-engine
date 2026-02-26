@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
@@ -199,16 +200,16 @@ const iveroFeatures = [
   { icon: MessageSquare, label: "Otimização de Prompts", desc: "Estratégias para dominar respostas de IA" },
 ];
 
-/* ── Soft blur overlay ── */
-function SoftBlur({ children, label }: { children: React.ReactNode; label?: string }) {
+/* ── Soft blur overlay with lead form ── */
+function SoftBlur({ children, label, onUnlock }: { children: React.ReactNode; label?: string; onUnlock?: () => void }) {
   return (
-    <div className="relative group/soft cursor-default">
+    <div className="relative group/soft cursor-default" onClick={onUnlock}>
       <div className="blur-[1.5px] opacity-60 select-none pointer-events-none transition-all duration-500 group-hover/soft:blur-[3px] group-hover/soft:opacity-40">{children}</div>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80 rounded-xl transition-opacity duration-500 group-hover/soft:to-card/90" />
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/soft:opacity-100 transition-all duration-400 z-10">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-ivero-gradient shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.45)] scale-90 group-hover/soft:scale-100 transition-transform duration-400">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-ivero-gradient shadow-[0_4px_24px_-4px_hsl(var(--primary)/0.45)] scale-90 group-hover/soft:scale-100 transition-transform duration-400 cursor-pointer">
           <Lock className="w-3.5 h-3.5 text-primary-foreground" />
-          <span className="text-xs font-medium text-primary-foreground">{label || "💜 Queremos você como nosso cliente."}</span>
+          <span className="text-xs font-medium text-primary-foreground">{label || "Ver recomendações completas"}</span>
         </div>
       </div>
     </div>
@@ -453,6 +454,22 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [showLeadForm, setShowLeadForm] = useState(false);
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
+
+  const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const email = (formData.get("email") as string)?.trim();
+    const name = (formData.get("name") as string)?.trim();
+    if (!email) return;
+    try {
+      await supabase.from("leads").upsert({ email, source: "preview_unlock" } as any, { onConflict: "email" });
+    } catch (_) { /* silently continue */ }
+    setLeadSubmitted(true);
+    setShowLeadForm(false);
+  };
 
   const handleDownloadPDF = useCallback(async () => {
     if (!reportRef.current || exporting) return;
@@ -498,6 +515,57 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       transition={{ duration: 0.6 }}
       className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30" ref={reportRef}
     >
+      {/* Lead capture dialog */}
+      <Dialog open={showLeadForm} onOpenChange={setShowLeadForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">
+              Desbloqueie as recomendações completas
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Preencha os dados abaixo para acessar a análise estratégica completa da sua marca.
+            </p>
+          </DialogHeader>
+          <form onSubmit={handleLeadSubmit} className="flex flex-col gap-4 mt-2">
+            <input
+              name="name"
+              type="text"
+              required
+              placeholder="Nome"
+              maxLength={100}
+              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
+            />
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="E-mail corporativo"
+              maxLength={255}
+              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
+            />
+            <input
+              name="site"
+              type="url"
+              placeholder="Site da empresa"
+              maxLength={255}
+              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
+            />
+            <input
+              name="phone"
+              type="tel"
+              placeholder="Celular"
+              maxLength={20}
+              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
+            />
+            <Button variant="hero" size="lg" className="w-full h-12 text-base mt-1" type="submit">
+              Ver recomendações completas
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">Seus dados estão seguros. Sem spam.</p>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl print:hidden">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -689,7 +757,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                         </div>
                       ))}
                       {pillar.strengths.length > 1 && (
-                        <SoftBlur>
+                        <SoftBlur onUnlock={() => setShowLeadForm(true)}>
                           {pillar.strengths.slice(1).map((s, i) => (
                             <div key={i} className="flex items-center gap-2 text-sm">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -713,7 +781,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                           </div>
                         ))}
                         {pillar.weaknesses.length > 1 && (
-                          <SoftBlur>
+                          <SoftBlur onUnlock={() => setShowLeadForm(true)}>
                             {pillar.weaknesses.slice(1).map((w, i) => (
                               <div key={i} className="flex items-center gap-2 text-sm">
                                 <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
@@ -727,7 +795,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                   )}
 
                   {/* Recommendation — blurred */}
-                  <SoftBlur>
+                  <SoftBlur onUnlock={() => setShowLeadForm(true)}>
                     <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-1.5">
                       <p className="text-xs font-semibold text-primary uppercase tracking-widest">Estratégia de Domínio</p>
                       <p className="text-sm text-foreground leading-relaxed">{pillar.recommendation}</p>
@@ -765,7 +833,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           <PremiumCard glow>
             <div className="space-y-4">
               <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
-              <SoftBlur label="🔒 Estratégia para Superar Seus Concorrentes">
+              <SoftBlur label="🔒 Estratégia para Superar Seus Concorrentes" onUnlock={() => setShowLeadForm(true)}>
                 <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
                   <p className="text-sm text-foreground leading-relaxed font-medium">
                     Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
