@@ -116,7 +116,7 @@ export default function DiagnosticoPage() {
   const displayName = settings?.brand_name || "sua marca";
 
   // TODO: Replace with real plan status check
-  const hasPlan = false;
+  const hasPlan = true; // Clients accessing the dashboard already have a plan
 
   if (isLoading) return null;
 
@@ -140,20 +140,7 @@ export default function DiagnosticoPage() {
           </div>
         </div>
 
-        {/* Plan indicator */}
-        <div className="mt-4">
-          {hasPlan ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200/60">
-              <Unlock className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-700">🔓 Versão Completa Disponível no Plano Ativo</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200/60">
-              <Lock className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-700">🔒 Desbloqueie o Plano de Domínio Estratégico</span>
-            </div>
-          )}
-        </div>
+        {/* Plan status removed — clients accessing dashboard already have a plan */}
       </motion.div>
 
       {/* Score de Presença */}
@@ -286,13 +273,13 @@ export default function DiagnosticoPage() {
                       </div>
                       <div>
                         <h3 className="text-base font-display font-bold text-foreground">{pillar.name}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{pillar.summary}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                       <span className="text-xs text-muted-foreground">/100</span>
-                      <div className={`mt-1 inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusBg}`}>
+                      <div className={`mt-1 inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
                         {pillar.status}
                       </div>
                     </div>
@@ -358,23 +345,7 @@ export default function DiagnosticoPage() {
         })}
       </div>
 
-      {/* ── CTA WhatsApp ── */}
-      <motion.div {...fade} transition={{ delay: 0.5 }}>
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-6 text-center space-y-3">
-            <a
-              href="https://wa.me/5511999999999?text=Quero%20entender%20como%20aumentar%20meu%20Score%20GEO"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-semibold text-sm shadow-[0_4px_20px_-4px_hsl(142,70%,45%/0.4)] transition-all"
-            >
-              <Phone className="w-4 h-4" />
-              🟣 Chamar a Ivero no WhatsApp
-            </a>
-            <p className="text-xs text-muted-foreground">Converse com um especialista e entenda como aumentar seu score.</p>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* WhatsApp CTA removed — client already in dashboard */}
 
       {/* ── Diagnóstico Final (Premium) ── */}
       <motion.div {...fade} transition={{ delay: 0.55 }}>
@@ -422,27 +393,7 @@ export default function DiagnosticoPage() {
         </Card>
       </motion.div>
 
-      {/* ── CTA Final ── */}
-      {!hasPlan && (
-        <motion.div {...fade} transition={{ delay: 0.6 }}>
-          <Card className="bg-ivero-gradient text-primary-foreground overflow-hidden">
-            <CardContent className="p-8 text-center space-y-4">
-              <p className="text-lg font-display font-bold">
-                💜 Enquanto você lê isso, a IA já está recomendando seus concorrentes.
-              </p>
-              <p className="text-sm opacity-90">
-                A Ivero posiciona sua marca como referência nas respostas de IA.
-              </p>
-              <Button
-                size="lg"
-                className="bg-white text-primary hover:bg-white/90 font-semibold rounded-full shadow-lg"
-              >
-                Quero dominar as IAs <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+      {/* CTA Final removed — client already in dashboard */}
     </div>
   );
 }

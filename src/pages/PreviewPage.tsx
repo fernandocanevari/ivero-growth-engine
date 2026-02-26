@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
@@ -449,14 +451,52 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 /* ── Diagnostic Report ── */
 function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
   const navigate = useNavigate();
-  const handleDownloadPDF = () => { window.print(); };
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (!reportRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        windowWidth: 800,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 10;
+
+      pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - 20;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - 20;
+      }
+
+      pdf.save(`diagnostico-ivero-${siteUrl || "marca"}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, [siteUrl, exporting]);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30"
+      className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30" ref={reportRef}
     >
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl print:hidden">
@@ -465,9 +505,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             Ivero
           </button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="gap-1.5 rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={exporting} className="gap-1.5 rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
               <Download className="w-4 h-4" />
-              Baixar PDF
+              {exporting ? "Gerando..." : "Baixar PDF"}
             </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/preview")} className="rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
               Nova Análise
@@ -480,10 +520,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         {/* Title — Diagnóstico de Influência em IA */}
         <AnimatedSection>
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-              <Brain className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs uppercase tracking-widest text-primary font-semibold">Diagnóstico de Influência em IA</span>
-            </div>
+            {/* Badge removed per request */}
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
               {siteUrl || "Seu site"}
             </h1>
@@ -493,7 +530,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             {/* Plan indicator */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/60 mt-2">
               <Lock className="w-3.5 h-3.5 text-amber-600" />
-              <span className="text-xs font-medium text-amber-700">🔒 Desbloqueie o Plano de Domínio Estratégico</span>
+              <span className="text-xs font-medium text-amber-700">🔒 Relatório Estratégico Completo disponível para clientes Ivero</span>
             </div>
           </div>
         </AnimatedSection>
@@ -618,13 +655,13 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                       </div>
                       <div>
                         <h3 className="text-base font-display font-bold text-foreground">{pillar.name}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{pillar.summary}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                       <span className="text-xs text-muted-foreground">/100</span>
-                      <div className={`mt-1 inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusBg}`}>
+                      <div className={`mt-1 inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
                         {pillar.status}
                       </div>
                     </div>
@@ -641,30 +678,50 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     />
                   </div>
 
-                  {/* Strengths — strategic analysis */}
+                  {/* Strengths — show 1st visible, blur rest */}
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
                     <div className="space-y-1.5">
-                      {pillar.strengths.map((s, i) => (
+                      {pillar.strengths.slice(0, 1).map((s, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           <span className="text-foreground">{s}</span>
                         </div>
                       ))}
+                      {pillar.strengths.length > 1 && (
+                        <SoftBlur>
+                          {pillar.strengths.slice(1).map((s, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="text-foreground">{s}</span>
+                            </div>
+                          ))}
+                        </SoftBlur>
+                      )}
                     </div>
                   </div>
 
-                  {/* Weaknesses — impact analysis */}
+                  {/* Weaknesses — show 1st visible, blur rest */}
                   {pillar.weaknesses && pillar.weaknesses.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Impacto competitivo</p>
                       <div className="space-y-1.5">
-                        {pillar.weaknesses.map((w, i) => (
+                        {pillar.weaknesses.slice(0, 1).map((w, i) => (
                           <div key={i} className="flex items-center gap-2 text-sm">
                             <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
                             <span className="text-foreground">{w}</span>
                           </div>
                         ))}
+                        {pillar.weaknesses.length > 1 && (
+                          <SoftBlur>
+                            {pillar.weaknesses.slice(1).map((w, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                <span className="text-foreground">{w}</span>
+                              </div>
+                            ))}
+                          </SoftBlur>
+                        )}
                       </div>
                     </div>
                   )}
@@ -684,17 +741,22 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
 
         {/* ── CTA WhatsApp — after pillar analysis ── */}
         <AnimatedSection delay={0.55}>
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center space-y-3">
+          <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-8 text-center space-y-4">
+            <p className="text-lg font-display font-bold text-foreground">
+              💜 Queremos você como nosso cliente
+            </p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Sua marca merece aparecer nas respostas das IAs. Fale com a gente e descubra como.
+            </p>
             <a
-              href="https://wa.me/5511999999999?text=Quero%20entender%20como%20aumentar%20meu%20Score%20GEO"
+              href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-semibold text-sm shadow-[0_4px_20px_-4px_hsl(142,70%,45%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(142,70%,45%/0.5)] transition-all"
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-semibold text-sm shadow-[0_4px_20px_-4px_hsl(142,70%,45%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(142,70%,45%/0.5)] transition-all"
             >
               <Phone className="w-4 h-4" />
-              🟣 Chamar a Ivero no WhatsApp
+              Falar com a Ivero no WhatsApp
             </a>
-            <p className="text-xs text-muted-foreground">Converse com um especialista e entenda como aumentar seu score.</p>
           </div>
         </AnimatedSection>
 
@@ -727,7 +789,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
               <div className="relative">
-                <BlurredOverlay title="🔒 Plano de Domínio Estratégico" />
+                <BlurredOverlay title="🔒 Relatório Estratégico Completo" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
                     <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
@@ -803,7 +865,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                   size="lg"
                   className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full sm:w-auto"
                 >
-                  Desbloquear relatório
+                  Quero minha marca nas IAs
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </form>
