@@ -841,7 +841,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
               <div className="relative min-h-[120px]">
-                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
+                {!leadSubmitted && (
+                  <div className="absolute inset-0 z-10 rounded-xl backdrop-blur-[4px] bg-gradient-to-b from-card/30 via-card/50 to-card/70" />
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
                     <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
@@ -861,7 +863,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={Rocket} title="Previsão de Impacto" />
               <div className="relative min-h-[100px]">
-                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
+                {!leadSubmitted && (
+                  <div className="absolute inset-0 z-10 rounded-xl backdrop-blur-[4px] bg-gradient-to-b from-card/30 via-card/50 to-card/70" />
+                )}
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { metric: "+180%", label: "Menções em IAs" },
