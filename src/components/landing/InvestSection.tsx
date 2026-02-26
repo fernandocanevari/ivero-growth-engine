@@ -90,7 +90,7 @@ const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
 
   return (
-    <section className="py-14 sm:py-20 bg-ivero-dark relative overflow-hidden">
+    <section id="planos" className="py-14 sm:py-20 bg-ivero-dark relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-ivero-purple/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
 
