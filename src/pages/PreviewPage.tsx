@@ -840,17 +840,16 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           <PremiumCard>
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
-              <div className="relative">
-                <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
-                      <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
-                        <span className="text-sm text-muted-foreground">{a}</span>
-                      </div>
-                    ))}
-                  </div>
-                </SoftBlur>
+              <div className="relative min-h-[120px]">
+                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
+                    <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
+                      <span className="text-sm text-muted-foreground">{a}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </PremiumCard>
@@ -861,21 +860,20 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           <PremiumCard>
             <div className="space-y-4">
               <SectionHeader icon={Rocket} title="Previsão de Impacto" />
-              <div className="relative">
-                <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { metric: "+180%", label: "Menções em IAs" },
-                      { metric: "Top 3", label: "Posição no setor" },
-                      { metric: "+65%", label: "Tráfego qualificado" },
-                    ].map((item, i) => (
-                      <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
-                        <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </SoftBlur>
+              <div className="relative min-h-[100px]">
+                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { metric: "+180%", label: "Menções em IAs" },
+                    { metric: "Top 3", label: "Posição no setor" },
+                    { metric: "+65%", label: "Tráfego qualificado" },
+                  ].map((item, i) => (
+                    <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
+                      <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </PremiumCard>
