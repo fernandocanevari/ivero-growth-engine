@@ -130,7 +130,7 @@ const InvestSection = () => {
               }`}
             >
               Anual
-              <span className="text-[10px] font-bold bg-accent/20 text-accent border border-accent/30 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold bg-accent/30 text-white border border-accent/40 px-1.5 py-0.5 rounded-full">
                 -20%
               </span>
             </button>
