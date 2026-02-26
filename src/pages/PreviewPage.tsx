@@ -606,7 +606,12 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
               <ScoreCircle score={37} benchmark={58} />
 
               <div className="pt-5 border-t border-border/60 space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Presença nas IAs</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Presença nas IAs</p>
+                  <span className="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200/60 shadow-sm">
+                    Sentimento Misto
+                  </span>
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {aiEngines.map((engine) => (
                     <span
@@ -622,9 +627,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                       {engine.found && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
                     </span>
                   ))}
-                  <span className="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200/60 shadow-sm">
-                    Sentimento Misto
-                  </span>
                 </div>
               </div>
             </div>
@@ -839,14 +841,16 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
               <div className="relative">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
-                    <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
-                      <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
-                      <span className="text-sm text-muted-foreground">{a}</span>
-                    </div>
-                  ))}
-                </div>
+                <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
+                      <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
+                        <span className="text-sm text-muted-foreground">{a}</span>
+                      </div>
+                    ))}
+                  </div>
+                </SoftBlur>
               </div>
             </div>
           </PremiumCard>
@@ -858,18 +862,20 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={Rocket} title="Previsão de Impacto" />
               <div className="relative">
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { metric: "+180%", label: "Menções em IAs" },
-                    { metric: "Top 3", label: "Posição no setor" },
-                    { metric: "+65%", label: "Tráfego qualificado" },
-                  ].map((item, i) => (
-                    <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
-                      <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
+                <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { metric: "+180%", label: "Menções em IAs" },
+                      { metric: "Top 3", label: "Posição no setor" },
+                      { metric: "+65%", label: "Tráfego qualificado" },
+                    ].map((item, i) => (
+                      <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
+                        <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </SoftBlur>
               </div>
             </div>
           </PremiumCard>
@@ -947,7 +953,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 variant="hero"
                 size="lg"
                 className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/#planos")}
               >
                 Conheça nossos planos
                 <ArrowRight className="ml-2 w-5 h-5" />
