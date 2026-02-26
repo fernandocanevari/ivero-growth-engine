@@ -375,8 +375,8 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-            <span className="text-4xl font-display font-bold text-foreground">{animatedScore}</span>
-            <span className="text-xs text-muted-foreground font-medium">/100</span>
+            <span className="text-3xl font-display font-bold text-foreground">{animatedScore}</span>
+            <span className="text-xs text-muted-foreground font-medium mt-0.5">/100</span>
           </div>
         </div>
 
@@ -592,7 +592,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
               {siteUrl || "Seu site"}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base sm:text-lg text-muted-foreground">
               A IA está decidindo quem recomendar. Veja onde sua marca se posiciona.
             </p>
             {/* Plan indicator removed — avoid impression everything is locked */}
@@ -607,7 +607,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
 
               <div className="pt-5 border-t border-border/60 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Presença nas IAs</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {aiEngines.map((engine) => (
                     <span
                       key={engine.name}
@@ -622,8 +622,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                       {engine.found && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
                     </span>
                   ))}
-                </div>
-                <div className="flex items-center gap-2">
                   <span className="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200/60 shadow-sm">
                     Sentimento Misto
                   </span>
@@ -693,11 +691,11 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         {/* ── 5 Pilares Detalhados (Diagnóstico Detalhado) ── */}
         <AnimatedSection delay={0.18}>
           <div className="space-y-2 mb-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Diagnóstico Detalhado
             </h2>
-            <p className="text-xs text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
           </div>
         </AnimatedSection>
 
@@ -742,30 +740,20 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     />
                   </div>
 
-                  {/* Strengths — show 1st visible, blur rest */}
+                  {/* Strengths — all shown, no CTA here */}
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
                     <div className="space-y-1.5">
-                      {pillar.strengths.slice(0, 1).map((s, i) => (
+                      {pillar.strengths.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           <span className="text-foreground">{s}</span>
                         </div>
                       ))}
-                      {pillar.strengths.length > 1 && (
-                      <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                          {pillar.strengths.slice(1).map((s, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span className="text-foreground">{s}</span>
-                            </div>
-                          ))}
-                        </SoftBlur>
-                      )}
                     </div>
                   </div>
 
-                  {/* Weaknesses — show 1st visible, blur rest */}
+                  {/* Weaknesses — all visible, no separate CTA here */}
                   {pillar.weaknesses && pillar.weaknesses.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Impacto competitivo</p>
@@ -776,16 +764,14 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                             <span className="text-foreground">{w}</span>
                           </div>
                         ))}
-                        {pillar.weaknesses.length > 1 && (
-                          <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                            {pillar.weaknesses.slice(1).map((w, i) => (
-                              <div key={i} className="flex items-center gap-2 text-sm">
-                                <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                                <span className="text-foreground">{w}</span>
-                              </div>
-                            ))}
-                          </SoftBlur>
-                        )}
+                        <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
+                          {pillar.weaknesses.slice(1).map((w, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm">
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span className="text-foreground">{w}</span>
+                            </div>
+                          ))}
+                        </SoftBlur>
                       </div>
                     </div>
                   )}
@@ -818,8 +804,8 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 px-10 py-4.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-bold text-base shadow-[0_4px_24px_-4px_hsl(142,70%,45%/0.45)] hover:shadow-[0_8px_36px_-4px_hsl(142,70%,45%/0.55)] transition-all hover:scale-105"
             >
-              <Phone className="w-5 h-5" />
-              Falar com a Ivero no WhatsApp
+              <Phone className="w-6 h-6" />
+              <span className="text-lg font-bold">Falar com a Ivero no WhatsApp</span>
             </a>
           </div>
         </AnimatedSection>
@@ -853,7 +839,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
               <div className="relative">
-                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
                     <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
@@ -873,7 +858,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             <div className="space-y-4">
               <SectionHeader icon={Rocket} title="Previsão de Impacto" />
               <div className="relative">
-                {!leadSubmitted && <BlurredOverlay title="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} />}
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { metric: "+180%", label: "Menções em IAs" },
