@@ -470,6 +470,8 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
     setLeadSubmitted(true);
+    // Scroll to top so user sees full analysis from the beginning
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDownloadPDF = useCallback(async () => {
