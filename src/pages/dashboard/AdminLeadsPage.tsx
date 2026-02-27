@@ -183,7 +183,7 @@ export default function AdminLeadsPage() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar nome, e-mail ou telefone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar nome, e-mail ou telefone..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
         </div>
 
         <div className="w-[180px]">
