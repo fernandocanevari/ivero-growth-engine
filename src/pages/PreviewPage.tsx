@@ -470,6 +470,8 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
     setLeadSubmitted(true);
+    // Scroll to top so user sees full analysis from the beginning
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDownloadPDF = useCallback(async () => {
@@ -478,33 +480,42 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
     try {
       const el = reportRef.current;
 
-      // 1. Force all content visible
+      // 1. Scroll to top to avoid offset issues
+      window.scrollTo(0, 0);
+      await new Promise((r) => setTimeout(r, 100));
+
+      // 2. Force all content visible
       const originalHeight = el.style.height;
       const originalOverflow = el.style.overflow;
+      const originalPosition = el.style.position;
       el.style.height = "auto";
       el.style.overflow = "visible";
+      el.style.position = "relative";
 
-      // 2. Force all framer-motion animated elements to be fully visible
-      const motionEls = el.querySelectorAll<HTMLElement>("[style*='opacity'], [style*='transform']");
-      const originalStyles: { el: HTMLElement; opacity: string; transform: string }[] = [];
-      motionEls.forEach((m) => {
-        originalStyles.push({ el: m, opacity: m.style.opacity, transform: m.style.transform });
-        m.style.opacity = "1";
-        m.style.transform = "none";
+      // 3. Force all framer-motion animated elements to be fully visible
+      const allEls = el.querySelectorAll<HTMLElement>("*");
+      const savedStyles: { el: HTMLElement; opacity: string; transform: string; visibility: string }[] = [];
+      allEls.forEach((m) => {
+        if (m.style.opacity !== "" || m.style.transform !== "" || m.style.visibility === "hidden") {
+          savedStyles.push({ el: m, opacity: m.style.opacity, transform: m.style.transform, visibility: m.style.visibility });
+          m.style.opacity = "1";
+          m.style.transform = "none";
+          m.style.visibility = "visible";
+        }
       });
 
-      // 3. Wait for layout recalc
-      await new Promise((r) => setTimeout(r, 600));
+      // 4. Wait for layout recalc
+      await new Promise((r) => setTimeout(r, 500));
 
-      // 4. Find all PDF sections, or fall back to direct children of the content area
+      // 5. Find all PDF sections
       const contentArea = el.querySelector(".space-y-8") as HTMLElement || el;
       let sections = Array.from(contentArea.querySelectorAll<HTMLElement>("[data-pdf-section]"));
       if (sections.length === 0) {
-        // Fallback: use direct children as sections
         sections = Array.from(contentArea.children) as HTMLElement[];
       }
+      // Filter only visible sections
+      sections = sections.filter((s) => s.offsetHeight > 0 && s.offsetWidth > 0);
 
-      // A4 dimensions
       const A4_WIDTH_MM = 210;
       const A4_HEIGHT_MM = 297;
       const MARGIN_MM = 10;
@@ -514,61 +525,66 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       let currentY = MARGIN_MM;
-      let isFirstSection = true;
+      let pageStarted = true; // first page already exists
 
       for (const section of sections) {
-        // Skip invisible or zero-height elements
-        if (section.offsetHeight === 0) continue;
-
         const canvas = await html2canvas(section, {
           scale: 2,
           useCORS: true,
           backgroundColor: "#ffffff",
           windowWidth: 800,
-          scrollY: -window.scrollY,
+          scrollX: 0,
+          scrollY: 0,
+          x: 0,
+          y: 0,
         });
+
+        if (canvas.width === 0 || canvas.height === 0) continue;
 
         const scaleFactor = CONTENT_WIDTH_MM / (canvas.width / 2);
         const sectionHeightMM = (canvas.height / 2) * scaleFactor;
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
-        // If section won't fit on current page, start a new page
+        // Check if section fits on current page
         const remainingSpace = A4_HEIGHT_MM - MARGIN_MM - currentY;
-        if (!isFirstSection && sectionHeightMM > remainingSpace && currentY > MARGIN_MM) {
-          pdf.addPage();
-          currentY = MARGIN_MM;
-        }
 
-        // If a single section is taller than a full page, slice it across pages
-        if (sectionHeightMM > CONTENT_HEIGHT_MM) {
-          const imgData = canvas.toDataURL("image/jpeg", 0.92);
-          const imgWidthMM = CONTENT_WIDTH_MM;
-          const imgHeightMM = sectionHeightMM;
-          const totalPages = Math.ceil(imgHeightMM / CONTENT_HEIGHT_MM);
-
-          for (let p = 0; p < totalPages; p++) {
-            if (p > 0 || (!isFirstSection && currentY > MARGIN_MM)) {
-              pdf.addPage();
-              currentY = MARGIN_MM;
-            }
-            const yOffset = MARGIN_MM - p * CONTENT_HEIGHT_MM;
-            pdf.addImage(imgData, "JPEG", MARGIN_MM, yOffset, imgWidthMM, imgHeightMM);
-          }
-          currentY = MARGIN_MM + (imgHeightMM % CONTENT_HEIGHT_MM || CONTENT_HEIGHT_MM);
-        } else {
-          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        if (sectionHeightMM <= remainingSpace) {
+          // Fits on current page
           pdf.addImage(imgData, "JPEG", MARGIN_MM, currentY, CONTENT_WIDTH_MM, sectionHeightMM);
           currentY += sectionHeightMM + SECTION_GAP_MM;
+        } else if (sectionHeightMM <= CONTENT_HEIGHT_MM) {
+          // Doesn't fit but fits on a fresh page
+          pdf.addPage();
+          currentY = MARGIN_MM;
+          pdf.addImage(imgData, "JPEG", MARGIN_MM, currentY, CONTENT_WIDTH_MM, sectionHeightMM);
+          currentY += sectionHeightMM + SECTION_GAP_MM;
+        } else {
+          // Section is taller than a full page — slice it
+          if (currentY > MARGIN_MM + 1) {
+            pdf.addPage();
+            currentY = MARGIN_MM;
+          }
+          const totalSlices = Math.ceil(sectionHeightMM / CONTENT_HEIGHT_MM);
+          for (let s = 0; s < totalSlices; s++) {
+            if (s > 0) {
+              pdf.addPage();
+            }
+            const yOffset = MARGIN_MM - s * CONTENT_HEIGHT_MM;
+            pdf.addImage(imgData, "JPEG", MARGIN_MM, yOffset, CONTENT_WIDTH_MM, sectionHeightMM);
+          }
+          const lastSliceUsed = sectionHeightMM % CONTENT_HEIGHT_MM;
+          currentY = MARGIN_MM + (lastSliceUsed > 0 ? lastSliceUsed : CONTENT_HEIGHT_MM) + SECTION_GAP_MM;
         }
-
-        isFirstSection = false;
       }
 
-      // 5. Restore original styles
+      // 6. Restore original styles
       el.style.height = originalHeight;
       el.style.overflow = originalOverflow;
-      originalStyles.forEach(({ el: m, opacity, transform }) => {
+      el.style.position = originalPosition;
+      savedStyles.forEach(({ el: m, opacity, transform, visibility }) => {
         m.style.opacity = opacity;
         m.style.transform = transform;
+        m.style.visibility = visibility;
       });
 
       pdf.save(`diagnostico-ivero-${siteUrl || "marca"}.pdf`);
@@ -601,9 +617,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 {exporting ? "Gerando..." : "Baixar PDF"}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => navigate("/preview")} className="rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
-              Nova Análise
-            </Button>
           </div>
         </div>
       </header>
