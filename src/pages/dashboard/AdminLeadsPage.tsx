@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   ShieldAlert, Download, Search, Mail, Globe, Clock,
-  CalendarIcon, X, Zap, Trash2,
+  CalendarIcon, X, Zap, Trash2, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -48,6 +48,8 @@ export default function AdminLeadsPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [page, setPage] = useState(1);
+  const perPage = 15;
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["admin_leads"],
@@ -89,7 +91,12 @@ export default function AdminLeadsPage() {
     setDateFrom(undefined);
     setDateTo(undefined);
     setSearch("");
+    setPage(1);
   };
+
+  // Reset page when filters change
+  const handleSearch = (val: string) => { setSearch(val); setPage(1); };
+  const handleSourceFilter = (val: string) => { setSourceFilter(val); setPage(1); };
 
   const filtered = leads?.filter((l) => {
     const q = search.toLowerCase();
@@ -176,12 +183,12 @@ export default function AdminLeadsPage() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar nome, e-mail ou telefone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar nome, e-mail ou telefone..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
         </div>
 
         <div className="w-[180px]">
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Origem</label>
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <Select value={sourceFilter} onValueChange={handleSourceFilter}>
             <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
@@ -229,58 +236,103 @@ export default function AdminLeadsPage() {
 
       {/* Table */}
       {filtered && filtered.length > 0 ? (
-        <div className="border border-border rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead>Celular</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead className="text-center">Data</TableHead>
-                <TableHead className="text-center w-[60px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium text-foreground">{l.name || "—"}</TableCell>
-                  <TableCell className="text-foreground">{l.email}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{l.site || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{l.phone || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{l.source}</Badge></TableCell>
-                  <TableCell className="text-center text-sm text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("pt-BR")}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            O lead <strong>{l.email}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteMutation.mutate(l.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
+        <>
+          <div className="border border-border rounded-xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Site</TableHead>
+                  <TableHead>Celular</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead className="text-center">Data</TableHead>
+                  <TableHead className="text-center w-[60px]">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const totalPages = Math.ceil(filtered.length / perPage);
+                  const safePage = Math.min(page, totalPages);
+                  const start = (safePage - 1) * perPage;
+                  return filtered.slice(start, start + perPage);
+                })().map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="font-medium text-foreground">{l.name || "—"}</TableCell>
+                    <TableCell className="text-foreground">{l.email}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{l.site || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{l.phone || "—"}</TableCell>
+                    <TableCell><Badge variant="secondary">{l.source}</Badge></TableCell>
+                    <TableCell className="text-center text-sm text-muted-foreground">
+                      {new Date(l.created_at).toLocaleString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              O lead <strong>{l.email}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMutation.mutate(l.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {(() => {
+            const totalPages = Math.ceil(filtered.length / perPage);
+            if (totalPages <= 1) return null;
+            const safePage = Math.min(page, totalPages);
+            return (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-muted-foreground">
+                  {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, filtered.length)} de {filtered.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                    .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      typeof p === "string" ? (
+                        <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
+                      ) : (
+                        <Button key={p} variant={p === safePage ? "default" : "outline"} size="icon" className="h-8 w-8 text-xs" onClick={() => setPage(p)}>
+                          {p}
+                        </Button>
+                      )
+                    )}
+                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </>
       ) : (
         <div className="text-center py-12 text-muted-foreground text-sm">
           Nenhum lead encontrado.
