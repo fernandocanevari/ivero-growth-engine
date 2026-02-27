@@ -662,7 +662,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
                   <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255}
                     className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="site" type="url" placeholder="Site da empresa" maxLength={255}
+                  <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255}
                     className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
                   <input name="phone" type="tel" placeholder="Celular" maxLength={20}
                     className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
