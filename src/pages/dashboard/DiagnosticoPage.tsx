@@ -134,6 +134,7 @@ export default function DiagnosticoPage() {
             <h1 className="text-2xl font-bold font-display text-foreground">
               🧠 Diagnóstico de Influência em IA
             </h1>
+            <p className="text-xs text-muted-foreground mt-1 italic">Análise inicial — Raio-X de como as IAs percebem sua marca hoje</p>
             <p className="text-sm text-muted-foreground mt-0.5">
               Análise completa de como as IAs percebem e recomendam {displayName}.
             </p>
