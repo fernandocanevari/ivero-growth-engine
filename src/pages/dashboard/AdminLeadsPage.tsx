@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   ShieldAlert, Download, Search, Mail, Globe, Clock,
-  CalendarIcon, X, Zap, Trash2,
+  CalendarIcon, X, Zap, Trash2, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
