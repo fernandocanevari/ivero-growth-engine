@@ -475,44 +475,60 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
     if (!reportRef.current || exporting) return;
     setExporting(true);
     try {
-      // Force all lazy/viewport-dependent content to render by temporarily scrolling
       const el = reportRef.current;
+
+      // 1. Force all content visible (override height/overflow)
       const originalHeight = el.style.height;
       const originalOverflow = el.style.overflow;
       el.style.height = "auto";
       el.style.overflow = "visible";
 
-      // Wait a tick for any IntersectionObserver-based animations to trigger
-      await new Promise((r) => setTimeout(r, 500));
+      // 2. Force all framer-motion animated elements to be fully visible
+      const motionEls = el.querySelectorAll<HTMLElement>("[style*='opacity'], [style*='transform']");
+      const originalStyles: { el: HTMLElement; opacity: string; transform: string }[] = [];
+      motionEls.forEach((m) => {
+        originalStyles.push({ el: m, opacity: m.style.opacity, transform: m.style.transform });
+        m.style.opacity = "1";
+        m.style.transform = "none";
+      });
+
+      // 3. Wait for layout recalc
+      await new Promise((r) => setTimeout(r, 600));
 
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
         windowWidth: 800,
-        scrollY: -window.scrollY,
+        scrollY: 0,
+        y: 0,
         height: el.scrollHeight,
+        width: el.scrollWidth,
       });
 
+      // 4. Restore original styles
       el.style.height = originalHeight;
       el.style.overflow = originalOverflow;
+      originalStyles.forEach(({ el: m, opacity, transform }) => {
+        m.style.opacity = opacity;
+        m.style.transform = transform;
+      });
+
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const margin = 10;
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
+      const imgWidth = pageWidth - margin * 2;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 10;
+      const usableHeight = pageHeight - margin * 2;
 
-      pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - 20;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + 10;
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight - 20;
+      // 5. Paginate correctly — page 0 first, then subsequent pages
+      const totalPages = Math.ceil(imgHeight / usableHeight);
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
+        const yOffset = margin - page * usableHeight;
+        pdf.addImage(imgData, "JPEG", margin, yOffset, imgWidth, imgHeight);
       }
 
       pdf.save(`diagnostico-ivero-${siteUrl || "marca"}.pdf`);
