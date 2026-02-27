@@ -1,1 +1,4 @@
 project_id = "klscginkmflwanzjxtqy"
+
+[functions.simulate-ai]
+verify_jwt = false
