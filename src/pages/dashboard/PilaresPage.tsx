@@ -411,8 +411,9 @@ export default function PilaresPage() {
       {/* Header */}
       <motion.div {...fade}>
         <h1 className="text-2xl font-bold font-display text-foreground">
-          Análise dos 5 Pilares Estratégicos
+          📈 Evolução Estratégica
         </h1>
+        <p className="text-xs text-muted-foreground mt-1 italic">Monitoramento contínuo — Acompanhe a evolução dos seus pilares ao longo do tempo</p>
         <p className="text-muted-foreground mt-1">
           Métricas detalhadas, evolução temporal e benchmarks de cada pilar que determina se a IA recomenda {displayName}.
         </p>
