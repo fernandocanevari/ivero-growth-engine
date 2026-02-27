@@ -406,6 +406,46 @@ export default function DiagnosticoPage() {
 
       {/* WhatsApp CTA removed — client already in dashboard */}
 
+      {/* ── Evolução do Score (histórico de re-análises) ── */}
+      {evolutionChartData.length >= 2 && (
+        <motion.div {...fade} transition={{ delay: 0.5 }}>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Evolução do Score ao Longo do Tempo
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Histórico das suas análises — cada ponto representa uma re-análise do site.
+              </p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={evolutionChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={{ r: 5, fill: "hsl(var(--primary))" }}
+                    name="Score GEO"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* ── Diagnóstico Final (Premium) ── */}
       <motion.div {...fade} transition={{ delay: 0.55 }}>
         <Card className="shadow-[0_4px_40px_-8px_hsl(var(--primary)/0.15)] overflow-hidden relative">
