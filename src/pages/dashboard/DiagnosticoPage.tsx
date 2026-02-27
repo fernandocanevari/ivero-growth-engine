@@ -1,15 +1,17 @@
 import { motion } from "framer-motion";
 import {
   Brain, Lock, Unlock, Eye, ShieldCheck, Target, Rocket, Sparkles,
-  CheckCircle2, AlertTriangle, Phone, ArrowRight,
+  CheckCircle2, AlertTriangle, Phone, ArrowRight, RefreshCw, Clock, CalendarDays,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { toast } from "sonner";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ResponsiveContainer,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
