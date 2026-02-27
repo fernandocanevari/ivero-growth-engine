@@ -454,7 +454,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
