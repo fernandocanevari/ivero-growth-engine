@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   ShieldAlert, Download, Search, Mail, Globe, Clock,
-  CalendarIcon, X, Zap,
+  CalendarIcon, X, Zap, Trash2,
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -17,23 +17,33 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AdminKPICard } from "@/components/admin/AdminKPICard";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
 interface LeadRow {
   id: string;
   email: string;
+  name: string;
+  site: string;
+  phone: string;
   source: string;
   created_at: string;
 }
 
 export default function AdminLeadsPage() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
@@ -49,6 +59,20 @@ export default function AdminLeadsPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as LeadRow[];
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_leads"] });
+      toast.success("Lead excluído com sucesso.");
+    },
+    onError: () => {
+      toast.error("Erro ao excluir lead.");
     },
   });
 
@@ -68,7 +92,8 @@ export default function AdminLeadsPage() {
   };
 
   const filtered = leads?.filter((l) => {
-    if (search && !l.email.toLowerCase().includes(search.toLowerCase())) return false;
+    const q = search.toLowerCase();
+    if (q && !l.email.toLowerCase().includes(q) && !l.name?.toLowerCase().includes(q) && !l.phone?.includes(q)) return false;
     if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
     const created = new Date(l.created_at);
     if (dateFrom && created < dateFrom) return false;
@@ -81,13 +106,9 @@ export default function AdminLeadsPage() {
   });
 
   const total = leads?.length ?? 0;
-
-  // Leads today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const leadsToday = leads?.filter((l) => new Date(l.created_at) >= today).length ?? 0;
-
-  // Leads this week
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   const leadsWeek = leads?.filter((l) => new Date(l.created_at) >= weekAgo).length ?? 0;
@@ -95,7 +116,10 @@ export default function AdminLeadsPage() {
   const exportToExcel = () => {
     if (!filtered?.length) return;
     const rows = filtered.map((l) => ({
+      Nome: l.name || "—",
       "E-mail": l.email,
+      Site: l.site || "—",
+      Celular: l.phone || "—",
       Origem: l.source,
       "Data Captura": new Date(l.created_at).toLocaleString("pt-BR"),
     }));
@@ -133,9 +157,7 @@ export default function AdminLeadsPage() {
               Leads
               <InfoTooltip text="E-mails capturados nos formulários de conversão do site. Exporte para Excel para integrar com seu CRM." />
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {total} lead(s) capturado(s)
-            </p>
+            <p className="text-sm text-muted-foreground">{total} lead(s) capturado(s)</p>
           </div>
         </div>
         <Button onClick={exportToExcel} variant="outline" className="gap-2" disabled={!filtered?.length}>
@@ -154,25 +176,16 @@ export default function AdminLeadsPage() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar e-mail..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Buscar nome, e-mail ou telefone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
 
         <div className="w-[180px]">
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Origem</label>
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todas" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
-              {sources.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
+              {sources.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
             </SelectContent>
           </Select>
         </div>
@@ -220,20 +233,48 @@ export default function AdminLeadsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Nome</TableHead>
                 <TableHead>E-mail</TableHead>
+                <TableHead>Site</TableHead>
+                <TableHead>Celular</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead className="text-center">Data</TableHead>
+                <TableHead className="text-center w-[60px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((l) => (
                 <TableRow key={l.id}>
-                  <TableCell className="font-medium text-foreground">{l.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{l.source}</Badge>
-                  </TableCell>
+                  <TableCell className="font-medium text-foreground">{l.name || "—"}</TableCell>
+                  <TableCell className="text-foreground">{l.email}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{l.site || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{l.phone || "—"}</TableCell>
+                  <TableCell><Badge variant="secondary">{l.source}</Badge></TableCell>
                   <TableCell className="text-center text-sm text-muted-foreground">
                     {new Date(l.created_at).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            O lead <strong>{l.email}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMutation.mutate(l.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}

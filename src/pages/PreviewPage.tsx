@@ -475,12 +475,27 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
     if (!reportRef.current || exporting) return;
     setExporting(true);
     try {
-      const canvas = await html2canvas(reportRef.current, {
+      // Force all lazy/viewport-dependent content to render by temporarily scrolling
+      const el = reportRef.current;
+      const originalHeight = el.style.height;
+      const originalOverflow = el.style.overflow;
+      el.style.height = "auto";
+      el.style.overflow = "visible";
+
+      // Wait a tick for any IntersectionObserver-based animations to trigger
+      await new Promise((r) => setTimeout(r, 500));
+
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
         windowWidth: 800,
+        scrollY: -window.scrollY,
+        height: el.scrollHeight,
       });
+
+      el.style.height = originalHeight;
+      el.style.overflow = originalOverflow;
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
