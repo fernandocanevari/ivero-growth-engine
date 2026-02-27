@@ -603,9 +603,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 {exporting ? "Gerando..." : "Baixar PDF"}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => navigate("/preview")} className="rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
-              Nova Análise
-            </Button>
           </div>
         </div>
       </header>
