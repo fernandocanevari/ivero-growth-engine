@@ -91,7 +91,12 @@ export default function AdminLeadsPage() {
     setDateFrom(undefined);
     setDateTo(undefined);
     setSearch("");
+    setPage(1);
   };
+
+  // Reset page when filters change
+  const handleSearch = (val: string) => { setSearch(val); setPage(1); };
+  const handleSourceFilter = (val: string) => { setSourceFilter(val); setPage(1); };
 
   const filtered = leads?.filter((l) => {
     const q = search.toLowerCase();
