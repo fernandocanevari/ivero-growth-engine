@@ -515,56 +515,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       transition={{ duration: 0.6 }}
       className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30" ref={reportRef}
     >
-      {/* Lead capture dialog */}
-      <Dialog open={showLeadForm} onOpenChange={setShowLeadForm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">
-              Desbloqueie as recomendações completas
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Preencha os dados abaixo para acessar a análise estratégica completa da sua marca.
-            </p>
-          </DialogHeader>
-          <form onSubmit={handleLeadSubmit} className="flex flex-col gap-4 mt-2">
-            <input
-              name="name"
-              type="text"
-              required
-              placeholder="Nome"
-              maxLength={100}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="E-mail corporativo"
-              maxLength={255}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <input
-              name="site"
-              type="url"
-              placeholder="Site da empresa"
-              maxLength={255}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <input
-              name="phone"
-              type="tel"
-              placeholder="Celular"
-              maxLength={20}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <Button variant="hero" size="lg" className="w-full h-12 text-base mt-1" type="submit">
-              Ver recomendações completas
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">Seus dados estão seguros. Sem spam.</p>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Lead capture dialog removed — using inline gate instead */}
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl print:hidden">
