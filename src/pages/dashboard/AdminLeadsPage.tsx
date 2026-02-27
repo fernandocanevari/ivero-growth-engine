@@ -188,7 +188,7 @@ export default function AdminLeadsPage() {
 
         <div className="w-[180px]">
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Origem</label>
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <Select value={sourceFilter} onValueChange={handleSourceFilter}>
             <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
