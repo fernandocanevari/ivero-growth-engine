@@ -461,13 +461,14 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
     const form = e.currentTarget;
     const formData = new FormData(form);
     const email = (formData.get("email") as string)?.trim();
-    const name = (formData.get("name") as string)?.trim();
+    const name = (formData.get("name") as string)?.trim() || "";
+    const site = (formData.get("site") as string)?.trim() || "";
+    const phone = (formData.get("phone") as string)?.trim() || "";
     if (!email) return;
     try {
-      await supabase.from("leads").upsert({ email, source: "preview_unlock" } as any, { onConflict: "email" });
+      await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
     setLeadSubmitted(true);
-    
   };
 
   const handleDownloadPDF = useCallback(async () => {
