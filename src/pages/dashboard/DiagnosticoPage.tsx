@@ -116,13 +116,31 @@ function SoftBlur({ children, label }: { children: React.ReactNode; label?: stri
 export default function DiagnosticoPage() {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
+  const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
 
   // TODO: Replace with real plan status check
-  const hasPlan = true; // Clients accessing the dashboard already have a plan
+  const hasPlan = true;
+
+  const handleReanalyze = () => {
+    if (!canReanalyze) return;
+    runAnalysis.mutate(
+      { clarity: 82, authority: 35, conversion: 58, positioning: 64, experience: 71 },
+      {
+        onSuccess: () => toast.success("Nova análise realizada com sucesso!"),
+        onError: () => toast.error("Erro ao realizar análise. Tente novamente."),
+      }
+    );
+  };
 
   if (isLoading) return null;
 
   const level = getScoreLevel(overallScore);
+
+  // Build evolution chart data from history
+  const evolutionChartData = history.map((record) => ({
+    date: new Date(record.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+    score: record.overall_score,
+  }));
 
   return (
     <div className="space-y-8 max-w-4xl">
