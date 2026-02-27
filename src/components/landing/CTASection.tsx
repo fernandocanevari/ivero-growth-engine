@@ -73,7 +73,7 @@ const CTASection = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="lg" className="text-sm sm:text-base px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto" onClick={() => navigate("/preview")}>
-                Começar agora — é grátis
+                Queremos você como cliente
                 <ArrowRight className="ml-2" />
               </Button>
             </div>

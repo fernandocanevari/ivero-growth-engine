@@ -141,7 +141,7 @@ const Footer = () => {
           <div className="flex flex-col items-center md:items-end gap-2">
             <Button variant="hero" size="default" className="px-5 text-sm w-full sm:w-auto" asChild>
               <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-                Fale direto com o fundador, o Fernando!
+                Fale com o fundador da Ivero!
                 <ArrowRight className="ml-1.5 w-4 h-4" />
               </a>
             </Button>
