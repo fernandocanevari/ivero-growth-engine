@@ -523,10 +523,12 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
             Ivero
           </button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={exporting} className="gap-1.5 rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
-              <Download className="w-4 h-4" />
-              {exporting ? "Gerando..." : "Baixar PDF"}
-            </Button>
+            {leadSubmitted && (
+              <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={exporting} className="gap-1.5 rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
+                <Download className="w-4 h-4" />
+                {exporting ? "Gerando..." : "Baixar PDF"}
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => navigate("/preview")} className="rounded-full border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
               Nova Análise
             </Button>
