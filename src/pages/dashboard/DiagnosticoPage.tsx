@@ -164,6 +164,44 @@ export default function DiagnosticoPage() {
         {/* Plan status removed — clients accessing dashboard already have a plan */}
       </motion.div>
 
+      {/* Re-analysis button */}
+      <motion.div {...fade} transition={{ delay: 0.03 }}>
+        <Card>
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                <RefreshCw className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Re-análise do site</p>
+                {daysSinceLast !== null ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Última análise há {daysSinceLast} {daysSinceLast === 1 ? "dia" : "dias"}
+                    {!canReanalyze && ` · Disponível em ${daysRemaining} dias`}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma análise salva ainda</p>
+                )}
+              </div>
+            </div>
+            <Button
+              onClick={handleReanalyze}
+              disabled={!canReanalyze || runAnalysis.isPending}
+              size="sm"
+              className="gap-2"
+            >
+              {runAnalysis.isPending ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <CalendarDays className="w-4 h-4" />
+              )}
+              {canReanalyze ? "Realizar nova análise" : `Aguarde ${daysRemaining} dias`}
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Score de Presença */}
       <motion.div {...fade} transition={{ delay: 0.05 }}>
         <Card className="overflow-hidden">
