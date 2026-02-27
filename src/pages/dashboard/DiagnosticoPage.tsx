@@ -142,6 +142,18 @@ export default function DiagnosticoPage() {
     score: record.overall_score,
   }));
 
+  // Delta between last two analyses
+  const prev = history.length >= 2 ? history[history.length - 2] : null;
+  const curr = history.length >= 1 ? history[history.length - 1] : null;
+  const deltas = prev && curr ? [
+    { label: "Clareza", delta: curr.clarity_score - prev.clarity_score },
+    { label: "Autoridade", delta: curr.authority_score - prev.authority_score },
+    { label: "Conversão", delta: curr.conversion_score - prev.conversion_score },
+    { label: "Posicionamento", delta: curr.positioning_score - prev.positioning_score },
+    { label: "Experiência", delta: curr.experience_score - prev.experience_score },
+    { label: "Score Geral", delta: curr.overall_score - prev.overall_score },
+  ] : null;
+
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Header */}
@@ -201,6 +213,32 @@ export default function DiagnosticoPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Delta comparison between last two analyses */}
+      {deltas && (
+        <motion.div {...fade} transition={{ delay: 0.04 }}>
+          <Card>
+            <CardContent className="p-5 space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Comparativo com Análise Anterior
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {deltas.map((d) => (
+                  <div key={d.label} className="rounded-xl border border-border bg-card p-3 text-center space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">{d.label}</p>
+                    <p className={`text-lg font-bold font-display ${
+                      d.delta > 0 ? "text-emerald-500" : d.delta < 0 ? "text-red-500" : "text-muted-foreground"
+                    }`}>
+                      {d.delta > 0 ? "↑" : d.delta < 0 ? "↓" : "—"} {Math.abs(d.delta)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Score de Presença */}
       <motion.div {...fade} transition={{ delay: 0.05 }}>
