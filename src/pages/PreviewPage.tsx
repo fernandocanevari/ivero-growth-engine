@@ -616,25 +616,32 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                 </ResponsiveContainer>
               </div>
 
-              {/* Dynamic phrase for weakest pillar */}
-              <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                  <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase()}</p>
-                </div>
-              </div>
+              {/* Dynamic phrase + strength/weakness — blur starts here when locked */}
+              <div className={`relative ${!leadSubmitted ? "select-none pointer-events-none" : ""}`}>
+                <div className={!leadSubmitted ? "blur-[2.5px] opacity-55" : ""}>
+                  <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                      <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase()}</p>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
-                  <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
-                  <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
-                  <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
+                      <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
+                      <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
+                      <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
+                    </div>
+                    <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
+                      <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
+                      <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
+                      <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
-                  <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
-                  <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
-                  <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
-                </div>
+                {!leadSubmitted && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card via-card/80 to-transparent rounded-b-xl" />
+                )}
               </div>
             </div>
           </PremiumCard>
@@ -643,11 +650,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
         {/* ── BLURRED TEASER + LEAD GATE ── */}
         {!leadSubmitted && (
           <>
-            {/* Teaser: blurred preview of detailed content to show there's more */}
             <AnimatedSection delay={0.15}>
               <div className="relative overflow-hidden rounded-2xl">
-                {/* Fake content that gets progressively blurred */}
-                <div className="space-y-4 blur-[2px] opacity-70 select-none pointer-events-none">
+                <div className="space-y-4 blur-[4px] opacity-40 select-none pointer-events-none">
                   <div className="space-y-2">
                     <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -668,11 +673,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-emerald-500" style={{ width: "82%" }} />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3">Sua marca comunica de forma direta o que faz e para quem.</p>
                   </PremiumCard>
                 </div>
-                {/* Stronger blur overlay on second card peek */}
-                <div className="space-y-4 blur-[5px] opacity-40 select-none pointer-events-none -mt-1">
+                <div className="space-y-4 blur-[8px] opacity-20 select-none pointer-events-none -mt-1">
                   <PremiumCard>
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 border border-red-200/60">
@@ -686,11 +689,9 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-red-500" style={{ width: "35%" }} />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3">Autoridade baixa reduz drasticamente a chance de recomendação.</p>
                   </PremiumCard>
                 </div>
-                {/* Gradient fade to white at the bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/90 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/90 to-transparent" />
               </div>
             </AnimatedSection>
 
