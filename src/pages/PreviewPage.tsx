@@ -461,25 +461,41 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
     const form = e.currentTarget;
     const formData = new FormData(form);
     const email = (formData.get("email") as string)?.trim();
-    const name = (formData.get("name") as string)?.trim();
+    const name = (formData.get("name") as string)?.trim() || "";
+    const site = (formData.get("site") as string)?.trim() || "";
+    const phone = (formData.get("phone") as string)?.trim() || "";
     if (!email) return;
     try {
-      await supabase.from("leads").upsert({ email, source: "preview_unlock" } as any, { onConflict: "email" });
+      await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
     setLeadSubmitted(true);
-    
   };
 
   const handleDownloadPDF = useCallback(async () => {
     if (!reportRef.current || exporting) return;
     setExporting(true);
     try {
-      const canvas = await html2canvas(reportRef.current, {
+      // Force all lazy/viewport-dependent content to render by temporarily scrolling
+      const el = reportRef.current;
+      const originalHeight = el.style.height;
+      const originalOverflow = el.style.overflow;
+      el.style.height = "auto";
+      el.style.overflow = "visible";
+
+      // Wait a tick for any IntersectionObserver-based animations to trigger
+      await new Promise((r) => setTimeout(r, 500));
+
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
         windowWidth: 800,
+        scrollY: -window.scrollY,
+        height: el.scrollHeight,
       });
+
+      el.style.height = originalHeight;
+      el.style.overflow = originalOverflow;
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
