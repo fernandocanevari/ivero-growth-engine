@@ -658,7 +658,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                   <span className="text-sm font-semibold text-foreground">5 análises bloqueadas</span>
                   <span className="text-xs text-muted-foreground">— preencha abaixo para liberar</span>
                 </div>
-                <div className="space-y-4 blur-[4px] opacity-40 select-none pointer-events-none pt-14">
+                <div className="space-y-4 blur-[3px] opacity-50 select-none pointer-events-none pt-14">
                   <div className="space-y-2">
                     <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -679,9 +679,11 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-emerald-500" style={{ width: "82%" }} />
                     </div>
+                    <p className="text-sm text-muted-foreground mt-3">Sua marca comunica de forma direta o que faz e para quem.</p>
                   </PremiumCard>
                 </div>
-                <div className="space-y-4 blur-[8px] opacity-20 select-none pointer-events-none -mt-1">
+                {/* Second card — more blurred */}
+                <div className="space-y-4 blur-[6px] opacity-35 select-none pointer-events-none -mt-1">
                   <PremiumCard>
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 border border-red-200/60">
@@ -695,9 +697,44 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-red-500" style={{ width: "35%" }} />
                     </div>
+                    <p className="text-sm text-muted-foreground mt-3">Autoridade baixa reduz drasticamente a chance de recomendação.</p>
                   </PremiumCard>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/90 to-transparent" />
+                {/* Third card — heavily blurred */}
+                <div className="space-y-4 blur-[10px] opacity-20 select-none pointer-events-none -mt-2">
+                  <PremiumCard>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-100 border border-amber-200/60">
+                        <Target className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-foreground">Conversão</p>
+                        <p className="text-xs text-muted-foreground">Score: 58/100 · Moderado</p>
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-amber-500" style={{ width: "58%" }} />
+                    </div>
+                  </PremiumCard>
+                </div>
+                {/* Fourth card — almost invisible */}
+                <div className="blur-[14px] opacity-10 select-none pointer-events-none -mt-3">
+                  <PremiumCard>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-100 border border-amber-200/60">
+                        <Rocket className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-foreground">Posicionamento</p>
+                        <p className="text-xs text-muted-foreground">Score: 64/100 · Moderado</p>
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-amber-500" style={{ width: "64%" }} />
+                    </div>
+                  </PremiumCard>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/95 to-transparent" />
               </div>
             </AnimatedSection>
 
