@@ -652,7 +652,13 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           <>
             <AnimatedSection delay={0.15}>
               <div className="relative overflow-hidden rounded-2xl">
-                <div className="space-y-4 blur-[4px] opacity-40 select-none pointer-events-none">
+                {/* Urgency counter badge */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border/80 shadow-lg">
+                  <Lock className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">5 análises bloqueadas</span>
+                  <span className="text-xs text-muted-foreground">— preencha abaixo para liberar</span>
+                </div>
+                <div className="space-y-4 blur-[4px] opacity-40 select-none pointer-events-none pt-14">
                   <div className="space-y-2">
                     <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
