@@ -4,25 +4,46 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, CheckCircle2, XCircle } from "lucide-react";
-import { simulatorResponses, brandName } from "@/lib/mock-data";
+import { Send, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
-const defaultPrompt = Object.keys(simulatorResponses)[0] as keyof typeof simulatorResponses;
+interface SimResult {
+  model: string;
+  response: string;
+  mentionsBrand: boolean;
+}
 
 export default function SimuladorPage() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<typeof simulatorResponses[typeof defaultPrompt] | null>(null);
+  const [results, setResults] = useState<SimResult[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const { data: brand } = useBrandSettings();
 
-  const handleSearch = () => {
+  const brandName = brand?.brand_name || "Sua Marca";
+
+  const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true);
-    // Simulate API delay
-    setTimeout(() => {
-      setResults(simulatorResponses[defaultPrompt]);
+    setResults(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("simulate-ai", {
+        body: { prompt: query, brandName, mode: "simulator" },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setResults(data.results);
+    } catch (e: any) {
+      console.error("Simulador error:", e);
+      toast({ title: "Erro ao simular", description: e.message || "Tente novamente.", variant: "destructive" });
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -39,11 +60,12 @@ export default function SimuladorPage() {
               placeholder="Digite uma pergunta, ex: Qual a melhor ferramenta de marketing?"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && !loading && handleSearch()}
               className="flex-1"
             />
             <Button onClick={handleSearch} disabled={loading || !query.trim()} className="bg-primary text-primary-foreground">
-              <Send className="h-4 w-4 mr-2" /> {loading ? "Buscando..." : "Simular"}
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              {loading ? "Buscando..." : "Simular"}
             </Button>
           </div>
         </CardContent>
