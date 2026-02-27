@@ -454,7 +454,6 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -468,7 +467,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       await supabase.from("leads").upsert({ email, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
     setLeadSubmitted(true);
-    setShowLeadForm(false);
+    
   };
 
   const handleDownloadPDF = useCallback(async () => {
@@ -515,56 +514,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       transition={{ duration: 0.6 }}
       className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30" ref={reportRef}
     >
-      {/* Lead capture dialog */}
-      <Dialog open={showLeadForm} onOpenChange={setShowLeadForm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">
-              Desbloqueie as recomendações completas
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Preencha os dados abaixo para acessar a análise estratégica completa da sua marca.
-            </p>
-          </DialogHeader>
-          <form onSubmit={handleLeadSubmit} className="flex flex-col gap-4 mt-2">
-            <input
-              name="name"
-              type="text"
-              required
-              placeholder="Nome"
-              maxLength={100}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="E-mail corporativo"
-              maxLength={255}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <input
-              name="site"
-              type="url"
-              placeholder="Site da empresa"
-              maxLength={255}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <input
-              name="phone"
-              type="tel"
-              placeholder="Celular"
-              maxLength={20}
-              className="h-12 rounded-lg border border-border px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-primary/50 transition-colors bg-background"
-            />
-            <Button variant="hero" size="lg" className="w-full h-12 text-base mt-1" type="submit">
-              Ver recomendações completas
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">Seus dados estão seguros. Sem spam.</p>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Lead capture dialog removed — using inline gate instead */}
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl print:hidden">
@@ -690,281 +640,250 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── 5 Pilares Detalhados (Diagnóstico Detalhado) ── */}
-        <AnimatedSection delay={0.18}>
-          <div className="space-y-2 mb-2">
-            <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              Diagnóstico Detalhado
-            </h2>
-            <p className="text-sm sm:text-base text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
-          </div>
-        </AnimatedSection>
+        {/* ── LEAD GATE — Inline form after score/radar ── */}
+        {!leadSubmitted && (
+          <AnimatedSection delay={0.18}>
+            <div className="relative rounded-2xl overflow-hidden">
+              <div className="absolute inset-0 bg-ivero-gradient" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
+              <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
+                <div className="space-y-2">
+                  <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
+                  <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
+                    Seu diagnóstico completo está pronto
+                  </h2>
+                  <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
+                    Preencha os dados abaixo para desbloquear os 5 pilares detalhados, plano de ação e previsão de impacto.
+                  </p>
+                </div>
+                <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
+                  <input name="name" type="text" required placeholder="Nome" maxLength={100}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="site" type="url" placeholder="Site da empresa" maxLength={255}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="phone" type="tel" placeholder="Celular" maxLength={20}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <Button type="submit" size="lg"
+                    className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
+                    Desbloquear diagnóstico completo
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
+                </form>
+              </div>
+            </div>
+          </AnimatedSection>
+        )}
 
-        {pillarDetails.map((pillar, idx) => {
-          const PillarIcon = pillar.icon;
-          const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
-          const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
-          const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
+        {/* ── Everything below only shows after lead submission ── */}
+        {leadSubmitted && (
+          <>
+            {/* ── 5 Pilares Detalhados ── */}
+            <AnimatedSection delay={0.05}>
+              <div className="space-y-2 mb-2">
+                <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Diagnóstico Detalhado
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
+              </div>
+            </AnimatedSection>
 
-          return (
-            <AnimatedSection key={pillar.name} delay={0.2 + idx * 0.06}>
-              <PremiumCard>
-                <div className="space-y-5">
-                  {/* Header with score */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm">
-                        <PillarIcon className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-display font-bold text-foreground">{pillar.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                      <div>
-                        <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
-                        <span className="text-xs text-muted-foreground">/100</span>
-                      </div>
-                      <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
-                        {pillar.status}
-                      </div>
-                    </div>
-                  </div>
+            {pillarDetails.map((pillar, idx) => {
+              const PillarIcon = pillar.icon;
+              const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
+              const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
+              const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
 
-                  {/* Score bar */}
-                  <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full ${barColor}`}
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${pillar.score}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1.2, ease: "easeOut" }}
-                    />
-                  </div>
-
-                  {/* Strengths — all shown, no CTA here */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
-                    <div className="space-y-1.5">
-                      {pillar.strengths.map((s, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          <span className="text-foreground">{s}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Weaknesses — all visible, no separate CTA here */}
-                  {pillar.weaknesses && pillar.weaknesses.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Impacto competitivo</p>
-                      <div className="space-y-1.5">
-                        {pillar.weaknesses.slice(0, 1).map((w, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm">
-                            <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                            <span className="text-foreground">{w}</span>
+              return (
+                <AnimatedSection key={pillar.name} delay={0.08 + idx * 0.06}>
+                  <PremiumCard>
+                    <div className="space-y-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm">
+                            <PillarIcon className="w-5 h-5 text-primary-foreground" />
                           </div>
-                        ))}
-                        <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                          {pillar.weaknesses.slice(1).map((w, i) => (
+                          <div>
+                            <h3 className="text-base font-display font-bold text-foreground">{pillar.name}</h3>
+                            <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                          <div>
+                            <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
+                            <span className="text-xs text-muted-foreground">/100</span>
+                          </div>
+                          <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
+                            {pillar.status}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${barColor}`}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${pillar.score}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1.2, ease: "easeOut" }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
+                        <div className="space-y-1.5">
+                          {pillar.strengths.map((s, i) => (
                             <div key={i} className="flex items-center gap-2 text-sm">
-                              <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                              <span className="text-foreground">{w}</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="text-foreground">{s}</span>
                             </div>
                           ))}
-                        </SoftBlur>
+                        </div>
+                      </div>
+
+                      {pillar.weaknesses && pillar.weaknesses.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Impacto competitivo</p>
+                          <div className="space-y-1.5">
+                            {pillar.weaknesses.map((w, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                <span className="text-foreground">{w}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-1.5">
+                        <p className="text-xs font-semibold text-primary uppercase tracking-widest">Estratégia de Domínio</p>
+                        <p className="text-sm text-foreground leading-relaxed">{pillar.recommendation}</p>
                       </div>
                     </div>
-                  )}
+                  </PremiumCard>
+                </AnimatedSection>
+              );
+            })}
 
-                  {/* Recommendation — blurred */}
-                  <SoftBlur onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                    <div className="rounded-xl bg-primary/5 border border-primary/15 p-4 space-y-1.5">
-                      <p className="text-xs font-semibold text-primary uppercase tracking-widest">Estratégia de Domínio</p>
-                      <p className="text-sm text-foreground leading-relaxed">{pillar.recommendation}</p>
-                    </div>
-                  </SoftBlur>
+            {/* ── CTA WhatsApp ── */}
+            <AnimatedSection delay={0.5}>
+              <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
+                <p className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+                  💜 Queremos você como nosso cliente
+                </p>
+                <p className="text-base text-muted-foreground max-w-md mx-auto">
+                  Sua marca merece aparecer nas respostas das IAs. Fale com a gente e descubra como.
+                </p>
+                <a
+                  href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 px-10 py-4.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-bold text-base shadow-[0_4px_24px_-4px_hsl(142,70%,45%/0.45)] hover:shadow-[0_8px_36px_-4px_hsl(142,70%,45%/0.55)] transition-all hover:scale-105"
+                >
+                  <Phone className="w-6 h-6" />
+                  <span className="text-lg font-bold">Falar com a Ivero no WhatsApp</span>
+                </a>
+              </div>
+            </AnimatedSection>
+
+            {/* ── Diagnóstico Final ── */}
+            <AnimatedSection delay={0.54}>
+              <PremiumCard glow>
+                <div className="space-y-4">
+                  <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
+                  <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
+                    <p className="text-sm text-foreground leading-relaxed font-medium">
+                      Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
+                      decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
+                      reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
+                      contextuais.
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      Os pilares de <strong>Autoridade</strong> e <strong>Conversão</strong> são os que mais limitam sua capacidade de ser
+                      recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
+                    </p>
+                  </div>
                 </div>
               </PremiumCard>
             </AnimatedSection>
-          );
-        })}
 
-        {/* ── CTA WhatsApp — after pillar analysis ── */}
-        <AnimatedSection delay={0.55}>
-          <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
-            <p className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-              💜 Queremos você como nosso cliente
-            </p>
-            <p className="text-base text-muted-foreground max-w-md mx-auto">
-              Sua marca merece aparecer nas respostas das IAs. Fale com a gente e descubra como.
-            </p>
-            <a
-              href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-10 py-4.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-bold text-base shadow-[0_4px_24px_-4px_hsl(142,70%,45%/0.45)] hover:shadow-[0_8px_36px_-4px_hsl(142,70%,45%/0.55)] transition-all hover:scale-105"
-            >
-              <Phone className="w-6 h-6" />
-              <span className="text-lg font-bold">Falar com a Ivero no WhatsApp</span>
-            </a>
-          </div>
-        </AnimatedSection>
-
-        {/* ── Diagnóstico Final (Premium) ── */}
-        <AnimatedSection delay={0.58}>
-          <PremiumCard glow>
-            <div className="space-y-4">
-              <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
-              <SoftBlur label="Ver recomendações completas" onUnlock={() => setShowLeadForm(true)} unlocked={leadSubmitted}>
-                <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
-                  <p className="text-sm text-foreground leading-relaxed font-medium">
-                    Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
-                    decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
-                    reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
-                    contextuais.
-                  </p>
-                  <p className="text-sm text-foreground leading-relaxed">
-                    Os pilares de <strong>Autoridade</strong> e <strong>Conversão</strong> são os que mais limitam sua capacidade de ser
-                    recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
-                  </p>
-                </div>
-              </SoftBlur>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
-
-        {/* ── Plano de Ação (BLURRED) ── */}
-        <AnimatedSection delay={0.62}>
-          <PremiumCard>
-            <div className="space-y-4">
-              <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
-              <div className="relative min-h-[120px]">
-                {!leadSubmitted && (
-                  <div className="absolute inset-0 z-10 rounded-xl backdrop-blur-[4px] bg-gradient-to-b from-card/30 via-card/50 to-card/70" />
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
-                    <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
-                      <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
-                      <span className="text-sm text-muted-foreground">{a}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
-
-        {/* ── Previsão de Impacto (BLURRED) ── */}
-        <AnimatedSection delay={0.66}>
-          <PremiumCard>
-            <div className="space-y-4">
-              <SectionHeader icon={Rocket} title="Previsão de Impacto" />
-              <div className="relative min-h-[100px]">
-                {!leadSubmitted && (
-                  <div className="absolute inset-0 z-10 rounded-xl backdrop-blur-[4px] bg-gradient-to-b from-card/30 via-card/50 to-card/70" />
-                )}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { metric: "+180%", label: "Menções em IAs" },
-                    { metric: "Top 3", label: "Posição no setor" },
-                    { metric: "+65%", label: "Tráfego qualificado" },
-                  ].map((item, i) => (
-                    <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
-                      <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
-
-        {/* ── CTA de impacto ── */}
-        <AnimatedSection delay={0.7}>
-          <div className="relative rounded-2xl overflow-hidden">
-            <div className="absolute inset-0 bg-ivero-gradient" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
-            <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
-                💜 Enquanto você lê isso, a IA já está recomendando seus concorrentes.
-              </h2>
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const form = e.target as HTMLFormElement;
-                  const email = (form.elements.namedItem("cta_email") as HTMLInputElement)?.value?.trim();
-                  if (!email) return;
-                  try {
-                    await supabase.from("leads").upsert({ email, source: "preview_cta" } as any, { onConflict: "email" });
-                  } catch (_) { /* silently continue */ }
-                  navigate(`/login?email=${encodeURIComponent(email)}`);
-                }}
-                className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto"
-              >
-                <div className="relative flex-1 w-full">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    name="cta_email"
-                    type="email"
-                    required
-                    placeholder="Seu melhor e-mail"
-                    className="pl-10 h-12 rounded-full bg-white/95 border-0 text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:ring-white/50"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full sm:w-auto"
-                >
-                  Quero minha marca nas IAs
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </form>
-              <p className="text-xs text-primary-foreground/60">7 dias gratuitos • Sem cartão de crédito</p>
-            </div>
-          </div>
-        </AnimatedSection>
-
-        {/* ── Ivero Features ── */}
-        <AnimatedSection delay={0.74}>
-          <PremiumCard glow>
-            <div className="space-y-6">
-              <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {iveroFeatures.map((feat, i) => {
-                  const Icon = feat.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
-                        <Icon className="w-5 h-5 text-primary-foreground" />
+            {/* ── Plano de Ação ── */}
+            <AnimatedSection delay={0.58}>
+              <PremiumCard>
+                <div className="space-y-4">
+                  <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
+                      <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
+                        <span className="text-sm text-muted-foreground">{a}</span>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{feat.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
+                    ))}
+                  </div>
+                </div>
+              </PremiumCard>
+            </AnimatedSection>
+
+            {/* ── Previsão de Impacto ── */}
+            <AnimatedSection delay={0.62}>
+              <PremiumCard>
+                <div className="space-y-4">
+                  <SectionHeader icon={Rocket} title="Previsão de Impacto" />
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { metric: "+180%", label: "Menções em IAs" },
+                      { metric: "Top 3", label: "Posição no setor" },
+                      { metric: "+65%", label: "Tráfego qualificado" },
+                    ].map((item, i) => (
+                      <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
+                        <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <Button
-                variant="hero"
-                size="lg"
-                className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
-                onClick={() => { navigate("/"); setTimeout(() => { document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" }); }, 300); }}
-              >
-                Conheça nossos planos
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </div>
-          </PremiumCard>
-        </AnimatedSection>
+                    ))}
+                  </div>
+                </div>
+              </PremiumCard>
+            </AnimatedSection>
+
+            {/* ── Ivero Features ── */}
+            <AnimatedSection delay={0.68}>
+              <PremiumCard glow>
+                <div className="space-y-6">
+                  <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {iveroFeatures.map((feat, i) => {
+                      const Icon = feat.icon;
+                      return (
+                        <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
+                            <Icon className="w-5 h-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{feat.label}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
+                    onClick={() => { navigate("/"); setTimeout(() => { document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" }); }, 300); }}
+                  >
+                    Conheça nossos planos
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </div>
+              </PremiumCard>
+            </AnimatedSection>
+          </>
+        )}
       </div>
     </motion.div>
   );
