@@ -640,42 +640,96 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── LEAD GATE — Inline form after score/radar ── */}
+        {/* ── BLURRED TEASER + LEAD GATE ── */}
         {!leadSubmitted && (
-          <AnimatedSection delay={0.18}>
-            <div className="relative rounded-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-ivero-gradient" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
-              <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
-                <div className="space-y-2">
-                  <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
-                  <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
-                    Seu diagnóstico completo está pronto
-                  </h2>
-                  <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
-                    Preencha os dados abaixo para desbloquear os 5 pilares detalhados, plano de ação e previsão de impacto.
-                  </p>
+          <>
+            {/* Teaser: blurred preview of detailed content to show there's more */}
+            <AnimatedSection delay={0.15}>
+              <div className="relative overflow-hidden rounded-2xl">
+                {/* Fake content that gets progressively blurred */}
+                <div className="space-y-4 blur-[2px] opacity-70 select-none pointer-events-none">
+                  <div className="space-y-2">
+                    <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Diagnóstico Detalhado
+                    </h2>
+                    <p className="text-sm text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
+                  </div>
+                  <PremiumCard>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200/60">
+                        <Eye className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-foreground">Clareza</p>
+                        <p className="text-xs text-muted-foreground">Score: 82/100 · Forte</p>
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: "82%" }} />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">Sua marca comunica de forma direta o que faz e para quem.</p>
+                  </PremiumCard>
                 </div>
-                <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
-                  <input name="name" type="text" required placeholder="Nome" maxLength={100}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="phone" type="tel" placeholder="Celular" maxLength={20}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <Button type="submit" size="lg"
-                    className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
-                    Desbloquear diagnóstico completo
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
-                </form>
+                {/* Stronger blur overlay on second card peek */}
+                <div className="space-y-4 blur-[5px] opacity-40 select-none pointer-events-none -mt-1">
+                  <PremiumCard>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 border border-red-200/60">
+                        <ShieldCheck className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-foreground">Autoridade</p>
+                        <p className="text-xs text-muted-foreground">Score: 35/100 · Crítico</p>
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-red-500" style={{ width: "35%" }} />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">Autoridade baixa reduz drasticamente a chance de recomendação.</p>
+                  </PremiumCard>
+                </div>
+                {/* Gradient fade to white at the bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/90 to-transparent" />
               </div>
-            </div>
-          </AnimatedSection>
+            </AnimatedSection>
+
+            {/* Lead gate form */}
+            <AnimatedSection delay={0.18}>
+              <div className="relative rounded-2xl overflow-hidden -mt-8">
+                <div className="absolute inset-0 bg-ivero-gradient" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
+                <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
+                  <div className="space-y-2">
+                    <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
+                    <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
+                      Desbloqueie a análise completa
+                    </h2>
+                    <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
+                      Você está vendo apenas o resumo. Preencha abaixo para acessar os 5 pilares detalhados, plano de ação personalizado e previsão de impacto.
+                    </p>
+                  </div>
+                  <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
+                    <input name="name" type="text" required placeholder="Nome" maxLength={100}
+                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                    <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255}
+                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                    <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255}
+                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                    <input name="phone" type="tel" placeholder="Celular" maxLength={20}
+                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                    <Button type="submit" size="lg"
+                      className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
+                      Desbloquear diagnóstico completo
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                    <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
+                  </form>
+                </div>
+              </div>
+            </AnimatedSection>
+          </>
         )}
 
         {/* ── Everything below only shows after lead submission ── */}
