@@ -467,7 +467,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       await supabase.from("leads").upsert({ email, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
     setLeadSubmitted(true);
-    setShowLeadForm(false);
+    
   };
 
   const handleDownloadPDF = useCallback(async () => {
