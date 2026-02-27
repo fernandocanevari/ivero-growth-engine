@@ -142,6 +142,18 @@ export default function DiagnosticoPage() {
     score: record.overall_score,
   }));
 
+  // Delta between last two analyses
+  const prev = history.length >= 2 ? history[history.length - 2] : null;
+  const curr = history.length >= 1 ? history[history.length - 1] : null;
+  const deltas = prev && curr ? [
+    { label: "Clareza", delta: curr.clarity_score - prev.clarity_score },
+    { label: "Autoridade", delta: curr.authority_score - prev.authority_score },
+    { label: "Conversão", delta: curr.conversion_score - prev.conversion_score },
+    { label: "Posicionamento", delta: curr.positioning_score - prev.positioning_score },
+    { label: "Experiência", delta: curr.experience_score - prev.experience_score },
+    { label: "Score Geral", delta: curr.overall_score - prev.overall_score },
+  ] : null;
+
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Header */}

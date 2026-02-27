@@ -64,23 +64,27 @@ const HeroSection = () => {
 
             <div className="flex flex-col gap-3 w-full">
               {/* Input pill — empilhado no mobile */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
-                <input
-                  type="url"
-                  placeholder="Digite o site da sua marca"
-                  value={siteUrl}
-                  onChange={(e) => setSiteUrl(e.target.value)}
-                  className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-5 sm:py-0"
-                />
-                <Button
-                  variant="hero"
-                  size="lg"
-                  className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
-                  onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
-                >
-                  Descubra sua visibilidade em IA
-                  <ArrowRight className="ml-1.5 w-4 h-4" />
-                </Button>
+              <div className="relative group">
+                {/* Animated glow behind */}
+                <div className="absolute -inset-1 rounded-full sm:rounded-full rounded-2xl bg-gradient-to-r from-[hsl(265,70%,55%)] via-[hsl(300,70%,50%)] to-[hsl(265,70%,55%)] opacity-40 blur-lg group-hover:opacity-60 group-focus-within:opacity-70 transition-opacity duration-500 animate-pulse" />
+                <div className="relative flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 overflow-hidden shadow-[0_0_20px_hsl(265,60%,55%/0.25),0_0_60px_hsl(265,60%,55%/0.1)] focus-within:shadow-[0_0_25px_hsl(265,60%,55%/0.35),0_0_80px_hsl(265,60%,55%/0.15)] transition-shadow duration-300">
+                  <input
+                    type="url"
+                    placeholder="Digite o site da sua marca"
+                    value={siteUrl}
+                    onChange={(e) => setSiteUrl(e.target.value)}
+                    className="flex-1 bg-transparent text-primary-foreground placeholder:text-ivero-slate text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-5 sm:py-0"
+                  />
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
+                    onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
+                  >
+                    Descubra sua visibilidade em IA
+                    <ArrowRight className="ml-1.5 w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <p className="text-primary-foreground text-sm sm:text-base font-medium ml-1 sm:ml-5">
                 Veja análise instantânea da sua presença nas respostas da IA 🚀
