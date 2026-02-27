@@ -1,15 +1,17 @@
 import { motion } from "framer-motion";
 import {
   Brain, Lock, Unlock, Eye, ShieldCheck, Target, Rocket, Sparkles,
-  CheckCircle2, AlertTriangle, Phone, ArrowRight,
+  CheckCircle2, AlertTriangle, Phone, ArrowRight, RefreshCw, Clock, CalendarDays,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { toast } from "sonner";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ResponsiveContainer,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
@@ -114,13 +116,31 @@ function SoftBlur({ children, label }: { children: React.ReactNode; label?: stri
 export default function DiagnosticoPage() {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
+  const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
 
   // TODO: Replace with real plan status check
-  const hasPlan = true; // Clients accessing the dashboard already have a plan
+  const hasPlan = true;
+
+  const handleReanalyze = () => {
+    if (!canReanalyze) return;
+    runAnalysis.mutate(
+      { clarity: 82, authority: 35, conversion: 58, positioning: 64, experience: 71 },
+      {
+        onSuccess: () => toast.success("Nova análise realizada com sucesso!"),
+        onError: () => toast.error("Erro ao realizar análise. Tente novamente."),
+      }
+    );
+  };
 
   if (isLoading) return null;
 
   const level = getScoreLevel(overallScore);
+
+  // Build evolution chart data from history
+  const evolutionChartData = history.map((record) => ({
+    date: new Date(record.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+    score: record.overall_score,
+  }));
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -142,6 +162,44 @@ export default function DiagnosticoPage() {
         </div>
 
         {/* Plan status removed — clients accessing dashboard already have a plan */}
+      </motion.div>
+
+      {/* Re-analysis button */}
+      <motion.div {...fade} transition={{ delay: 0.03 }}>
+        <Card>
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                <RefreshCw className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Re-análise do site</p>
+                {daysSinceLast !== null ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Última análise há {daysSinceLast} {daysSinceLast === 1 ? "dia" : "dias"}
+                    {!canReanalyze && ` · Disponível em ${daysRemaining} dias`}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma análise salva ainda</p>
+                )}
+              </div>
+            </div>
+            <Button
+              onClick={handleReanalyze}
+              disabled={!canReanalyze || runAnalysis.isPending}
+              size="sm"
+              className="gap-2"
+            >
+              {runAnalysis.isPending ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <CalendarDays className="w-4 h-4" />
+              )}
+              {canReanalyze ? "Realizar nova análise" : `Aguarde ${daysRemaining} dias`}
+            </Button>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Score de Presença */}
@@ -347,6 +405,46 @@ export default function DiagnosticoPage() {
       </div>
 
       {/* WhatsApp CTA removed — client already in dashboard */}
+
+      {/* ── Evolução do Score (histórico de re-análises) ── */}
+      {evolutionChartData.length >= 2 && (
+        <motion.div {...fade} transition={{ delay: 0.5 }}>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Evolução do Score ao Longo do Tempo
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Histórico das suas análises — cada ponto representa uma re-análise do site.
+              </p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={evolutionChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={{ r: 5, fill: "hsl(var(--primary))" }}
+                    name="Score GEO"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* ── Diagnóstico Final (Premium) ── */}
       <motion.div {...fade} transition={{ delay: 0.55 }}>

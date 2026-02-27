@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_history: {
+        Row: {
+          authority_score: number
+          clarity_score: number
+          conversion_score: number
+          created_at: string
+          experience_score: number
+          id: string
+          overall_score: number
+          positioning_score: number
+          user_id: string
+        }
+        Insert: {
+          authority_score?: number
+          clarity_score?: number
+          conversion_score?: number
+          created_at?: string
+          experience_score?: number
+          id?: string
+          overall_score?: number
+          positioning_score?: number
+          user_id: string
+        }
+        Update: {
+          authority_score?: number
+          clarity_score?: number
+          conversion_score?: number
+          created_at?: string
+          experience_score?: number
+          id?: string
+          overall_score?: number
+          positioning_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_settings: {
         Row: {
           brand_name: string
