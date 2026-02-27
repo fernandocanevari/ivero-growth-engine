@@ -231,58 +231,103 @@ export default function AdminLeadsPage() {
 
       {/* Table */}
       {filtered && filtered.length > 0 ? (
-        <div className="border border-border rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead>Celular</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead className="text-center">Data</TableHead>
-                <TableHead className="text-center w-[60px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium text-foreground">{l.name || "—"}</TableCell>
-                  <TableCell className="text-foreground">{l.email}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{l.site || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{l.phone || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{l.source}</Badge></TableCell>
-                  <TableCell className="text-center text-sm text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("pt-BR")}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            O lead <strong>{l.email}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteMutation.mutate(l.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
+        <>
+          <div className="border border-border rounded-xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Site</TableHead>
+                  <TableHead>Celular</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead className="text-center">Data</TableHead>
+                  <TableHead className="text-center w-[60px]">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const totalPages = Math.ceil(filtered.length / perPage);
+                  const safePage = Math.min(page, totalPages);
+                  const start = (safePage - 1) * perPage;
+                  return filtered.slice(start, start + perPage);
+                })().map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="font-medium text-foreground">{l.name || "—"}</TableCell>
+                    <TableCell className="text-foreground">{l.email}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{l.site || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{l.phone || "—"}</TableCell>
+                    <TableCell><Badge variant="secondary">{l.source}</Badge></TableCell>
+                    <TableCell className="text-center text-sm text-muted-foreground">
+                      {new Date(l.created_at).toLocaleString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              O lead <strong>{l.email}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMutation.mutate(l.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {(() => {
+            const totalPages = Math.ceil(filtered.length / perPage);
+            if (totalPages <= 1) return null;
+            const safePage = Math.min(page, totalPages);
+            return (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-muted-foreground">
+                  {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, filtered.length)} de {filtered.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                    .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      typeof p === "string" ? (
+                        <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
+                      ) : (
+                        <Button key={p} variant={p === safePage ? "default" : "outline"} size="icon" className="h-8 w-8 text-xs" onClick={() => setPage(p)}>
+                          {p}
+                        </Button>
+                      )
+                    )}
+                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </>
       ) : (
         <div className="text-center py-12 text-muted-foreground text-sm">
           Nenhum lead encontrado.
