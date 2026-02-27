@@ -48,6 +48,8 @@ export default function AdminLeadsPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [page, setPage] = useState(1);
+  const perPage = 15;
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["admin_leads"],
