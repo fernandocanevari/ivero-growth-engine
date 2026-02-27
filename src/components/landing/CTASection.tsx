@@ -72,9 +72,9 @@ const CTASection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg" className="text-sm sm:text-base px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto" onClick={() => navigate("/preview")}>
-                Queremos você como cliente
-                <ArrowRight className="ml-2" />
+              <Button variant="hero" size="lg" className="text-sm sm:text-base px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto" onClick={() => navigate("/auth")}>
+                Queremos você como cliente — Comece agora
+                <ArrowRight className="ml-2 w-6 h-6" />
               </Button>
             </div>
           </motion.div>
