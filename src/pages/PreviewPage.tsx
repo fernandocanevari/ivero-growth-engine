@@ -477,7 +477,7 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
     try {
       const el = reportRef.current;
 
-      // 1. Force all content visible (override height/overflow)
+      // 1. Force all content visible
       const originalHeight = el.style.height;
       const originalOverflow = el.style.overflow;
       el.style.height = "auto";
@@ -495,41 +495,80 @@ function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
       // 3. Wait for layout recalc
       await new Promise((r) => setTimeout(r, 600));
 
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: 800,
-        scrollY: 0,
-        y: 0,
-        height: el.scrollHeight,
-        width: el.scrollWidth,
-      });
+      // 4. Find all PDF sections, or fall back to direct children of the content area
+      const contentArea = el.querySelector(".space-y-8") as HTMLElement || el;
+      let sections = Array.from(contentArea.querySelectorAll<HTMLElement>("[data-pdf-section]"));
+      if (sections.length === 0) {
+        // Fallback: use direct children as sections
+        sections = Array.from(contentArea.children) as HTMLElement[];
+      }
 
-      // 4. Restore original styles
+      // A4 dimensions
+      const A4_WIDTH_MM = 210;
+      const A4_HEIGHT_MM = 297;
+      const MARGIN_MM = 10;
+      const CONTENT_WIDTH_MM = A4_WIDTH_MM - MARGIN_MM * 2;
+      const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - MARGIN_MM * 2;
+      const SECTION_GAP_MM = 3;
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      let currentY = MARGIN_MM;
+      let isFirstSection = true;
+
+      for (const section of sections) {
+        // Skip invisible or zero-height elements
+        if (section.offsetHeight === 0) continue;
+
+        const canvas = await html2canvas(section, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          windowWidth: 800,
+          scrollY: -window.scrollY,
+        });
+
+        const scaleFactor = CONTENT_WIDTH_MM / (canvas.width / 2);
+        const sectionHeightMM = (canvas.height / 2) * scaleFactor;
+
+        // If section won't fit on current page, start a new page
+        const remainingSpace = A4_HEIGHT_MM - MARGIN_MM - currentY;
+        if (!isFirstSection && sectionHeightMM > remainingSpace && currentY > MARGIN_MM) {
+          pdf.addPage();
+          currentY = MARGIN_MM;
+        }
+
+        // If a single section is taller than a full page, slice it across pages
+        if (sectionHeightMM > CONTENT_HEIGHT_MM) {
+          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+          const imgWidthMM = CONTENT_WIDTH_MM;
+          const imgHeightMM = sectionHeightMM;
+          const totalPages = Math.ceil(imgHeightMM / CONTENT_HEIGHT_MM);
+
+          for (let p = 0; p < totalPages; p++) {
+            if (p > 0 || (!isFirstSection && currentY > MARGIN_MM)) {
+              pdf.addPage();
+              currentY = MARGIN_MM;
+            }
+            const yOffset = MARGIN_MM - p * CONTENT_HEIGHT_MM;
+            pdf.addImage(imgData, "JPEG", MARGIN_MM, yOffset, imgWidthMM, imgHeightMM);
+          }
+          currentY = MARGIN_MM + (imgHeightMM % CONTENT_HEIGHT_MM || CONTENT_HEIGHT_MM);
+        } else {
+          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+          pdf.addImage(imgData, "JPEG", MARGIN_MM, currentY, CONTENT_WIDTH_MM, sectionHeightMM);
+          currentY += sectionHeightMM + SECTION_GAP_MM;
+        }
+
+        isFirstSection = false;
+      }
+
+      // 5. Restore original styles
       el.style.height = originalHeight;
       el.style.overflow = originalOverflow;
       originalStyles.forEach(({ el: m, opacity, transform }) => {
         m.style.opacity = opacity;
         m.style.transform = transform;
       });
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const margin = 10;
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - margin * 2;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const usableHeight = pageHeight - margin * 2;
-
-      // 5. Paginate correctly — page 0 first, then subsequent pages
-      const totalPages = Math.ceil(imgHeight / usableHeight);
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) pdf.addPage();
-        const yOffset = margin - page * usableHeight;
-        pdf.addImage(imgData, "JPEG", margin, yOffset, imgWidth, imgHeight);
-      }
 
       pdf.save(`diagnostico-ivero-${siteUrl || "marca"}.pdf`);
     } catch (err) {
