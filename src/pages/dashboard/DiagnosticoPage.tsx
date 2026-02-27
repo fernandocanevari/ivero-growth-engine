@@ -214,6 +214,32 @@ export default function DiagnosticoPage() {
         </Card>
       </motion.div>
 
+      {/* Delta comparison between last two analyses */}
+      {deltas && (
+        <motion.div {...fade} transition={{ delay: 0.04 }}>
+          <Card>
+            <CardContent className="p-5 space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Comparativo com Análise Anterior
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {deltas.map((d) => (
+                  <div key={d.label} className="rounded-xl border border-border bg-card p-3 text-center space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">{d.label}</p>
+                    <p className={`text-lg font-bold font-display ${
+                      d.delta > 0 ? "text-emerald-500" : d.delta < 0 ? "text-red-500" : "text-muted-foreground"
+                    }`}>
+                      {d.delta > 0 ? "↑" : d.delta < 0 ? "↓" : "—"} {Math.abs(d.delta)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Score de Presença */}
       <motion.div {...fade} transition={{ delay: 0.05 }}>
         <Card className="overflow-hidden">
