@@ -230,6 +230,45 @@ export type Database = {
         }
         Relationships: []
       }
+      simulation_results: {
+        Row: {
+          autoridade: number | null
+          clareza: number | null
+          conversao: number | null
+          created_at: string
+          experiencia: number | null
+          id: string
+          posicionamento: number | null
+          resumo: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          autoridade?: number | null
+          clareza?: number | null
+          conversao?: number | null
+          created_at?: string
+          experiencia?: number | null
+          id?: string
+          posicionamento?: number | null
+          resumo?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          autoridade?: number | null
+          clareza?: number | null
+          conversao?: number | null
+          created_at?: string
+          experiencia?: number | null
+          id?: string
+          posicionamento?: number | null
+          resumo?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
