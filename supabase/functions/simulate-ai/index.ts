@@ -59,11 +59,12 @@ function getModelConfigs(): ModelConfig[] {
   }
 
   // Perplexity via Lovable AI Gateway (sonar model)
+  // Perplexity via Lovable AI Gateway — uses a supported model to simulate Perplexity-style responses
   if (lovableKey) {
     configs.push({
       name: "Perplexity",
       url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      model: "perplexity/sonar",
+      model: "google/gemini-3-flash-preview",
       getHeaders: () => ({
         Authorization: `Bearer ${lovableKey}`,
         "Content-Type": "application/json",
