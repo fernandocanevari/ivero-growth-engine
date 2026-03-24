@@ -14,8 +14,8 @@ interface ModelConfig {
 }
 
 function getModelConfigs(): ModelConfig[] {
-  const openaiKey = Deno.env.get("Key_Open_IA");
-  const geminiKey = Deno.env.get("Key_gemini");
+  const openaiKey = Deno.env.get("key_open_IA");
+  const geminiKey = Deno.env.get("Key_Gemini");
   const claudeKey = Deno.env.get("Key_antropic_claude");
   const lovableKey = Deno.env.get("LOVABLE_API_KEY");
 
