@@ -5,6 +5,151 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+interface ModelConfig {
+  name: string;
+  url: string;
+  model: string;
+  getHeaders: () => Record<string, string>;
+  parseResponse: (data: any) => string;
+}
+
+function getModelConfigs(): ModelConfig[] {
+  const openaiKey = Deno.env.get("Key_Open_IA");
+  const geminiKey = Deno.env.get("Key_gemini");
+  const claudeKey = Deno.env.get("Key_antropic_claude");
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+
+  const configs: ModelConfig[] = [];
+
+  if (openaiKey) {
+    configs.push({
+      name: "ChatGPT",
+      url: "https://api.openai.com/v1/chat/completions",
+      model: "gpt-4o-mini",
+      getHeaders: () => ({
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      }),
+      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
+    });
+  }
+
+  if (geminiKey) {
+    configs.push({
+      name: "Gemini",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.0-flash",
+      getHeaders: () => ({ "Content-Type": "application/json" }),
+      parseResponse: (data) => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
+    });
+  }
+
+  if (claudeKey) {
+    configs.push({
+      name: "Claude",
+      url: "https://api.anthropic.com/v1/messages",
+      model: "claude-3-5-haiku-latest",
+      getHeaders: () => ({
+        "x-api-key": claudeKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      }),
+      parseResponse: (data) => data.content?.[0]?.text || "",
+    });
+  }
+
+  // Perplexity via Lovable AI Gateway (sonar model)
+  if (lovableKey) {
+    configs.push({
+      name: "Perplexity",
+      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      model: "perplexity/sonar",
+      getHeaders: () => ({
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json",
+      }),
+      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
+    });
+  }
+
+  return configs;
+}
+
+async function callModel(
+  config: ModelConfig,
+  userPrompt: string,
+  systemPrompt: string,
+  brandName: string,
+  mode: string
+): Promise<{ model: string; response?: string; mentionsBrand?: boolean; mentioned?: boolean; error?: string }> {
+  try {
+    let body: any;
+
+    if (config.name === "Gemini") {
+      // Gemini uses a different API format
+      body = {
+        contents: [
+          { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
+        ],
+        generationConfig: { maxOutputTokens: 300 },
+      };
+    } else if (config.name === "Claude") {
+      body = {
+        model: config.model,
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      };
+    } else {
+      // OpenAI-compatible (ChatGPT, Perplexity via gateway)
+      body = {
+        model: config.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 300,
+      };
+    }
+
+    const response = await fetch(config.url, {
+      method: "POST",
+      headers: config.getHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`${config.name} error [${response.status}]:`, errText);
+      return {
+        model: config.name,
+        ...(mode === "simulator"
+          ? { response: `[Erro ao consultar ${config.name}]`, mentionsBrand: false }
+          : { mentioned: false }),
+        error: `HTTP ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const content = config.parseResponse(data);
+    const mentionsBrand = content.toLowerCase().includes(brandName.toLowerCase());
+
+    if (mode === "simulator") {
+      return { model: config.name, response: content, mentionsBrand };
+    } else {
+      return { model: config.name, mentioned: mentionsBrand };
+    }
+  } catch (e) {
+    console.error(`${config.name} call failed:`, e);
+    return {
+      model: config.name,
+      ...(mode === "simulator"
+        ? { response: `[Erro ao consultar ${config.name}]`, mentionsBrand: false }
+        : { mentioned: false }),
+    };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -18,76 +163,24 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const configs = getModelConfigs();
+    if (configs.length === 0) {
+      return new Response(JSON.stringify({ error: "Nenhuma chave de IA configurada." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const systemPrompt = mode === "tester"
-      ? `You are an AI brand visibility analyzer. Given a user prompt and a brand name, simulate how 4 different AI assistants (ChatGPT, Gemini, Claude, Perplexity) would respond. For each model, determine if the brand "${brandName}" would likely appear in the response. Return ONLY a JSON object with this exact structure, no markdown:
-{"results": [{"model": "ChatGPT", "mentioned": true/false}, {"model": "Gemini", "mentioned": true/false}, {"model": "Claude", "mentioned": true/false}, {"model": "Perplexity", "mentioned": true/false}]}`
-      : `You are an AI brand visibility simulator. Given a user prompt, simulate realistic responses from 4 different AI assistants (ChatGPT, Gemini, Claude, Perplexity). Each response should be 1-3 sentences in Portuguese (Brazil). Some responses should naturally mention the brand "${brandName}" if it's relevant to the query, others should not. Be realistic - not all AIs would mention the same brand. Return ONLY a JSON object with this exact structure, no markdown:
-{"results": [{"model": "ChatGPT", "response": "...", "mentionsBrand": true/false}, {"model": "Gemini", "response": "...", "mentionsBrand": true/false}, {"model": "Claude", "response": "...", "mentionsBrand": true/false}, {"model": "Perplexity", "response": "...", "mentionsBrand": true/false}]}`;
+      ? `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`
+      : `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+    // Call all models in parallel
+    const results = await Promise.all(
+      configs.map((config) => callModel(config, prompt, systemPrompt, brandName, mode))
+    );
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Tente novamente em alguns segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro ao consultar IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      return new Response(JSON.stringify({ error: "Resposta vazia da IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Parse the JSON from the AI response
-    let parsed;
-    try {
-      // Remove markdown code blocks if present
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse AI response:", content);
-      return new Response(JSON.stringify({ error: "Erro ao processar resposta da IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify(parsed), {
+    return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
