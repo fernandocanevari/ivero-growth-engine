@@ -72,12 +72,32 @@ const loadingSteps = [
   { icon: BarChart3, text: "Gerando diagnóstico final..." },
 ];
 
-/* ── Mock data ── */
-const aiEngines = [
-  { name: "ChatGPT", found: true },
-  { name: "Claude", found: true },
+/* ── AI engine result type ── */
+interface AIEngineResult {
+  name: string;
+  found: boolean;
+  error?: boolean;
+  errorMessage?: string;
+}
+
+/* ── Extract brand name from URL ── */
+function extractBrandFromUrl(url: string): string {
+  try {
+    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    clean = clean.split("/")[0].split(".")[0];
+    return clean || "marca";
+  } catch {
+    return "marca";
+  }
+}
+
+/* ── Default fallback engines (shown if API fails completely) ── */
+const defaultAiEngines: AIEngineResult[] = [
+  { name: "ChatGPT", found: false },
   { name: "Gemini", found: false },
+  { name: "Claude", found: false },
   { name: "Perplexity", found: false },
+  { name: "GPT-5", found: false },
 ];
 
 const radarData = [
