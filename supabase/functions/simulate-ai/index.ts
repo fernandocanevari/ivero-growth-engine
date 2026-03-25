@@ -69,6 +69,17 @@ function getModelConfigs(): ModelConfig[] {
       }),
       parseResponse: (data) => data.choices?.[0]?.message?.content || "",
     });
+
+    configs.push({
+      name: "GPT-5",
+      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      model: "openai/gpt-5-mini",
+      getHeaders: () => ({
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json",
+      }),
+      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
+    });
   }
 
   return configs;
