@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Send, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -14,7 +14,7 @@ interface TestResult {
   id: number;
   prompt: string;
   date: string;
-  results: Record<string, boolean>;
+  results: Record<string, { mentioned: boolean; error?: boolean; errorMessage?: string }>;
 }
 
 export default function PromptTesterPage() {
@@ -37,9 +37,9 @@ export default function PromptTesterPage() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      const resultsMap: Record<string, boolean> = {};
-      data.results.forEach((r: { model: string; mentioned: boolean }) => {
-        resultsMap[r.model] = r.mentioned;
+      const resultsMap: Record<string, { mentioned: boolean; error?: boolean; errorMessage?: string }> = {};
+      data.results.forEach((r: { model: string; mentioned: boolean; error?: boolean; errorMessage?: string }) => {
+        resultsMap[r.model] = { mentioned: r.mentioned, error: r.error, errorMessage: r.errorMessage };
       });
 
       setHistory((prev) => [
@@ -96,11 +96,28 @@ export default function PromptTesterPage() {
                 <div key={h.id} className="p-3 rounded-lg bg-secondary/50">
                   <p className="text-sm font-medium text-foreground">"{h.prompt}"</p>
                   <p className="text-xs text-muted-foreground mt-1">{h.date}</p>
-                  <div className="flex gap-2 mt-2">
-                    {Object.entries(h.results).map(([model, found]) => (
-                      <Badge key={model} variant="outline" className={`text-[10px] gap-1 ${found ? "border-emerald-200 text-emerald-700" : "border-border text-muted-foreground"}`}>
-                        {found ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {Object.entries(h.results).map(([model, info]) => (
+                      <Badge
+                        key={model}
+                        variant="outline"
+                        className={`text-[10px] gap-1 ${
+                          info.error
+                            ? "border-yellow-300 text-yellow-700 bg-yellow-50"
+                            : info.mentioned
+                            ? "border-emerald-200 text-emerald-700"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {info.error ? (
+                          <AlertTriangle className="h-3 w-3" />
+                        ) : info.mentioned ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <XCircle className="h-3 w-3" />
+                        )}
                         {model}
+                        {info.error && <span className="ml-0.5">({info.errorMessage})</span>}
                       </Badge>
                     ))}
                   </div>

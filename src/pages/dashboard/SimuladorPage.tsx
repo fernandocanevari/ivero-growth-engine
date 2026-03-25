@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Send, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -14,6 +14,8 @@ interface SimResult {
   model: string;
   response: string;
   mentionsBrand: boolean;
+  error?: boolean;
+  errorMessage?: string;
 }
 
 export default function SimuladorPage() {
@@ -74,11 +76,15 @@ export default function SimuladorPage() {
       {results && (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {results.map((r) => (
-            <Card key={r.model} className={r.mentionsBrand ? "border-l-4 border-l-emerald-500" : ""}>
+            <Card key={r.model} className={r.error ? "border-l-4 border-l-yellow-500 opacity-75" : r.mentionsBrand ? "border-l-4 border-l-emerald-500" : ""}>
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-base font-semibold text-foreground">{r.model}</p>
-                  {r.mentionsBrand ? (
+                  {r.error ? (
+                    <Badge variant="outline" className="text-[10px] border-yellow-300 text-yellow-700 bg-yellow-50">
+                      <AlertTriangle className="h-3 w-3 mr-1" /> {r.errorMessage || "Indisponível"}
+                    </Badge>
+                  ) : r.mentionsBrand ? (
                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[10px]">
                       <CheckCircle2 className="h-3 w-3 mr-1" /> Menciona {brandName}
                     </Badge>
@@ -88,7 +94,9 @@ export default function SimuladorPage() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">"{r.response}"</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {r.error ? `Este modelo está temporariamente indisponível (${r.errorMessage}).` : `"${r.response}"`}
+                </p>
               </CardContent>
             </Card>
           ))}

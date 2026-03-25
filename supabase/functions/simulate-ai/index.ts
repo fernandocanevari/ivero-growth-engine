@@ -58,8 +58,6 @@ function getModelConfigs(): ModelConfig[] {
     });
   }
 
-  // Perplexity via Lovable AI Gateway (sonar model)
-  // Perplexity via Lovable AI Gateway — uses a supported model to simulate Perplexity-style responses
   if (lovableKey) {
     configs.push({
       name: "Perplexity",
@@ -76,18 +74,24 @@ function getModelConfigs(): ModelConfig[] {
   return configs;
 }
 
+function getErrorMessage(status: number): string {
+  if (status === 429) return "Limite atingido";
+  if (status === 400) return "Sem créditos";
+  if (status === 401 || status === 403) return "Chave inválida";
+  return `Erro HTTP ${status}`;
+}
+
 async function callModel(
   config: ModelConfig,
   userPrompt: string,
   systemPrompt: string,
   brandName: string,
   mode: string
-): Promise<{ model: string; response?: string; mentionsBrand?: boolean; mentioned?: boolean; error?: string }> {
+): Promise<{ model: string; response?: string; mentionsBrand?: boolean; mentioned?: boolean; error?: boolean; errorMessage?: string }> {
   try {
     let body: any;
 
     if (config.name === "Gemini") {
-      // Gemini uses a different API format
       body = {
         contents: [
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
@@ -102,7 +106,6 @@ async function callModel(
         messages: [{ role: "user", content: userPrompt }],
       };
     } else {
-      // OpenAI-compatible (ChatGPT, Perplexity via gateway)
       body = {
         model: config.model,
         messages: [
@@ -122,12 +125,14 @@ async function callModel(
     if (!response.ok) {
       const errText = await response.text();
       console.error(`${config.name} error [${response.status}]:`, errText);
+      const errorMessage = getErrorMessage(response.status);
       return {
         model: config.name,
+        error: true,
+        errorMessage,
         ...(mode === "simulator"
-          ? { response: `[Erro ao consultar ${config.name}]`, mentionsBrand: false }
+          ? { response: "", mentionsBrand: false }
           : { mentioned: false }),
-        error: `HTTP ${response.status}`,
       };
     }
 
@@ -144,8 +149,10 @@ async function callModel(
     console.error(`${config.name} call failed:`, e);
     return {
       model: config.name,
+      error: true,
+      errorMessage: "Falha na conexão",
       ...(mode === "simulator"
-        ? { response: `[Erro ao consultar ${config.name}]`, mentionsBrand: false }
+        ? { response: "", mentionsBrand: false }
         : { mentioned: false }),
     };
   }
@@ -172,11 +179,8 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = mode === "tester"
-      ? `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`
-      : `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`;
+    const systemPrompt = `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`;
 
-    // Call all models in parallel
     const results = await Promise.all(
       configs.map((config) => callModel(config, prompt, systemPrompt, brandName, mode))
     );
