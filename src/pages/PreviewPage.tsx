@@ -471,7 +471,7 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 }
 
 /* ── Diagnostic Report ── */
-function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
+function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: AIEngineResult[] }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
