@@ -1,57 +1,23 @@
 
 
-## Problemas Identificados
+## Plano: Adicionar modelo "GPT-5" via Lovable AI Gateway
 
-1. **Visibilidade na sidebar**: O Simulador de Influência e o Prompt Tester estão enterrados na seção "Ferramentas", longe do topo. São ferramentas centrais do produto.
-2. **Erro silencioso nos modelos**: Quando um modelo retorna erro (429/400), o sistema mostra "Não menciona" em vez de indicar que houve falha, enganando o usuário.
+### Contexto
+Adicionar temporariamente um segundo modelo gratuito via Lovable AI Gateway chamado "GPT-5" para testes. Será removido quando as chaves reais (Claude, Gemini, OpenAI, Perplexity) estiverem configuradas.
 
-## Plano
+### Alteração
 
-### 1. Reorganizar a sidebar para dar destaque ao Simulador e Prompt Tester
+**Arquivo**: `supabase/functions/simulate-ai/index.ts`
 
-Mover o Simulador de Influência e o Prompt Tester para a seção **"Inteligência"**, que é a seção mais visitada e coerente com a proposta dessas ferramentas. A seção "Ferramentas" ficaria apenas com Campanhas (ou seria removida, movendo Campanhas para "Ações").
+No bloco que verifica `lovableKey`, adicionar uma segunda entrada `configs.push()` com:
+- **name**: `"GPT-5"`
+- **url**: `https://ai.gateway.lovable.dev/v1/chat/completions`
+- **model**: `openai/gpt-5-mini`
+- **Headers e parseResponse**: idênticos ao modelo "Perplexity" existente
 
-Nova estrutura proposta:
+### Resultado
+O Simulador e o Prompt Tester mostrarão 5 modelos: ChatGPT, Gemini, Claude, Perplexity e GPT-5. Os dois últimos usam o gateway gratuito. Deploy da edge function após a alteração.
 
-```text
-Visão Geral
-  ├── Dashboard
-  ├── Diagnóstico IA
-  └── Evolução Estratégica
-
-Inteligência
-  ├── Monitoramento Multi-IA
-  ├── Análise Comparativa
-  ├── Dominância por Modelo
-  ├── Score GEO
-  ├── Análise de Sentimento
-  ├── Simulador de Influência    ← movido
-  └── Prompt Tester              ← movido
-
-Ações
-  ├── Planos de Ação
-  ├── Mapa de Prompts
-  ├── Alertas
-  └── Campanhas                  ← movido (elimina seção Ferramentas)
-
-Extras
-  ├── Relatórios
-  └── Configurações
-```
-
-**Arquivo**: `src/components/dashboard/DashboardSidebar.tsx` -- mover itens entre os arrays `menuGroups`.
-
-### 2. Tratar erros dos modelos de IA na edge function
-
-Atualizar `supabase/functions/simulate-ai/index.ts` para que, quando um modelo retornar erro HTTP (429, 400, etc.), o resultado inclua um campo `error: true` e uma `errorMessage` (ex: "Limite atingido" ou "Sem créditos") em vez de retornar string vazia que é interpretada como "não menciona".
-
-### 3. Exibir estado de erro nos cards do Simulador e Prompt Tester
-
-Atualizar `SimuladorPage.tsx` e `PromptTesterPage.tsx` para reconhecer o campo `error` nos resultados e exibir um badge/estado visual diferente (ex: "Indisponível" em amarelo/cinza) em vez de "Não menciona".
-
-### Arquivos Modificados
-- `src/components/dashboard/DashboardSidebar.tsx` -- reorganizar menu
-- `supabase/functions/simulate-ai/index.ts` -- retornar info de erro por modelo
-- `src/pages/dashboard/SimuladorPage.tsx` -- exibir estado de erro nos cards
-- `src/pages/dashboard/PromptTesterPage.tsx` -- exibir estado de erro nos badges
+### Arquivos modificados
+- `supabase/functions/simulate-ai/index.ts`
 
