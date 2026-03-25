@@ -72,12 +72,32 @@ const loadingSteps = [
   { icon: BarChart3, text: "Gerando diagnóstico final..." },
 ];
 
-/* ── Mock data ── */
-const aiEngines = [
-  { name: "ChatGPT", found: true },
-  { name: "Claude", found: true },
+/* ── AI engine result type ── */
+interface AIEngineResult {
+  name: string;
+  found: boolean;
+  error?: boolean;
+  errorMessage?: string;
+}
+
+/* ── Extract brand name from URL ── */
+function extractBrandFromUrl(url: string): string {
+  try {
+    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    clean = clean.split("/")[0].split(".")[0];
+    return clean || "marca";
+  } catch {
+    return "marca";
+  }
+}
+
+/* ── Default fallback engines (shown if API fails completely) ── */
+const defaultAiEngines: AIEngineResult[] = [
+  { name: "ChatGPT", found: false },
   { name: "Gemini", found: false },
+  { name: "Claude", found: false },
   { name: "Perplexity", found: false },
+  { name: "GPT-5", found: false },
 ];
 
 const radarData = [
@@ -451,7 +471,7 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 }
 
 /* ── Diagnostic Report ── */
-function DiagnosticReport({ siteUrl }: { siteUrl: string }) {
+function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: AIEngineResult[] }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -1034,6 +1054,7 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [aiEngines, setAiEngines] = useState<AIEngineResult[]>(defaultAiEngines);
 
   useEffect(() => {
     const totalDuration = 7000;
@@ -1050,6 +1071,32 @@ export default function PreviewPage() {
       setCurrentStep((prev) => (prev >= loadingSteps.length - 1 ? prev : prev + 1));
     }, stepDuration);
 
+    // Call edge function in parallel with loading animation
+    const brandName = extractBrandFromUrl(siteUrl);
+    const fetchAiPresence = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("simulate-ai", {
+          body: {
+            prompt: `O que você sabe sobre a empresa ${brandName}? Ela é referência no mercado?`,
+            brandName,
+            mode: "tester",
+          },
+        });
+        if (!error && data?.results) {
+          const engines: AIEngineResult[] = data.results.map((r: any) => ({
+            name: r.model,
+            found: r.error ? false : r.mentioned,
+            error: r.error,
+            errorMessage: r.errorMessage,
+          }));
+          setAiEngines(engines);
+        }
+      } catch (e) {
+        console.error("AI presence check failed:", e);
+      }
+    };
+    fetchAiPresence();
+
     const timeout = setTimeout(() => {
       clearInterval(progressInterval);
       clearInterval(stepInterval);
@@ -1063,8 +1110,8 @@ export default function PreviewPage() {
       clearInterval(stepInterval);
       clearTimeout(timeout);
     };
-  }, []);
+  }, [siteUrl]);
 
   if (loading) return <LoadingScreen currentStep={currentStep} progress={progress} />;
-  return <DiagnosticReport siteUrl={siteUrl} />;
+  return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} />;
 }
