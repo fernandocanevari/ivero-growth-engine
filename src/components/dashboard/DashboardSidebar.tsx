@@ -42,6 +42,8 @@ const menuGroups = [
       { title: "Dominância por Modelo", url: "/dashboard/dominancia", icon: BarChart3 },
       { title: "Score GEO", url: "/dashboard/score", icon: TrendingUp },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
+      { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
+      { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: Terminal },
     ],
   },
   {
@@ -50,13 +52,6 @@ const menuGroups = [
       { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
       { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
       { title: "Alertas", url: "/dashboard/alertas", icon: Bell, badge: unreadAlerts },
-    ],
-  },
-  {
-    label: "Ferramentas",
-    items: [
-      { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
-      { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: Terminal },
       { title: "Campanhas", url: "/dashboard/campanhas", icon: Megaphone },
     ],
   },
