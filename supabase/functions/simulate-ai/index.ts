@@ -116,6 +116,15 @@ async function callModel(
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       };
+    } else if (config.name === "GPT-5") {
+      body = {
+        model: config.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_completion_tokens: 300,
+      };
     } else {
       body = {
         model: config.model,
