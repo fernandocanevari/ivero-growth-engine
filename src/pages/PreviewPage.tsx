@@ -80,15 +80,13 @@ interface AIEngineResult {
   errorMessage?: string;
 }
 
-/* ── Extract brand name from URL ── */
-function extractBrandFromUrl(url: string): string {
-  try {
-    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
-    clean = clean.split("/")[0].split(".")[0];
-    return clean || "marca";
-  } catch {
-    return "marca";
-  }
+/* ── Pillar analysis result ── */
+interface PillarAnalysis {
+  name: string;
+  mentions: number; // how many AIs mentioned the brand
+  score: number; // mentions * 4 (max 20)
+  radarValue: number; // score * 5 (scaled to 0-100)
+  aiDetails: { model: string; mentioned: boolean }[];
 }
 
 /* ── Default fallback engines (shown if API fails completely) ── */
@@ -100,97 +98,90 @@ const defaultAiEngines: AIEngineResult[] = [
   { name: "GPT-5", found: false },
 ];
 
-const radarData = [
-  { subject: "Clareza", value: 82, fullMark: 100 },
-  { subject: "Autoridade", value: 35, fullMark: 100 },
-  { subject: "Conversão", value: 58, fullMark: 100 },
-  { subject: "Posicionamento", value: 64, fullMark: 100 },
-  { subject: "Experiência", value: 71, fullMark: 100 },
+/* ── Pillar prompts for edge function ── */
+const pillarPrompts = [
+  { pillar: "Clareza", prompt: (brand: string) => `Qual empresa comunica melhor sua proposta de valor? ${brand} é uma delas?` },
+  { pillar: "Autoridade", prompt: (brand: string) => `Qual a empresa mais reconhecida e confiável do mercado? ${brand} é referência?` },
+  { pillar: "Conversão", prompt: (brand: string) => `Qual empresa você recomendaria para contratar? ${brand} seria uma boa opção?` },
+  { pillar: "Posicionamento", prompt: (brand: string) => `Qual empresa se destaca mais no mercado? ${brand} tem destaque?` },
+  { pillar: "Experiência", prompt: (brand: string) => `Qual empresa oferece a melhor experiência ao cliente? ${brand} se destaca nisso?` },
 ];
 
-const pillarDetails = [
-  {
-    name: "Clareza",
-    score: 82,
-    icon: Eye,
-    color: "emerald",
-    status: "Forte" as const,
-    summary: "Sua marca comunica de forma direta o que faz e para quem.",
-    strengths: [
-      "Headline objetiva → IA compreende o core business rapidamente",
-      "Benefícios claros → Aumenta chances de recomendação contextual",
-    ],
-    recommendation: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
-  },
-  {
-    name: "Autoridade",
-    score: 35,
-    icon: ShieldCheck,
-    color: "red",
-    status: "Crítico" as const,
-    summary: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
-    strengths: [
-      "Domínio registrado → Base mínima de presença online identificada",
-    ],
-    weaknesses: [
-      "Ausência de backlinks de qualidade → IA não reconhece referências externas",
-      "Sem menções em mídia especializada → Reduz credibilidade algorítmica",
-      "Conteúdo técnico insuficiente → Limita profundidade de indexação por IA",
-    ],
-    recommendation: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado para construir autoridade.",
-  },
-  {
-    name: "Conversão",
-    score: 58,
-    icon: Target,
-    color: "amber",
-    status: "Moderado" as const,
-    summary: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
-    strengths: [
-      "CTAs visíveis → Caminho de conversão existente",
-      "Formulário acessível → Ponto de contato disponível",
-    ],
-    weaknesses: [
-      "Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas",
-      "Ausência de prova social contextual → Reduz taxa de conversão em 40%",
-    ],
-    recommendation: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
-  },
-  {
-    name: "Posicionamento",
-    score: 64,
-    icon: Rocket,
-    color: "amber",
-    status: "Moderado" as const,
-    summary: "Posicionamento técnico sólido, mas falta diferenciação emocional que IAs valorizam.",
-    strengths: [
-      "Linguagem profissional → Consistência na comunicação",
-      "Foco em valor → Diferenciação por benefício detectada",
-    ],
-    weaknesses: [
-      "Sem storytelling → IA gera respostas genéricas sobre sua marca",
-      "Elementos aspiracionais ausentes → Reduz engajamento nas recomendações",
-    ],
-    recommendation: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas sobre sua marca.",
-  },
-  {
-    name: "Experiência",
-    score: 71,
-    icon: Sparkles,
-    color: "emerald",
-    status: "Bom" as const,
-    summary: "Estrutura técnica funcional com oportunidades de otimização para crawlers de IA.",
-    strengths: [
-      "Navegação intuitiva → Facilita compreensão da estrutura pela IA",
-      "Design consistente → Sinal de profissionalismo para algoritmos",
-    ],
-    weaknesses: [
-      "Dados estruturados ausentes → IA não consegue extrair informações semânticas",
-      "Velocidade de carregamento → Impacta indexação por motores de IA",
-    ],
-    recommendation: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
-  },
-];
+/* ── Build dynamic pillar details from analysis ── */
+function buildPillarDetails(pillarResults: PillarAnalysis[]) {
+  const pillarConfig: Record<string, { icon: React.ElementType; summaryGood: string; summaryMid: string; summaryBad: string; strengths: string[]; weaknesses: string[]; recGood: string; recBad: string }> = {
+    Clareza: {
+      icon: Eye,
+      summaryGood: "Sua marca comunica de forma direta o que faz e para quem.",
+      summaryMid: "Sua comunicação é parcialmente clara, mas pode ser mais direta.",
+      summaryBad: "Falta clareza na comunicação — IAs não compreendem sua proposta.",
+      strengths: ["Headline objetiva → IA compreende o core business rapidamente", "Benefícios claros → Aumenta chances de recomendação contextual"],
+      weaknesses: ["Proposta de valor confusa → IA não sabe o que sua empresa faz", "Mensagem genérica → Reduz diferenciação nas respostas de IA"],
+      recGood: "Mantenha a comunicação clara e reforce a diferenciação competitiva.",
+      recBad: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
+    },
+    Autoridade: {
+      icon: ShieldCheck,
+      summaryGood: "Sua marca é reconhecida como autoridade pelas IAs.",
+      summaryMid: "Autoridade parcial — algumas IAs reconhecem, outras não.",
+      summaryBad: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
+      strengths: ["Reconhecimento detectado → IAs citam sua marca como referência", "Presença online sólida → Base de autoridade identificada"],
+      weaknesses: ["Ausência de backlinks de qualidade → IA não reconhece referências externas", "Sem menções em mídia especializada → Reduz credibilidade algorítmica", "Conteúdo técnico insuficiente → Limita profundidade de indexação por IA"],
+      recGood: "Continue investindo em conteúdo de autoridade e backlinks de qualidade.",
+      recBad: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado.",
+    },
+    Conversão: {
+      icon: Target,
+      summaryGood: "IAs recomendam sua marca ativamente quando perguntadas.",
+      summaryMid: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
+      summaryBad: "Baixa conversão — visitantes vindos de IA não se tornam clientes.",
+      strengths: ["CTAs visíveis → Caminho de conversão existente", "Formulário acessível → Ponto de contato disponível"],
+      weaknesses: ["Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas", "Ausência de prova social contextual → Reduz taxa de conversão em 40%"],
+      recGood: "Otimize as landing pages para visitantes vindos de respostas de IA.",
+      recBad: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
+    },
+    Posicionamento: {
+      icon: Rocket,
+      summaryGood: "Posicionamento forte — IAs destacam sua marca no mercado.",
+      summaryMid: "Posicionamento técnico sólido, mas falta diferenciação emocional.",
+      summaryBad: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
+      strengths: ["Linguagem profissional → Consistência na comunicação", "Foco em valor → Diferenciação por benefício detectada"],
+      weaknesses: ["Sem storytelling → IA gera respostas genéricas sobre sua marca", "Elementos aspiracionais ausentes → Reduz engajamento nas recomendações"],
+      recGood: "Mantenha o storytelling e adicione mais elementos de diferenciação.",
+      recBad: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas.",
+    },
+    Experiência: {
+      icon: Sparkles,
+      summaryGood: "Excelente experiência — IAs reconhecem qualidade no atendimento.",
+      summaryMid: "Estrutura técnica funcional com oportunidades de otimização.",
+      summaryBad: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
+      strengths: ["Navegação intuitiva → Facilita compreensão da estrutura pela IA", "Design consistente → Sinal de profissionalismo para algoritmos"],
+      weaknesses: ["Dados estruturados ausentes → IA não consegue extrair informações semânticas", "Velocidade de carregamento → Impacta indexação por motores de IA"],
+      recGood: "Continue investindo em experiência do usuário e dados estruturados.",
+      recBad: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
+    },
+  };
+
+  return pillarResults.map((p) => {
+    const config = pillarConfig[p.name];
+    if (!config) return null;
+    const status = p.radarValue >= 70 ? "Forte" as const : p.radarValue >= 40 ? "Moderado" as const : "Crítico" as const;
+    const summary = p.radarValue >= 70 ? config.summaryGood : p.radarValue >= 40 ? config.summaryMid : config.summaryBad;
+    const recommendation = p.radarValue >= 60 ? config.recGood : config.recBad;
+
+    return {
+      name: p.name,
+      score: p.radarValue,
+      icon: config.icon,
+      color: p.radarValue >= 70 ? "emerald" : p.radarValue >= 40 ? "amber" : "red",
+      status,
+      summary,
+      strengths: p.mentions > 0 ? config.strengths : [config.strengths[0]],
+      weaknesses: p.mentions < 3 ? config.weaknesses : undefined,
+      recommendation,
+    };
+  }).filter(Boolean);
+}
 
 /* ── Dynamic phrase for weakest pillar ── */
 function getWeakestPillarPhrase(): string {
