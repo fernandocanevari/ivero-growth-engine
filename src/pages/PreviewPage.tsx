@@ -1046,6 +1046,18 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
 }
 
 /* ── Main Page ── */
+/* ── Extract brand name from URL ── */
+function extractBrandFromUrl(url: string): string {
+  try {
+    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    clean = clean.split("/")[0].split(".")[0];
+    return clean || "marca";
+  } catch {
+    return "marca";
+  }
+}
+
+/* ── Main Page ── */
 export default function PreviewPage() {
   const [searchParams] = useSearchParams();
   const siteUrl = searchParams.get("url") || "";
@@ -1053,9 +1065,18 @@ export default function PreviewPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [aiEngines, setAiEngines] = useState<AIEngineResult[]>(defaultAiEngines);
+  const [geoScore, setGeoScore] = useState(0);
+  const [dynamicRadarData, setDynamicRadarData] = useState([
+    { subject: "Clareza", value: 0, fullMark: 100 },
+    { subject: "Autoridade", value: 0, fullMark: 100 },
+    { subject: "Conversão", value: 0, fullMark: 100 },
+    { subject: "Posicionamento", value: 0, fullMark: 100 },
+    { subject: "Experiência", value: 0, fullMark: 100 },
+  ]);
+  const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
   useEffect(() => {
-    const totalDuration = 7000;
+    const totalDuration = 10000; // increased to allow 5 parallel calls to complete
     const stepDuration = totalDuration / loadingSteps.length;
 
     const progressInterval = setInterval(() => {
@@ -1069,31 +1090,60 @@ export default function PreviewPage() {
       setCurrentStep((prev) => (prev >= loadingSteps.length - 1 ? prev : prev + 1));
     }, stepDuration);
 
-    // Call edge function in parallel with loading animation
+    // Make 5 parallel calls — one per pillar
     const brandName = extractBrandFromUrl(siteUrl);
-    const fetchAiPresence = async () => {
+
+    const fetchAllPillars = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("simulate-ai", {
-          body: {
-            prompt: `O que você sabe sobre a empresa ${brandName}? Ela é referência no mercado?`,
-            brandName,
-            mode: "tester",
-          },
+        const pillarCalls = pillarPrompts.map(async ({ pillar, prompt }) => {
+          try {
+            const { data, error } = await supabase.functions.invoke("simulate-ai", {
+              body: {
+                prompt: prompt(brandName),
+                brandName,
+                mode: "tester",
+              },
+            });
+            if (!error && data?.results) {
+              const mentions = data.results.filter((r: any) => !r.error && r.mentioned).length;
+              const aiDetails = data.results.map((r: any) => ({ model: r.model, mentioned: !r.error && r.mentioned }));
+              return { name: pillar, mentions, score: mentions * 4, radarValue: mentions * 4 * 5, aiDetails } as PillarAnalysis;
+            }
+          } catch (e) {
+            console.error(`Pillar ${pillar} call failed:`, e);
+          }
+          return { name: pillar, mentions: 0, score: 0, radarValue: 0, aiDetails: [] } as PillarAnalysis;
         });
-        if (!error && data?.results) {
-          const engines: AIEngineResult[] = data.results.map((r: any) => ({
-            name: r.model,
-            found: r.error ? false : r.mentioned,
-            error: r.error,
-            errorMessage: r.errorMessage,
+
+        const results = await Promise.all(pillarCalls);
+
+        // Calculate total GEO score: sum of all pillar scores (each 0-20, total 0-100)
+        const totalScore = results.reduce((sum, r) => sum + r.score, 0);
+        setGeoScore(totalScore);
+
+        // Build radar data
+        const radar = results.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
+        setDynamicRadarData(radar);
+
+        // Build pillar details
+        const details = buildPillarDetails(results);
+        setDynamicPillarDetails(details);
+
+        // Aggregate AI engines from the "Autoridade" pillar for the presence section
+        const authorityResult = results.find((r) => r.name === "Autoridade");
+        if (authorityResult && authorityResult.aiDetails.length > 0) {
+          const engines: AIEngineResult[] = authorityResult.aiDetails.map((ai) => ({
+            name: ai.model,
+            found: ai.mentioned,
           }));
           setAiEngines(engines);
         }
       } catch (e) {
-        console.error("AI presence check failed:", e);
+        console.error("Pillar analysis failed:", e);
       }
     };
-    fetchAiPresence();
+
+    fetchAllPillars();
 
     const timeout = setTimeout(() => {
       clearInterval(progressInterval);
@@ -1111,5 +1161,5 @@ export default function PreviewPage() {
   }, [siteUrl]);
 
   if (loading) return <LoadingScreen currentStep={currentStep} progress={progress} />;
-  return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} />;
+  return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />;
 }
