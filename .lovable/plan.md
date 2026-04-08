@@ -3,7 +3,7 @@
 ## Plano: Score GEO dinâmico — 5 pilares × 5 IAs × 4 pontos
 
 ### Fórmula
-- 5 pilares (Clareza, Autoridade, Conversão, Posicionamento, Experiência)
+- 5 pilares (Clareza, Autoridade, Conversão, Posicionamento, Relevância)
 - Cada pilar é consultado nas 5 IAs com um prompt específico
 - Cada menção da marca por uma IA em um pilar = **4 pontos**
 - Score máximo = 5 pilares × 5 IAs × 4 = **100**

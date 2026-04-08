@@ -104,7 +104,7 @@ const pillarPrompts = [
   { pillar: "Autoridade", prompt: (brand: string) => `Qual a empresa mais reconhecida e confiável do mercado? ${brand} é referência?` },
   { pillar: "Conversão", prompt: (brand: string) => `Qual empresa você recomendaria para contratar? ${brand} seria uma boa opção?` },
   { pillar: "Posicionamento", prompt: (brand: string) => `Qual empresa se destaca mais no mercado? ${brand} tem destaque?` },
-  { pillar: "Experiência", prompt: (brand: string) => `Qual empresa oferece a melhor experiência ao cliente? ${brand} se destaca nisso?` },
+  { pillar: "Relevância", prompt: (brand: string) => `A marca ${brand} é citada em contextos relevantes ao seu nicho? Ela aparece em buscas e discussões do setor?` },
 ];
 
 /* ── Build dynamic pillar details from analysis ── */
@@ -150,15 +150,15 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       recGood: "Mantenha o storytelling e adicione mais elementos de diferenciação.",
       recBad: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas.",
     },
-    Experiência: {
+    Relevância: {
       icon: Sparkles,
-      summaryGood: "Excelente experiência — IAs reconhecem qualidade no atendimento.",
-      summaryMid: "Estrutura técnica funcional com oportunidades de otimização.",
-      summaryBad: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
-      strengths: ["Navegação intuitiva → Facilita compreensão da estrutura pela IA", "Design consistente → Sinal de profissionalismo para algoritmos"],
-      weaknesses: ["Dados estruturados ausentes → IA não consegue extrair informações semânticas", "Velocidade de carregamento → Impacta indexação por motores de IA"],
-      recGood: "Continue investindo em experiência do usuário e dados estruturados.",
-      recBad: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
+      summaryGood: "Sua marca é citada em contextos altamente relevantes ao seu nicho.",
+      summaryMid: "Relevância parcial — sua marca aparece em alguns contextos do setor.",
+      summaryBad: "Baixa relevância contextual — IAs não associam sua marca ao seu nicho.",
+      strengths: ["Presença em buscas do setor → IA associa sua marca ao nicho correto", "Citações em contextos relevantes → Reforça autoridade temática"],
+      weaknesses: ["Ausência em discussões do setor → IA não conecta sua marca ao nicho", "Falta de conteúdo contextual → Reduz associação temática nas respostas de IA"],
+      recGood: "Mantenha a produção de conteúdo relevante ao nicho e amplie a presença em discussões do setor.",
+      recBad: "Produza conteúdo altamente relevante ao seu nicho e participe ativamente de discussões e publicações do setor.",
     },
   };
 
@@ -191,7 +191,7 @@ function getWeakestPillarPhrase(dynamicRadarData: { subject: string; value: numb
     Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
     Conversão: "Baixa conversão significa que visitantes vindos de IA não se tornam clientes.",
     Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
-    Experiência: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
+    Relevância: "Baixa relevância contextual faz a IA não associar sua marca ao seu nicho.",
   };
   return phrases[weakest?.subject] || phrases["Autoridade"];
 }
