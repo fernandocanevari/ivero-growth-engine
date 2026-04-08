@@ -396,7 +396,7 @@ export default function DiagnosticoPage() {
 
                   {/* Definition */}
                   <div className="rounded-xl bg-muted/50 border border-border p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">Definição</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">O que esse pilar avalia</p>
                     <p className="text-sm text-foreground leading-relaxed">{pillar.definition}</p>
                   </div>
 
