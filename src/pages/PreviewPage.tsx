@@ -462,7 +462,7 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 }
 
 /* ── Diagnostic Report ── */
-function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: AIEngineResult[] }) {
+function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dynamicPillarDetails }: { siteUrl: string; aiEngines: AIEngineResult[]; geoScore: number; dynamicRadarData: { subject: string; value: number; fullMark: number }[]; dynamicPillarDetails: any[] }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -651,7 +651,7 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
         <AnimatedSection delay={0.1}>
           <PremiumCard glow>
             <div className="space-y-6">
-              <ScoreCircle score={37} benchmark={58} />
+              <ScoreCircle score={geoScore} benchmark={58} />
 
               <div className="pt-5 border-t border-border/60 space-y-3">
                 <div className="flex items-center gap-3">
@@ -689,7 +689,7 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
 
               <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                  <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
                     <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
                     <PolarAngleAxis
                       dataKey="subject"
@@ -720,7 +720,7 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
                   <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                      <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase()}</p>
+                      <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase(dynamicRadarData)}</p>
                     </div>
                   </div>
 
