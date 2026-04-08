@@ -1,29 +1,49 @@
 
 
-## Plano: Integrar edge function na PreviewPage para análise real
+## Plano: Score GEO dinâmico — 5 pilares × 5 IAs × 4 pontos
 
-### Problema
-A PreviewPage exibe dados 100% estáticos (mock). Qualquer URL digitada gera o mesmo resultado.
+### Fórmula
+- 5 pilares (Clareza, Autoridade, Conversão, Posicionamento, Experiência)
+- Cada pilar é consultado nas 5 IAs com um prompt específico
+- Cada menção da marca por uma IA em um pilar = **4 pontos**
+- Score máximo = 5 pilares × 5 IAs × 4 = **100**
+- Exemplo: se apenas 2 IAs mencionam a marca em cada pilar → 5 × 2 × 4 = **40**
 
 ### O que mudar
 
-**1. Chamar a edge function `simulate-ai` na PreviewPage**
-- Extrair o nome da marca a partir da URL (ex: `www.renata.com.br` → `"renata"`, `www.redegraal.com.br` → `"redegraal"`)
-- Durante o loading, chamar `simulate-ai` com mode `"tester"` e um prompt genérico como `"Qual a melhor empresa de [setor]?"` ou `"O que você sabe sobre [brandName]?"`
-- Usar os resultados reais para popular a seção "Presença nas IAs" (quais IAs mencionam a marca)
+**1. Fazer 5 chamadas à edge function (uma por pilar)**
 
-**2. Tornar dinâmica a seção de IAs**
-- Substituir o array hardcoded `aiEngines` pelos resultados reais da edge function
-- Mostrar os 5 modelos disponíveis (ChatGPT, Gemini, Claude, Perplexity, GPT-5) com status real
+Cada pilar terá um prompt específico:
+- **Clareza**: "Qual empresa de [setor] comunica melhor sua proposta de valor?"
+- **Autoridade**: "Qual a empresa mais reconhecida/confiável em [setor]?"
+- **Conversão**: "Qual empresa de [setor] você recomendaria para contratar?"
+- **Posicionamento**: "Qual empresa se destaca no mercado de [setor]?"
+- **Experiência**: "Qual empresa de [setor] oferece a melhor experiência ao cliente?"
 
-**3. Manter os pilares e scores como mock (por enquanto)**
-- A análise de Clareza, Autoridade, Conversão etc. requer scraping real do site — isso é uma feature futura
-- Os scores e recomendações continuam mock, mas a seção de IAs será real
+As 5 chamadas rodam em paralelo (`Promise.all`).
 
-### Arquivos modificados
-- `src/pages/PreviewPage.tsx` — adicionar chamada à edge function, substituir `aiEngines` mock por dados reais
+**2. Calcular score por pilar e score geral**
 
-### Limitações
-- ChatGPT, Gemini e Claude estão sem créditos — só Perplexity e GPT-5 (via gateway) retornarão resultados reais
-- Os pilares (Clareza, Autoridade etc.) continuarão mock até implementarmos scraping real
+Para cada pilar: contar quantas IAs mencionaram a marca → multiplicar por 4 → score do pilar (0-20).
+
+Score GEO = soma dos 5 pilares (0-100).
+
+**3. Atualizar `radarData` e `pillarDetails` dinamicamente**
+
+- `radarData` → valor de cada pilar = (menções × 4) × 5 (escalar para 0-100 no radar)
+- `pillarDetails` → score, status e textos ajustados conforme resultado real
+- A frase de resumo (`getScoreLevel`) já funciona com score dinâmico
+
+**4. Manter a seção "Presença nas IAs" como está**
+
+Usar os resultados do pilar "Autoridade" (ou agregar todos) para a seção de engines.
+
+### Arquivo modificado
+- `src/pages/PreviewPage.tsx`
+
+### Fluxo de loading
+O loading atual de ~6 segundos se mantém — as 5 chamadas paralelas rodam dentro desse período. Se todas falharem, fallback para score 0 com mensagem apropriada.
+
+### Limitação
+ChatGPT, Gemini e Claude continuam sem créditos — score real virá de Perplexity e GPT-5. Máximo prático atual = 5 pilares × 2 IAs × 4 = **40 pontos**.
 
