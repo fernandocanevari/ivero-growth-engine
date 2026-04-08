@@ -1046,16 +1046,6 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
 }
 
 /* ── Main Page ── */
-/* ── Extract brand name from URL ── */
-function extractBrandFromUrl(url: string): string {
-  try {
-    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
-    clean = clean.split("/")[0].split(".")[0];
-    return clean || "marca";
-  } catch {
-    return "marca";
-  }
-}
 
 /* ── Main Page ── */
 export default function PreviewPage() {
