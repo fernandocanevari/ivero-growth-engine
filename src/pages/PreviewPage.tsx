@@ -724,18 +724,25 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
-                      <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
-                      <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
-                      <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
-                    </div>
-                    <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
-                      <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
-                      <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
-                      <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
-                    </div>
-                  </div>
+                  {(() => {
+                    const sorted = [...dynamicRadarData].sort((a, b) => b.value - a.value);
+                    const strongest = sorted[0];
+                    const weakest = sorted[sorted.length - 1];
+                    return (
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
+                          <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
+                          <p className="text-base font-display font-bold text-emerald-700 mt-1">{strongest?.subject}</p>
+                          <p className="text-xs text-emerald-600/70 mt-0.5">Score: {strongest?.value}/100</p>
+                        </div>
+                        <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
+                          <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
+                          <p className="text-base font-display font-bold text-red-700 mt-1">{weakest?.subject}</p>
+                          <p className="text-xs text-red-600/70 mt-0.5">Score: {weakest?.value}/100</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {!leadSubmitted && (
                   <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card via-card/80 to-transparent rounded-b-xl" />
@@ -841,7 +848,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               </div>
             </AnimatedSection>
 
-            {pillarDetails.map((pillar, idx) => {
+            {dynamicPillarDetails.map((pillar, idx) => {
               const PillarIcon = pillar.icon;
               const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
               const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
