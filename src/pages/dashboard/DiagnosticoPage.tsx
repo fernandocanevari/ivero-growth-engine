@@ -29,19 +29,23 @@ const radarData = [
   { subject: "Autoridade", value: 35, fullMark: 100 },
   { subject: "Conversão", value: 58, fullMark: 100 },
   { subject: "Posicionamento", value: 64, fullMark: 100 },
-  { subject: "Experiência", value: 71, fullMark: 100 },
+  { subject: "Relevância", value: 71, fullMark: 100 },
 ];
 
 const pillarDetails = [
   {
-    name: "Clareza", score: 82, icon: Eye, status: "Forte" as const,
+    name: "Clareza", subtitle: "Entendimento", score: 82, icon: Eye, status: "Forte" as const,
+    definition: "A proposta de valor da marca é compreensível de forma imediata, sem ambiguidade ou ruído. O visitante entende em segundos o que a empresa faz, para quem faz e por que ela é a melhor escolha.",
+    aiAnalysis: "Proposta de valor explícita no hero; headline direta sem jargão; ausência de ambiguidade sobre o produto ou serviço; linguagem adequada ao público-alvo.",
     summary: "Sua marca comunica de forma direta o que faz e para quem.",
     strengths: ["Headline objetiva → IA compreende o core business rapidamente", "Benefícios claros → Aumenta chances de recomendação contextual"],
     weaknesses: [],
     recommendation: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
   },
   {
-    name: "Autoridade", score: 35, icon: ShieldCheck, status: "Crítico" as const,
+    name: "Autoridade", subtitle: "Credibilidade", score: 35, icon: ShieldCheck, status: "Crítico" as const,
+    definition: "A marca demonstra domínio sobre o seu nicho por meio de conteúdo especializado, provas sociais consistentes e sinais externos de reconhecimento que levam a IA a confiar e recomendar a fonte.",
+    aiAnalysis: "Presença de cases, depoimentos e números concretos; menção a prêmios, certificações ou parcerias; publicações técnicas, blog ou conteúdo de expertise; uso de linguagem especializada e assertiva.",
     summary: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
     strengths: ["Domínio registrado → Base mínima de presença online identificada"],
     weaknesses: [
@@ -52,17 +56,9 @@ const pillarDetails = [
     recommendation: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado.",
   },
   {
-    name: "Conversão", score: 58, icon: Target, status: "Moderado" as const,
-    summary: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
-    strengths: ["CTAs visíveis → Caminho de conversão existente", "Formulário acessível → Ponto de contato disponível"],
-    weaknesses: [
-      "Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas",
-      "Ausência de prova social contextual → Reduz taxa de conversão em 40%",
-    ],
-    recommendation: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
-  },
-  {
-    name: "Posicionamento", score: 64, icon: Rocket, status: "Moderado" as const,
+    name: "Posicionamento", subtitle: "Identidade", score: 64, icon: Rocket, status: "Moderado" as const,
+    definition: "A marca comunica com precisão quem ela é, a quem se destina e qual diferencial a distingue dos concorrentes. O posicionamento é consistente em todos os elementos da página e não gera dúvida sobre o segmento ou persona atendida.",
+    aiAnalysis: "Nicho de atuação explícito; público-alvo claramente identificado; diferencial competitivo declarado; tom de voz e mensagem coerentes do header ao rodapé.",
     summary: "Posicionamento técnico sólido, mas falta diferenciação emocional que IAs valorizam.",
     strengths: ["Linguagem profissional → Consistência na comunicação", "Foco em valor → Diferenciação por benefício detectada"],
     weaknesses: [
@@ -72,14 +68,28 @@ const pillarDetails = [
     recommendation: "Adicione elementos aspiracionais e storytelling para que IAs gerem respostas mais humanizadas sobre sua marca.",
   },
   {
-    name: "Experiência", score: 71, icon: Sparkles, status: "Bom" as const,
-    summary: "Estrutura técnica funcional com oportunidades de otimização para crawlers de IA.",
-    strengths: ["Navegação intuitiva → Facilita compreensão da estrutura pela IA", "Design consistente → Sinal de profissionalismo para algoritmos"],
+    name: "Conversão", subtitle: "Ação", score: 58, icon: Target, status: "Moderado" as const,
+    definition: "O site possui elementos estruturados para conduzir o visitante a uma ação concreta — seja um contato, compra, cadastro ou próximo passo na jornada. Os CTAs são visíveis, relevantes e adequados ao contexto de quem chega via recomendação de IA.",
+    aiAnalysis: "Presença de CTAs claros e visíveis; existência de oferta ou próximo passo definido; fluxo lógico de navegação; formulários ou mecanismos de conversão funcionais.",
+    summary: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
+    strengths: ["CTAs visíveis → Caminho de conversão existente", "Formulário acessível → Ponto de contato disponível"],
     weaknesses: [
-      "Dados estruturados ausentes → IA não consegue extrair informações semânticas",
-      "Velocidade de carregamento → Impacta indexação por motores de IA",
+      "Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas",
+      "Ausência de prova social contextual → Reduz taxa de conversão em 40%",
     ],
-    recommendation: "Otimize velocidade de carregamento e implemente dados estruturados para facilitar indexação por motores de IA.",
+    recommendation: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
+  },
+  {
+    name: "Relevância", subtitle: "Contexto e Busca", score: 71, icon: Sparkles, status: "Bom" as const,
+    definition: "O conteúdo do site é suficientemente rico e contextualizado para que sistemas de IA o associem a buscas e contextos relevantes do nicho da marca. A relevância determina se a marca será lembrada e citada quando o usuário perguntar sobre o seu setor.",
+    aiAnalysis: "Densidade e qualidade do conteúdo contextual; presença em discussões e buscas do setor; uso de termos e vocabulário do nicho; cobertura temática abrangente do segmento.",
+    summary: "Conteúdo contextualizado com oportunidades de ampliar cobertura temática do nicho.",
+    strengths: ["Vocabulário do nicho presente → IA associa a marca ao setor", "Conteúdo temático detectado → Base para indexação contextual"],
+    weaknesses: [
+      "Cobertura temática limitada → IA não associa a marca a todas as buscas do nicho",
+      "Ausência em discussões do setor → Reduz citações contextuais por IA",
+    ],
+    recommendation: "Amplie a cobertura temática do seu nicho com conteúdo rico e contextualizado para ser citado em mais buscas por IA.",
   },
 ];
 
@@ -90,7 +100,7 @@ function getWeakestPillarPhrase(): string {
     Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
     Conversão: "Baixa conversão significa que visitantes vindos de IA não se tornam clientes.",
     Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
-    Experiência: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
+    Relevância: "Baixa relevância contextual faz a IA ignorar sua marca em buscas do nicho.",
   };
   return phrases[weakest.subject] || phrases["Autoridade"];
 }
@@ -150,7 +160,7 @@ export default function DiagnosticoPage() {
     { label: "Autoridade", delta: curr.authority_score - prev.authority_score },
     { label: "Conversão", delta: curr.conversion_score - prev.conversion_score },
     { label: "Posicionamento", delta: curr.positioning_score - prev.positioning_score },
-    { label: "Experiência", delta: curr.experience_score - prev.experience_score },
+    { label: "Relevância", delta: curr.experience_score - prev.experience_score },
     { label: "Score Geral", delta: curr.overall_score - prev.overall_score },
   ] : null;
 
@@ -369,7 +379,9 @@ export default function DiagnosticoPage() {
                         <PillarIcon className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div>
-                        <h3 className="text-base font-display font-bold text-foreground">{pillar.name}</h3>
+                        <h3 className="text-base font-display font-bold text-foreground">
+                          {pillar.name} <span className="text-muted-foreground font-normal text-sm">({pillar.subtitle})</span>
+                        </h3>
                         <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
                       </div>
                     </div>
@@ -379,6 +391,18 @@ export default function DiagnosticoPage() {
                       <div className={`mt-1 inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
                         {pillar.status}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Definition & AI Analysis */}
+                  <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">Definição</p>
+                      <p className="text-sm text-foreground leading-relaxed">{pillar.definition}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">O que a IA analisa</p>
+                      <p className="text-sm text-foreground leading-relaxed">{pillar.aiAnalysis}</p>
                     </div>
                   </div>
 
