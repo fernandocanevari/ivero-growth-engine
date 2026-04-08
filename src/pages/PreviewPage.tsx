@@ -80,15 +80,13 @@ interface AIEngineResult {
   errorMessage?: string;
 }
 
-/* ── Extract brand name from URL ── */
-function extractBrandFromUrl(url: string): string {
-  try {
-    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
-    clean = clean.split("/")[0].split(".")[0];
-    return clean || "marca";
-  } catch {
-    return "marca";
-  }
+/* ── Pillar analysis result ── */
+interface PillarAnalysis {
+  name: string;
+  mentions: number; // how many AIs mentioned the brand
+  score: number; // mentions * 4 (max 20)
+  radarValue: number; // score * 5 (scaled to 0-100)
+  aiDetails: { model: string; mentioned: boolean }[];
 }
 
 /* ── Default fallback engines (shown if API fails completely) ── */
@@ -100,101 +98,94 @@ const defaultAiEngines: AIEngineResult[] = [
   { name: "GPT-5", found: false },
 ];
 
-const radarData = [
-  { subject: "Clareza", value: 82, fullMark: 100 },
-  { subject: "Autoridade", value: 35, fullMark: 100 },
-  { subject: "Conversão", value: 58, fullMark: 100 },
-  { subject: "Posicionamento", value: 64, fullMark: 100 },
-  { subject: "Experiência", value: 71, fullMark: 100 },
+/* ── Pillar prompts for edge function ── */
+const pillarPrompts = [
+  { pillar: "Clareza", prompt: (brand: string) => `Qual empresa comunica melhor sua proposta de valor? ${brand} é uma delas?` },
+  { pillar: "Autoridade", prompt: (brand: string) => `Qual a empresa mais reconhecida e confiável do mercado? ${brand} é referência?` },
+  { pillar: "Conversão", prompt: (brand: string) => `Qual empresa você recomendaria para contratar? ${brand} seria uma boa opção?` },
+  { pillar: "Posicionamento", prompt: (brand: string) => `Qual empresa se destaca mais no mercado? ${brand} tem destaque?` },
+  { pillar: "Experiência", prompt: (brand: string) => `Qual empresa oferece a melhor experiência ao cliente? ${brand} se destaca nisso?` },
 ];
 
-const pillarDetails = [
-  {
-    name: "Clareza",
-    score: 82,
-    icon: Eye,
-    color: "emerald",
-    status: "Forte" as const,
-    summary: "Sua marca comunica de forma direta o que faz e para quem.",
-    strengths: [
-      "Headline objetiva → IA compreende o core business rapidamente",
-      "Benefícios claros → Aumenta chances de recomendação contextual",
-    ],
-    recommendation: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
-  },
-  {
-    name: "Autoridade",
-    score: 35,
-    icon: ShieldCheck,
-    color: "red",
-    status: "Crítico" as const,
-    summary: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
-    strengths: [
-      "Domínio registrado → Base mínima de presença online identificada",
-    ],
-    weaknesses: [
-      "Ausência de backlinks de qualidade → IA não reconhece referências externas",
-      "Sem menções em mídia especializada → Reduz credibilidade algorítmica",
-      "Conteúdo técnico insuficiente → Limita profundidade de indexação por IA",
-    ],
-    recommendation: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado para construir autoridade.",
-  },
-  {
-    name: "Conversão",
-    score: 58,
-    icon: Target,
-    color: "amber",
-    status: "Moderado" as const,
-    summary: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
-    strengths: [
-      "CTAs visíveis → Caminho de conversão existente",
-      "Formulário acessível → Ponto de contato disponível",
-    ],
-    weaknesses: [
-      "Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas",
-      "Ausência de prova social contextual → Reduz taxa de conversão em 40%",
-    ],
-    recommendation: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
-  },
-  {
-    name: "Posicionamento",
-    score: 64,
-    icon: Rocket,
-    color: "amber",
-    status: "Moderado" as const,
-    summary: "Posicionamento técnico sólido, mas falta diferenciação emocional que IAs valorizam.",
-    strengths: [
-      "Linguagem profissional → Consistência na comunicação",
-      "Foco em valor → Diferenciação por benefício detectada",
-    ],
-    weaknesses: [
-      "Sem storytelling → IA gera respostas genéricas sobre sua marca",
-      "Elementos aspiracionais ausentes → Reduz engajamento nas recomendações",
-    ],
-    recommendation: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas sobre sua marca.",
-  },
-  {
-    name: "Experiência",
-    score: 71,
-    icon: Sparkles,
-    color: "emerald",
-    status: "Bom" as const,
-    summary: "Estrutura técnica funcional com oportunidades de otimização para crawlers de IA.",
-    strengths: [
-      "Navegação intuitiva → Facilita compreensão da estrutura pela IA",
-      "Design consistente → Sinal de profissionalismo para algoritmos",
-    ],
-    weaknesses: [
-      "Dados estruturados ausentes → IA não consegue extrair informações semânticas",
-      "Velocidade de carregamento → Impacta indexação por motores de IA",
-    ],
-    recommendation: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
-  },
-];
+/* ── Build dynamic pillar details from analysis ── */
+function buildPillarDetails(pillarResults: PillarAnalysis[]) {
+  const pillarConfig: Record<string, { icon: React.ElementType; summaryGood: string; summaryMid: string; summaryBad: string; strengths: string[]; weaknesses: string[]; recGood: string; recBad: string }> = {
+    Clareza: {
+      icon: Eye,
+      summaryGood: "Sua marca comunica de forma direta o que faz e para quem.",
+      summaryMid: "Sua comunicação é parcialmente clara, mas pode ser mais direta.",
+      summaryBad: "Falta clareza na comunicação — IAs não compreendem sua proposta.",
+      strengths: ["Headline objetiva → IA compreende o core business rapidamente", "Benefícios claros → Aumenta chances de recomendação contextual"],
+      weaknesses: ["Proposta de valor confusa → IA não sabe o que sua empresa faz", "Mensagem genérica → Reduz diferenciação nas respostas de IA"],
+      recGood: "Mantenha a comunicação clara e reforce a diferenciação competitiva.",
+      recBad: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
+    },
+    Autoridade: {
+      icon: ShieldCheck,
+      summaryGood: "Sua marca é reconhecida como autoridade pelas IAs.",
+      summaryMid: "Autoridade parcial — algumas IAs reconhecem, outras não.",
+      summaryBad: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
+      strengths: ["Reconhecimento detectado → IAs citam sua marca como referência", "Presença online sólida → Base de autoridade identificada"],
+      weaknesses: ["Ausência de backlinks de qualidade → IA não reconhece referências externas", "Sem menções em mídia especializada → Reduz credibilidade algorítmica", "Conteúdo técnico insuficiente → Limita profundidade de indexação por IA"],
+      recGood: "Continue investindo em conteúdo de autoridade e backlinks de qualidade.",
+      recBad: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado.",
+    },
+    Conversão: {
+      icon: Target,
+      summaryGood: "IAs recomendam sua marca ativamente quando perguntadas.",
+      summaryMid: "CTAs presentes mas sem otimização para jornadas vindas de IA.",
+      summaryBad: "Baixa conversão — visitantes vindos de IA não se tornam clientes.",
+      strengths: ["CTAs visíveis → Caminho de conversão existente", "Formulário acessível → Ponto de contato disponível"],
+      weaknesses: ["Sem landing pages para tráfego de IA → Perde visitantes que chegam via respostas", "Ausência de prova social contextual → Reduz taxa de conversão em 40%"],
+      recGood: "Otimize as landing pages para visitantes vindos de respostas de IA.",
+      recBad: "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
+    },
+    Posicionamento: {
+      icon: Rocket,
+      summaryGood: "Posicionamento forte — IAs destacam sua marca no mercado.",
+      summaryMid: "Posicionamento técnico sólido, mas falta diferenciação emocional.",
+      summaryBad: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
+      strengths: ["Linguagem profissional → Consistência na comunicação", "Foco em valor → Diferenciação por benefício detectada"],
+      weaknesses: ["Sem storytelling → IA gera respostas genéricas sobre sua marca", "Elementos aspiracionais ausentes → Reduz engajamento nas recomendações"],
+      recGood: "Mantenha o storytelling e adicione mais elementos de diferenciação.",
+      recBad: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas.",
+    },
+    Experiência: {
+      icon: Sparkles,
+      summaryGood: "Excelente experiência — IAs reconhecem qualidade no atendimento.",
+      summaryMid: "Estrutura técnica funcional com oportunidades de otimização.",
+      summaryBad: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
+      strengths: ["Navegação intuitiva → Facilita compreensão da estrutura pela IA", "Design consistente → Sinal de profissionalismo para algoritmos"],
+      weaknesses: ["Dados estruturados ausentes → IA não consegue extrair informações semânticas", "Velocidade de carregamento → Impacta indexação por motores de IA"],
+      recGood: "Continue investindo em experiência do usuário e dados estruturados.",
+      recBad: "Otimize a velocidade de carregamento e implemente dados estruturados para facilitar a indexação por motores de IA.",
+    },
+  };
+
+  return pillarResults.map((p) => {
+    const config = pillarConfig[p.name];
+    if (!config) return null;
+    const status = p.radarValue >= 70 ? "Forte" as const : p.radarValue >= 40 ? "Moderado" as const : "Crítico" as const;
+    const summary = p.radarValue >= 70 ? config.summaryGood : p.radarValue >= 40 ? config.summaryMid : config.summaryBad;
+    const recommendation = p.radarValue >= 60 ? config.recGood : config.recBad;
+
+    return {
+      name: p.name,
+      score: p.radarValue,
+      icon: config.icon,
+      color: p.radarValue >= 70 ? "emerald" : p.radarValue >= 40 ? "amber" : "red",
+      status,
+      summary,
+      strengths: p.mentions > 0 ? config.strengths : [config.strengths[0]],
+      weaknesses: p.mentions < 3 ? config.weaknesses : undefined,
+      recommendation,
+    };
+  }).filter(Boolean);
+}
 
 /* ── Dynamic phrase for weakest pillar ── */
-function getWeakestPillarPhrase(): string {
-  const weakest = [...radarData].sort((a, b) => a.value - b.value)[0];
+function getWeakestPillarPhrase(dynamicRadarData: { subject: string; value: number }[]): string {
+  const weakest = [...dynamicRadarData].sort((a, b) => a.value - b.value)[0];
   const phrases: Record<string, string> = {
     Clareza: "Falta de clareza diminui a compreensão da IA sobre sua proposta de valor.",
     Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
@@ -202,7 +193,7 @@ function getWeakestPillarPhrase(): string {
     Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
     Experiência: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
   };
-  return phrases[weakest.subject] || phrases["Autoridade"];
+  return phrases[weakest?.subject] || phrases["Autoridade"];
 }
 
 /* ── Score level helper ── */
@@ -471,7 +462,7 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 }
 
 /* ── Diagnostic Report ── */
-function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: AIEngineResult[] }) {
+function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dynamicPillarDetails }: { siteUrl: string; aiEngines: AIEngineResult[]; geoScore: number; dynamicRadarData: { subject: string; value: number; fullMark: number }[]; dynamicPillarDetails: any[] }) {
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -660,7 +651,7 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
         <AnimatedSection delay={0.1}>
           <PremiumCard glow>
             <div className="space-y-6">
-              <ScoreCircle score={37} benchmark={58} />
+              <ScoreCircle score={geoScore} benchmark={58} />
 
               <div className="pt-5 border-t border-border/60 space-y-3">
                 <div className="flex items-center gap-3">
@@ -698,7 +689,7 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
 
               <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                  <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
                     <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
                     <PolarAngleAxis
                       dataKey="subject"
@@ -729,22 +720,29 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
                   <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                      <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase()}</p>
+                      <p className="text-sm text-red-700 font-medium leading-relaxed">{getWeakestPillarPhrase(dynamicRadarData)}</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
-                      <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
-                      <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
-                      <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
-                    </div>
-                    <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
-                      <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
-                      <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
-                      <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
-                    </div>
-                  </div>
+                  {(() => {
+                    const sorted = [...dynamicRadarData].sort((a, b) => b.value - a.value);
+                    const strongest = sorted[0];
+                    const weakest = sorted[sorted.length - 1];
+                    return (
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center shadow-sm">
+                          <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
+                          <p className="text-base font-display font-bold text-emerald-700 mt-1">{strongest?.subject}</p>
+                          <p className="text-xs text-emerald-600/70 mt-0.5">Score: {strongest?.value}/100</p>
+                        </div>
+                        <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center shadow-sm">
+                          <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
+                          <p className="text-base font-display font-bold text-red-700 mt-1">{weakest?.subject}</p>
+                          <p className="text-xs text-red-600/70 mt-0.5">Score: {weakest?.value}/100</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {!leadSubmitted && (
                   <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card via-card/80 to-transparent rounded-b-xl" />
@@ -766,33 +764,37 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
                       Diagnóstico Detalhado
                     </h2>
                   </div>
-                  <PremiumCard>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200/60">
-                        <Eye className="w-4 h-4 text-emerald-600" />
+                  {dynamicPillarDetails[0] && (
+                    <PremiumCard>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
+                          <Eye className={`w-4 h-4 ${dynamicPillarDetails[0].score >= 70 ? "text-emerald-600" : dynamicPillarDetails[0].score >= 40 ? "text-amber-600" : "text-red-600"}`} />
+                        </div>
+                        <div>
+                          <p className="font-display font-bold text-foreground">{dynamicPillarDetails[0].name}</p>
+                          <p className="text-xs text-muted-foreground">Score: {dynamicPillarDetails[0].score}/100 · {dynamicPillarDetails[0].status}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-display font-bold text-foreground">Clareza</p>
-                        <p className="text-xs text-muted-foreground">Score: 82/100 · Forte</p>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className={`h-full rounded-full ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-500" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${dynamicPillarDetails[0].score}%` }} />
                       </div>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-emerald-500" style={{ width: "82%" }} />
-                    </div>
-                  </PremiumCard>
+                    </PremiumCard>
+                  )}
                 </div>
                 <div className="blur-[7px] opacity-25 select-none pointer-events-none -mt-1">
-                  <PremiumCard>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 border border-red-200/60">
-                        <ShieldCheck className="w-4 h-4 text-red-600" />
+                  {dynamicPillarDetails[1] && (
+                    <PremiumCard>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[1].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[1].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
+                          <ShieldCheck className={`w-4 h-4 ${dynamicPillarDetails[1].score >= 70 ? "text-emerald-600" : dynamicPillarDetails[1].score >= 40 ? "text-amber-600" : "text-red-600"}`} />
+                        </div>
+                        <div>
+                          <p className="font-display font-bold text-foreground">{dynamicPillarDetails[1].name}</p>
+                          <p className="text-xs text-muted-foreground">Score: {dynamicPillarDetails[1].score}/100 · {dynamicPillarDetails[1].status}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-display font-bold text-foreground">Autoridade</p>
-                        <p className="text-xs text-muted-foreground">Score: 35/100 · Crítico</p>
-                      </div>
-                    </div>
-                  </PremiumCard>
+                    </PremiumCard>
+                  )}
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/95 to-transparent" />
               </div>
@@ -850,7 +852,7 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
               </div>
             </AnimatedSection>
 
-            {pillarDetails.map((pillar, idx) => {
+            {dynamicPillarDetails.map((pillar, idx) => {
               const PillarIcon = pillar.icon;
               const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
               const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
@@ -953,18 +955,26 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
               <PremiumCard glow>
                 <div className="space-y-4">
                   <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
-                  <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
-                    <p className="text-sm text-foreground leading-relaxed font-medium">
-                      Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
-                      decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
-                      reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
-                      contextuais.
-                    </p>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      Os pilares de <strong>Autoridade</strong> e <strong>Conversão</strong> são os que mais limitam sua capacidade de ser
-                      recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
-                    </p>
-                  </div>
+                  {(() => {
+                    const sorted = [...dynamicRadarData].sort((a, b) => a.value - b.value);
+                    const weakest1 = sorted[0]?.subject || "Autoridade";
+                    const weakest2 = sorted[1]?.subject || "Conversão";
+                    return (
+                      <div className="space-y-3">
+                        <p className="text-sm text-foreground leading-relaxed font-medium">
+                          {geoScore <= 40
+                            ? "Sua marca está praticamente invisível para as IAs generativas. Isso significa que quando potenciais clientes perguntam sobre soluções do seu mercado, sua empresa não aparece nas respostas."
+                            : geoScore <= 70
+                            ? "Sua marca tem presença parcial nas IAs, mas ainda não é referência. Alguns modelos a reconhecem, enquanto outros a ignoram completamente."
+                            : "Sua marca já tem forte presença nas IAs generativas. A maioria dos modelos a reconhece e recomenda quando questionados sobre o seu mercado."}
+                        </p>
+                        <p className="text-sm text-foreground leading-relaxed">
+                          Os pilares de <strong>{weakest1}</strong> e <strong>{weakest2}</strong> são os que mais limitam sua capacidade de ser
+                          recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </PremiumCard>
             </AnimatedSection>
@@ -1047,6 +1057,17 @@ function DiagnosticReport({ siteUrl, aiEngines }: { siteUrl: string; aiEngines: 
   );
 }
 
+/* ── Extract brand name from URL ── */
+function extractBrandFromUrl(url: string): string {
+  try {
+    let clean = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    clean = clean.split("/")[0].split(".")[0];
+    return clean || "marca";
+  } catch {
+    return "marca";
+  }
+}
+
 /* ── Main Page ── */
 export default function PreviewPage() {
   const [searchParams] = useSearchParams();
@@ -1055,9 +1076,18 @@ export default function PreviewPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [aiEngines, setAiEngines] = useState<AIEngineResult[]>(defaultAiEngines);
+  const [geoScore, setGeoScore] = useState(0);
+  const [dynamicRadarData, setDynamicRadarData] = useState([
+    { subject: "Clareza", value: 0, fullMark: 100 },
+    { subject: "Autoridade", value: 0, fullMark: 100 },
+    { subject: "Conversão", value: 0, fullMark: 100 },
+    { subject: "Posicionamento", value: 0, fullMark: 100 },
+    { subject: "Experiência", value: 0, fullMark: 100 },
+  ]);
+  const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
   useEffect(() => {
-    const totalDuration = 7000;
+    const totalDuration = 10000; // increased to allow 5 parallel calls to complete
     const stepDuration = totalDuration / loadingSteps.length;
 
     const progressInterval = setInterval(() => {
@@ -1071,31 +1101,60 @@ export default function PreviewPage() {
       setCurrentStep((prev) => (prev >= loadingSteps.length - 1 ? prev : prev + 1));
     }, stepDuration);
 
-    // Call edge function in parallel with loading animation
+    // Make 5 parallel calls — one per pillar
     const brandName = extractBrandFromUrl(siteUrl);
-    const fetchAiPresence = async () => {
+
+    const fetchAllPillars = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("simulate-ai", {
-          body: {
-            prompt: `O que você sabe sobre a empresa ${brandName}? Ela é referência no mercado?`,
-            brandName,
-            mode: "tester",
-          },
+        const pillarCalls = pillarPrompts.map(async ({ pillar, prompt }) => {
+          try {
+            const { data, error } = await supabase.functions.invoke("simulate-ai", {
+              body: {
+                prompt: prompt(brandName),
+                brandName,
+                mode: "tester",
+              },
+            });
+            if (!error && data?.results) {
+              const mentions = data.results.filter((r: any) => !r.error && r.mentioned).length;
+              const aiDetails = data.results.map((r: any) => ({ model: r.model, mentioned: !r.error && r.mentioned }));
+              return { name: pillar, mentions, score: mentions * 4, radarValue: mentions * 4 * 5, aiDetails } as PillarAnalysis;
+            }
+          } catch (e) {
+            console.error(`Pillar ${pillar} call failed:`, e);
+          }
+          return { name: pillar, mentions: 0, score: 0, radarValue: 0, aiDetails: [] } as PillarAnalysis;
         });
-        if (!error && data?.results) {
-          const engines: AIEngineResult[] = data.results.map((r: any) => ({
-            name: r.model,
-            found: r.error ? false : r.mentioned,
-            error: r.error,
-            errorMessage: r.errorMessage,
+
+        const results = await Promise.all(pillarCalls);
+
+        // Calculate total GEO score: sum of all pillar scores (each 0-20, total 0-100)
+        const totalScore = results.reduce((sum, r) => sum + r.score, 0);
+        setGeoScore(totalScore);
+
+        // Build radar data
+        const radar = results.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
+        setDynamicRadarData(radar);
+
+        // Build pillar details
+        const details = buildPillarDetails(results);
+        setDynamicPillarDetails(details);
+
+        // Aggregate AI engines from the "Autoridade" pillar for the presence section
+        const authorityResult = results.find((r) => r.name === "Autoridade");
+        if (authorityResult && authorityResult.aiDetails.length > 0) {
+          const engines: AIEngineResult[] = authorityResult.aiDetails.map((ai) => ({
+            name: ai.model,
+            found: ai.mentioned,
           }));
           setAiEngines(engines);
         }
       } catch (e) {
-        console.error("AI presence check failed:", e);
+        console.error("Pillar analysis failed:", e);
       }
     };
-    fetchAiPresence();
+
+    fetchAllPillars();
 
     const timeout = setTimeout(() => {
       clearInterval(progressInterval);
@@ -1113,5 +1172,5 @@ export default function PreviewPage() {
   }, [siteUrl]);
 
   if (loading) return <LoadingScreen currentStep={currentStep} progress={progress} />;
-  return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} />;
+  return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />;
 }
