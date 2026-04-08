@@ -184,8 +184,8 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
 }
 
 /* ── Dynamic phrase for weakest pillar ── */
-function getWeakestPillarPhrase(): string {
-  const weakest = [...radarData].sort((a, b) => a.value - b.value)[0];
+function getWeakestPillarPhrase(dynamicRadarData: { subject: string; value: number }[]): string {
+  const weakest = [...dynamicRadarData].sort((a, b) => a.value - b.value)[0];
   const phrases: Record<string, string> = {
     Clareza: "Falta de clareza diminui a compreensão da IA sobre sua proposta de valor.",
     Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
@@ -193,7 +193,7 @@ function getWeakestPillarPhrase(): string {
     Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
     Experiência: "Problemas estruturais limitam a capacidade da IA interpretar sua relevância.",
   };
-  return phrases[weakest.subject] || phrases["Autoridade"];
+  return phrases[weakest?.subject] || phrases["Autoridade"];
 }
 
 /* ── Score level helper ── */
