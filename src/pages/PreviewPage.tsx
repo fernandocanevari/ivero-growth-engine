@@ -955,18 +955,26 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               <PremiumCard glow>
                 <div className="space-y-4">
                   <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A análise mais importante sobre o futuro da sua marca em IA" />
-                  <div className="rounded-xl bg-primary/5 border border-primary/15 p-5 space-y-3">
-                    <p className="text-sm text-foreground leading-relaxed font-medium">
-                      Sua marca adota uma comunicação predominantemente racional e técnica, focada em valor e direcionada a
-                      decisores B2B. Embora isso transmita credibilidade, a ausência de elementos emocionais e aspiracionais
-                      reduz o impacto em buscas conversacionais feitas por IAs, que priorizam respostas mais humanizadas e
-                      contextuais.
-                    </p>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      Os pilares de <strong>Autoridade</strong> e <strong>Conversão</strong> são os que mais limitam sua capacidade de ser
-                      recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
-                    </p>
-                  </div>
+                  {(() => {
+                    const sorted = [...dynamicRadarData].sort((a, b) => a.value - b.value);
+                    const weakest1 = sorted[0]?.subject || "Autoridade";
+                    const weakest2 = sorted[1]?.subject || "Conversão";
+                    return (
+                      <div className="space-y-3">
+                        <p className="text-sm text-foreground leading-relaxed font-medium">
+                          {geoScore <= 40
+                            ? "Sua marca está praticamente invisível para as IAs generativas. Isso significa que quando potenciais clientes perguntam sobre soluções do seu mercado, sua empresa não aparece nas respostas."
+                            : geoScore <= 70
+                            ? "Sua marca tem presença parcial nas IAs, mas ainda não é referência. Alguns modelos a reconhecem, enquanto outros a ignoram completamente."
+                            : "Sua marca já tem forte presença nas IAs generativas. A maioria dos modelos a reconhece e recomenda quando questionados sobre o seu mercado."}
+                        </p>
+                        <p className="text-sm text-foreground leading-relaxed">
+                          Os pilares de <strong>{weakest1}</strong> e <strong>{weakest2}</strong> são os que mais limitam sua capacidade de ser
+                          recomendado. Enquanto seus concorrentes investem nesses pontos, sua marca perde mercado de forma invisível.
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </PremiumCard>
             </AnimatedSection>
