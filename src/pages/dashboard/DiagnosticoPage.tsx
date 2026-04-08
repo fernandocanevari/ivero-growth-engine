@@ -394,16 +394,10 @@ export default function DiagnosticoPage() {
                     </div>
                   </div>
 
-                  {/* Definition & AI Analysis */}
-                  <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">Definição</p>
-                      <p className="text-sm text-foreground leading-relaxed">{pillar.definition}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">O que a IA analisa</p>
-                      <p className="text-sm text-foreground leading-relaxed">{pillar.aiAnalysis}</p>
-                    </div>
+                  {/* Definition */}
+                  <div className="rounded-xl bg-muted/50 border border-border p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">Definição</p>
+                    <p className="text-sm text-foreground leading-relaxed">{pillar.definition}</p>
                   </div>
 
                   {/* Score bar */}
