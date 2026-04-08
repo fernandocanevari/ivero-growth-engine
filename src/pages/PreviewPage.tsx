@@ -764,33 +764,37 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                       Diagnóstico Detalhado
                     </h2>
                   </div>
-                  <PremiumCard>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200/60">
-                        <Eye className="w-4 h-4 text-emerald-600" />
+                  {dynamicPillarDetails[0] && (
+                    <PremiumCard>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
+                          <Eye className={`w-4 h-4 ${dynamicPillarDetails[0].score >= 70 ? "text-emerald-600" : dynamicPillarDetails[0].score >= 40 ? "text-amber-600" : "text-red-600"}`} />
+                        </div>
+                        <div>
+                          <p className="font-display font-bold text-foreground">{dynamicPillarDetails[0].name}</p>
+                          <p className="text-xs text-muted-foreground">Score: {dynamicPillarDetails[0].score}/100 · {dynamicPillarDetails[0].status}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-display font-bold text-foreground">Clareza</p>
-                        <p className="text-xs text-muted-foreground">Score: 82/100 · Forte</p>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className={`h-full rounded-full ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-500" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${dynamicPillarDetails[0].score}%` }} />
                       </div>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-emerald-500" style={{ width: "82%" }} />
-                    </div>
-                  </PremiumCard>
+                    </PremiumCard>
+                  )}
                 </div>
                 <div className="blur-[7px] opacity-25 select-none pointer-events-none -mt-1">
-                  <PremiumCard>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 border border-red-200/60">
-                        <ShieldCheck className="w-4 h-4 text-red-600" />
+                  {dynamicPillarDetails[1] && (
+                    <PremiumCard>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[1].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[1].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
+                          <ShieldCheck className={`w-4 h-4 ${dynamicPillarDetails[1].score >= 70 ? "text-emerald-600" : dynamicPillarDetails[1].score >= 40 ? "text-amber-600" : "text-red-600"}`} />
+                        </div>
+                        <div>
+                          <p className="font-display font-bold text-foreground">{dynamicPillarDetails[1].name}</p>
+                          <p className="text-xs text-muted-foreground">Score: {dynamicPillarDetails[1].score}/100 · {dynamicPillarDetails[1].status}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-display font-bold text-foreground">Autoridade</p>
-                        <p className="text-xs text-muted-foreground">Score: 35/100 · Crítico</p>
-                      </div>
-                    </div>
-                  </PremiumCard>
+                    </PremiumCard>
+                  )}
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/95 to-transparent" />
               </div>
