@@ -394,10 +394,9 @@ export default function DiagnosticoPage() {
                     </div>
                   </div>
 
-                  {/* Definition */}
-                  <div className="rounded-xl bg-muted/50 border border-border p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">O que esse pilar avalia</p>
-                    <p className="text-sm text-foreground leading-relaxed">{pillar.definition}</p>
+                  {/* Definition — subtle, secondary to analysis blocks */}
+                  <div className="px-1">
+                    <p className="text-xs text-muted-foreground/70 leading-relaxed italic">{pillar.definition}</p>
                   </div>
 
                   {/* Score bar */}
