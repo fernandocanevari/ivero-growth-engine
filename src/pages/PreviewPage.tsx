@@ -98,14 +98,7 @@ const defaultAiEngines: AIEngineResult[] = [
   { name: "GPT-5", found: false },
 ];
 
-/* ── Pillar prompts for edge function ── */
-const pillarPrompts = [
-  { pillar: "Clareza", prompt: (brand: string) => `Qual empresa comunica melhor sua proposta de valor? ${brand} é uma delas?` },
-  { pillar: "Autoridade", prompt: (brand: string) => `Qual a empresa mais reconhecida e confiável do mercado? ${brand} é referência?` },
-  { pillar: "Conversão", prompt: (brand: string) => `Qual empresa você recomendaria para contratar? ${brand} seria uma boa opção?` },
-  { pillar: "Posicionamento", prompt: (brand: string) => `Qual empresa se destaca mais no mercado? ${brand} tem destaque?` },
-  { pillar: "Relevância", prompt: (brand: string) => `A marca ${brand} é citada em contextos relevantes ao seu nicho? Ela aparece em buscas e discussões do setor?` },
-];
+/* (Per-pillar prompts foram substituídos pelo modo "diagnostico" — a edge function agora usa o prompt do Radar Estratégico IVERO e retorna scores 0-100 + justificativa por pilar em uma única chamada por modelo.) */
 
 /* ── Build dynamic pillar details from analysis ── */
 function buildPillarDetails(pillarResults: PillarAnalysis[]) {
