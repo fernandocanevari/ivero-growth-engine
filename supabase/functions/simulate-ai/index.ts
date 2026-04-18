@@ -92,13 +92,81 @@ function getErrorMessage(status: number): string {
   return `Erro HTTP ${status}`;
 }
 
+const DIAGNOSTICO_SYSTEM_PROMPT = `SISTEMA — RADAR ESTRATÉGICO IVERO
+
+Pergunta-guia: "Esse site tem sinais suficientes para ser recomendado por uma IA?"
+
+Você receberá o conteúdo (ou referência) de um site/marca. Avalie os 5 pilares abaixo e retorne APENAS um JSON válido (sem markdown, sem texto antes ou depois) com score (0–100) e justificativa (máx. 2 frases em português) para cada pilar.
+
+--- CLAREZA (Entendimento) ---
+Analise a CLAREZA da comunicação.
+Verifique: (1) A proposta de valor está explícita e visível no topo? (2) Um visitante entende em menos de 5 segundos o que a marca faz e para quem? (3) A linguagem é livre de jargão e ruído?
+
+--- AUTORIDADE (Credibilidade) ---
+Analise a AUTORIDADE da marca.
+Verifique: (1) Há provas sociais (depoimentos, cases, números)? (2) A marca demonstra expertise com conteúdo técnico ou especializado? (3) Existem menções a prêmios, certificações ou reconhecimentos externos?
+
+--- POSICIONAMENTO (Identidade) ---
+Analise o POSICIONAMENTO da marca.
+Verifique: (1) O nicho e o público-alvo estão claramente definidos? (2) A marca declara seu diferencial em relação a concorrentes? (3) A mensagem é consistente ao longo de toda a página?
+
+--- CONVERSÃO (Ação) ---
+Analise a CONVERSÃO.
+Verifique: (1) Existem CTAs claros e visíveis que induzem o visitante a agir? (2) Há uma oferta ou próximo passo bem definido? (3) O fluxo de navegação conduz naturalmente a uma ação?
+
+--- RELEVÂNCIA (Contexto e busca) ---
+Analise a RELEVÂNCIA.
+Verifique: (1) O conteúdo utiliza termos e contextos relevantes do nicho da marca? (2) O site responde perguntas que o público-alvo faria a uma IA? (3) Há cobertura semântica suficiente para que sistemas de IA associem a marca ao setor correto?
+
+Formato de resposta OBRIGATÓRIO (apenas JSON puro):
+{
+  "clareza": { "score": 0, "justificativa": "" },
+  "autoridade": { "score": 0, "justificativa": "" },
+  "posicionamento": { "score": 0, "justificativa": "" },
+  "conversao": { "score": 0, "justificativa": "" },
+  "relevancia": { "score": 0, "justificativa": "" }
+}`;
+
+function extractJsonFromContent(content: string): any | null {
+  if (!content) return null;
+  // Remove markdown code fences if present
+  let cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Try to find first { ... } block
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+function emptyPillars() {
+  return {
+    clareza: { score: 0, justificativa: "" },
+    autoridade: { score: 0, justificativa: "" },
+    posicionamento: { score: 0, justificativa: "" },
+    conversao: { score: 0, justificativa: "" },
+    relevancia: { score: 0, justificativa: "" },
+  };
+}
+
 async function callModel(
   config: ModelConfig,
   userPrompt: string,
   systemPrompt: string,
   brandName: string,
   mode: string
-): Promise<{ model: string; response?: string; mentionsBrand?: boolean; mentioned?: boolean; error?: boolean; errorMessage?: string }> {
+): Promise<any> {
+  const isDiagnostico = mode === "diagnostico";
+  const maxTokens = isDiagnostico ? 1000 : 300;
+
   try {
     let body: any;
 
@@ -107,12 +175,12 @@ async function callModel(
         contents: [
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
         ],
-        generationConfig: { maxOutputTokens: 300 },
+        generationConfig: { maxOutputTokens: maxTokens },
       };
     } else if (config.name === "Claude") {
       body = {
         model: config.model,
-        max_tokens: 300,
+        max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       };
@@ -123,7 +191,7 @@ async function callModel(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 300,
+        max_completion_tokens: maxTokens,
       };
     } else {
       body = {
@@ -132,7 +200,7 @@ async function callModel(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 300,
+        max_tokens: maxTokens,
       };
     }
 
@@ -146,6 +214,9 @@ async function callModel(
       const errText = await response.text();
       console.error(`${config.name} error [${response.status}]:`, errText);
       const errorMessage = getErrorMessage(response.status);
+      if (isDiagnostico) {
+        return { model: config.name, error: true, errorMessage, pillars: emptyPillars() };
+      }
       return {
         model: config.name,
         error: true,
@@ -158,8 +229,42 @@ async function callModel(
 
     const data = await response.json();
     const content = config.parseResponse(data);
-    const mentionsBrand = content.toLowerCase().includes(brandName.toLowerCase());
 
+    if (isDiagnostico) {
+      const parsed = extractJsonFromContent(content);
+      if (!parsed) {
+        console.error(`${config.name} JSON parse failed. Content:`, content?.slice(0, 500));
+        return {
+          model: config.name,
+          error: true,
+          errorMessage: "Resposta inválida",
+          pillars: emptyPillars(),
+        };
+      }
+      // Normalize keys & ensure shape
+      const normalize = (k: string) => {
+        const v = parsed[k];
+        if (v && typeof v === "object") {
+          return {
+            score: typeof v.score === "number" ? Math.max(0, Math.min(100, v.score)) : 0,
+            justificativa: typeof v.justificativa === "string" ? v.justificativa : "",
+          };
+        }
+        return { score: 0, justificativa: "" };
+      };
+      return {
+        model: config.name,
+        pillars: {
+          clareza: normalize("clareza"),
+          autoridade: normalize("autoridade"),
+          posicionamento: normalize("posicionamento"),
+          conversao: normalize("conversao"),
+          relevancia: normalize("relevancia"),
+        },
+      };
+    }
+
+    const mentionsBrand = content.toLowerCase().includes(brandName.toLowerCase());
     if (mode === "simulator") {
       return { model: config.name, response: content, mentionsBrand };
     } else {
@@ -167,6 +272,9 @@ async function callModel(
     }
   } catch (e) {
     console.error(`${config.name} call failed:`, e);
+    if (isDiagnostico) {
+      return { model: config.name, error: true, errorMessage: "Falha na conexão", pillars: emptyPillars() };
+    }
     return {
       model: config.name,
       error: true,
@@ -199,7 +307,10 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`;
+    const systemPrompt =
+      mode === "diagnostico"
+        ? `${DIAGNOSTICO_SYSTEM_PROMPT}\n\nMarca a ser avaliada: "${brandName}".`
+        : `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`;
 
     const results = await Promise.all(
       configs.map((config) => callModel(config, prompt, systemPrompt, brandName, mode))

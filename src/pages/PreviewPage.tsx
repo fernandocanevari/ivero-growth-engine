@@ -83,10 +83,10 @@ interface AIEngineResult {
 /* ── Pillar analysis result ── */
 interface PillarAnalysis {
   name: string;
-  mentions: number; // how many AIs mentioned the brand
-  score: number; // mentions * 4 (max 20)
-  radarValue: number; // score * 5 (scaled to 0-100)
-  aiDetails: { model: string; mentioned: boolean }[];
+  mentions: number; // how many AIs scored the brand >= 50 in this pillar
+  score: number; // average score across models (0-100)
+  radarValue: number; // same as score (0-100)
+  aiDetails: { model: string; mentioned: boolean; score: number; justificativa: string }[];
 }
 
 /* ── Default fallback engines (shown if API fails completely) ── */
@@ -98,14 +98,7 @@ const defaultAiEngines: AIEngineResult[] = [
   { name: "GPT-5", found: false },
 ];
 
-/* ── Pillar prompts for edge function ── */
-const pillarPrompts = [
-  { pillar: "Clareza", prompt: (brand: string) => `Qual empresa comunica melhor sua proposta de valor? ${brand} é uma delas?` },
-  { pillar: "Autoridade", prompt: (brand: string) => `Qual a empresa mais reconhecida e confiável do mercado? ${brand} é referência?` },
-  { pillar: "Conversão", prompt: (brand: string) => `Qual empresa você recomendaria para contratar? ${brand} seria uma boa opção?` },
-  { pillar: "Posicionamento", prompt: (brand: string) => `Qual empresa se destaca mais no mercado? ${brand} tem destaque?` },
-  { pillar: "Relevância", prompt: (brand: string) => `A marca ${brand} é citada em contextos relevantes ao seu nicho? Ela aparece em buscas e discussões do setor?` },
-];
+/* (Per-pillar prompts foram substituídos pelo modo "diagnostico" — a edge function agora usa o prompt do Radar Estratégico IVERO e retorna scores 0-100 + justificativa por pilar em uma única chamada por modelo.) */
 
 /* ── Build dynamic pillar details from analysis ── */
 function buildPillarDetails(pillarResults: PillarAnalysis[]) {
@@ -1101,54 +1094,85 @@ export default function PreviewPage() {
       setCurrentStep((prev) => (prev >= loadingSteps.length - 1 ? prev : prev + 1));
     }, stepDuration);
 
-    // Make 5 parallel calls — one per pillar
+    // Single call per model returns all 5 pillars (mode: diagnostico)
     const brandName = extractBrandFromUrl(siteUrl);
+    const pillarKeys: { key: string; name: string }[] = [
+      { key: "clareza", name: "Clareza" },
+      { key: "autoridade", name: "Autoridade" },
+      { key: "conversao", name: "Conversão" },
+      { key: "posicionamento", name: "Posicionamento" },
+      { key: "relevancia", name: "Relevância" },
+    ];
 
     const fetchAllPillars = async () => {
       try {
-        const pillarCalls = pillarPrompts.map(async ({ pillar, prompt }) => {
-          try {
-            const { data, error } = await supabase.functions.invoke("simulate-ai", {
-              body: {
-                prompt: prompt(brandName),
-                brandName,
-                mode: "tester",
-              },
-            });
-            if (!error && data?.results) {
-              const mentions = data.results.filter((r: any) => !r.error && r.mentioned).length;
-              const aiDetails = data.results.map((r: any) => ({ model: r.model, mentioned: !r.error && r.mentioned }));
-              return { name: pillar, mentions, score: mentions * 4, radarValue: mentions * 4 * 5, aiDetails } as PillarAnalysis;
-            }
-          } catch (e) {
-            console.error(`Pillar ${pillar} call failed:`, e);
-          }
-          return { name: pillar, mentions: 0, score: 0, radarValue: 0, aiDetails: [] } as PillarAnalysis;
+        const { data, error } = await supabase.functions.invoke("simulate-ai", {
+          body: {
+            prompt: `Avalie a marca "${brandName}" com base nas informações públicas disponíveis sobre seu site e presença digital.`,
+            brandName,
+            mode: "diagnostico",
+          },
         });
 
-        const results = await Promise.all(pillarCalls);
+        if (error || !data?.results) {
+          console.error("Diagnostico call failed:", error);
+          return;
+        }
 
-        // Calculate total GEO score: sum of all pillar scores (each 0-20, total 0-100)
-        const totalScore = results.reduce((sum, r) => sum + r.score, 0);
+        const modelResults: any[] = data.results;
+
+        // Build per-pillar aggregation
+        const results: PillarAnalysis[] = pillarKeys.map(({ key, name }) => {
+          const aiDetails = modelResults.map((r) => {
+            const pillar = r.pillars?.[key];
+            const score = !r.error && pillar?.score ? pillar.score : 0;
+            const justificativa = pillar?.justificativa || (r.errorMessage ?? "");
+            return {
+              model: r.model,
+              mentioned: !r.error && score >= 50,
+              score,
+              justificativa,
+            };
+          });
+
+          // Average score across models that did NOT error
+          const validScores = aiDetails.filter((a) => !modelResults.find((m) => m.model === a.model)?.error);
+          const avgScore = validScores.length
+            ? Math.round(validScores.reduce((s, a) => s + a.score, 0) / validScores.length)
+            : 0;
+          const mentions = aiDetails.filter((a) => a.mentioned).length;
+
+          return {
+            name,
+            mentions,
+            score: avgScore,
+            radarValue: avgScore,
+            aiDetails,
+          };
+        });
+
+        // Overall GEO score = average of the 5 pillar scores
+        const totalScore = Math.round(
+          results.reduce((sum, r) => sum + r.radarValue, 0) / results.length
+        );
         setGeoScore(totalScore);
 
-        // Build radar data
         const radar = results.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
         setDynamicRadarData(radar);
 
-        // Build pillar details
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
 
-        // Aggregate AI engines from the "Autoridade" pillar for the presence section
-        const authorityResult = results.find((r) => r.name === "Autoridade");
-        if (authorityResult && authorityResult.aiDetails.length > 0) {
-          const engines: AIEngineResult[] = authorityResult.aiDetails.map((ai) => ({
-            name: ai.model,
-            found: ai.mentioned,
-          }));
-          setAiEngines(engines);
-        }
+        // Aggregate AI engines: a model is "found" if average score across pillars >= 50
+        const engines: AIEngineResult[] = modelResults.map((r) => {
+          if (r.error) {
+            return { name: r.model, found: false, error: true, errorMessage: r.errorMessage };
+          }
+          const scores = pillarKeys.map((p) => r.pillars?.[p.key]?.score || 0);
+          const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+          return { name: r.model, found: avg >= 50 };
+        });
+        setAiEngines(engines);
       } catch (e) {
         console.error("Pillar analysis failed:", e);
       }
