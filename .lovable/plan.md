@@ -1,49 +1,63 @@
 
 
-## Plano: Score GEO dinâmico — 5 pilares × 5 IAs × 4 pontos
+## Plano: Atualizar Edge Function `simulate-ai` com Prompt do Radar Estratégico IVERO
 
-### Fórmula
-- 5 pilares (Clareza, Autoridade, Conversão, Posicionamento, Relevância)
-- Cada pilar é consultado nas 5 IAs com um prompt específico
-- Cada menção da marca por uma IA em um pilar = **4 pontos**
-- Score máximo = 5 pilares × 5 IAs × 4 = **100**
-- Exemplo: se apenas 2 IAs mencionam a marca em cada pilar → 5 × 2 × 4 = **40**
+### Contexto
 
-### O que mudar
+Atualmente a edge function `simulate-ai` usa um prompt genérico simples ("Answer the user's question naturally..."). O objetivo é adicionar um novo modo `"diagnostico"` que use o prompt completo do Radar Estratégico IVERO com os 5 pilares, retornando JSON estruturado com scores e justificativas.
 
-**1. Fazer 5 chamadas à edge function (uma por pilar)**
+### O que será feito
 
-Cada pilar terá um prompt específico:
-- **Clareza**: "Qual empresa de [setor] comunica melhor sua proposta de valor?"
-- **Autoridade**: "Qual a empresa mais reconhecida/confiável em [setor]?"
-- **Conversão**: "Qual empresa de [setor] você recomendaria para contratar?"
-- **Posicionamento**: "Qual empresa se destaca no mercado de [setor]?"
-- **Experiência**: "Qual empresa de [setor] oferece a melhor experiência ao cliente?"
+#### 1. Atualizar `supabase/functions/simulate-ai/index.ts`
 
-As 5 chamadas rodam em paralelo (`Promise.all`).
+- **Novo modo `"diagnostico"`**: Quando `mode === "diagnostico"`, usar o prompt completo do Radar Estratégico em vez do prompt genérico
+- **System prompt dedicado**: Incluir os critérios detalhados de cada pilar (Clareza, Autoridade, Posicionamento, Conversão, Relevância) com o formato JSON de resposta esperado
+- **Aumentar `max_tokens`** para ~1000 no modo diagnóstico (o JSON estruturado precisa de mais espaço)
+- **Parsear a resposta**: Extrair o JSON dos 5 pilares da resposta da IA e retorná-lo junto com o `model` name
+- Os modos existentes (`simulator`, `tester`) continuam funcionando exatamente como antes
 
-**2. Calcular score por pilar e score geral**
+#### 2. Atualizar `src/pages/PreviewPage.tsx`
 
-Para cada pilar: contar quantas IAs mencionaram a marca → multiplicar por 4 → score do pilar (0-20).
+- Alterar as chamadas para usar `mode: "diagnostico"` em vez de `"tester"` com prompts individuais por pilar
+- Em vez de 5 chamadas paralelas (uma por pilar), fazer **1 chamada por modelo** que retorna todos os 5 pilares de uma vez
+- Parsear o JSON estruturado retornado para popular o radar e os pillar details com scores reais (0-100) e justificativas da IA
+- Calcular o score geral como média dos 5 pilares
 
-Score GEO = soma dos 5 pilares (0-100).
+### Detalhes técnicos
 
-**3. Atualizar `radarData` e `pillarDetails` dinamicamente**
+**Prompt do sistema (modo diagnóstico):**
+Será o prompt completo "SISTEMA — RADAR ESTRATÉGICO IVERO" fornecido pelo usuário, incluindo a pergunta-guia, os 5 blocos de análise com critérios específicos, e o formato JSON de resposta.
 
-- `radarData` → valor de cada pilar = (menções × 4) × 5 (escalar para 0-100 no radar)
-- `pillarDetails` → score, status e textos ajustados conforme resultado real
-- A frase de resumo (`getScoreLevel`) já funciona com score dinâmico
+**Fluxo de dados:**
+```text
+Client (PreviewPage)
+  → invoke("simulate-ai", { prompt: siteContent, brandName, mode: "diagnostico" })
+  → Edge Function usa prompt IVERO completo
+  → Cada modelo retorna JSON com 5 pilares { clareza, autoridade, posicionamento, conversao, relevancia }
+  → Client recebe scores + justificativas por modelo
+  → Calcula média entre modelos para score final de cada pilar
+```
 
-**4. Manter a seção "Presença nas IAs" como está**
+**Estrutura de resposta do modo diagnóstico:**
+```json
+{
+  "results": [
+    {
+      "model": "ChatGPT",
+      "pillars": {
+        "clareza": { "score": 75, "justificativa": "..." },
+        "autoridade": { "score": 40, "justificativa": "..." },
+        "posicionamento": { "score": 60, "justificativa": "..." },
+        "conversao": { "score": 55, "justificativa": "..." },
+        "relevancia": { "score": 70, "justificativa": "..." }
+      }
+    }
+  ]
+}
+```
 
-Usar os resultados do pilar "Autoridade" (ou agregar todos) para a seção de engines.
+### Arquivos modificados
 
-### Arquivo modificado
-- `src/pages/PreviewPage.tsx`
-
-### Fluxo de loading
-O loading atual de ~6 segundos se mantém — as 5 chamadas paralelas rodam dentro desse período. Se todas falharem, fallback para score 0 com mensagem apropriada.
-
-### Limitação
-ChatGPT, Gemini e Claude continuam sem créditos — score real virá de Perplexity e GPT-5. Máximo prático atual = 5 pilares × 2 IAs × 4 = **40 pontos**.
+1. `supabase/functions/simulate-ai/index.ts` — novo prompt e lógica para modo diagnóstico
+2. `src/pages/PreviewPage.tsx` — adaptar chamada e parsing para usar modo diagnóstico
 
