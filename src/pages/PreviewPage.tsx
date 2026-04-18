@@ -83,10 +83,10 @@ interface AIEngineResult {
 /* ── Pillar analysis result ── */
 interface PillarAnalysis {
   name: string;
-  mentions: number; // how many AIs mentioned the brand
-  score: number; // mentions * 4 (max 20)
-  radarValue: number; // score * 5 (scaled to 0-100)
-  aiDetails: { model: string; mentioned: boolean }[];
+  mentions: number; // how many AIs scored the brand >= 50 in this pillar
+  score: number; // average score across models (0-100)
+  radarValue: number; // same as score (0-100)
+  aiDetails: { model: string; mentioned: boolean; score: number; justificativa: string }[];
 }
 
 /* ── Default fallback engines (shown if API fails completely) ── */
