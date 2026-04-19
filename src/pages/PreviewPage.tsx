@@ -80,12 +80,20 @@ interface AIEngineResult {
   errorMessage?: string;
 }
 
+/* ── Pillar criterion (sub-criterio) ── */
+interface PillarCriterion {
+  nome: string;
+  score: number;
+  peso: number;
+}
+
 /* ── Pillar analysis result ── */
 interface PillarAnalysis {
   name: string;
   mentions: number; // how many AIs scored the brand >= 50 in this pillar
   score: number; // average score across models (0-100)
   radarValue: number; // same as score (0-100)
+  criterios: PillarCriterion[]; // 3 sub-criteria averaged across models
   aiDetails: { model: string; mentioned: boolean; score: number; justificativa: string }[];
 }
 
