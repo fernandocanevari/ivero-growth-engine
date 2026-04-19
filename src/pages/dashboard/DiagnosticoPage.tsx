@@ -150,6 +150,25 @@ export default function DiagnosticoPage() {
   // TODO: Replace with real plan status check
   const hasPlan = true;
 
+  // Read latest diagnostic payload (saved by PreviewPage) to enrich pillars with real sub-criteria
+  const [criteriaByPillar, setCriteriaByPillar] = useState<Record<string, PillarCriterion[]>>({});
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      const map: Record<string, PillarCriterion[]> = {};
+      (payload.pillarDetails || []).forEach((p: { name: string; criterios?: PillarCriterion[] }) => {
+        if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
+          map[p.name] = p.criterios;
+        }
+      });
+      setCriteriaByPillar(map);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const handleReanalyze = () => {
     if (!canReanalyze) return;
     runAnalysis.mutate(
@@ -164,6 +183,12 @@ export default function DiagnosticoPage() {
   if (isLoading) return null;
 
   const level = getScoreLevel(overallScore);
+  const overallBand = getScoreBand(overallScore);
+  const overallBandClass =
+    overallBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
+    : overallBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
+    : overallBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
+    : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
 
   // Build evolution chart data from history
   const evolutionChartData = history.map((record) => ({
