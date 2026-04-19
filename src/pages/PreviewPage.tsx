@@ -940,75 +940,12 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                         />
                       </div>
 
-                      {/* Como chegamos a esse score (3 sub-critérios ponderados) */}
+                      {/* Detalhamento por sub-critério é exclusivo do dashboard executivo */}
                       {pillar.criterios && pillar.criterios.length > 0 && (
-                        <div className="space-y-2.5 rounded-xl bg-muted/30 border border-border/40 p-4">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                            Como chegamos a esse score
-                          </p>
-                          <TooltipProvider delayDuration={150}>
-                            <div className="space-y-2.5">
-                              {pillar.criterios.map((c: PillarCriterion, ci: number) => {
-                                const cBand = getScoreBand(c.score);
-                                const cBar =
-                                  cBand.color === "red" ? "bg-red-500"
-                                  : cBand.color === "amber" ? "bg-amber-500"
-                                  : cBand.color === "blue" ? "bg-sky-500"
-                                  : "bg-emerald-500";
-                                return (
-                                  <Tooltip key={ci}>
-                                    <TooltipTrigger asChild>
-                                      <div className="space-y-1 cursor-help rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/40 transition-colors">
-                                        <div className="flex items-center justify-between text-xs gap-2">
-                                          <span className="text-foreground font-medium truncate pr-1">{c.nome}</span>
-                                          <div className="flex items-center gap-1.5 shrink-0">
-                                            {c.consenso && c.consenso.total > 1 && (() => {
-                                              const ratio = c.consenso.agree / c.consenso.total;
-                                              const consClass =
-                                                ratio >= 0.8 ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                                                : ratio >= 0.5 ? "bg-sky-50 text-sky-700 border-sky-200/60"
-                                                : "bg-amber-50 text-amber-700 border-amber-200/60";
-                                              return (
-                                                <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border tabular-nums ${consClass}`}>
-                                                  {c.consenso.agree}/{c.consenso.total} IAs
-                                                </span>
-                                              );
-                                            })()}
-                                            <span className="text-muted-foreground font-medium tabular-nums">
-                                              {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                                          <motion.div
-                                            className={`h-full rounded-full ${cBar}`}
-                                            initial={{ width: 0 }}
-                                            whileInView={{ width: `${c.score}%` }}
-                                            viewport={{ once: true }}
-                                            transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
-                                          />
-                                        </div>
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed space-y-1.5">
-                                      <p>
-                                        {c.justificativa && c.justificativa.trim().length > 0
-                                          ? c.justificativa
-                                          : "Justificativa não disponível para este critério nesta análise."}
-                                      </p>
-                                      {c.consenso && c.consenso.total > 1 && (
-                                        <p className="text-[10px] text-muted-foreground/90 border-t border-border/40 pt-1.5">
-                                          <span className="font-semibold">{c.consenso.agree} de {c.consenso.total} IAs</span> concordam com este score (variação ≤ 15 pontos da média).
-                                        </p>
-                                      )}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                );
-                              })}
-                            </div>
-                          </TooltipProvider>
-                          <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-1">
-                            Score do pilar = média ponderada dos 3 critérios acima. Passe o mouse para ver a justificativa da IA.
+                        <div className="rounded-xl bg-muted/20 border border-dashed border-border/50 p-3">
+                          <p className="text-[11px] text-muted-foreground/80 leading-relaxed flex items-center gap-1.5">
+                            <Lock className="w-3 h-3 shrink-0" />
+                            Detalhamento por sub-critério (rubrica de 3 fatores ponderados, justificativas e convergência entre IAs) disponível no <span className="font-semibold text-foreground/80">dashboard executivo</span>.
                           </p>
                         </div>
                       )}
@@ -1316,6 +1253,22 @@ export default function PreviewPage() {
 
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
+
+        // Persist criteria payload so the executive dashboard can render the rubric breakdown
+        try {
+          sessionStorage.setItem(
+            "ivero:lastDiagnostic",
+            JSON.stringify({
+              siteUrl,
+              geoScore: totalScore,
+              radar,
+              pillarDetails: details,
+              savedAt: new Date().toISOString(),
+            })
+          );
+        } catch {
+          /* storage may be unavailable (private mode); ignore */
+        }
 
         // Aggregate AI engines: a model is "found" if average score across pillars >= 50
         const engines: AIEngineResult[] = modelResults.map((r) => {

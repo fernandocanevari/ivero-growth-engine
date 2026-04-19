@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Brain, Lock, Unlock, Eye, ShieldCheck, Target, Rocket, Sparkles,
@@ -6,13 +7,31 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { toast } from "sonner";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
+
+/* ── Sub-criterion type (mirrors PreviewPage payload saved in sessionStorage) ── */
+interface PillarCriterion {
+  nome: string;
+  score: number;
+  peso: number;
+  justificativa?: string;
+  consenso?: { agree: number; total: number };
+}
+
+/* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
+function getScoreBand(score: number) {
+  if (score < 40) return { label: "Crítico", color: "red" as const };
+  if (score < 60) return { label: "Insuficiente", color: "amber" as const };
+  if (score < 80) return { label: "Sólido", color: "blue" as const };
+  return { label: "Referência", color: "emerald" as const };
+}
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
@@ -131,6 +150,25 @@ export default function DiagnosticoPage() {
   // TODO: Replace with real plan status check
   const hasPlan = true;
 
+  // Read latest diagnostic payload (saved by PreviewPage) to enrich pillars with real sub-criteria
+  const [criteriaByPillar, setCriteriaByPillar] = useState<Record<string, PillarCriterion[]>>({});
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      const map: Record<string, PillarCriterion[]> = {};
+      (payload.pillarDetails || []).forEach((p: { name: string; criterios?: PillarCriterion[] }) => {
+        if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
+          map[p.name] = p.criterios;
+        }
+      });
+      setCriteriaByPillar(map);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const handleReanalyze = () => {
     if (!canReanalyze) return;
     runAnalysis.mutate(
@@ -145,6 +183,12 @@ export default function DiagnosticoPage() {
   if (isLoading) return null;
 
   const level = getScoreLevel(overallScore);
+  const overallBand = getScoreBand(overallScore);
+  const overallBandClass =
+    overallBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
+    : overallBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
+    : overallBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
+    : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
 
   // Build evolution chart data from history
   const evolutionChartData = history.map((record) => ({
@@ -257,6 +301,9 @@ export default function DiagnosticoPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Score de Presença GEO
+              <span className={`ml-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${overallBandClass}`}>
+                {overallBand.label}
+              </span>
             </h2>
 
             <div className="flex items-center gap-6">
@@ -368,6 +415,13 @@ export default function DiagnosticoPage() {
           const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
           const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
           const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
+          const pillarBand = getScoreBand(pillar.score);
+          const pillarBandClass =
+            pillarBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
+            : pillarBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
+            : pillarBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
+            : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+          const criterios = criteriaByPillar[pillar.name] || [];
 
           return (
             <motion.div key={pillar.name} {...fade} transition={{ delay: 0.2 + idx * 0.05 }}>
@@ -385,10 +439,15 @@ export default function DiagnosticoPage() {
                         <p className="text-sm text-muted-foreground mt-0.5">{pillar.summary}</p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
-                      <span className="text-xs text-muted-foreground">/100</span>
-                      <div className={`mt-1 inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                      <div className="flex items-baseline gap-2">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${pillarBandClass}`}>
+                          {pillarBand.label}
+                        </span>
+                        <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
+                        <span className="text-xs text-muted-foreground">/100</span>
+                      </div>
+                      <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
                         {pillar.status}
                       </div>
                     </div>
@@ -409,6 +468,79 @@ export default function DiagnosticoPage() {
                       transition={{ duration: 1.2, ease: "easeOut" }}
                     />
                   </div>
+
+                  {/* Como chegamos a esse score (3 sub-critérios ponderados) — exclusivo do dashboard executivo */}
+                  {criterios.length > 0 && (
+                    <div className="space-y-2.5 rounded-xl bg-muted/30 border border-border/40 p-4">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                        Como chegamos a esse score
+                      </p>
+                      <TooltipProvider delayDuration={150}>
+                        <div className="space-y-2.5">
+                          {criterios.map((c, ci) => {
+                            const cBand = getScoreBand(c.score);
+                            const cBar =
+                              cBand.color === "red" ? "bg-red-500"
+                              : cBand.color === "amber" ? "bg-amber-500"
+                              : cBand.color === "blue" ? "bg-sky-500"
+                              : "bg-emerald-500";
+                            return (
+                              <Tooltip key={ci}>
+                                <TooltipTrigger asChild>
+                                  <div className="space-y-1 cursor-help rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/40 transition-colors">
+                                    <div className="flex items-center justify-between text-xs gap-2">
+                                      <span className="text-foreground font-medium truncate pr-1">{c.nome}</span>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {c.consenso && c.consenso.total > 1 && (() => {
+                                          const ratio = c.consenso.agree / c.consenso.total;
+                                          const consClass =
+                                            ratio >= 0.8 ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                                            : ratio >= 0.5 ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                                            : "bg-amber-50 text-amber-700 border-amber-200/60";
+                                          return (
+                                            <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border tabular-nums ${consClass}`}>
+                                              {c.consenso.agree}/{c.consenso.total} IAs
+                                            </span>
+                                          );
+                                        })()}
+                                        <span className="text-muted-foreground font-medium tabular-nums">
+                                          {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                      <motion.div
+                                        className={`h-full rounded-full ${cBar}`}
+                                        initial={{ width: 0 }}
+                                        whileInView={{ width: `${c.score}%` }}
+                                        viewport={{ once: true }}
+                                        transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
+                                      />
+                                    </div>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed space-y-1.5">
+                                  <p>
+                                    {c.justificativa && c.justificativa.trim().length > 0
+                                      ? c.justificativa
+                                      : "Justificativa não disponível para este critério nesta análise."}
+                                  </p>
+                                  {c.consenso && c.consenso.total > 1 && (
+                                    <p className="text-[10px] text-muted-foreground/90 border-t border-border/40 pt-1.5">
+                                      <span className="font-semibold">{c.consenso.agree} de {c.consenso.total} IAs</span> concordam com este score (variação ≤ 15 pontos da média).
+                                    </p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </TooltipProvider>
+                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-1">
+                        Score do pilar = média ponderada dos 3 critérios acima. Passe o mouse para ver a justificativa da IA.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Strengths */}
                   <div className="space-y-2">
@@ -478,7 +610,7 @@ export default function DiagnosticoPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip
+                  <RTooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
