@@ -1159,11 +1159,29 @@ export default function PreviewPage() {
             : 0;
           const mentions = aiDetails.filter((a) => a.mentioned).length;
 
+          // Aggregate criterios across models (average score per criterion index, keep nome+peso from first valid)
+          const validModelPillars = modelResults
+            .filter((m) => !m.error && Array.isArray(m.pillars?.[key]?.criterios))
+            .map((m) => m.pillars[key].criterios as Array<{ nome: string; score: number; peso: number }>);
+
+          let criterios: PillarCriterion[] = [];
+          if (validModelPillars.length > 0) {
+            const numCriterios = Math.min(3, ...validModelPillars.map((arr) => arr.length));
+            for (let i = 0; i < numCriterios; i++) {
+              const ref = validModelPillars.find((arr) => arr[i])?.[i];
+              if (!ref) continue;
+              const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
+              const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
+              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso });
+            }
+          }
+
           return {
             name,
             mentions,
             score: avgScore,
             radarValue: avgScore,
+            criterios,
             aiDetails,
           };
         });
