@@ -301,16 +301,37 @@ async function callModel(
           pillars: emptyPillars(),
         };
       }
-      // Normalize keys & ensure shape
+      // Normalize keys & ensure shape (with criterios)
+      const clamp = (n: any) =>
+        typeof n === "number" && isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : 0;
+      const normalizeCriterios = (arr: any): Array<{ nome: string; score: number; peso: number; justificativa: string }> => {
+        if (!Array.isArray(arr)) return [];
+        return arr.slice(0, 3).map((c: any) => ({
+          nome: typeof c?.nome === "string" ? c.nome : "",
+          score: clamp(c?.score),
+          peso: typeof c?.peso === "number" && isFinite(c.peso) ? Math.max(0, Math.min(100, Math.round(c.peso))) : 0,
+          justificativa: typeof c?.justificativa === "string" ? c.justificativa : "",
+        }));
+      };
       const normalize = (k: string) => {
         const v = parsed[k];
         if (v && typeof v === "object") {
+          const criterios = normalizeCriterios(v.criterios);
+          // If model didn't compute the weighted score, derive it from criterios
+          let score = clamp(v.score);
+          if (!score && criterios.length === 3) {
+            const totalPeso = criterios.reduce((s, c) => s + c.peso, 0) || 100;
+            score = Math.round(
+              criterios.reduce((s, c) => s + c.score * c.peso, 0) / totalPeso
+            );
+          }
           return {
-            score: typeof v.score === "number" ? Math.max(0, Math.min(100, v.score)) : 0,
+            score,
             justificativa: typeof v.justificativa === "string" ? v.justificativa : "",
+            criterios,
           };
         }
-        return { score: 0, justificativa: "" };
+        return emptyPillar();
       };
       return {
         model: config.name,
