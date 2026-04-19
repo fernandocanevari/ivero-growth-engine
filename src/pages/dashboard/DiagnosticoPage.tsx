@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Brain, Lock, Unlock, Eye, ShieldCheck, Target, Rocket, Sparkles,
@@ -6,13 +7,31 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { toast } from "sonner";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
+
+/* ── Sub-criterion type (mirrors PreviewPage payload saved in sessionStorage) ── */
+interface PillarCriterion {
+  nome: string;
+  score: number;
+  peso: number;
+  justificativa?: string;
+  consenso?: { agree: number; total: number };
+}
+
+/* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
+function getScoreBand(score: number) {
+  if (score < 40) return { label: "Crítico", color: "red" as const };
+  if (score < 60) return { label: "Insuficiente", color: "amber" as const };
+  if (score < 80) return { label: "Sólido", color: "blue" as const };
+  return { label: "Referência", color: "emerald" as const };
+}
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
