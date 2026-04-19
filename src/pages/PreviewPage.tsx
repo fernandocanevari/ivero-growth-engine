@@ -883,7 +883,23 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                          <div>
+                          <div className="flex items-baseline gap-2">
+                            {(() => {
+                              const band = getScoreBand(pillar.score);
+                              const bandClass =
+                                band.color === "red"
+                                  ? "bg-red-50 text-red-700 border-red-200/60"
+                                  : band.color === "amber"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                                  : band.color === "blue"
+                                  ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                                  : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                              return (
+                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
+                                  {band.label}
+                                </span>
+                              );
+                            })()}
                             <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                             <span className="text-xs text-muted-foreground">/100</span>
                           </div>
@@ -902,6 +918,47 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           transition={{ duration: 1.2, ease: "easeOut" }}
                         />
                       </div>
+
+                      {/* Como chegamos a esse score (3 sub-critérios ponderados) */}
+                      {pillar.criterios && pillar.criterios.length > 0 && (
+                        <div className="space-y-2.5 rounded-xl bg-muted/30 border border-border/40 p-4">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                            Como chegamos a esse score
+                          </p>
+                          <div className="space-y-2.5">
+                            {pillar.criterios.map((c: PillarCriterion, ci: number) => {
+                              const cBand = getScoreBand(c.score);
+                              const cBar =
+                                cBand.color === "red" ? "bg-red-500"
+                                : cBand.color === "amber" ? "bg-amber-500"
+                                : cBand.color === "blue" ? "bg-sky-500"
+                                : "bg-emerald-500";
+                              return (
+                                <div key={ci} className="space-y-1">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
+                                    <span className="text-muted-foreground font-medium tabular-nums shrink-0">
+                                      {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                    <motion.div
+                                      className={`h-full rounded-full ${cBar}`}
+                                      initial={{ width: 0 }}
+                                      whileInView={{ width: `${c.score}%` }}
+                                      viewport={{ once: true }}
+                                      transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-1">
+                            Score do pilar = média ponderada dos 3 critérios acima.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
