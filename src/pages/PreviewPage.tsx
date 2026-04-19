@@ -177,11 +177,20 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       color: p.radarValue >= 70 ? "emerald" : p.radarValue >= 40 ? "amber" : "red",
       status,
       summary,
+      criterios: p.criterios,
       strengths: p.mentions > 0 ? config.strengths : [config.strengths[0]],
       weaknesses: p.mentions < 3 ? config.weaknesses : undefined,
       recommendation,
     };
   }).filter(Boolean);
+}
+
+/* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
+function getScoreBand(score: number) {
+  if (score < 40) return { label: "Crítico", color: "red" as const };
+  if (score < 60) return { label: "Insuficiente", color: "amber" as const };
+  if (score < 80) return { label: "Sólido", color: "blue" as const };
+  return { label: "Referência", color: "emerald" as const };
 }
 
 /* ── Dynamic phrase for weakest pillar ── */
