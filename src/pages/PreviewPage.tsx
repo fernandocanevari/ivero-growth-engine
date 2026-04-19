@@ -1254,6 +1254,22 @@ export default function PreviewPage() {
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
 
+        // Persist criteria payload so the executive dashboard can render the rubric breakdown
+        try {
+          sessionStorage.setItem(
+            "ivero:lastDiagnostic",
+            JSON.stringify({
+              siteUrl,
+              geoScore: totalScore,
+              radar,
+              pillarDetails: details,
+              savedAt: new Date().toISOString(),
+            })
+          );
+        } catch {
+          /* storage may be unavailable (private mode); ignore */
+        }
+
         // Aggregate AI engines: a model is "found" if average score across pillars >= 50
         const engines: AIEngineResult[] = modelResults.map((r) => {
           if (r.error) {
