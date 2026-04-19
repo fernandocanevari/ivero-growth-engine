@@ -184,9 +184,20 @@ export default function AuthPage() {
             </>
           ) : (
             <>
+              {hasPrefilledLead && !isLogin && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold text-foreground">Continuando seu diagnóstico</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Pré-populamos seus dados. Defina uma senha para acessar o dashboard executivo.
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <h2 className="text-2xl font-display font-bold text-foreground">
-                  {isLogin ? "Bem-vindo de volta" : "Crie sua conta"}
+                  {isLogin ? "Bem-vindo de volta" : (hasPrefilledLead ? `Olá${prefName ? `, ${prefName.split(" ")[0]}` : ""}!` : "Crie sua conta")}
                 </h2>
                 <p className="text-muted-foreground">
                   {isLogin ? "Entre para acessar seu painel de inteligência." : "Comece a monitorar sua marca em IA agora."}
