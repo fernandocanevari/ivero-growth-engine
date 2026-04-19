@@ -96,35 +96,91 @@ const DIAGNOSTICO_SYSTEM_PROMPT = `SISTEMA — RADAR ESTRATÉGICO IVERO
 
 Pergunta-guia: "Esse site tem sinais suficientes para ser recomendado por uma IA?"
 
-Você receberá o conteúdo (ou referência) de um site/marca. Avalie os 5 pilares abaixo e retorne APENAS um JSON válido (sem markdown, sem texto antes ou depois) com score (0–100) e justificativa (máx. 2 frases em português) para cada pilar.
+Você receberá o conteúdo (ou referência) de um site/marca. Avalie os 5 pilares abaixo. Para CADA pilar, avalie 3 sub-critérios objetivos (cada um com score 0–100 e justificativa em até 1 frase) e depois calcule o score final do pilar como MÉDIA PONDERADA dos 3 critérios usando exatamente os pesos indicados.
+
+Retorne APENAS um JSON válido (sem markdown, sem texto antes ou depois).
 
 --- CLAREZA (Entendimento) ---
-Analise a CLAREZA da comunicação.
-Verifique: (1) A proposta de valor está explícita e visível no topo? (2) Um visitante entende em menos de 5 segundos o que a marca faz e para quem? (3) A linguagem é livre de jargão e ruído?
+Critérios (com pesos):
+1. "Proposta de valor no hero" (peso 40) — A proposta de valor está explícita e visível no topo?
+2. "Compreensão em <5s" (peso 35) — Um visitante entende em menos de 5 segundos o que a marca faz e para quem?
+3. "Linguagem livre de jargão" (peso 25) — A linguagem é livre de jargão e ruído?
 
 --- AUTORIDADE (Credibilidade) ---
-Analise a AUTORIDADE da marca.
-Verifique: (1) Há provas sociais (depoimentos, cases, números)? (2) A marca demonstra expertise com conteúdo técnico ou especializado? (3) Existem menções a prêmios, certificações ou reconhecimentos externos?
+Critérios (com pesos):
+1. "Provas sociais (cases, números, depoimentos)" (peso 40) — Há provas sociais concretas?
+2. "Expertise técnica/conteúdo especializado" (peso 35) — A marca demonstra expertise com conteúdo técnico ou especializado?
+3. "Prêmios, certificações e reconhecimentos" (peso 25) — Existem menções a prêmios, certificações ou reconhecimentos externos?
 
 --- POSICIONAMENTO (Identidade) ---
-Analise o POSICIONAMENTO da marca.
-Verifique: (1) O nicho e o público-alvo estão claramente definidos? (2) A marca declara seu diferencial em relação a concorrentes? (3) A mensagem é consistente ao longo de toda a página?
+Critérios (com pesos):
+1. "Nicho e público-alvo definidos" (peso 40) — O nicho e o público-alvo estão claramente definidos?
+2. "Diferencial competitivo declarado" (peso 35) — A marca declara seu diferencial em relação a concorrentes?
+3. "Consistência de mensagem" (peso 25) — A mensagem é consistente ao longo de toda a página?
 
 --- CONVERSÃO (Ação) ---
-Analise a CONVERSÃO.
-Verifique: (1) Existem CTAs claros e visíveis que induzem o visitante a agir? (2) Há uma oferta ou próximo passo bem definido? (3) O fluxo de navegação conduz naturalmente a uma ação?
+Critérios (com pesos):
+1. "CTAs claros e visíveis" (peso 40) — Existem CTAs claros e visíveis que induzem o visitante a agir?
+2. "Oferta ou próximo passo definido" (peso 35) — Há uma oferta ou próximo passo bem definido?
+3. "Fluxo de navegação lógico" (peso 25) — O fluxo de navegação conduz naturalmente a uma ação?
 
 --- RELEVÂNCIA (Contexto e busca) ---
-Analise a RELEVÂNCIA.
-Verifique: (1) O conteúdo utiliza termos e contextos relevantes do nicho da marca? (2) O site responde perguntas que o público-alvo faria a uma IA? (3) Há cobertura semântica suficiente para que sistemas de IA associem a marca ao setor correto?
+Critérios (com pesos):
+1. "Termos e palavras-chave do nicho" (peso 35) — O conteúdo utiliza termos e contextos relevantes do nicho da marca?
+2. "Responde perguntas reais do público" (peso 35) — O site responde perguntas que o público-alvo faria a uma IA?
+3. "Cobertura semântica do setor" (peso 30) — Há cobertura semântica suficiente para que sistemas de IA associem a marca ao setor correto?
 
-Formato de resposta OBRIGATÓRIO (apenas JSON puro):
+Para cada pilar, "score" final DEVE ser calculado como: round((c1*p1 + c2*p2 + c3*p3) / 100), onde cN é o score do critério e pN seu peso.
+
+Cada "justificativa" (do pilar e dos critérios) deve estar em português e ter no máximo 2 frases (critérios: 1 frase).
+
+Formato de resposta OBRIGATÓRIO (apenas JSON puro, exatamente esta estrutura):
 {
-  "clareza": { "score": 0, "justificativa": "" },
-  "autoridade": { "score": 0, "justificativa": "" },
-  "posicionamento": { "score": 0, "justificativa": "" },
-  "conversao": { "score": 0, "justificativa": "" },
-  "relevancia": { "score": 0, "justificativa": "" }
+  "clareza": {
+    "score": 0,
+    "justificativa": "",
+    "criterios": [
+      { "nome": "Proposta de valor no hero", "score": 0, "peso": 40, "justificativa": "" },
+      { "nome": "Compreensão em <5s", "score": 0, "peso": 35, "justificativa": "" },
+      { "nome": "Linguagem livre de jargão", "score": 0, "peso": 25, "justificativa": "" }
+    ]
+  },
+  "autoridade": {
+    "score": 0,
+    "justificativa": "",
+    "criterios": [
+      { "nome": "Provas sociais (cases, números, depoimentos)", "score": 0, "peso": 40, "justificativa": "" },
+      { "nome": "Expertise técnica/conteúdo especializado", "score": 0, "peso": 35, "justificativa": "" },
+      { "nome": "Prêmios, certificações e reconhecimentos", "score": 0, "peso": 25, "justificativa": "" }
+    ]
+  },
+  "posicionamento": {
+    "score": 0,
+    "justificativa": "",
+    "criterios": [
+      { "nome": "Nicho e público-alvo definidos", "score": 0, "peso": 40, "justificativa": "" },
+      { "nome": "Diferencial competitivo declarado", "score": 0, "peso": 35, "justificativa": "" },
+      { "nome": "Consistência de mensagem", "score": 0, "peso": 25, "justificativa": "" }
+    ]
+  },
+  "conversao": {
+    "score": 0,
+    "justificativa": "",
+    "criterios": [
+      { "nome": "CTAs claros e visíveis", "score": 0, "peso": 40, "justificativa": "" },
+      { "nome": "Oferta ou próximo passo definido", "score": 0, "peso": 35, "justificativa": "" },
+      { "nome": "Fluxo de navegação lógico", "score": 0, "peso": 25, "justificativa": "" }
+    ]
+  },
+  "relevancia": {
+    "score": 0,
+    "justificativa": "",
+    "criterios": [
+      { "nome": "Termos e palavras-chave do nicho", "score": 0, "peso": 35, "justificativa": "" },
+      { "nome": "Responde perguntas reais do público", "score": 0, "peso": 35, "justificativa": "" },
+      { "nome": "Cobertura semântica do setor", "score": 0, "peso": 30, "justificativa": "" }
+    ]
+  }
 }`;
 
 function extractJsonFromContent(content: string): any | null {
@@ -147,13 +203,17 @@ function extractJsonFromContent(content: string): any | null {
   }
 }
 
+function emptyPillar() {
+  return { score: 0, justificativa: "", criterios: [] as Array<{ nome: string; score: number; peso: number; justificativa: string }> };
+}
+
 function emptyPillars() {
   return {
-    clareza: { score: 0, justificativa: "" },
-    autoridade: { score: 0, justificativa: "" },
-    posicionamento: { score: 0, justificativa: "" },
-    conversao: { score: 0, justificativa: "" },
-    relevancia: { score: 0, justificativa: "" },
+    clareza: emptyPillar(),
+    autoridade: emptyPillar(),
+    posicionamento: emptyPillar(),
+    conversao: emptyPillar(),
+    relevancia: emptyPillar(),
   };
 }
 
@@ -165,7 +225,7 @@ async function callModel(
   mode: string
 ): Promise<any> {
   const isDiagnostico = mode === "diagnostico";
-  const maxTokens = isDiagnostico ? 1000 : 300;
+  const maxTokens = isDiagnostico ? 2500 : 300;
 
   try {
     let body: any;
@@ -241,16 +301,37 @@ async function callModel(
           pillars: emptyPillars(),
         };
       }
-      // Normalize keys & ensure shape
+      // Normalize keys & ensure shape (with criterios)
+      const clamp = (n: any) =>
+        typeof n === "number" && isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : 0;
+      const normalizeCriterios = (arr: any): Array<{ nome: string; score: number; peso: number; justificativa: string }> => {
+        if (!Array.isArray(arr)) return [];
+        return arr.slice(0, 3).map((c: any) => ({
+          nome: typeof c?.nome === "string" ? c.nome : "",
+          score: clamp(c?.score),
+          peso: typeof c?.peso === "number" && isFinite(c.peso) ? Math.max(0, Math.min(100, Math.round(c.peso))) : 0,
+          justificativa: typeof c?.justificativa === "string" ? c.justificativa : "",
+        }));
+      };
       const normalize = (k: string) => {
         const v = parsed[k];
         if (v && typeof v === "object") {
+          const criterios = normalizeCriterios(v.criterios);
+          // If model didn't compute the weighted score, derive it from criterios
+          let score = clamp(v.score);
+          if (!score && criterios.length === 3) {
+            const totalPeso = criterios.reduce((s, c) => s + c.peso, 0) || 100;
+            score = Math.round(
+              criterios.reduce((s, c) => s + c.score * c.peso, 0) / totalPeso
+            );
+          }
           return {
-            score: typeof v.score === "number" ? Math.max(0, Math.min(100, v.score)) : 0,
+            score,
             justificativa: typeof v.justificativa === "string" ? v.justificativa : "",
+            criterios,
           };
         }
-        return { score: 0, justificativa: "" };
+        return emptyPillar();
       };
       return {
         model: config.name,

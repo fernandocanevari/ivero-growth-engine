@@ -80,12 +80,20 @@ interface AIEngineResult {
   errorMessage?: string;
 }
 
+/* ── Pillar criterion (sub-criterio) ── */
+interface PillarCriterion {
+  nome: string;
+  score: number;
+  peso: number;
+}
+
 /* ── Pillar analysis result ── */
 interface PillarAnalysis {
   name: string;
   mentions: number; // how many AIs scored the brand >= 50 in this pillar
   score: number; // average score across models (0-100)
   radarValue: number; // same as score (0-100)
+  criterios: PillarCriterion[]; // 3 sub-criteria averaged across models
   aiDetails: { model: string; mentioned: boolean; score: number; justificativa: string }[];
 }
 
@@ -169,11 +177,20 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       color: p.radarValue >= 70 ? "emerald" : p.radarValue >= 40 ? "amber" : "red",
       status,
       summary,
+      criterios: p.criterios,
       strengths: p.mentions > 0 ? config.strengths : [config.strengths[0]],
       weaknesses: p.mentions < 3 ? config.weaknesses : undefined,
       recommendation,
     };
   }).filter(Boolean);
+}
+
+/* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
+function getScoreBand(score: number) {
+  if (score < 40) return { label: "Crítico", color: "red" as const };
+  if (score < 60) return { label: "Insuficiente", color: "amber" as const };
+  if (score < 80) return { label: "Sólido", color: "blue" as const };
+  return { label: "Referência", color: "emerald" as const };
 }
 
 /* ── Dynamic phrase for weakest pillar ── */
@@ -866,7 +883,23 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                          <div>
+                          <div className="flex items-baseline gap-2">
+                            {(() => {
+                              const band = getScoreBand(pillar.score);
+                              const bandClass =
+                                band.color === "red"
+                                  ? "bg-red-50 text-red-700 border-red-200/60"
+                                  : band.color === "amber"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                                  : band.color === "blue"
+                                  ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                                  : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                              return (
+                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
+                                  {band.label}
+                                </span>
+                              );
+                            })()}
                             <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                             <span className="text-xs text-muted-foreground">/100</span>
                           </div>
@@ -885,6 +918,47 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           transition={{ duration: 1.2, ease: "easeOut" }}
                         />
                       </div>
+
+                      {/* Como chegamos a esse score (3 sub-critérios ponderados) */}
+                      {pillar.criterios && pillar.criterios.length > 0 && (
+                        <div className="space-y-2.5 rounded-xl bg-muted/30 border border-border/40 p-4">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                            Como chegamos a esse score
+                          </p>
+                          <div className="space-y-2.5">
+                            {pillar.criterios.map((c: PillarCriterion, ci: number) => {
+                              const cBand = getScoreBand(c.score);
+                              const cBar =
+                                cBand.color === "red" ? "bg-red-500"
+                                : cBand.color === "amber" ? "bg-amber-500"
+                                : cBand.color === "blue" ? "bg-sky-500"
+                                : "bg-emerald-500";
+                              return (
+                                <div key={ci} className="space-y-1">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
+                                    <span className="text-muted-foreground font-medium tabular-nums shrink-0">
+                                      {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                    <motion.div
+                                      className={`h-full rounded-full ${cBar}`}
+                                      initial={{ width: 0 }}
+                                      whileInView={{ width: `${c.score}%` }}
+                                      viewport={{ once: true }}
+                                      transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-1">
+                            Score do pilar = média ponderada dos 3 critérios acima.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
@@ -1142,11 +1216,29 @@ export default function PreviewPage() {
             : 0;
           const mentions = aiDetails.filter((a) => a.mentioned).length;
 
+          // Aggregate criterios across models (average score per criterion index, keep nome+peso from first valid)
+          const validModelPillars = modelResults
+            .filter((m) => !m.error && Array.isArray(m.pillars?.[key]?.criterios))
+            .map((m) => m.pillars[key].criterios as Array<{ nome: string; score: number; peso: number }>);
+
+          let criterios: PillarCriterion[] = [];
+          if (validModelPillars.length > 0) {
+            const numCriterios = Math.min(3, ...validModelPillars.map((arr) => arr.length));
+            for (let i = 0; i < numCriterios; i++) {
+              const ref = validModelPillars.find((arr) => arr[i])?.[i];
+              if (!ref) continue;
+              const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
+              const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
+              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso });
+            }
+          }
+
           return {
             name,
             mentions,
             score: avgScore,
             radarValue: avgScore,
+            criterios,
             aiDetails,
           };
         });
