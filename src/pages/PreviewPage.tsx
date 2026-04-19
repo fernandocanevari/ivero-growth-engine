@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
@@ -85,6 +86,7 @@ interface PillarCriterion {
   nome: string;
   score: number;
   peso: number;
+  justificativa?: string;
 }
 
 /* ── Pillar analysis result ── */
@@ -404,7 +406,25 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 
         <div className="flex-1 space-y-4 text-center sm:text-left">
           <div>
-            <p className="text-base font-display font-semibold text-foreground">Score de Presença GEO</p>
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <p className="text-base font-display font-semibold text-foreground">Score de Presença GEO</p>
+              {(() => {
+                const band = getScoreBand(score);
+                const bandClass =
+                  band.color === "red"
+                    ? "bg-red-50 text-red-700 border-red-200/60"
+                    : band.color === "amber"
+                    ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                    : band.color === "blue"
+                    ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                return (
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
+                    {band.label}
+                  </span>
+                );
+              })()}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Índice de influência da sua marca nas IAs generativas</p>
           </div>
           <div className="space-y-3">
@@ -925,37 +945,48 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                             Como chegamos a esse score
                           </p>
-                          <div className="space-y-2.5">
-                            {pillar.criterios.map((c: PillarCriterion, ci: number) => {
-                              const cBand = getScoreBand(c.score);
-                              const cBar =
-                                cBand.color === "red" ? "bg-red-500"
-                                : cBand.color === "amber" ? "bg-amber-500"
-                                : cBand.color === "blue" ? "bg-sky-500"
-                                : "bg-emerald-500";
-                              return (
-                                <div key={ci} className="space-y-1">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
-                                    <span className="text-muted-foreground font-medium tabular-nums shrink-0">
-                                      {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
-                                    </span>
-                                  </div>
-                                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                                    <motion.div
-                                      className={`h-full rounded-full ${cBar}`}
-                                      initial={{ width: 0 }}
-                                      whileInView={{ width: `${c.score}%` }}
-                                      viewport={{ once: true }}
-                                      transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <TooltipProvider delayDuration={150}>
+                            <div className="space-y-2.5">
+                              {pillar.criterios.map((c: PillarCriterion, ci: number) => {
+                                const cBand = getScoreBand(c.score);
+                                const cBar =
+                                  cBand.color === "red" ? "bg-red-500"
+                                  : cBand.color === "amber" ? "bg-amber-500"
+                                  : cBand.color === "blue" ? "bg-sky-500"
+                                  : "bg-emerald-500";
+                                return (
+                                  <Tooltip key={ci}>
+                                    <TooltipTrigger asChild>
+                                      <div className="space-y-1 cursor-help rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/40 transition-colors">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
+                                          <span className="text-muted-foreground font-medium tabular-nums shrink-0">
+                                            {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
+                                          </span>
+                                        </div>
+                                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                          <motion.div
+                                            className={`h-full rounded-full ${cBar}`}
+                                            initial={{ width: 0 }}
+                                            whileInView={{ width: `${c.score}%` }}
+                                            viewport={{ once: true }}
+                                            transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                      {c.justificativa && c.justificativa.trim().length > 0
+                                        ? c.justificativa
+                                        : "Justificativa não disponível para este critério nesta análise."}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })}
+                            </div>
+                          </TooltipProvider>
                           <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-1">
-                            Score do pilar = média ponderada dos 3 critérios acima.
+                            Score do pilar = média ponderada dos 3 critérios acima. Passe o mouse para ver a justificativa da IA.
                           </p>
                         </div>
                       )}
@@ -1219,7 +1250,7 @@ export default function PreviewPage() {
           // Aggregate criterios across models (average score per criterion index, keep nome+peso from first valid)
           const validModelPillars = modelResults
             .filter((m) => !m.error && Array.isArray(m.pillars?.[key]?.criterios))
-            .map((m) => m.pillars[key].criterios as Array<{ nome: string; score: number; peso: number }>);
+            .map((m) => m.pillars[key].criterios as Array<{ nome: string; score: number; peso: number; justificativa?: string }>);
 
           let criterios: PillarCriterion[] = [];
           if (validModelPillars.length > 0) {
@@ -1229,7 +1260,12 @@ export default function PreviewPage() {
               if (!ref) continue;
               const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
               const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
-              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso });
+              // Pick the longest non-empty justificativa across models for this criterion
+              const justificativas = validModelPillars
+                .map((arr) => arr[i]?.justificativa)
+                .filter((j): j is string => typeof j === "string" && j.trim().length > 0);
+              const justificativa = justificativas.sort((a, b) => b.length - a.length)[0];
+              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso, justificativa });
             }
           }
 
