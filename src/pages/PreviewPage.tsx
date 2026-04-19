@@ -1261,12 +1261,16 @@ export default function PreviewPage() {
               if (!ref) continue;
               const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
               const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
+              // Convergence: how many models scored within ±15 of the average for this criterion
+              const CONVERGENCE_TOLERANCE = 15;
+              const agree = scores.filter((s) => Math.abs(s - avg) <= CONVERGENCE_TOLERANCE).length;
+              const consenso = { agree, total: scores.length };
               // Pick the longest non-empty justificativa across models for this criterion
               const justificativas = validModelPillars
                 .map((arr) => arr[i]?.justificativa)
                 .filter((j): j is string => typeof j === "string" && j.trim().length > 0);
               const justificativa = justificativas.sort((a, b) => b.length - a.length)[0];
-              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso, justificativa });
+              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso, justificativa, consenso });
             }
           }
 
