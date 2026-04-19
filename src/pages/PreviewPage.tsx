@@ -406,7 +406,25 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 
         <div className="flex-1 space-y-4 text-center sm:text-left">
           <div>
-            <p className="text-base font-display font-semibold text-foreground">Score de Presença GEO</p>
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <p className="text-base font-display font-semibold text-foreground">Score de Presença GEO</p>
+              {(() => {
+                const band = getScoreBand(score);
+                const bandClass =
+                  band.color === "red"
+                    ? "bg-red-50 text-red-700 border-red-200/60"
+                    : band.color === "amber"
+                    ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                    : band.color === "blue"
+                    ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                return (
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
+                    {band.label}
+                  </span>
+                );
+              })()}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Índice de influência da sua marca nas IAs generativas</p>
           </div>
           <div className="space-y-3">
