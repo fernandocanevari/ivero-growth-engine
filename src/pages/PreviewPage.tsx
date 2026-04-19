@@ -87,6 +87,7 @@ interface PillarCriterion {
   score: number;
   peso: number;
   justificativa?: string;
+  consenso?: { agree: number; total: number }; // how many models agree (within ±15 of avg)
 }
 
 /* ── Pillar analysis result ── */
