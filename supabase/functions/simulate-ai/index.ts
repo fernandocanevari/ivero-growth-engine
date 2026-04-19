@@ -221,7 +221,7 @@ async function callModel(
   mode: string
 ): Promise<any> {
   const isDiagnostico = mode === "diagnostico";
-  const maxTokens = isDiagnostico ? 1000 : 300;
+  const maxTokens = isDiagnostico ? 2500 : 300;
 
   try {
     let body: any;
