@@ -498,6 +498,12 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadData, setLeadData] = useState<{ name: string; email: string; site: string; phone: string }>({
+    name: "",
+    email: "",
+    site: "",
+    phone: "",
+  });
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -511,9 +517,22 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
     try {
       await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
+    setLeadData({ name, email, site, phone });
     setLeadSubmitted(true);
     // Scroll to top so user sees full analysis from the beginning
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Build a query string with the lead data so the signup page can pre-populate fields and create profile
+  const buildSignupUrl = () => {
+    const params = new URLSearchParams({
+      mode: "signup",
+      email: leadData.email,
+      name: leadData.name,
+      site: leadData.site || siteUrl,
+      phone: leadData.phone,
+    });
+    return `/auth?${params.toString()}`;
   };
 
   const handleDownloadPDF = useCallback(async () => {
