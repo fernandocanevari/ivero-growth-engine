@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
-  Lock, Target, Eye, Rocket, Download, Mail,
+  Lock, Unlock, Target, Eye, Rocket, Download, Mail,
   Activity, ShieldCheck, LineChart, MessageSquare, Gauge, Radio,
   Phone,
 } from "lucide-react";
