@@ -87,6 +87,7 @@ interface PillarCriterion {
   score: number;
   peso: number;
   justificativa?: string;
+  consenso?: { agree: number; total: number }; // how many models agree (within ±15 of avg)
 }
 
 /* ── Pillar analysis result ── */
@@ -958,11 +959,25 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                                   <Tooltip key={ci}>
                                     <TooltipTrigger asChild>
                                       <div className="space-y-1 cursor-help rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/40 transition-colors">
-                                        <div className="flex items-center justify-between text-xs">
-                                          <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
-                                          <span className="text-muted-foreground font-medium tabular-nums shrink-0">
-                                            {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
-                                          </span>
+                                        <div className="flex items-center justify-between text-xs gap-2">
+                                          <span className="text-foreground font-medium truncate pr-1">{c.nome}</span>
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            {c.consenso && c.consenso.total > 1 && (() => {
+                                              const ratio = c.consenso.agree / c.consenso.total;
+                                              const consClass =
+                                                ratio >= 0.8 ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                                                : ratio >= 0.5 ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                                                : "bg-amber-50 text-amber-700 border-amber-200/60";
+                                              return (
+                                                <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border tabular-nums ${consClass}`}>
+                                                  {c.consenso.agree}/{c.consenso.total} IAs
+                                                </span>
+                                              );
+                                            })()}
+                                            <span className="text-muted-foreground font-medium tabular-nums">
+                                              {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
+                                            </span>
+                                          </div>
                                         </div>
                                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                                           <motion.div
@@ -975,10 +990,17 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                                         </div>
                                       </div>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-                                      {c.justificativa && c.justificativa.trim().length > 0
-                                        ? c.justificativa
-                                        : "Justificativa não disponível para este critério nesta análise."}
+                                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed space-y-1.5">
+                                      <p>
+                                        {c.justificativa && c.justificativa.trim().length > 0
+                                          ? c.justificativa
+                                          : "Justificativa não disponível para este critério nesta análise."}
+                                      </p>
+                                      {c.consenso && c.consenso.total > 1 && (
+                                        <p className="text-[10px] text-muted-foreground/90 border-t border-border/40 pt-1.5">
+                                          <span className="font-semibold">{c.consenso.agree} de {c.consenso.total} IAs</span> concordam com este score (variação ≤ 15 pontos da média).
+                                        </p>
+                                      )}
                                     </TooltipContent>
                                   </Tooltip>
                                 );
@@ -1260,12 +1282,16 @@ export default function PreviewPage() {
               if (!ref) continue;
               const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
               const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
+              // Convergence: how many models scored within ±15 of the average for this criterion
+              const CONVERGENCE_TOLERANCE = 15;
+              const agree = scores.filter((s) => Math.abs(s - avg) <= CONVERGENCE_TOLERANCE).length;
+              const consenso = { agree, total: scores.length };
               // Pick the longest non-empty justificativa across models for this criterion
               const justificativas = validModelPillars
                 .map((arr) => arr[i]?.justificativa)
                 .filter((j): j is string => typeof j === "string" && j.trim().length > 0);
               const justificativa = justificativas.sort((a, b) => b.length - a.length)[0];
-              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso, justificativa });
+              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso, justificativa, consenso });
             }
           }
 
