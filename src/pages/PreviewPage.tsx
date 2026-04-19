@@ -927,37 +927,48 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                             Como chegamos a esse score
                           </p>
-                          <div className="space-y-2.5">
-                            {pillar.criterios.map((c: PillarCriterion, ci: number) => {
-                              const cBand = getScoreBand(c.score);
-                              const cBar =
-                                cBand.color === "red" ? "bg-red-500"
-                                : cBand.color === "amber" ? "bg-amber-500"
-                                : cBand.color === "blue" ? "bg-sky-500"
-                                : "bg-emerald-500";
-                              return (
-                                <div key={ci} className="space-y-1">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
-                                    <span className="text-muted-foreground font-medium tabular-nums shrink-0">
-                                      {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
-                                    </span>
-                                  </div>
-                                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                                    <motion.div
-                                      className={`h-full rounded-full ${cBar}`}
-                                      initial={{ width: 0 }}
-                                      whileInView={{ width: `${c.score}%` }}
-                                      viewport={{ once: true }}
-                                      transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <TooltipProvider delayDuration={150}>
+                            <div className="space-y-2.5">
+                              {pillar.criterios.map((c: PillarCriterion, ci: number) => {
+                                const cBand = getScoreBand(c.score);
+                                const cBar =
+                                  cBand.color === "red" ? "bg-red-500"
+                                  : cBand.color === "amber" ? "bg-amber-500"
+                                  : cBand.color === "blue" ? "bg-sky-500"
+                                  : "bg-emerald-500";
+                                return (
+                                  <Tooltip key={ci}>
+                                    <TooltipTrigger asChild>
+                                      <div className="space-y-1 cursor-help rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/40 transition-colors">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="text-foreground font-medium truncate pr-2">{c.nome}</span>
+                                          <span className="text-muted-foreground font-medium tabular-nums shrink-0">
+                                            {c.score}/100 <span className="text-muted-foreground/60">· {c.peso}%</span>
+                                          </span>
+                                        </div>
+                                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                          <motion.div
+                                            className={`h-full rounded-full ${cBar}`}
+                                            initial={{ width: 0 }}
+                                            whileInView={{ width: `${c.score}%` }}
+                                            viewport={{ once: true }}
+                                            transition={{ duration: 1, delay: 0.1 + ci * 0.1, ease: "easeOut" }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                      {c.justificativa && c.justificativa.trim().length > 0
+                                        ? c.justificativa
+                                        : "Justificativa não disponível para este critério nesta análise."}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })}
+                            </div>
+                          </TooltipProvider>
                           <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-1">
-                            Score do pilar = média ponderada dos 3 critérios acima.
+                            Score do pilar = média ponderada dos 3 critérios acima. Passe o mouse para ver a justificativa da IA.
                           </p>
                         </div>
                       )}
