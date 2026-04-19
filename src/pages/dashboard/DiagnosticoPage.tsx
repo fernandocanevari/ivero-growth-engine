@@ -301,6 +301,9 @@ export default function DiagnosticoPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Score de Presença GEO
+              <span className={`ml-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${overallBandClass}`}>
+                {overallBand.label}
+              </span>
             </h2>
 
             <div className="flex items-center gap-6">
