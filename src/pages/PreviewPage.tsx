@@ -85,6 +85,7 @@ interface PillarCriterion {
   nome: string;
   score: number;
   peso: number;
+  justificativa?: string;
 }
 
 /* ── Pillar analysis result ── */
