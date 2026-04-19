@@ -1,63 +1,73 @@
 
 
-## Plano: Atualizar Edge Function `simulate-ai` com Prompt do Radar Estratégico IVERO
+## Raciocínio de Score do Radar Estratégico
 
 ### Contexto
 
-Atualmente a edge function `simulate-ai` usa um prompt genérico simples ("Answer the user's question naturally..."). O objetivo é adicionar um novo modo `"diagnostico"` que use o prompt completo do Radar Estratégico IVERO com os 5 pilares, retornando JSON estruturado com scores e justificativas.
+Hoje cada pilar recebe um score 0–100 direto da IA, sem mostrar *como* o número foi formado. Isso fragiliza a defesa do score perante o cliente executivo e dificulta gerar ações de melhoria concretas.
 
-### O que será feito
+### Proposta: 3 sub-critérios ponderados por pilar
 
-#### 1. Atualizar `supabase/functions/simulate-ai/index.ts`
+Cada pilar passa a ser decomposto em **3 sub-critérios objetivos** (já presentes nos prompts atuais), cada um com score 0–100 e peso. O score final do pilar é a média ponderada — calculada pela própria IA.
 
-- **Novo modo `"diagnostico"`**: Quando `mode === "diagnostico"`, usar o prompt completo do Radar Estratégico em vez do prompt genérico
-- **System prompt dedicado**: Incluir os critérios detalhados de cada pilar (Clareza, Autoridade, Posicionamento, Conversão, Relevância) com o formato JSON de resposta esperado
-- **Aumentar `max_tokens`** para ~1000 no modo diagnóstico (o JSON estruturado precisa de mais espaço)
-- **Parsear a resposta**: Extrair o JSON dos 5 pilares da resposta da IA e retorná-lo junto com o `model` name
-- Os modos existentes (`simulator`, `tester`) continuam funcionando exatamente como antes
+| Pilar | Critério 1 (40%) | Critério 2 (35%) | Critério 3 (25%) |
+|---|---|---|---|
+| **Clareza** | Proposta de valor no hero | Compreensão em <5s | Linguagem livre de jargão |
+| **Autoridade** | Provas sociais (cases, números) | Expertise técnica/conteúdo | Prêmios e certificações |
+| **Posicionamento** | Nicho e público-alvo definidos | Diferencial competitivo | Consistência de mensagem |
+| **Conversão** | CTAs claros e visíveis | Oferta/próximo passo | Fluxo de navegação lógico |
+| **Relevância** | Termos do nicho (35%) | Responde perguntas reais (35%) | Cobertura semântica (30%) |
 
-#### 2. Atualizar `src/pages/PreviewPage.tsx`
+### Faixas de interpretação (universal)
 
-- Alterar as chamadas para usar `mode: "diagnostico"` em vez de `"tester"` com prompts individuais por pilar
-- Em vez de 5 chamadas paralelas (uma por pilar), fazer **1 chamada por modelo** que retorna todos os 5 pilares de uma vez
-- Parsear o JSON estruturado retornado para popular o radar e os pillar details com scores reais (0-100) e justificativas da IA
-- Calcular o score geral como média dos 5 pilares
+| Score | Faixa | Significado |
+|---|---|---|
+| 0–39 | **Crítico** | Sinal ausente — IA não infere |
+| 40–59 | **Insuficiente** | Sinal inconsistente — IA hesita |
+| 60–79 | **Sólido** | Sinal claro — IA considera |
+| 80–100 | **Referência** | Sinal forte — IA cita com confiança |
 
-### Detalhes técnicos
+### O que será implementado
 
-**Prompt do sistema (modo diagnóstico):**
-Será o prompt completo "SISTEMA — RADAR ESTRATÉGICO IVERO" fornecido pelo usuário, incluindo a pergunta-guia, os 5 blocos de análise com critérios específicos, e o formato JSON de resposta.
+**1. Edge Function `simulate-ai` (modo `diagnostico`)**
+Atualizar `DIAGNOSTICO_SYSTEM_PROMPT` para retornar, por pilar:
+- `score` final (média ponderada calculada pela IA)
+- `criterios`: array de 3 objetos `{ nome, score, peso, justificativa }`
+- `justificativa` síntese (já existe)
 
-**Fluxo de dados:**
-```text
-Client (PreviewPage)
-  → invoke("simulate-ai", { prompt: siteContent, brandName, mode: "diagnostico" })
-  → Edge Function usa prompt IVERO completo
-  → Cada modelo retorna JSON com 5 pilares { clareza, autoridade, posicionamento, conversao, relevancia }
-  → Client recebe scores + justificativas por modelo
-  → Calcula média entre modelos para score final de cada pilar
-```
-
-**Estrutura de resposta do modo diagnóstico:**
 ```json
 {
-  "results": [
-    {
-      "model": "ChatGPT",
-      "pillars": {
-        "clareza": { "score": 75, "justificativa": "..." },
-        "autoridade": { "score": 40, "justificativa": "..." },
-        "posicionamento": { "score": 60, "justificativa": "..." },
-        "conversao": { "score": 55, "justificativa": "..." },
-        "relevancia": { "score": 70, "justificativa": "..." }
-      }
-    }
-  ]
+  "clareza": {
+    "score": 72,
+    "justificativa": "Proposta clara mas com jargão técnico.",
+    "criterios": [
+      { "nome": "Proposta de valor no hero", "score": 85, "peso": 40, "justificativa": "..." },
+      { "nome": "Compreensão em <5s", "score": 75, "peso": 35, "justificativa": "..." },
+      { "nome": "Linguagem livre de jargão", "score": 50, "peso": 25, "justificativa": "..." }
+    ]
+  }
 }
 ```
 
+**2. `PreviewPage.tsx`**
+- Score do pilar = média entre modelos
+- Salvar `criterios` no `pillarDetails` para uso no dashboard
+- Score geral = média dos 5 pilares (mantém)
+
+**3. `DiagnosticoPage.tsx`**
+Adicionar um bloco discreto **"Como chegamos a esse score"** em cada card de pilar, abaixo da Definição e antes de Análise/Impacto. Visual com 3 mini-barras horizontais:
+
+```text
+Proposta de valor no hero    ████████░░  85   (40%)
+Compreensão em <5s           ███████░░░  75   (35%)
+Linguagem livre de jargão    █████░░░░░  50   (25%)
+```
+
+Mais um **badge de faixa** (Crítico/Insuficiente/Sólido/Referência) ao lado do score do pilar — cor tênue para não competir com Análise e Impacto Competitivo.
+
 ### Arquivos modificados
 
-1. `supabase/functions/simulate-ai/index.ts` — novo prompt e lógica para modo diagnóstico
-2. `src/pages/PreviewPage.tsx` — adaptar chamada e parsing para usar modo diagnóstico
+1. `supabase/functions/simulate-ai/index.ts` — novo prompt com rubrica e formato JSON estendido
+2. `src/pages/PreviewPage.tsx` — armazenar `criterios` em `pillarDetails`
+3. `src/pages/dashboard/DiagnosticoPage.tsx` — bloco de critérios + badge de faixa
 
