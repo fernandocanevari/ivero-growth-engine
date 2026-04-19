@@ -203,13 +203,17 @@ function extractJsonFromContent(content: string): any | null {
   }
 }
 
+function emptyPillar() {
+  return { score: 0, justificativa: "", criterios: [] as Array<{ nome: string; score: number; peso: number; justificativa: string }> };
+}
+
 function emptyPillars() {
   return {
-    clareza: { score: 0, justificativa: "" },
-    autoridade: { score: 0, justificativa: "" },
-    posicionamento: { score: 0, justificativa: "" },
-    conversao: { score: 0, justificativa: "" },
-    relevancia: { score: 0, justificativa: "" },
+    clareza: emptyPillar(),
+    autoridade: emptyPillar(),
+    posicionamento: emptyPillar(),
+    conversao: emptyPillar(),
+    relevancia: emptyPillar(),
   };
 }
 
