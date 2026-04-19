@@ -1220,7 +1220,7 @@ export default function PreviewPage() {
           // Aggregate criterios across models (average score per criterion index, keep nome+peso from first valid)
           const validModelPillars = modelResults
             .filter((m) => !m.error && Array.isArray(m.pillars?.[key]?.criterios))
-            .map((m) => m.pillars[key].criterios as Array<{ nome: string; score: number; peso: number }>);
+            .map((m) => m.pillars[key].criterios as Array<{ nome: string; score: number; peso: number; justificativa?: string }>);
 
           let criterios: PillarCriterion[] = [];
           if (validModelPillars.length > 0) {
@@ -1230,7 +1230,12 @@ export default function PreviewPage() {
               if (!ref) continue;
               const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
               const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
-              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso });
+              // Pick the longest non-empty justificativa across models for this criterion
+              const justificativas = validModelPillars
+                .map((arr) => arr[i]?.justificativa)
+                .filter((j): j is string => typeof j === "string" && j.trim().length > 0);
+              const justificativa = justificativas.sort((a, b) => b.length - a.length)[0];
+              criterios.push({ nome: ref.nome, score: avg, peso: ref.peso, justificativa });
             }
           }
 
