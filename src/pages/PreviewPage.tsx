@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
   AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
-  Lock, Target, Eye, Rocket, Download, Mail,
+  Lock, Unlock, Target, Eye, Rocket, Download, Mail,
   Activity, ShieldCheck, LineChart, MessageSquare, Gauge, Radio,
   Phone,
 } from "lucide-react";
@@ -498,6 +498,12 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadData, setLeadData] = useState<{ name: string; email: string; site: string; phone: string }>({
+    name: "",
+    email: "",
+    site: "",
+    phone: "",
+  });
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -511,9 +517,22 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
     try {
       await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
     } catch (_) { /* silently continue */ }
+    setLeadData({ name, email, site, phone });
     setLeadSubmitted(true);
     // Scroll to top so user sees full analysis from the beginning
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Build a query string with the lead data so the signup page can pre-populate fields and create profile
+  const buildSignupUrl = () => {
+    const params = new URLSearchParams({
+      mode: "signup",
+      email: leadData.email,
+      name: leadData.name,
+      site: leadData.site || siteUrl,
+      phone: leadData.phone,
+    });
+    return `/auth?${params.toString()}`;
   };
 
   const handleDownloadPDF = useCallback(async () => {
@@ -782,6 +801,63 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
             </div>
           </PremiumCard>
         </AnimatedSection>
+
+        {/* ── CTA: Crie sua conta executiva (logo após o Score GEO, só visível depois do lead) ── */}
+        {leadSubmitted && (
+          <AnimatedSection delay={0.08}>
+            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.04] via-card to-card shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.18)]">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-ivero-gradient opacity-70" />
+              <div className="grid md:grid-cols-[1.4fr_1fr] gap-6 p-6 sm:p-7">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">Acesso executivo</span>
+                  </div>
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                    Acompanhe a evolução desta análise no <span className="text-gradient">dashboard executivo</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Sem custo para começar. Crie sua conta com 1 clique e tenha acesso a histórico de re-análises, monitoramento de menções, alertas de queda de score e detalhamento por sub-critério com convergência entre as 5 IAs.
+                  </p>
+                  <ul className="space-y-1.5 pt-1">
+                    {[
+                      "Histórico ilimitado de diagnósticos",
+                      "Rubrica completa por sub-critério (3 fatores ponderados)",
+                      "Convergência entre ChatGPT, Claude, Gemini, Perplexity e GPT-5",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-xs text-foreground/80">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex flex-col justify-center gap-3">
+                  <Button
+                    size="lg"
+                    className="w-full h-12 bg-ivero-gradient hover:opacity-95 text-primary-foreground font-semibold shadow-[0_4px_24px_-6px_hsl(var(--primary)/0.4)] gap-2"
+                    onClick={() => navigate(buildSignupUrl())}
+                  >
+                    Criar conta gratuita
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-12 border-border hover:bg-muted/50 font-medium gap-2"
+                    onClick={() => navigate(`/auth?mode=login&email=${encodeURIComponent(leadData.email)}`)}
+                  >
+                    <Unlock className="w-4 h-4" />
+                    Já sou cliente — Entrar
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground/80 text-center leading-relaxed pt-1">
+                    Cadastro grátis · Sem cartão de crédito · Plano pago libera recursos avançados
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+        )}
 
         {/* ── BLURRED TEASER + LEAD GATE ── */}
         {!leadSubmitted && (
