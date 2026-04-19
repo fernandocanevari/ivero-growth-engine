@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,24 @@ import { ArrowRight, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+
+  // Read prefilled values from query string (lead capture → signup handoff)
+  const prefEmail = searchParams.get("email") || "";
+  const prefName = searchParams.get("name") || "";
+  const prefSite = searchParams.get("site") || "";
+  const prefPhone = searchParams.get("phone") || "";
+  const initialMode = (searchParams.get("mode") || "login").toLowerCase();
+
+  const [isLogin, setIsLogin] = useState(initialMode !== "signup");
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefEmail);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Persist any prefilled lead context so the brand profile can be built right after signup
+  const hasPrefilledLead = Boolean(prefName || prefSite || prefPhone);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -38,15 +50,44 @@ export default function AuthPage() {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: {
+          emailRedirectTo: window.location.origin + "/dashboard",
+          data: {
+            display_name: prefName || email.split("@")[0],
+          },
+        },
       });
       if (error) {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Cadastro realizado!", description: "Verifique seu email para confirmar." });
+        // If we have prefilled lead context AND a session was created (email confirmation off),
+        // persist brand_settings immediately so the dashboard is pre-populated.
+        const userId = data.user?.id;
+        const session = data.session;
+        if (userId && session && hasPrefilledLead) {
+          try {
+            await supabase.from("brand_settings").upsert(
+              {
+                user_id: userId,
+                brand_name: prefName || "",
+                website: prefSite || "",
+                contact_name: prefName || "",
+                contact_email: email,
+                contact_phone: prefPhone || "",
+              } as any,
+              { onConflict: "user_id" }
+            );
+          } catch (_) { /* non-blocking */ }
+        }
+        toast({
+          title: data.session ? "Conta criada!" : "Cadastro realizado!",
+          description: data.session
+            ? "Bem-vindo ao seu dashboard executivo."
+            : "Verifique seu email para confirmar e acessar o dashboard.",
+        });
       }
     }
     setLoading(false);
