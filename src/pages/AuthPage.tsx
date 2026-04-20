@@ -232,6 +232,17 @@ export default function AuthPage() {
             </>
           ) : (
             <>
+              {staleSessionCleared && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
+                  <ArrowLeft className="w-4 h-4 text-amber-600 mt-0.5 shrink-0 rotate-180" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold text-foreground">Sessão anterior encerrada</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Detectamos uma conta diferente conectada neste navegador. Encerramos para você criar sua conta com segurança.
+                    </p>
+                  </div>
+                </div>
+              )}
               {hasPrefilledLead && !isLogin && (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
