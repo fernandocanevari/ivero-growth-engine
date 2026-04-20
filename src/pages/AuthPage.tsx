@@ -52,22 +52,42 @@ export default function AuthPage() {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        // If we just signed up with prefilled lead data, run the upsert before navigating
-        if (event === "SIGNED_IN" && pendingSignupForUserId === session.user.id && hasPrefilledLead) {
-          await persistBrandFromLead(session.user.id, session.user.email || email);
-          pendingSignupForUserId = null;
-        }
+    // If a lead arrives via /auth?email=...&name=... but the browser already
+    // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
+    // auto-redirect them into someone else's dashboard. Force a fresh signup.
+    const cameFromLeadGate = hasPrefilledLead || Boolean(prefEmail);
+    const isMatchingUser = (sessionEmail?: string | null) =>
+      !cameFromLeadGate || (sessionEmail && prefEmail && sessionEmail.toLowerCase() === prefEmail.toLowerCase());
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) return;
+      // If we just signed up with prefilled lead data, run the upsert before navigating
+      if (event === "SIGNED_IN" && pendingSignupForUserId === session.user.id && hasPrefilledLead) {
+        // Defer to avoid awaiting inside the auth callback (prevents deadlocks)
+        setTimeout(() => {
+          persistBrandFromLead(session.user.id, session.user.email || email);
+        }, 0);
+        pendingSignupForUserId = null;
+      }
+      if (isMatchingUser(session.user.email)) {
         navigate("/dashboard", { replace: true });
       }
+      // else: stale session from another user — wait for them to sign up/in
     });
 
     // Expose setter so handleSubmit can mark a pending signup
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/dashboard", { replace: true });
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+      if (cameFromLeadGate && !isMatchingUser(session.user.email)) {
+        // Stale session belongs to a different user — sign out so the lead
+        // sees the actual signup form instead of being thrown into someone
+        // else's dashboard.
+        await supabase.auth.signOut();
+        return;
+      }
+      navigate("/dashboard", { replace: true });
     });
 
     return () => {
