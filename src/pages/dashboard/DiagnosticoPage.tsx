@@ -134,8 +134,8 @@ const pillarDetails = [
   },
 ];
 
-function getWeakestPillarPhrase(): string {
-  const weakest = [...radarData].sort((a, b) => a.value - b.value)[0];
+function getWeakestPillarPhrase(data: { subject: string; value: number }[]): string {
+  const weakest = [...data].sort((a, b) => a.value - b.value)[0];
   const phrases: Record<string, string> = {
     Clareza: "Falta de clareza diminui a compreensão da IA sobre sua proposta de valor.",
     Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
@@ -143,10 +143,8 @@ function getWeakestPillarPhrase(): string {
     Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
     Relevância: "Baixa relevância contextual faz a IA ignorar sua marca em buscas do nicho.",
   };
-  return phrases[weakest.subject] || phrases["Autoridade"];
+  return phrases[weakest?.subject] || phrases["Autoridade"];
 }
-
-const overallScore = Math.round(radarData.reduce((s, d) => s + d.value, 0) / radarData.length);
 
 /* ── Soft blur for locked content ── */
 function SoftBlur({ children, label }: { children: React.ReactNode; label?: string }) {
