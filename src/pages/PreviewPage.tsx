@@ -810,7 +810,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="relative overflow-hidden rounded-3xl my-8 p-8 sm:p-10 lg:p-12 bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#3d1a4e] shadow-[0_20px_80px_-20px_rgba(168,85,247,0.5)] border border-white/10"
+              className="relative overflow-hidden rounded-3xl my-6 p-6 sm:p-7 lg:p-8 bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#3d1a4e] shadow-[0_20px_80px_-20px_rgba(168,85,247,0.5)] border border-white/10"
             >
               {/* Background glow blobs */}
               <div className="absolute -top-32 -left-20 w-96 h-96 rounded-full bg-fuchsia-500/30 blur-3xl pointer-events-none" />
