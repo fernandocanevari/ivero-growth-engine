@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
+import { identifyUser, track } from "@/lib/analytics";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -129,6 +130,16 @@ export default function AuthPage() {
         } else if (userId && hasPrefilledLead) {
           // Otherwise mark this user as pending so the auth state listener runs the upsert
           (window as any).__iveroPendingSignup?.(userId);
+        }
+        // Funnel step 4: signup completed. Alias the lead's email-identity
+        // to the new auth.users.id so the full pre-signup journey stays attached.
+        if (userId) {
+          identifyUser(userId, { email });
+          track("signup_completed", {
+            email,
+            user_id: userId,
+            came_from_lead_gate: hasPrefilledLead,
+          });
         }
         toast({
           title: data.session ? "Conta criada!" : "Cadastro realizado!",

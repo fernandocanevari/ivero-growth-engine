@@ -17,6 +17,7 @@ import {
   Phone,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { identifyLead, track } from "@/lib/analytics";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer,
@@ -552,6 +553,16 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
     } catch (_) { /* silently continue */ }
     setLeadData({ name, email, site: site || "", phone: phone || "" });
     setLeadSubmitted(true);
+
+    // Funnel step 2: preview gate unlocked. Re-identify in case the user
+    // arrived here directly (without going through the hero form).
+    identifyLead(email, { name, source: "preview_unlock" });
+    track("preview_gate_unlocked", {
+      email,
+      score_inicial: geoScore,
+      analyzed_url: siteUrl,
+    });
+
     toast({ title: "Análise completa desbloqueada", description: "Role para ver todos os pilares estratégicos." });
     // Scroll to top so user sees full analysis from the beginning
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -572,7 +583,14 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
   // Always force a clean signup: if any old session exists in localStorage
   // (e.g. admin testing), sign out before navigating so the lead doesn't
   // land on someone else's dashboard.
-  const goToSignup = async () => {
+  const goToSignup = async (ctaOrigin: string = "criar_conta") => {
+    // Funnel step 3: signup started. Track BEFORE signOut so we don't
+    // lose identity (signOut would clear PostHog if we reset there).
+    track("signup_started", {
+      email: leadData.email,
+      cta_origin: ctaOrigin,
+      score_inicial: geoScore,
+    });
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) await supabase.auth.signOut();
@@ -913,7 +931,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   <Button
                     size="lg"
                     className="group w-full h-11 sm:h-12 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.8)] hover:scale-[1.01] transition-all duration-300 gap-2.5"
-                    onClick={goToSignup}
+                    onClick={() => goToSignup("criar_conta")}
                   >
                     Criar minha conta — é grátis
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -1264,7 +1282,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   <Button
                     size="lg"
                     className="group h-11 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.85)] hover:scale-[1.02] transition-all duration-300 gap-2.5"
-                    onClick={goToSignup}
+                    onClick={() => goToSignup("subir_patamar")}
                   >
                     Quero subir de patamar
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
