@@ -24,6 +24,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [staleSessionCleared, setStaleSessionCleared] = useState(false);
 
   // Persist any prefilled lead context so the brand profile can be built right after signup
   const hasPrefilledLead = Boolean(prefName || prefSite || prefPhone);
@@ -85,6 +86,7 @@ export default function AuthPage() {
         // sees the actual signup form instead of being thrown into someone
         // else's dashboard.
         await supabase.auth.signOut();
+        setStaleSessionCleared(true);
         return;
       }
       navigate("/dashboard", { replace: true });
@@ -230,6 +232,17 @@ export default function AuthPage() {
             </>
           ) : (
             <>
+              {staleSessionCleared && (
+                <div className="rounded-xl border border-border bg-muted/40 p-3 flex items-start gap-2">
+                  <ArrowLeft className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0 rotate-180" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold text-foreground">Sessão anterior encerrada</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Detectamos uma conta diferente conectada neste navegador. Encerramos para você criar sua conta com segurança.
+                    </p>
+                  </div>
+                </div>
+              )}
               {hasPrefilledLead && !isLogin && (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />

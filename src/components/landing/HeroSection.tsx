@@ -3,9 +3,30 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+// Same strict schema used in the PreviewPage lead gate — keeps lead quality consistent
+const heroLeadSchema = z.object({
+  name: z.string().trim().min(2, "Informe seu nome completo").max(100, "Nome muito longo"),
+  email: z
+    .string()
+    .trim()
+    .email("E-mail inválido")
+    .max(255, "E-mail muito longo")
+    .refine((v) => /\.[a-z]{2,}$/i.test(v), "E-mail incompleto (ex: nome@empresa.com)"),
+  site: z.string().trim().max(255).optional(),
+  phone: z.string().trim().max(20).optional(),
+});
 
 const HeroSection = () => {
   const [siteUrl, setSiteUrl] = useState("");
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formSite, setFormSite] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const sectionRef = useRef(null);
 
@@ -17,6 +38,41 @@ const HeroSection = () => {
   const glowPurpleY = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const glowPinkY   = useTransform(scrollYProgress, [0, 1], [0, 50]);
   const streakY     = useTransform(scrollYProgress, [0, 1], [0, -40]);
+
+  const handleHeroFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    const parsed = heroLeadSchema.safeParse({
+      name: formName,
+      email: formEmail,
+      site: formSite,
+      phone: formPhone,
+    });
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || "Dados inválidos";
+      toast({ title: "Verifique seus dados", description: firstError, variant: "destructive" });
+      return;
+    }
+
+    setSubmitting(true);
+    const { name, email, site, phone } = parsed.data;
+    try {
+      await supabase
+        .from("leads")
+        .upsert(
+          { email, name, site: site || "", phone: phone || "", source: "hero_form" } as any,
+          { onConflict: "email" }
+        );
+    } catch (_) { /* silently continue — user still gets the diagnostic */ }
+
+    const params = new URLSearchParams();
+    if (site) params.set("url", site);
+    params.set("name", name);
+    params.set("email", email);
+    if (phone) params.set("phone", phone);
+    navigate(`/preview?${params.toString()}`);
+  };
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden bg-ivero-dark">
@@ -105,29 +161,43 @@ const HeroSection = () => {
               </h3>
               <p className="text-ivero-slate-light text-sm mb-6">Preencha os dados abaixo e comece agora.</p>
 
-              <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
+              <form className="flex flex-col gap-4" onSubmit={handleHeroFormSubmit}>
                 <input
                   type="text"
+                  required
+                  maxLength={100}
                   placeholder="Nome"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <input
                   type="email"
+                  required
+                  maxLength={255}
                   placeholder="E-mail corporativo"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <input
-                  type="url"
+                  type="text"
+                  maxLength={255}
                   placeholder="Site da empresa"
+                  value={formSite}
+                  onChange={(e) => setFormSite(e.target.value)}
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <input
                   type="tel"
+                  maxLength={20}
                   placeholder="Celular"
+                  value={formPhone}
+                  onChange={(e) => setFormPhone(e.target.value)}
                   className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
-                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="button" onClick={() => navigate("/preview")}>
-                  Começar agora
+                <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="submit" disabled={submitting}>
+                  {submitting ? "Processando..." : "Começar agora"}
                 </Button>
               </form>
             </div>
