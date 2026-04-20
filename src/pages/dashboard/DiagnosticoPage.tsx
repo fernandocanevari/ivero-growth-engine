@@ -25,6 +25,28 @@ interface PillarCriterion {
   consenso?: { agree: number; total: number };
 }
 
+/* ── Pillar payload type (mirrors PreviewPage `buildPillarDetails` output) ── */
+interface PillarPayload {
+  name: string;
+  subtitle?: string;
+  score: number;
+  status?: string;
+  definition?: string;
+  summary?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendation?: string;
+  criterios?: PillarCriterion[];
+}
+
+const PILLAR_ICON_MAP: Record<string, typeof Eye> = {
+  Clareza: Eye,
+  Autoridade: ShieldCheck,
+  Posicionamento: Rocket,
+  Conversão: Target,
+  Relevância: Sparkles,
+};
+
 /* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
 function getScoreBand(score: number) {
   if (score < 40) return { label: "Crítico", color: "red" as const };
@@ -150,24 +172,48 @@ export default function DiagnosticoPage() {
   // TODO: Replace with real plan status check
   const hasPlan = true;
 
-  // Read latest diagnostic payload (saved by PreviewPage) to enrich pillars with real sub-criteria
-  const [criteriaByPillar, setCriteriaByPillar] = useState<Record<string, PillarCriterion[]>>({});
+  // Read latest diagnostic payload (saved by PreviewPage) to use REAL data
+  const [livePillars, setLivePillars] = useState<PillarPayload[] | null>(null);
+  const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
+  const [liveScore, setLiveScore] = useState<number | null>(null);
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("ivero:lastDiagnostic");
       if (!raw) return;
       const payload = JSON.parse(raw);
-      const map: Record<string, PillarCriterion[]> = {};
-      (payload.pillarDetails || []).forEach((p: { name: string; criterios?: PillarCriterion[] }) => {
-        if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
-          map[p.name] = p.criterios;
-        }
-      });
-      setCriteriaByPillar(map);
+      if (Array.isArray(payload.pillarDetails) && payload.pillarDetails.length > 0) {
+        setLivePillars(payload.pillarDetails);
+      }
+      if (Array.isArray(payload.radar) && payload.radar.length > 0) {
+        setLiveRadar(payload.radar);
+      }
+      if (typeof payload.geoScore === "number") {
+        setLiveScore(payload.geoScore);
+      }
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Merge live data with mock fallback (mock used only if no analysis was run yet)
+  const effectiveRadar = liveRadar ?? radarData;
+  const effectivePillars = (livePillars ?? pillarDetails).map((p) => ({
+    ...p,
+    icon: PILLAR_ICON_MAP[p.name] ?? Eye,
+    subtitle: p.subtitle ?? "",
+    summary: p.summary ?? "",
+    strengths: p.strengths ?? [],
+    weaknesses: p.weaknesses ?? [],
+    recommendation: p.recommendation ?? "",
+    definition: p.definition ?? "",
+    status: p.status ?? "",
+  }));
+  const criteriaByPillar: Record<string, PillarCriterion[]> = {};
+  (livePillars ?? []).forEach((p) => {
+    if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
+      criteriaByPillar[p.name] = p.criterios;
+    }
+  });
 
   const handleReanalyze = () => {
     if (!canReanalyze) return;
