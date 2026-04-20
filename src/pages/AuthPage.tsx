@@ -24,6 +24,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [staleSessionCleared, setStaleSessionCleared] = useState(false);
 
   // Persist any prefilled lead context so the brand profile can be built right after signup
   const hasPrefilledLead = Boolean(prefName || prefSite || prefPhone);
