@@ -31,6 +31,7 @@ import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
 import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
+import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <CookieConsentBanner />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
