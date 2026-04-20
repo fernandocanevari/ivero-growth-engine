@@ -4,27 +4,49 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import OnboardingWizard from "./OnboardingWizard";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { supabase } from "@/integrations/supabase/client";
 
-const SNOOZE_KEY = "ivero_onboarding_snoozed_until";
+const SNOOZE_PREFIX = "ivero_onboarding_snoozed_until:";
+const LEGACY_KEY = "ivero_onboarding_snoozed_until";
 const SNOOZE_MS = 24 * 60 * 60 * 1000; // 24h
 
 export default function DashboardLayout() {
   const { needsOnboarding, isLoading } = useOnboarding();
   const [dismissed, setDismissed] = useState(false);
   const [snoozed, setSnoozed] = useState(true); // default true to avoid flash
+  const [userId, setUserId] = useState<string | null>(null);
 
+  // Resolve current user, then check per-user snooze (and clear legacy global key)
   useEffect(() => {
-    const until = Number(localStorage.getItem(SNOOZE_KEY) || 0);
-    setSnoozed(Date.now() < until);
+    let active = true;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!active) return;
+      // Clear legacy global snooze key from previous version (was shared across users)
+      localStorage.removeItem(LEGACY_KEY);
+      if (!user) {
+        setSnoozed(false);
+        return;
+      }
+      setUserId(user.id);
+      const until = Number(localStorage.getItem(SNOOZE_PREFIX + user.id) || 0);
+      setSnoozed(Date.now() < until);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
+    if (userId) {
+      localStorage.setItem(SNOOZE_PREFIX + userId, String(Date.now() + SNOOZE_MS));
+    }
     setDismissed(true);
   };
 
   const handleComplete = () => {
-    localStorage.removeItem(SNOOZE_KEY);
+    if (userId) {
+      localStorage.removeItem(SNOOZE_PREFIX + userId);
+    }
     setDismissed(true);
   };
 
