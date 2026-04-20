@@ -831,20 +831,20 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
 
-              <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
+              <div className="relative z-10 max-w-3xl mx-auto text-center space-y-4">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
                   <motion.div
                     animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-fuchsia-300" />
+                    <Sparkles className="w-3 h-3 text-fuchsia-300" />
                   </motion.div>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/95">Sua marca merece mais</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/95">Sua marca merece mais</span>
                 </div>
 
                 {/* Headline */}
-                <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-[1.1] tracking-tight">
+                <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-[1.1] tracking-tight">
                   Pare de ser invisível para as IAs.
                   <br />
                   <span className="bg-gradient-to-r from-fuchsia-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
@@ -853,52 +853,52 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                 </h3>
 
                 {/* Sub-copy */}
-                <p className="text-base sm:text-lg text-white/85 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-sm sm:text-base text-white/85 leading-relaxed max-w-2xl mx-auto">
                   Enquanto você lê, seus concorrentes estão sendo recomendados. Crie sua conta agora e comece a virar o jogo em 60 segundos.
                 </p>
 
                 {/* Benefit bullets */}
-                <ul className="space-y-2 pt-2 max-w-md mx-auto text-left">
+                <ul className="space-y-1.5 max-w-md mx-auto text-left">
                   {[
                     "Histórico ilimitado de diagnósticos",
                     "Análise completa de cada pilar estratégico",
                     "Convergência entre ChatGPT, Claude, Gemini, Perplexity e GPT-5",
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm text-white/90">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <li key={item} className="flex items-start gap-2 text-[13px] text-white/90">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
 
                 {/* Trust badges (above CTA) */}
-                <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
                   {["100% grátis", "Sem cartão", "Cancele quando quiser"].map((label) => (
                     <span
                       key={label}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-xs sm:text-sm font-semibold text-emerald-300"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-xs font-semibold text-emerald-300"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> {label}
+                      <CheckCircle2 className="w-3 h-3" /> {label}
                     </span>
                   ))}
                 </div>
 
                 {/* Primary CTA */}
-                <div className="pt-4 space-y-3">
+                <div className="pt-2 space-y-2">
                   <Button
                     size="lg"
-                    className="group w-full h-14 sm:h-16 bg-white hover:bg-white text-[#2d1b4e] hover:text-[#1a0b2e] font-bold text-base sm:text-lg rounded-xl shadow-[0_10px_40px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_15px_50px_-10px_rgba(255,255,255,0.7)] hover:scale-[1.02] transition-all duration-300 gap-3"
+                    className="group w-full h-12 sm:h-13 bg-white hover:bg-white text-[#2d1b4e] hover:text-[#1a0b2e] font-bold text-sm sm:text-base rounded-xl shadow-[0_10px_40px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_15px_50px_-10px_rgba(255,255,255,0.7)] hover:scale-[1.02] transition-all duration-300 gap-3"
                     onClick={() => navigate(buildSignupUrl())}
                   >
                     Criar conta gratuita
-                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
                   <button
                     type="button"
                     onClick={() => navigate(`/auth?mode=login&email=${encodeURIComponent(leadData.email)}`)}
-                    className="inline-flex items-center justify-center gap-2 text-sm text-white/70 hover:text-white transition-colors underline-offset-4 hover:underline"
+                    className="inline-flex items-center justify-center gap-2 text-xs text-white/70 hover:text-white transition-colors underline-offset-4 hover:underline"
                   >
-                    <Unlock className="w-3.5 h-3.5" />
+                    <Unlock className="w-3 h-3" />
                     Já sou cliente — Entrar
                   </button>
                 </div>
