@@ -65,12 +65,12 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 
 /* ── Loading steps ── */
 const loadingSteps = [
-  { icon: Search, text: "Analisando seu site..." },
-  { icon: Globe, text: "Coletando dados estruturais..." },
-  { icon: Brain, text: "Processando informações comportamentais..." },
-  { icon: Bot, text: "Consultando modelos de IA..." },
-  { icon: Zap, text: "Consolidando insights..." },
-  { icon: BarChart3, text: "Gerando diagnóstico final..." },
+  { icon: Search, text: "Investigando como as IAs enxergam sua marca..." },
+  { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini, Claude..." },
+  { icon: Brain, text: "Cruzando seu posicionamento com o dos concorrentes..." },
+  { icon: Bot, text: "Detectando onde sua marca está sendo ignorada..." },
+  { icon: Zap, text: "Calculando o custo da sua invisibilidade..." },
+  { icon: BarChart3, text: "Revelando o caminho para virar referência..." },
 ];
 
 /* ── AI engine result type ── */
@@ -854,7 +854,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                 </ul>
 
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                  {["100% grátis", "Sem cartão", "Cancele quando quiser"].map((label) => (
+                  {["Diagnóstico grátis", "Sem cartão para começar", "Cancele quando quiser"].map((label) => (
                     <span
                       key={label}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-400 text-emerald-950 border border-emerald-300 shadow-[0_4px_14px_-2px_hsl(150_80%_45%/0.55)] text-[11px] sm:text-xs font-bold"
@@ -870,7 +870,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                     className="group w-full h-11 sm:h-12 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.8)] hover:scale-[1.01] transition-all duration-300 gap-2.5"
                     onClick={() => navigate(buildSignupUrl())}
                   >
-                    Criar conta gratuita
+                    Criar minha conta — é grátis
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
                   <button
@@ -1028,9 +1028,6 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                             <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                             <span className="text-xs text-muted-foreground">/100</span>
                           </div>
-                          <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
-                            {pillar.status}
-                          </div>
                         </div>
                       </div>
 
@@ -1044,15 +1041,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                         />
                       </div>
 
-                      {/* Detalhamento por sub-critério é exclusivo do dashboard executivo */}
-                      {pillar.criterios && pillar.criterios.length > 0 && (
-                        <div className="rounded-xl bg-muted/20 border border-dashed border-border/50 p-3">
-                          <p className="text-[11px] text-muted-foreground/80 leading-relaxed flex items-center gap-1.5">
-                            <Lock className="w-3 h-3 shrink-0" />
-                            Detalhamento por sub-critério (rubrica de 3 fatores ponderados, justificativas e convergência entre IAs) disponível no <span className="font-semibold text-foreground/80">dashboard executivo</span>.
-                          </p>
-                        </div>
-                      )}
+                      {/* Sub-criterio details intentionally reserved for the executive dashboard */}
 
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
@@ -1097,7 +1086,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   💜 Queremos você como nosso cliente
                 </p>
                 <p className="text-base text-muted-foreground max-w-md mx-auto">
-                  Sua marca merece aparecer nas respostas das IAs. Fale com a gente e descubra como.
+                  Sua marca merece aparecer nas respostas das IAs.
                 </p>
                 <a
                   href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
@@ -1210,6 +1199,36 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   </Button>
                 </div>
               </PremiumCard>
+            </AnimatedSection>
+
+            {/* ── Final CTA — fechamento estratégico ── */}
+            <AnimatedSection delay={0.75}>
+              <div className="relative overflow-hidden rounded-2xl bg-[#0b0b14] p-6 sm:p-7 max-w-2xl mx-auto text-center">
+                <div
+                  className="absolute inset-0 opacity-60 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.35), transparent 55%), radial-gradient(circle at 75% 85%, hsl(var(--accent) / 0.28), transparent 60%)",
+                  }}
+                />
+                <div className="relative z-10 space-y-4">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-tight tracking-tight">
+                    Sua marca pode dominar as respostas das IAs.
+                    <span className="block text-gradient mt-1">Comece grátis hoje.</span>
+                  </h3>
+                  <Button
+                    size="lg"
+                    className="group h-11 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.85)] hover:scale-[1.02] transition-all duration-300 gap-2.5"
+                    onClick={() => navigate(buildSignupUrl())}
+                  >
+                    Quero subir de patamar
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                  <p className="text-[11px] sm:text-xs text-primary-foreground/65">
+                    Diagnóstico completo grátis · sem cartão
+                  </p>
+                </div>
+              </div>
             </AnimatedSection>
           </>
         )}
