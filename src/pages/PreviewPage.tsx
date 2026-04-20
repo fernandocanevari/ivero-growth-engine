@@ -854,7 +854,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                 </ul>
 
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                  {["100% grátis", "Sem cartão", "Cancele quando quiser"].map((label) => (
+                  {["Diagnóstico grátis", "Sem cartão para começar", "Cancele quando quiser"].map((label) => (
                     <span
                       key={label}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-400 text-emerald-950 border border-emerald-300 shadow-[0_4px_14px_-2px_hsl(150_80%_45%/0.55)] text-[11px] sm:text-xs font-bold"
