@@ -1200,6 +1200,36 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                 </div>
               </PremiumCard>
             </AnimatedSection>
+
+            {/* ── Final CTA — fechamento estratégico ── */}
+            <AnimatedSection delay={0.75}>
+              <div className="relative overflow-hidden rounded-2xl bg-[#0b0b14] p-6 sm:p-7 max-w-2xl mx-auto text-center">
+                <div
+                  className="absolute inset-0 opacity-60 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.35), transparent 55%), radial-gradient(circle at 75% 85%, hsl(var(--accent) / 0.28), transparent 60%)",
+                  }}
+                />
+                <div className="relative z-10 space-y-4">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-tight tracking-tight">
+                    Sua marca pode dominar as respostas das IAs.
+                    <span className="block text-gradient mt-1">Comece grátis hoje.</span>
+                  </h3>
+                  <Button
+                    size="lg"
+                    className="group h-11 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.85)] hover:scale-[1.02] transition-all duration-300 gap-2.5"
+                    onClick={() => navigate(buildSignupUrl())}
+                  >
+                    Quero subir de patamar
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                  <p className="text-[11px] sm:text-xs text-primary-foreground/65">
+                    Diagnóstico completo grátis · sem cartão
+                  </p>
+                </div>
+              </div>
+            </AnimatedSection>
           </>
         )}
       </div>
