@@ -1086,7 +1086,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   💜 Queremos você como nosso cliente
                 </p>
                 <p className="text-base text-muted-foreground max-w-md mx-auto">
-                  Sua marca merece aparecer nas respostas das IAs. Fale com a gente e descubra como.
+                  Sua marca merece aparecer nas respostas das IAs.
                 </p>
                 <a
                   href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
