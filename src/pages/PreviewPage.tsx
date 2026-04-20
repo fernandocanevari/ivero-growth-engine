@@ -1041,15 +1041,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                         />
                       </div>
 
-                      {/* Detalhamento por sub-critério é exclusivo do dashboard executivo */}
-                      {pillar.criterios && pillar.criterios.length > 0 && (
-                        <div className="rounded-xl bg-muted/20 border border-dashed border-border/50 p-3">
-                          <p className="text-[11px] text-muted-foreground/80 leading-relaxed flex items-center gap-1.5">
-                            <Lock className="w-3 h-3 shrink-0" />
-                            Detalhamento por sub-critério (rubrica de 3 fatores ponderados, justificativas e convergência entre IAs) disponível no <span className="font-semibold text-foreground/80">dashboard executivo</span>.
-                          </p>
-                        </div>
-                      )}
+                      {/* Sub-criterio details intentionally reserved for the executive dashboard */}
 
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
