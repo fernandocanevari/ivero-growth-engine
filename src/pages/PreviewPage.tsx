@@ -1028,9 +1028,6 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                             <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                             <span className="text-xs text-muted-foreground">/100</span>
                           </div>
-                          <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
-                            {pillar.status}
-                          </div>
                         </div>
                       </div>
 
