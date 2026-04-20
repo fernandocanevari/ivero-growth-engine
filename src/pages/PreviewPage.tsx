@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
+import { z } from "zod";
+import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,19 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer,
 } from "recharts";
+
+/* ── Lead gate validation schema ── */
+const leadSchema = z.object({
+  name: z.string().trim().min(2, "Informe seu nome completo").max(100, "Nome muito longo"),
+  email: z
+    .string()
+    .trim()
+    .email("E-mail inválido")
+    .max(255, "E-mail muito longo")
+    .refine((v) => /\.[a-z]{2,}$/i.test(v), "E-mail incompleto (ex: nome@empresa.com)"),
+  site: z.string().trim().max(255).optional(),
+  phone: z.string().trim().max(20).optional(),
+});
 
 /* ── Animated section wrapper ── */
 function AnimatedSection({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -509,16 +524,35 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const email = (formData.get("email") as string)?.trim();
-    const name = (formData.get("name") as string)?.trim() || "";
-    const site = (formData.get("site") as string)?.trim() || "";
-    const phone = (formData.get("phone") as string)?.trim() || "";
-    if (!email) return;
+    const rawEmail = (formData.get("email") as string)?.trim() || "";
+    const rawName = (formData.get("name") as string)?.trim() || "";
+    const rawSite = (formData.get("site") as string)?.trim() || "";
+    const rawPhone = (formData.get("phone") as string)?.trim() || "";
+
+    // Strict validation — HTML5 type="email" is too lenient (accepts "joao@gmail")
+    const parsed = leadSchema.safeParse({
+      name: rawName,
+      email: rawEmail,
+      site: rawSite,
+      phone: rawPhone,
+    });
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || "Dados inválidos";
+      toast({ title: "Verifique seus dados", description: firstError, variant: "destructive" });
+      return;
+    }
+
+    const { name, email, site, phone } = parsed.data;
     try {
-      await supabase.from("leads").upsert({ email, name, site, phone, source: "preview_unlock" } as any, { onConflict: "email" });
+      await supabase
+        .from("leads")
+        .upsert({ email, name, site: site || "", phone: phone || "", source: "preview_unlock" } as any, {
+          onConflict: "email",
+        });
     } catch (_) { /* silently continue */ }
-    setLeadData({ name, email, site, phone });
+    setLeadData({ name, email, site: site || "", phone: phone || "" });
     setLeadSubmitted(true);
+    toast({ title: "Análise completa desbloqueada", description: "Role para ver todos os pilares estratégicos." });
     // Scroll to top so user sees full analysis from the beginning
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -533,6 +567,17 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
       phone: leadData.phone,
     });
     return `/auth?${params.toString()}`;
+  };
+
+  // Always force a clean signup: if any old session exists in localStorage
+  // (e.g. admin testing), sign out before navigating so the lead doesn't
+  // land on someone else's dashboard.
+  const goToSignup = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await supabase.auth.signOut();
+    } catch (_) { /* ignore */ }
+    navigate(buildSignupUrl());
   };
 
   const handleDownloadPDF = useCallback(async () => {
@@ -868,7 +913,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   <Button
                     size="lg"
                     className="group w-full h-11 sm:h-12 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.8)] hover:scale-[1.01] transition-all duration-300 gap-2.5"
-                    onClick={() => navigate(buildSignupUrl())}
+                    onClick={goToSignup}
                   >
                     Criar minha conta — é grátis
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -1219,7 +1264,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   <Button
                     size="lg"
                     className="group h-11 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.85)] hover:scale-[1.02] transition-all duration-300 gap-2.5"
-                    onClick={() => navigate(buildSignupUrl())}
+                    onClick={goToSignup}
                   >
                     Quero subir de patamar
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
