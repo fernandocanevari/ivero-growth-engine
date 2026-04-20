@@ -28,16 +28,53 @@ export default function AuthPage() {
   // Persist any prefilled lead context so the brand profile can be built right after signup
   const hasPrefilledLead = Boolean(prefName || prefSite || prefPhone);
 
+  // Helper: persist brand_settings for a freshly signed-up user
+  const persistBrandFromLead = async (userId: string, userEmail: string) => {
+    if (!hasPrefilledLead) return;
+    try {
+      await supabase.from("brand_settings").upsert(
+        {
+          user_id: userId,
+          brand_name: prefName || "",
+          website: prefSite || "",
+          contact_name: prefName || "",
+          contact_email: userEmail,
+          contact_phone: prefPhone || "",
+        } as any,
+        { onConflict: "user_id" }
+      );
+    } catch (err) {
+      console.warn("[AuthPage] Failed to persist brand_settings from lead:", err);
+    }
+  };
+
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/dashboard", { replace: true });
+    // Track whether we just signed up so we can run the brand upsert when the session arrives
+    let pendingSignupForUserId: string | null = null;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        // If we just signed up with prefilled lead data, run the upsert before navigating
+        if (event === "SIGNED_IN" && pendingSignupForUserId === session.user.id && hasPrefilledLead) {
+          await persistBrandFromLead(session.user.id, session.user.email || email);
+          pendingSignupForUserId = null;
+        }
+        navigate("/dashboard", { replace: true });
+      }
     });
+
+    // Expose setter so handleSubmit can mark a pending signup
+    (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/dashboard", { replace: true });
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      delete (window as any).__iveroPendingSignup;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,24 +100,13 @@ export default function AuthPage() {
       if (error) {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
-        // If we have prefilled lead context AND a session was created (email confirmation off),
-        // persist brand_settings immediately so the dashboard is pre-populated.
         const userId = data.user?.id;
-        const session = data.session;
-        if (userId && session && hasPrefilledLead) {
-          try {
-            await supabase.from("brand_settings").upsert(
-              {
-                user_id: userId,
-                brand_name: prefName || "",
-                website: prefSite || "",
-                contact_name: prefName || "",
-                contact_email: email,
-                contact_phone: prefPhone || "",
-              } as any,
-              { onConflict: "user_id" }
-            );
-          } catch (_) { /* non-blocking */ }
+        // If the session was returned synchronously, persist immediately.
+        if (userId && data.session && hasPrefilledLead) {
+          await persistBrandFromLead(userId, email);
+        } else if (userId && hasPrefilledLead) {
+          // Otherwise mark this user as pending so the auth state listener runs the upsert
+          (window as any).__iveroPendingSignup?.(userId);
         }
         toast({
           title: data.session ? "Conta criada!" : "Cadastro realizado!",
