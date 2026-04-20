@@ -1,65 +1,91 @@
 
 
-## Refinos no PreviewPage — alinhar copy ao modelo "conta grátis + dashboard pago"
+## Corrigir lead gate: validação rigorosa + sempre forçar cadastro novo
 
-### Decisão de negócio confirmada
-Não é freemium. Lead cria conta grátis para acessar o **diagnóstico completo + histórico**, mas o **dashboard executivo** (5 pilares aprofundados, monitoramento contínuo, alertas, comparativo) exige assinatura. Os selos precisam refletir isso sem mentir nem assustar.
+### Diagnóstico do problema
+
+Dois bugs combinados causam o comportamento relatado:
+
+**Bug 1 — Sessão persistida vaza para o lead.** O `localStorage` do navegador guarda uma sessão Supabase de outro usuário (provavelmente o admin que testou antes). Quando o lead preenche o gate e clica em qualquer CTA ("Criar minha conta", "Quero subir de patamar"), ele vai pra `/auth?mode=signup&email=...`. Mas a `AuthPage` tem este código (linhas 67–73):
+
+```ts
+supabase.auth.getSession().then(({ data: { session } }) => {
+  if (session) navigate("/dashboard", { replace: true });
+});
+```
+
+Resultado: se já existe sessão de outro usuário, o lead é jogado direto no dashboard daquele cliente, sem nem ver o formulário de cadastro. **Isso é um vazamento de dados grave.**
+
+**Bug 2 — Validação de e-mail fraca no lead gate.** O input usa só `type="email"` do HTML5, que aceita formatos como `joao@gmail` (sem TLD) em alguns navegadores. Sem schema de validação real, leads inválidos entram na base e ainda assim "avançam" no fluxo.
 
 ---
 
-### 1. Cards de Pilar — limpeza visual (`PreviewPage.tsx` ~1031-1033 e 1047-1055)
+### Solução
 
-- Remover o pill duplicado `pillar.status` ("Moderado", "Forte", etc.) — fica só a badge da banda + score `INSUFICIENTE 43/100`.
-- Remover o bloco "Detalhamento por sub-critério (rubrica de 3 fatores ponderados...)" — protege o segredo do modelo.
+#### 1. `PreviewPage.tsx` — validação rigorosa do lead gate
 
-### 2. CTA WhatsApp (~1100)
-Remover **"Fale com a gente e descubra como."** Manter apenas: *"Sua marca merece aparecer nas respostas das IAs."*
+Adicionar schema **Zod** dentro de `handleLeadSubmit`:
 
-### 3. CTA dark principal — corrigir promessa enganosa
-
-Trocar selos atuais por copy honesto e ainda atraente:
-
-| Antes (engana) | Depois (verdadeiro + sedutor) |
-|---|---|
-| ✓ 100% grátis | ✓ **Diagnóstico grátis** |
-| ✓ Sem cartão | ✓ **Sem cartão para começar** |
-| ✓ Cancele quando quiser | ✓ **Cancele quando quiser** |
-
-Subtítulo do botão muda de "Criar conta gratuita" para **"Criar minha conta — é grátis"** (deixa claro que a *conta* é grátis, não tudo).
-
-### 4. Loading screen — copy emocional (linhas 67-74)
-
-Substituir os 6 textos técnicos por narrativa de tensão/desejo (ícones permanecem):
-
-| # | Atual | Novo |
-|---|---|---|
-| 1 | Analisando seu site... | **Investigando como as IAs enxergam sua marca...** |
-| 2 | Coletando dados estruturais... | **Mapeando sua presença em ChatGPT, Gemini, Claude...** |
-| 3 | Processando informações comportamentais... | **Cruzando seu posicionamento com o dos concorrentes...** |
-| 4 | Consultando modelos de IA... | **Detectando onde sua marca está sendo ignorada...** |
-| 5 | Consolidando insights... | **Calculando o custo da sua invisibilidade...** |
-| 6 | Gerando diagnóstico final... | **Revelando o caminho para virar referência...** |
-
-### 5. Novo CTA final — fechamento estratégico (após linha 1213)
-
-Bloco compacto dark gradient (mesma identidade do CTA principal, porém **menor**: `p-5`, headline `text-xl/2xl`, botão `h-11`, max-w-2xl centralizado). Aparece como última coisa do report.
-
-```text
-┌─────────────────────────────────────────────────────┐
-│  Sua marca pode dominar as respostas das IAs.       │
-│  Comece grátis hoje.                                │
-│                                                     │
-│       [ Quero subir de patamar  → ]                 │
-│                                                     │
-│  Diagnóstico completo grátis · sem cartão           │
-└─────────────────────────────────────────────────────┘
+```ts
+const leadSchema = z.object({
+  name: z.string().trim().min(2, "Informe seu nome completo").max(100),
+  email: z.string().trim().email("E-mail inválido").max(255)
+    .refine(v => /\.[a-z]{2,}$/i.test(v), "E-mail incompleto (ex: nome@empresa.com)"),
+  site: z.string().trim().max(255).optional(),
+  phone: z.string().trim().max(20).optional(),
+});
 ```
 
-- Headline: **"Sua marca pode dominar as respostas das IAs."** + linha 2 em gradiente magenta: *"Comece grátis hoje."*
-- Botão branco sólido sobre fundo escuro: **"Quero subir de patamar"** (seta com slide-right no hover) → `/auth?intent=signup`
-- Microcopy abaixo do botão: *"Diagnóstico completo grátis · sem cartão"*
+Se a validação falhar, mostrar o erro com `toast({ variant: "destructive" })` e **não** marcar `leadSubmitted = true`. O formulário continua visível para correção.
 
-### Arquivo modificado
+#### 2. `PreviewPage.tsx` — limpar sessão antiga ao desbloquear o gate
 
-- `src/pages/PreviewPage.tsx` — 5 edições pontuais (linhas 67-74, 1031-1033, 1047-1055, 1100, selos do CTA dark) + inserção de novo bloco final após 1213.
+Antes de redirecionar para `/auth`, garantir que **qualquer sessão antiga seja encerrada** para que o lead chegue à página de cadastro limpa. Nova função helper:
+
+```ts
+const goToSignup = async () => {
+  // Se houver uma sessão antiga (admin de teste, outro user), faz logout
+  // antes de mandar para /auth — assim o lead vê o formulário de cadastro
+  // em vez de ser jogado no dashboard alheio.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) await supabase.auth.signOut();
+  navigate(buildSignupUrl());
+};
+```
+
+Trocar todos os `navigate(buildSignupUrl())` da `PreviewPage` (botão "Criar minha conta — é grátis", "Quero subir de patamar" e qualquer outro CTA dark) por `goToSignup()`.
+
+#### 3. `AuthPage.tsx` — não auto-redirecionar quando vier do lead gate
+
+Hoje, se a página `/auth` é aberta com **sessão pré-existente**, ela manda direto pro dashboard. Isso está correto para usuário voltando, mas **errado quando há `?mode=signup&email=...&name=...`** vindo do lead gate (significa que é alguém novo querendo se cadastrar).
+
+Mudança no `useEffect` da `AuthPage` (linhas 65–80):
+
+```ts
+const cameFromLeadGate = Boolean(prefEmail || prefName || prefSite || prefPhone);
+
+supabase.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    if (cameFromLeadGate && session.user.email !== prefEmail) {
+      // Lead diferente do user logado → faz logout para mostrar form de cadastro
+      await supabase.auth.signOut();
+      return;
+    }
+    navigate("/dashboard", { replace: true });
+  }
+});
+```
+
+Mesma proteção no `onAuthStateChange`: só redirecionar para `/dashboard` se o e-mail da sessão bater com o pré-preenchido (ou se não houver pré-preenchimento).
+
+#### 4. `PreviewPage.tsx` — feedback de sucesso após desbloqueio
+
+Após `setLeadSubmitted(true)`, mostrar um toast verde discreto: *"Análise completa desbloqueada"*. Isso confirma a ação para o lead, evitando a sensação de "aconteceu algo estranho" que o usuário relatou.
+
+---
+
+### Arquivos modificados
+
+- `src/pages/PreviewPage.tsx` — validação Zod no `handleLeadSubmit`, helper `goToSignup` que faz logout antes de navegar, toast de sucesso
+- `src/pages/AuthPage.tsx` — bloquear auto-redirect quando lead novo chegar com sessão de outro user
 
