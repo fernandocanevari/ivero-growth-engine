@@ -806,88 +806,66 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
         {leadSubmitted && (
           <AnimatedSection delay={0.08}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
+              initial={{ opacity: 0, scale: 0.97 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="relative overflow-hidden rounded-3xl my-6 p-6 sm:p-7 lg:p-8 bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#3d1a4e] shadow-[0_20px_80px_-20px_rgba(168,85,247,0.5)] border border-white/10"
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="relative overflow-hidden rounded-[1.75rem] my-5 p-5 sm:p-6 bg-gradient-to-br from-ivero-dark via-ivero-purple to-accent shadow-[0_18px_56px_-22px_hsl(var(--accent)/0.45)] border border-primary-foreground/10"
             >
-              {/* Background glow blobs */}
-              <div className="absolute -top-32 -left-20 w-96 h-96 rounded-full bg-fuchsia-500/30 blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full bg-purple-600/30 blur-3xl pointer-events-none" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-32 bg-gradient-to-r from-transparent via-fuchsia-500/10 to-transparent blur-2xl pointer-events-none" />
+              <div className="absolute -top-20 -left-12 w-56 h-56 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-20 -right-12 w-56 h-56 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
+              <div className="absolute inset-x-10 top-1/2 h-20 -translate-y-1/2 bg-ivero-gradient-soft blur-2xl pointer-events-none" />
 
-              {/* Animated border glow */}
               <motion.div
-                className="absolute inset-0 rounded-3xl pointer-events-none"
+                className="absolute inset-0 rounded-[1.75rem] pointer-events-none"
                 style={{
-                  background: "linear-gradient(135deg, rgba(232,121,249,0.4), transparent 40%, transparent 60%, rgba(168,85,247,0.4))",
+                  background: "linear-gradient(135deg, hsl(var(--accent) / 0.35), transparent 42%, transparent 58%, hsl(var(--primary) / 0.35))",
                   WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
                   WebkitMaskComposite: "xor",
                   maskComposite: "exclude",
-                  padding: "2px",
+                  padding: "1px",
                 }}
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
 
-              <div className="relative z-10 max-w-3xl mx-auto text-center space-y-4">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <Sparkles className="w-3 h-3 text-fuchsia-300" />
-                  </motion.div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/95">Sua marca merece mais</span>
-                </div>
-
-                {/* Headline */}
-                <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-[1.1] tracking-tight">
+              <div className="relative z-10 max-w-2xl mx-auto text-center space-y-3">
+                <h3 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-primary-foreground leading-[1.08] tracking-tight">
                   Pare de ser invisível para as IAs.
-                  <br />
-                  <span className="bg-gradient-to-r from-fuchsia-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-                    Domine sua categoria.
-                  </span>
+                  <span className="block text-gradient mt-1">Domine sua categoria.</span>
                 </h3>
 
-                {/* Sub-copy */}
-                <p className="text-sm sm:text-base text-white/85 leading-relaxed max-w-2xl mx-auto">
-                  Enquanto você lê, seus concorrentes estão sendo recomendados. Crie sua conta agora e comece a virar o jogo em 60 segundos.
-                </p>
-
-                {/* Benefit bullets */}
-                <ul className="space-y-1.5 max-w-md mx-auto text-left">
+                <ul className="grid gap-2 sm:grid-cols-2 max-w-xl mx-auto text-left">
                   {[
                     "Histórico ilimitado de diagnósticos",
                     "Análise completa de cada pilar estratégico",
-                    "Convergência entre ChatGPT, Claude, Gemini, Perplexity e GPT-5",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-[13px] text-white/90">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    "E muito mais para sua marca ficar no topo nas IAs",
+                  ].map((item, index) => (
+                    <li
+                      key={item}
+                      className={`flex items-start gap-2 rounded-xl border border-primary-foreground/10 bg-primary-foreground/10 px-3 py-2 text-xs sm:text-[13px] text-primary-foreground/90 ${index === 2 ? "sm:col-span-2" : ""}`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
 
-                {/* Trust badges (above CTA) */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
                   {["100% grátis", "Sem cartão", "Cancele quando quiser"].map((label) => (
                     <span
                       key={label}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-xs font-semibold text-emerald-300"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-foreground/12 border border-primary-foreground/20 text-[11px] font-semibold text-primary-foreground"
                     >
                       <CheckCircle2 className="w-3 h-3" /> {label}
                     </span>
                   ))}
                 </div>
 
-                {/* Primary CTA */}
-                <div className="pt-2 space-y-2">
+                <div className="pt-1 space-y-1.5">
                   <Button
                     size="lg"
-                    className="group w-full h-12 sm:h-13 bg-white hover:bg-white text-[#2d1b4e] hover:text-[#1a0b2e] font-bold text-sm sm:text-base rounded-xl shadow-[0_10px_40px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_15px_50px_-10px_rgba(255,255,255,0.7)] hover:scale-[1.02] transition-all duration-300 gap-3"
+                    className="group w-full h-11 sm:h-12 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.8)] hover:scale-[1.01] transition-all duration-300 gap-2.5"
                     onClick={() => navigate(buildSignupUrl())}
                   >
                     Criar conta gratuita
@@ -896,7 +874,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   <button
                     type="button"
                     onClick={() => navigate(`/auth?mode=login&email=${encodeURIComponent(leadData.email)}`)}
-                    className="inline-flex items-center justify-center gap-2 text-xs text-white/70 hover:text-white transition-colors underline-offset-4 hover:underline"
+                    className="inline-flex items-center justify-center gap-1.5 text-[11px] sm:text-xs text-primary-foreground/75 hover:text-primary-foreground transition-colors underline-offset-4 hover:underline"
                   >
                     <Unlock className="w-3 h-3" />
                     Já sou cliente — Entrar
