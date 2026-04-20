@@ -1,66 +1,62 @@
 
 
-## Implementar PostHog Cloud EU + 4 eventos do funil de conversão
+## Implementação PostHog EU + 4 eventos do funil de conversão
 
-### Pré-requisito (do seu lado)
-1. Criar conta em https://eu.posthog.com (região **EU/Frankfurt**)
-2. Criar projeto "Ivero"
-3. Copiar a **Project API Key** (formato `phc_...`) e colar no chat
+### Configuração confirmada
+- **Região**: EU Cloud (Frankfurt) — endpoint `https://eu.i.posthog.com`
+- **Project token**: `phc_kyHRgaNd3gBskVfVTodQUVLfzqLfjPNroAEMDHj2gUvn`
+- **Conformidade**: GDPR/LGPD-ready
 
-### O que vou implementar
+### Arquivos a criar/modificar
 
-#### 1. Instalar e inicializar o PostHog
-- Adicionar dependência `posthog-js`
-- Criar `src/lib/analytics.ts` com inicialização única usando endpoint EU (`https://eu.i.posthog.com`)
-- Inicializar no `src/main.tsx` antes do `createRoot`
-- Configurações: `capture_pageview: true`, `persistence: 'localStorage+cookie'`, `autocapture: false` (controle manual para evitar ruído)
+**1. `src/lib/analytics.ts`** (novo)
+Helpers tipados encapsulando `posthog-js`:
+- `initAnalytics()` — chamado uma vez no boot
+- `track(event, properties)` — dispara evento
+- `identifyLead(email, traits)` — vincula jornada pré-cadastro pelo e-mail
+- `identifyUser(userId, traits)` — vincula ao `auth.users.id` pós-signup
+- `resetIdentity()` — limpa no logout
 
-#### 2. Helper de tracking tipado
-Funções utilitárias em `src/lib/analytics.ts`:
-- `track(event, properties)` — envia evento
-- `identifyLead(email, traits)` — vincula eventos a um lead pelo e-mail (pseudo-anônimo até signup)
-- `identifyUser(userId, traits)` — vincula ao `auth.users.id` após cadastro completo
-- `resetIdentity()` — chama no logout
+Config: `api_host: 'https://eu.i.posthog.com'`, `autocapture: false`, `capture_pageview: true`, `persistence: 'localStorage+cookie'`, `respect_dnt: true`. Em DEV, opt-out automático para não poluir métricas.
 
-#### 3. Os 4 eventos do funil
+**2. `src/main.tsx`**
+Chama `initAnalytics()` antes do `createRoot`.
 
-| Evento | Onde dispara | Properties enviadas |
-|---|---|---|
-| `hero_form_submitted` | `HeroSection.tsx` após validação Zod OK e antes de navegar para `/preview` | `email`, `name`, `site`, `has_phone`, `source: 'hero_form'` |
-| `preview_gate_unlocked` | `PreviewPage.tsx` em `handleLeadSubmit` após validação OK e `setLeadSubmitted(true)` | `email`, `score_inicial`, `analyzed_url` |
-| `signup_started` | `PreviewPage.tsx` dentro do helper `goToSignup` antes do `navigate` | `email`, `cta_origin` (qual botão: "criar conta", "subir patamar", etc.) |
-| `signup_completed` | `AuthPage.tsx` após `supabase.auth.signUp` com sucesso | `email`, `user_id`, `came_from_lead_gate: boolean` |
+**3. `src/components/landing/HeroSection.tsx`**
+No submit do formulário (após validação Zod já existente):
+```ts
+identifyLead(email);
+track('hero_form_submitted', { email, name, site, has_phone: !!phone, source: 'hero_form' });
+```
 
-Em cada evento, chamar `identifyLead(email)` antes do `track()` para que o PostHog conecte os 4 eventos como **uma jornada única**.
+**4. `src/pages/PreviewPage.tsx`** (2 eventos)
+- Em `handleLeadSubmit` após gate desbloqueado: `track('preview_gate_unlocked', { email, score_inicial, analyzed_url })`
+- No helper `goToSignup` antes do navigate: `track('signup_started', { email, cta_origin })` — passa origem do CTA como argumento (ex: `'criar_conta'`, `'subir_patamar'`)
 
-#### 4. Logout limpa identidade
-No botão de logout (provavelmente `DashboardSidebar.tsx`), chamar `resetIdentity()` após `supabase.auth.signOut()` — evita misturar sessões de leads diferentes no mesmo navegador.
+**5. `src/pages/AuthPage.tsx`**
+Após `supabase.auth.signUp` bem-sucedido:
+```ts
+identifyUser(user.id, { email });
+track('signup_completed', { email, user_id: user.id, came_from_lead_gate });
+```
 
-#### 5. Configurar funil no painel PostHog (instruções pós-implementação)
-Vou te mandar prints/passo-a-passo para criar o funil:
-- PostHog → Insights → New → Funnel
-- Steps: `hero_form_submitted` → `preview_gate_unlocked` → `signup_started` → `signup_completed`
-- Conversion window: 7 dias
-- Breakdown opcional por `source` ou `cta_origin`
+**6. `src/components/dashboard/DashboardSidebar.tsx`**
+Após `supabase.auth.signOut()` no botão de logout: `resetIdentity()`.
 
-### Detalhes técnicos
-- **LGPD**: PostHog EU + `respect_dnt: true` (respeita "Do Not Track" do navegador). Sem cookie banner agora — adicionamos depois se necessário.
-- **Chave pública**: `phc_...` é segura no bundle do cliente (igual GA). Vou colocar como constante em `src/lib/analytics.ts` (não precisa de `.env` nem secret de build).
-- **Sem PII sensível**: enviamos e-mail e nome (já temos consentimento implícito ao preencher form). NUNCA enviamos senha, telefone completo, CPF.
-- **Dev vs prod**: PostHog inicializa em ambos, mas com `loaded: (ph) => { if (import.meta.env.DEV) ph.opt_out_capturing() }` para não poluir métricas durante desenvolvimento.
+**7. `package.json`**
+Adiciona `posthog-js` (~250KB, lazy-loaded internamente).
 
-### Arquivos modificados
-- `package.json` — adiciona `posthog-js`
-- `src/lib/analytics.ts` — **novo**, init + helpers `track`, `identifyLead`, `identifyUser`, `resetIdentity`
-- `src/main.tsx` — chama `initAnalytics()` antes do render
-- `src/components/landing/HeroSection.tsx` — `track('hero_form_submitted', ...)` no submit
-- `src/pages/PreviewPage.tsx` — `track('preview_gate_unlocked', ...)` no gate, `track('signup_started', ...)` no `goToSignup`
-- `src/pages/AuthPage.tsx` — `track('signup_completed', ...)` após signup OK + `identifyUser`
-- `src/components/dashboard/DashboardSidebar.tsx` — `resetIdentity()` no logout
+### Pós-implementação — instruções para você
 
-### Quando você voltar
-Cole a chave assim:
-> "Aqui está: `phc_aB3xK9...`"
+Vou te enviar passo-a-passo para criar o funil no painel PostHog EU:
+1. **Insights → New insight → Funnel**
+2. Steps na ordem: `hero_form_submitted` → `preview_gate_unlocked` → `signup_started` → `signup_completed`
+3. Conversion window: **7 dias**
+4. Breakdown opcional por `cta_origin` para descobrir qual botão converte mais
 
-Aprovo o plano agora e implemento na hora seguinte.
+### Por que essa abordagem
+- **LGPD**: dados em Frankfurt, `respect_dnt` ativo, sem PII sensível
+- **Jornada unificada**: `identifyLead(email)` antes do signup conecta lead anônimo ao user logado depois
+- **DEV silencioso**: sua máquina não polui métricas
+- **Reversível**: 1 linha em `analytics.ts` desliga tudo se necessário
 
