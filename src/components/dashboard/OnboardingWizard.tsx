@@ -32,7 +32,7 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
 };
 
-export default function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
+export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete: () => void; onDismiss?: () => void }) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [answers, setAnswers] = useState(["", "", ""]);
@@ -149,7 +149,7 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
                 <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
               </Button>
             )}
-            <Button variant="link" size="sm" className="text-muted-foreground" onClick={onComplete}>
+            <Button variant="link" size="sm" className="text-muted-foreground" onClick={onDismiss ?? onComplete}>
               Responder mais tarde
             </Button>
           </div>
