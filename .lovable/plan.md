@@ -1,88 +1,65 @@
 
 
-## Transformar CTA pós-Score em bloco de alto impacto visual
+## Refinos no PreviewPage — alinhar copy ao modelo "conta grátis + dashboard pago"
 
-### Diagnóstico do problema atual
+### Decisão de negócio confirmada
+Não é freemium. Lead cria conta grátis para acessar o **diagnóstico completo + histórico**, mas o **dashboard executivo** (5 pilares aprofundados, monitoramento contínuo, alertas, comparativo) exige assinatura. Os selos precisam refletir isso sem mentir nem assustar.
 
-O bloco atual usa:
-- Fundo `bg-gradient-to-br from-primary/[0.04] via-card to-card` → quase branco, mistura com os cards de diagnóstico ao redor
-- Borda fina `border-primary/20` → idêntica aos cards de pilares
-- Linha de 2px no topo → discreta demais
-- Tipografia 2xl → mesmo tamanho dos títulos de seção do diagnóstico
-- Layout 2 colunas equilibradas → parece "mais um card informativo"
+---
 
-Resultado: o olho do usuário escaneia e ignora, achando que é continuação do diagnóstico.
+### 1. Cards de Pilar — limpeza visual (`PreviewPage.tsx` ~1031-1033 e 1047-1055)
 
-### Nova direção visual: "interrupção"
+- Remover o pill duplicado `pillar.status` ("Moderado", "Forte", etc.) — fica só a badge da banda + score `INSUFICIENTE 43/100`.
+- Remover o bloco "Detalhamento por sub-critério (rubrica de 3 fatores ponderados...)" — protege o segredo do modelo.
 
-A regra de CTA forte é **quebrar o padrão** da página. Como o PreviewPage é Premium Light (branco/cards claros), o CTA precisa virar uma **ilha escura com gradiente Ivero vivo**, contrastando com tudo ao redor.
+### 2. CTA WhatsApp (~1100)
+Remover **"Fale com a gente e descubra como."** Manter apenas: *"Sua marca merece aparecer nas respostas das IAs."*
 
-### Mudanças específicas
+### 3. CTA dark principal — corrigir promessa enganosa
 
-**1. Fundo dramático (inversão de tema)**
-- Trocar fundo claro por `bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#3d1a4e]` (deep purple → magenta hint)
-- Adicionar mesh/glow: 2 blobs radiais magenta + roxo no fundo (blur-3xl, opacity 40%)
-- Borda externa: `border-2 border-transparent` com `bg-clip` para gradiente animado magenta→roxo
+Trocar selos atuais por copy honesto e ainda atraente:
 
-**2. Escala e respiração**
-- Padding interno generoso: `p-8 sm:p-10 lg:p-12` (era p-6/7)
-- Margem vertical extra: `my-8` para destacar do bloco anterior/próximo
-- Adicionar `shadow-[0_20px_80px_-20px_rgba(168,85,247,0.5)]` (glow magenta abaixo)
+| Antes (engana) | Depois (verdadeiro + sedutor) |
+|---|---|
+| ✓ 100% grátis | ✓ **Diagnóstico grátis** |
+| ✓ Sem cartão | ✓ **Sem cartão para começar** |
+| ✓ Cancele quando quiser | ✓ **Cancele quando quiser** |
 
-**3. Tipografia agressiva**
-- Headline: `text-3xl sm:text-4xl lg:text-5xl` (antes 2xl), branco puro
-- Manter "Domine sua categoria" em gradiente magenta vivo
-- Badge superior maior, com pulse animado no ícone Sparkles
+Subtítulo do botão muda de "Criar conta gratuita" para **"Criar minha conta — é grátis"** (deixa claro que a *conta* é grátis, não tudo).
 
-**4. Botão CTA monumental**
-- Botão "Criar conta gratuita": altura `h-14 sm:h-16`, fonte `text-base sm:text-lg`, fundo branco sólido com texto roxo escuro (inversão para contraste máximo dentro do bloco escuro)
-- Adicionar hover: `scale-105` + glow expandido
-- Seta animada (slide-right no hover)
-- Botão "Já sou cliente": ghost transparente com borda branca sutil, secundário visualmente
+### 4. Loading screen — copy emocional (linhas 67-74)
 
-**5. Selos de confiança em destaque**
-- Mover os 3 selos (100% grátis / Sem cartão / Cancele quando quiser) para **acima dos botões**, em pílulas com fundo `bg-emerald-500/15 border border-emerald-400/40`, texto verde claro `text-emerald-300`
-- Tamanho maior: `text-xs sm:text-sm`, padding `px-3 py-1.5`
-- Centralizadas e visíveis antes de qualquer clique
+Substituir os 6 textos técnicos por narrativa de tensão/desejo (ícones permanecem):
 
-**6. Urgência sutil (sem cair em hype)**
-- Manter copy "Enquanto você lê, seus concorrentes estão sendo recomendados…" mas com `text-white/85` para legibilidade no fundo escuro
-- Lista de bullets: ícones CheckCircle2 em verde brilhante (`text-emerald-400`), texto branco/85
+| # | Atual | Novo |
+|---|---|---|
+| 1 | Analisando seu site... | **Investigando como as IAs enxergam sua marca...** |
+| 2 | Coletando dados estruturais... | **Mapeando sua presença em ChatGPT, Gemini, Claude...** |
+| 3 | Processando informações comportamentais... | **Cruzando seu posicionamento com o dos concorrentes...** |
+| 4 | Consultando modelos de IA... | **Detectando onde sua marca está sendo ignorada...** |
+| 5 | Consolidando insights... | **Calculando o custo da sua invisibilidade...** |
+| 6 | Gerando diagnóstico final... | **Revelando o caminho para virar referência...** |
 
-**7. Animação de entrada**
-- Já está dentro de `AnimatedSection` — adicionar `whileInView` scale de 0.96 → 1 + glow pulsante contínuo na borda
+### 5. Novo CTA final — fechamento estratégico (após linha 1213)
 
-### Layout final (wireframe)
+Bloco compacto dark gradient (mesma identidade do CTA principal, porém **menor**: `p-5`, headline `text-xl/2xl`, botão `h-11`, max-w-2xl centralizado). Aparece como última coisa do report.
 
 ```text
-┌──────────────────────────────────────────────────────┐
-│ [glow magenta] [glow roxo] (background mesh)         │
-│                                                      │
-│  ✨ SUA MARCA MERECE MAIS                            │
-│                                                      │
-│  Pare de ser invisível para as IAs.                  │
-│  Domine sua categoria.          ← 4xl/5xl branco     │
-│                                                      │
-│  Enquanto você lê, seus concorrentes…                │
-│                                                      │
-│  ✓ Histórico ilimitado                               │
-│  ✓ Análise completa de cada pilar                    │
-│  ✓ Convergência ChatGPT, Claude, Gemini…             │
-│                                                      │
-│   [✓ 100% grátis] [✓ Sem cartão] [✓ Cancele]        │
-│                                                      │
-│   ┌────────────────────────────────────────────┐    │
-│   │   Criar conta gratuita        →            │    │ ← branco, h-16
-│   └────────────────────────────────────────────┘    │
-│         Já sou cliente — Entrar                      │ ← ghost branco
-│                                                      │
-└──────────────────────────────────────────────────────┘
-   (shadow magenta glow embaixo)
+┌─────────────────────────────────────────────────────┐
+│  Sua marca pode dominar as respostas das IAs.       │
+│  Comece grátis hoje.                                │
+│                                                     │
+│       [ Quero subir de patamar  → ]                 │
+│                                                     │
+│  Diagnóstico completo grátis · sem cartão           │
+└─────────────────────────────────────────────────────┘
 ```
 
-Layout passa de 2 colunas para **1 coluna centralizada** (max-w-3xl mx-auto) — força o olho a percorrer headline → benefícios → botão sem distração lateral.
+- Headline: **"Sua marca pode dominar as respostas das IAs."** + linha 2 em gradiente magenta: *"Comece grátis hoje."*
+- Botão branco sólido sobre fundo escuro: **"Quero subir de patamar"** (seta com slide-right no hover) → `/auth?intent=signup`
+- Microcopy abaixo do botão: *"Diagnóstico completo grátis · sem cartão"*
 
 ### Arquivo modificado
 
-- `src/pages/PreviewPage.tsx` — substituir o bloco CTA (linhas 805-868) pela nova versão dark/dramática
+- `src/pages/PreviewPage.tsx` — 5 edições pontuais (linhas 67-74, 1031-1033, 1047-1055, 1100, selos do CTA dark) + inserção de novo bloco final após 1213.
 
