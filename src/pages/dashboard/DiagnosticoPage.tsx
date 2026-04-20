@@ -25,6 +25,28 @@ interface PillarCriterion {
   consenso?: { agree: number; total: number };
 }
 
+/* ── Pillar payload type (mirrors PreviewPage `buildPillarDetails` output) ── */
+interface PillarPayload {
+  name: string;
+  subtitle?: string;
+  score: number;
+  status?: string;
+  definition?: string;
+  summary?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendation?: string;
+  criterios?: PillarCriterion[];
+}
+
+const PILLAR_ICON_MAP: Record<string, typeof Eye> = {
+  Clareza: Eye,
+  Autoridade: ShieldCheck,
+  Posicionamento: Rocket,
+  Conversão: Target,
+  Relevância: Sparkles,
+};
+
 /* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
 function getScoreBand(score: number) {
   if (score < 40) return { label: "Crítico", color: "red" as const };
@@ -112,8 +134,8 @@ const pillarDetails = [
   },
 ];
 
-function getWeakestPillarPhrase(): string {
-  const weakest = [...radarData].sort((a, b) => a.value - b.value)[0];
+function getWeakestPillarPhrase(data: { subject: string; value: number }[]): string {
+  const weakest = [...data].sort((a, b) => a.value - b.value)[0];
   const phrases: Record<string, string> = {
     Clareza: "Falta de clareza diminui a compreensão da IA sobre sua proposta de valor.",
     Autoridade: "Autoridade baixa reduz drasticamente a chance de recomendação nas IAs.",
@@ -121,10 +143,8 @@ function getWeakestPillarPhrase(): string {
     Posicionamento: "Posicionamento fraco faz a IA recomendar concorrentes no seu lugar.",
     Relevância: "Baixa relevância contextual faz a IA ignorar sua marca em buscas do nicho.",
   };
-  return phrases[weakest.subject] || phrases["Autoridade"];
+  return phrases[weakest?.subject] || phrases["Autoridade"];
 }
-
-const overallScore = Math.round(radarData.reduce((s, d) => s + d.value, 0) / radarData.length);
 
 /* ── Soft blur for locked content ── */
 function SoftBlur({ children, label }: { children: React.ReactNode; label?: string }) {
@@ -150,24 +170,48 @@ export default function DiagnosticoPage() {
   // TODO: Replace with real plan status check
   const hasPlan = true;
 
-  // Read latest diagnostic payload (saved by PreviewPage) to enrich pillars with real sub-criteria
-  const [criteriaByPillar, setCriteriaByPillar] = useState<Record<string, PillarCriterion[]>>({});
+  // Read latest diagnostic payload (saved by PreviewPage) to use REAL data
+  const [livePillars, setLivePillars] = useState<PillarPayload[] | null>(null);
+  const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
+  const [liveScore, setLiveScore] = useState<number | null>(null);
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("ivero:lastDiagnostic");
       if (!raw) return;
       const payload = JSON.parse(raw);
-      const map: Record<string, PillarCriterion[]> = {};
-      (payload.pillarDetails || []).forEach((p: { name: string; criterios?: PillarCriterion[] }) => {
-        if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
-          map[p.name] = p.criterios;
-        }
-      });
-      setCriteriaByPillar(map);
+      if (Array.isArray(payload.pillarDetails) && payload.pillarDetails.length > 0) {
+        setLivePillars(payload.pillarDetails);
+      }
+      if (Array.isArray(payload.radar) && payload.radar.length > 0) {
+        setLiveRadar(payload.radar);
+      }
+      if (typeof payload.geoScore === "number") {
+        setLiveScore(payload.geoScore);
+      }
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Merge live data with mock fallback (mock used only if no analysis was run yet)
+  const effectiveRadar = liveRadar ?? radarData;
+  const effectivePillars = (livePillars ?? pillarDetails).map((p) => ({
+    ...p,
+    icon: PILLAR_ICON_MAP[p.name] ?? Eye,
+    subtitle: p.subtitle ?? "",
+    summary: p.summary ?? "",
+    strengths: p.strengths ?? [],
+    weaknesses: p.weaknesses ?? [],
+    recommendation: p.recommendation ?? "",
+    definition: p.definition ?? "",
+    status: p.status ?? "",
+  }));
+  const criteriaByPillar: Record<string, PillarCriterion[]> = {};
+  (livePillars ?? []).forEach((p) => {
+    if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
+      criteriaByPillar[p.name] = p.criterios;
+    }
+  });
 
   const handleReanalyze = () => {
     if (!canReanalyze) return;
@@ -181,6 +225,12 @@ export default function DiagnosticoPage() {
   };
 
   if (isLoading) return null;
+
+  // Compute overall score from effective (live or mock) radar
+  const overallScore = liveScore ?? Math.round(effectiveRadar.reduce((s, d) => s + d.value, 0) / effectiveRadar.length);
+  const sortedRadar = [...effectiveRadar].sort((a, b) => b.value - a.value);
+  const strongestPillar = sortedRadar[0];
+  const weakestPillar = sortedRadar[sortedRadar.length - 1];
 
   const level = getScoreLevel(overallScore);
   const overallBand = getScoreBand(overallScore);
@@ -361,7 +411,7 @@ export default function DiagnosticoPage() {
 
             <div className="w-full h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                <RadarChart data={effectiveRadar} cx="50%" cy="50%" outerRadius="75%">
                   <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
                   <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
@@ -380,20 +430,20 @@ export default function DiagnosticoPage() {
             <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-700 font-medium">{getWeakestPillarPhrase()}</p>
+                <p className="text-sm text-red-700 font-medium">{getWeakestPillarPhrase(effectiveRadar)}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center">
                 <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
-                <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
-                <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
+                <p className="text-base font-display font-bold text-emerald-700 mt-1">{strongestPillar?.subject}</p>
+                <p className="text-xs text-emerald-600/70 mt-0.5">Score: {strongestPillar?.value}/100</p>
               </div>
               <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center">
                 <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
-                <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
-                <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
+                <p className="text-base font-display font-bold text-red-700 mt-1">{weakestPillar?.subject}</p>
+                <p className="text-xs text-red-600/70 mt-0.5">Score: {weakestPillar?.value}/100</p>
               </div>
             </div>
           </CardContent>
@@ -410,7 +460,7 @@ export default function DiagnosticoPage() {
       </motion.div>
 
       <div className="space-y-4">
-        {pillarDetails.map((pillar, idx) => {
+        {effectivePillars.map((pillar, idx) => {
           const PillarIcon = pillar.icon;
           const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
           const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";

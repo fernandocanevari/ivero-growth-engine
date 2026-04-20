@@ -837,13 +837,15 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
 
                 <ul className="grid gap-2 sm:grid-cols-2 max-w-xl mx-auto text-left">
                   {[
-                    "Histórico ilimitado de diagnósticos",
-                    "Análise completa de cada pilar estratégico",
+                    "Monitoramento contínuo nas 5 principais IAs",
+                    "Alertas quando concorrentes te ultrapassam",
+                    "Plano de ação personalizado por pilar",
+                    "Benchmark competitivo no seu setor",
                     "E muito mais para sua marca ficar no topo nas IAs",
                   ].map((item, index) => (
                     <li
                       key={item}
-                      className={`flex items-start gap-2 rounded-xl border border-primary-foreground/10 bg-primary-foreground/10 px-3 py-2 text-xs sm:text-[13px] text-primary-foreground/90 ${index === 2 ? "sm:col-span-2" : ""}`}
+                      className={`flex items-start gap-2 rounded-xl border border-primary-foreground/10 bg-primary-foreground/10 px-3 py-2 text-xs sm:text-[13px] text-primary-foreground/90 ${index === 4 ? "sm:col-span-2" : ""}`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground shrink-0 mt-0.5" />
                       <span>{item}</span>
@@ -851,13 +853,13 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   ))}
                 </ul>
 
-                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                   {["100% grátis", "Sem cartão", "Cancele quando quiser"].map((label) => (
                     <span
                       key={label}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-foreground/12 border border-primary-foreground/20 text-[11px] font-semibold text-primary-foreground"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-400 text-emerald-950 border border-emerald-300 shadow-[0_4px_14px_-2px_hsl(150_80%_45%/0.55)] text-[11px] sm:text-xs font-bold"
                     >
-                      <CheckCircle2 className="w-3 h-3" /> {label}
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {label}
                     </span>
                   ))}
                 </div>
