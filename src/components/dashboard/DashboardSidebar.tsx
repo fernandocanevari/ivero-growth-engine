@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useUserRole } from "@/hooks/useUserRole";
+import { resetIdentity } from "@/lib/analytics";
 import {
   Sidebar,
   SidebarContent,
@@ -72,6 +73,8 @@ export function DashboardSidebar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    // Clear PostHog identity so the next user on this device isn't tracked as this one.
+    resetIdentity();
     navigate("/login", { replace: true });
   };
 

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { identifyLead, track } from "@/lib/analytics";
 
 // Same strict schema used in the PreviewPage lead gate — keeps lead quality consistent
 const heroLeadSchema = z.object({
@@ -65,6 +66,17 @@ const HeroSection = () => {
           { onConflict: "email" }
         );
     } catch (_) { /* silently continue — user still gets the diagnostic */ }
+
+    // Funnel step 1: hero form submitted. Identify by email so we can stitch
+    // the journey through preview gate → signup later.
+    identifyLead(email, { name, source: "hero_form" });
+    track("hero_form_submitted", {
+      email,
+      name,
+      site: site || "",
+      has_phone: !!phone,
+      source: "hero_form",
+    });
 
     const params = new URLSearchParams();
     if (site) params.set("url", site);
