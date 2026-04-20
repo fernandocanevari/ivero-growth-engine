@@ -811,18 +811,18 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                 <div className="space-y-3">
                   <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
                     <Sparkles className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">Acesso executivo</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">Sua marca merece mais</span>
                   </div>
                   <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight">
-                    Acompanhe a evolução desta análise no <span className="text-gradient">dashboard executivo</span>
+                    Pare de ser invisível para as IAs. <span className="text-gradient">Domine sua categoria.</span>
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Sem custo para começar. Crie sua conta com 1 clique e tenha acesso a histórico de re-análises, monitoramento de menções, alertas de queda de score e detalhamento por sub-critério com convergência entre as 5 IAs.
+                  <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+                    Enquanto você lê, seus concorrentes estão sendo recomendados. Crie sua conta agora e comece a virar o jogo em 60 segundos.
                   </p>
                   <ul className="space-y-1.5 pt-1">
                     {[
                       "Histórico ilimitado de diagnósticos",
-                      "Rubrica completa por sub-critério (3 fatores ponderados)",
+                      "Análise completa de cada pilar estratégico",
                       "Convergência entre ChatGPT, Claude, Gemini, Perplexity e GPT-5",
                     ].map((item) => (
                       <li key={item} className="flex items-start gap-2 text-xs text-foreground/80">
@@ -850,9 +850,17 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                     <Unlock className="w-4 h-4" />
                     Já sou cliente — Entrar
                   </Button>
-                  <p className="text-[10px] text-muted-foreground/80 text-center leading-relaxed pt-1">
-                    Cadastro grátis · Sem cartão de crédito · Plano pago libera recursos avançados
-                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 pt-1">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                      <CheckCircle2 className="w-3 h-3" /> 100% grátis
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                      <CheckCircle2 className="w-3 h-3" /> Sem cartão
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                      <CheckCircle2 className="w-3 h-3" /> Cancele quando quiser
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
