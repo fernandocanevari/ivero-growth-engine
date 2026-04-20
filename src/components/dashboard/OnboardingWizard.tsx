@@ -32,7 +32,7 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
 };
 
-export default function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
+export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete: () => void; onDismiss?: () => void }) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [answers, setAnswers] = useState(["", "", ""]);
