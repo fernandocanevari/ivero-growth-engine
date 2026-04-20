@@ -802,68 +802,108 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
           </PremiumCard>
         </AnimatedSection>
 
-        {/* ── CTA: Crie sua conta executiva (logo após o Score GEO, só visível depois do lead) ── */}
+        {/* ── CTA: Crie sua conta executiva (alto impacto, dark interrupt) ── */}
         {leadSubmitted && (
           <AnimatedSection delay={0.08}>
-            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.04] via-card to-card shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.18)]">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-ivero-gradient opacity-70" />
-              <div className="grid md:grid-cols-[1.4fr_1fr] gap-6 p-6 sm:p-7">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
-                    <Sparkles className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">Sua marca merece mais</span>
-                  </div>
-                  <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight">
-                    Pare de ser invisível para as IAs. <span className="text-gradient">Domine sua categoria.</span>
-                  </h3>
-                  <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-                    Enquanto você lê, seus concorrentes estão sendo recomendados. Crie sua conta agora e comece a virar o jogo em 60 segundos.
-                  </p>
-                  <ul className="space-y-1.5 pt-1">
-                    {[
-                      "Histórico ilimitado de diagnósticos",
-                      "Análise completa de cada pilar estratégico",
-                      "Convergência entre ChatGPT, Claude, Gemini, Perplexity e GPT-5",
-                    ].map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-xs text-foreground/80">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="relative overflow-hidden rounded-3xl my-8 p-8 sm:p-10 lg:p-12 bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#3d1a4e] shadow-[0_20px_80px_-20px_rgba(168,85,247,0.5)] border border-white/10"
+            >
+              {/* Background glow blobs */}
+              <div className="absolute -top-32 -left-20 w-96 h-96 rounded-full bg-fuchsia-500/30 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-32 -right-20 w-96 h-96 rounded-full bg-purple-600/30 blur-3xl pointer-events-none" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-32 bg-gradient-to-r from-transparent via-fuchsia-500/10 to-transparent blur-2xl pointer-events-none" />
+
+              {/* Animated border glow */}
+              <motion.div
+                className="absolute inset-0 rounded-3xl pointer-events-none"
+                style={{
+                  background: "linear-gradient(135deg, rgba(232,121,249,0.4), transparent 40%, transparent 60%, rgba(168,85,247,0.4))",
+                  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                  WebkitMaskComposite: "xor",
+                  maskComposite: "exclude",
+                  padding: "2px",
+                }}
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              />
+
+              <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-fuchsia-300" />
+                  </motion.div>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/95">Sua marca merece mais</span>
                 </div>
-                <div className="flex flex-col justify-center gap-3">
+
+                {/* Headline */}
+                <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-[1.1] tracking-tight">
+                  Pare de ser invisível para as IAs.
+                  <br />
+                  <span className="bg-gradient-to-r from-fuchsia-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    Domine sua categoria.
+                  </span>
+                </h3>
+
+                {/* Sub-copy */}
+                <p className="text-base sm:text-lg text-white/85 leading-relaxed max-w-2xl mx-auto">
+                  Enquanto você lê, seus concorrentes estão sendo recomendados. Crie sua conta agora e comece a virar o jogo em 60 segundos.
+                </p>
+
+                {/* Benefit bullets */}
+                <ul className="space-y-2 pt-2 max-w-md mx-auto text-left">
+                  {[
+                    "Histórico ilimitado de diagnósticos",
+                    "Análise completa de cada pilar estratégico",
+                    "Convergência entre ChatGPT, Claude, Gemini, Perplexity e GPT-5",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-white/90">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Trust badges (above CTA) */}
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                  {["100% grátis", "Sem cartão", "Cancele quando quiser"].map((label) => (
+                    <span
+                      key={label}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-xs sm:text-sm font-semibold text-emerald-300"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Primary CTA */}
+                <div className="pt-4 space-y-3">
                   <Button
                     size="lg"
-                    className="w-full h-12 bg-ivero-gradient hover:opacity-95 text-primary-foreground font-semibold shadow-[0_4px_24px_-6px_hsl(var(--primary)/0.4)] gap-2"
+                    className="group w-full h-14 sm:h-16 bg-white hover:bg-white text-[#2d1b4e] hover:text-[#1a0b2e] font-bold text-base sm:text-lg rounded-xl shadow-[0_10px_40px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_15px_50px_-10px_rgba(255,255,255,0.7)] hover:scale-[1.02] transition-all duration-300 gap-3"
                     onClick={() => navigate(buildSignupUrl())}
                   >
                     Criar conta gratuita
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full h-12 border-border hover:bg-muted/50 font-medium gap-2"
+                  <button
+                    type="button"
                     onClick={() => navigate(`/auth?mode=login&email=${encodeURIComponent(leadData.email)}`)}
+                    className="inline-flex items-center justify-center gap-2 text-sm text-white/70 hover:text-white transition-colors underline-offset-4 hover:underline"
                   >
-                    <Unlock className="w-4 h-4" />
+                    <Unlock className="w-3.5 h-3.5" />
                     Já sou cliente — Entrar
-                  </Button>
-                  <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 pt-1">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      <CheckCircle2 className="w-3 h-3" /> 100% grátis
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      <CheckCircle2 className="w-3 h-3" /> Sem cartão
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      <CheckCircle2 className="w-3 h-3" /> Cancele quando quiser
-                    </span>
-                  </div>
+                  </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </AnimatedSection>
         )}
 
