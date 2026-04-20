@@ -86,6 +86,7 @@ export default function AuthPage() {
         // sees the actual signup form instead of being thrown into someone
         // else's dashboard.
         await supabase.auth.signOut();
+        setStaleSessionCleared(true);
         return;
       }
       navigate("/dashboard", { replace: true });
