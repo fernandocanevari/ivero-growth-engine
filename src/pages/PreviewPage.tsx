@@ -870,7 +870,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                     className="group w-full h-11 sm:h-12 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.8)] hover:scale-[1.01] transition-all duration-300 gap-2.5"
                     onClick={() => navigate(buildSignupUrl())}
                   >
-                    Criar conta gratuita
+                    Criar minha conta — é grátis
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
                   <button
