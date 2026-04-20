@@ -5,8 +5,8 @@ import posthog from "posthog-js";
  *
  * Why a wrapper:
  *  - Single source of truth for the API host (GDPR/LGPD: data stays in EU).
- *  - Lets us silence DEV (own browser) so test sessions don't pollute funnels.
- *  - Encapsulates identify/reset so callers don't need to know PostHog internals.
+ *  - DEV (localhost / lovable preview) is silenced so QA doesn't pollute funnels.
+ *  - PROD starts opted-OUT and only opts-in after explicit user consent (LGPD).
  *  - One-line kill switch: set `ENABLED = false` to disable everything globally.
  */
 
@@ -15,6 +15,10 @@ const API_HOST = "https://eu.i.posthog.com";
 
 // Master kill switch — flip to false to disable analytics across the app.
 const ENABLED = true;
+
+// localStorage key for storing the user's consent choice.
+export const CONSENT_STORAGE_KEY = "ivero_cookie_consent";
+export type ConsentStatus = "granted" | "denied" | "unknown";
 
 // In Lovable preview & local dev, PostHog runs but opts out of capture so we
 // don't inflate metrics with our own QA traffic. Production users still tracked.
@@ -31,6 +35,17 @@ const isDevEnvironment = (): boolean => {
 
 let initialized = false;
 
+export function getConsentStatus(): ConsentStatus {
+  if (typeof window === "undefined") return "unknown";
+  try {
+    const v = window.localStorage.getItem(CONSENT_STORAGE_KEY);
+    if (v === "granted" || v === "denied") return v;
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
 export function initAnalytics(): void {
   if (!ENABLED || initialized || typeof window === "undefined") return;
   initialized = true;
@@ -43,12 +58,51 @@ export function initAnalytics(): void {
     persistence: "localStorage+cookie",
     respect_dnt: true, // honor Do Not Track for LGPD compliance
     disable_session_recording: true, // off until we explicitly want it
+    // Start opted-OUT in production until the user grants consent (LGPD principle:
+    // collect data only AFTER explicit consent). Once they accept the banner,
+    // setConsent('granted') flips the switch.
+    opt_out_capturing_by_default: true,
     loaded: (ph) => {
+      // DEV: always silenced regardless of consent — we don't pollute metrics from QA.
       if (isDevEnvironment()) {
+        ph.opt_out_capturing();
+        return;
+      }
+      // PROD: respect previously stored consent decision.
+      const status = getConsentStatus();
+      if (status === "granted") {
+        ph.opt_in_capturing();
+      } else {
         ph.opt_out_capturing();
       }
     },
   });
+}
+
+/**
+ * Update the consent decision — called from the cookie banner.
+ * Persists to localStorage and immediately flips PostHog's capture state.
+ * In DEV, we still keep capture off (QA traffic should never count).
+ */
+export function setConsent(status: "granted" | "denied"): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CONSENT_STORAGE_KEY, status);
+  } catch {
+    /* ignore storage errors (private mode, quota, etc.) */
+  }
+  if (!ENABLED || !initialized) return;
+  if (isDevEnvironment()) {
+    posthog.opt_out_capturing();
+    return;
+  }
+  if (status === "granted") {
+    posthog.opt_in_capturing();
+  } else {
+    posthog.opt_out_capturing();
+    // Best-effort: clear any PII PostHog may have buffered before consent.
+    try { posthog.reset(); } catch { /* ignore */ }
+  }
 }
 
 type EventProps = Record<string, string | number | boolean | null | undefined>;
