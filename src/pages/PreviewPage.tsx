@@ -65,12 +65,12 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 
 /* ── Loading steps ── */
 const loadingSteps = [
-  { icon: Search, text: "Analisando seu site..." },
-  { icon: Globe, text: "Coletando dados estruturais..." },
-  { icon: Brain, text: "Processando informações comportamentais..." },
-  { icon: Bot, text: "Consultando modelos de IA..." },
-  { icon: Zap, text: "Consolidando insights..." },
-  { icon: BarChart3, text: "Gerando diagnóstico final..." },
+  { icon: Search, text: "Investigando como as IAs enxergam sua marca..." },
+  { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini, Claude..." },
+  { icon: Brain, text: "Cruzando seu posicionamento com o dos concorrentes..." },
+  { icon: Bot, text: "Detectando onde sua marca está sendo ignorada..." },
+  { icon: Zap, text: "Calculando o custo da sua invisibilidade..." },
+  { icon: BarChart3, text: "Revelando o caminho para virar referência..." },
 ];
 
 /* ── AI engine result type ── */
