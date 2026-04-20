@@ -149,7 +149,7 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
                 <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
               </Button>
             )}
-            <Button variant="link" size="sm" className="text-muted-foreground" onClick={onComplete}>
+            <Button variant="link" size="sm" className="text-muted-foreground" onClick={onDismiss ?? onComplete}>
               Responder mais tarde
             </Button>
           </div>
