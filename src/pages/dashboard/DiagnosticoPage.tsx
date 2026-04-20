@@ -226,6 +226,12 @@ export default function DiagnosticoPage() {
 
   if (isLoading) return null;
 
+  // Compute overall score from effective (live or mock) radar
+  const overallScore = liveScore ?? Math.round(effectiveRadar.reduce((s, d) => s + d.value, 0) / effectiveRadar.length);
+  const sortedRadar = [...effectiveRadar].sort((a, b) => b.value - a.value);
+  const strongestPillar = sortedRadar[0];
+  const weakestPillar = sortedRadar[sortedRadar.length - 1];
+
   const level = getScoreLevel(overallScore);
   const overallBand = getScoreBand(overallScore);
   const overallBandClass =
@@ -405,7 +411,7 @@ export default function DiagnosticoPage() {
 
             <div className="w-full h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                <RadarChart data={effectiveRadar} cx="50%" cy="50%" outerRadius="75%">
                   <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
                   <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
@@ -424,20 +430,20 @@ export default function DiagnosticoPage() {
             <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-700 font-medium">{getWeakestPillarPhrase()}</p>
+                <p className="text-sm text-red-700 font-medium">{getWeakestPillarPhrase(effectiveRadar)}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-center">
                 <p className="text-xs text-muted-foreground font-medium">Principal ponto forte</p>
-                <p className="text-base font-display font-bold text-emerald-700 mt-1">Clareza</p>
-                <p className="text-xs text-emerald-600/70 mt-0.5">Score: 82/100</p>
+                <p className="text-base font-display font-bold text-emerald-700 mt-1">{strongestPillar?.subject}</p>
+                <p className="text-xs text-emerald-600/70 mt-0.5">Score: {strongestPillar?.value}/100</p>
               </div>
               <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 text-center">
                 <p className="text-xs text-muted-foreground font-medium">Maior vulnerabilidade</p>
-                <p className="text-base font-display font-bold text-red-700 mt-1">Autoridade</p>
-                <p className="text-xs text-red-600/70 mt-0.5">Score: 35/100</p>
+                <p className="text-base font-display font-bold text-red-700 mt-1">{weakestPillar?.subject}</p>
+                <p className="text-xs text-red-600/70 mt-0.5">Score: {weakestPillar?.value}/100</p>
               </div>
             </div>
           </CardContent>
@@ -454,7 +460,7 @@ export default function DiagnosticoPage() {
       </motion.div>
 
       <div className="space-y-4">
-        {pillarDetails.map((pillar, idx) => {
+        {effectivePillars.map((pillar, idx) => {
           const PillarIcon = pillar.icon;
           const scoreColor = pillar.score >= 70 ? "emerald" : pillar.score >= 50 ? "amber" : "red";
           const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
