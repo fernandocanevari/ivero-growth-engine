@@ -197,6 +197,13 @@ export function KeywordCloudSection({ cloudsInPeriod, previousCloud, totalModels
           )}
         </CardContent>
       </Card>
+
+      <KeywordDetailSheet
+        open={selected !== null}
+        onOpenChange={(o) => !o && setSelected(null)}
+        entry={selected}
+        totalModels={totalModels}
+      />
     </section>
   );
 }
