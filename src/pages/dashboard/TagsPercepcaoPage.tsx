@@ -6,6 +6,7 @@ import { usePerceptionAlerts } from "@/hooks/usePerceptionAlerts";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { PerceptionTagBadge } from "@/components/dashboard/PerceptionTagBadge";
 import { PerceptionPillarSheet } from "@/components/dashboard/PerceptionPillarSheet";
+import { KeywordCloudSection } from "@/components/dashboard/KeywordCloudSection";
 import {
   buildPerceptionSnapshot,
   isEmptySnapshot,
