@@ -52,6 +52,11 @@ export const LOCKED_ROUTE_INFO: Record<
   string,
   { title: string; description: string }
 > = {
+  "/dashboard/tags-percepcao": {
+    title: "Tags de Percepção da IA",
+    description:
+      "Veja as evidências semânticas (verde/amarelo/vermelho) que as IAs extraem do seu site para responder à pergunta-mestre: este site é recomendável?",
+  },
   "/dashboard/pilares": {
     title: "Evolução Estratégica",
     description:

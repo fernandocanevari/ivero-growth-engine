@@ -33,6 +33,7 @@ import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
+import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="monitoramento" element={<MonitoramentoPage />} />
             <Route path="comparativo" element={<ComparativoPage />} />
             <Route path="score" element={<ScorePage />} />
+            <Route path="tags-percepcao" element={<TagsPercepcaoPage />} />
             <Route path="sentimento" element={<SentimentoPage />} />
             <Route path="acoes" element={<AcoesPage />} />
             <Route path="conteudo" element={<GeradorConteudoPage />} />
