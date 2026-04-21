@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard, Lock,
+  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard, Lock, Tags,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -49,6 +49,7 @@ const menuGroups = [
       { title: "Análise Comparativa", url: "/dashboard/comparativo", icon: GitCompare },
       { title: "Dominância por Modelo", url: "/dashboard/dominancia", icon: BarChart3 },
       { title: "Score GEO", url: "/dashboard/score", icon: TrendingUp },
+      { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
       { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
       { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: Terminal },

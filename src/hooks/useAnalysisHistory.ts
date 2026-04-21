@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { buildPerceptionSnapshot, type PerceptionSnapshot } from "@/lib/perception-tags";
 
 export interface AnalysisRecord {
   id: string;
@@ -12,6 +13,7 @@ export interface AnalysisRecord {
   positioning_score: number;
   experience_score: number;
   created_at: string;
+  perception_snapshot?: PerceptionSnapshot | Record<string, never>;
 }
 
 function randomVariation(base: number, range = 8): number {
@@ -59,6 +61,9 @@ export function useAnalysisHistory() {
       const positioning = randomVariation(baseScores.positioning);
       const experience = randomVariation(baseScores.experience);
       const overall = Math.round((clarity + authority + conversion + positioning + experience) / 5);
+      const perception_snapshot = buildPerceptionSnapshot({
+        clarity, authority, conversion, positioning, experience,
+      });
 
       const { error } = await supabase.from("analysis_history").insert({
         user_id: userId,
@@ -68,6 +73,7 @@ export function useAnalysisHistory() {
         conversion_score: conversion,
         positioning_score: positioning,
         experience_score: experience,
+        perception_snapshot: perception_snapshot as unknown as never,
       });
       if (error) throw error;
     },
