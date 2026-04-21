@@ -100,7 +100,7 @@ export function TrialBanner({ userId }: TrialBannerProps) {
                     </span>
                   )}
                   <span className="text-muted-foreground hidden md:inline">
-                    {" "}— escolha um plano para manter o monitoramento ativo.
+                    {" "}— acesso ao Diagnóstico, Score e Dashboard. <span className="text-foreground font-medium">Recursos avançados liberam após upgrade.</span>
                   </span>
                 </p>
               </div>
