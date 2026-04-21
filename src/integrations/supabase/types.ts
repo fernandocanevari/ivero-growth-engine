@@ -23,6 +23,7 @@ export type Database = {
           experience_score: number
           id: string
           overall_score: number
+          perception_snapshot: Json
           positioning_score: number
           user_id: string
         }
@@ -34,6 +35,7 @@ export type Database = {
           experience_score?: number
           id?: string
           overall_score?: number
+          perception_snapshot?: Json
           positioning_score?: number
           user_id: string
         }
@@ -45,6 +47,7 @@ export type Database = {
           experience_score?: number
           id?: string
           overall_score?: number
+          perception_snapshot?: Json
           positioning_score?: number
           user_id?: string
         }
