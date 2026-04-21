@@ -550,6 +550,7 @@ export default function DiagnosticoPage() {
                             const cBand = getScoreBand(c.score);
                             const cBar =
                               cBand.color === "red" ? "bg-red-500"
+                              : cBand.color === "orange" ? "bg-orange-500"
                               : cBand.color === "amber" ? "bg-amber-500"
                               : cBand.color === "blue" ? "bg-sky-500"
                               : "bg-emerald-500";
