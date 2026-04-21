@@ -1248,33 +1248,17 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                       );
                     })}
                   </div>
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    className="w-full text-base py-6 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(var(--primary)/0.5)] transition-shadow"
-                    onClick={() => { navigate("/"); setTimeout(() => { document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" }); }, 300); }}
-                  >
-                    Conheça nossos planos
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
                 </div>
               </PremiumCard>
             </AnimatedSection>
 
             {/* ── Final CTA — fechamento estratégico ── */}
             <AnimatedSection delay={0.75}>
-              <div className="relative overflow-hidden rounded-2xl bg-[#0b0b14] p-6 sm:p-7 max-w-2xl mx-auto text-center">
-                <div
-                  className="absolute inset-0 opacity-60 pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.35), transparent 55%), radial-gradient(circle at 75% 85%, hsl(var(--accent) / 0.28), transparent 60%)",
-                  }}
-                />
+              <div className="relative overflow-hidden rounded-2xl bg-ivero-gradient p-6 sm:p-7 max-w-2xl mx-auto text-center">
                 <div className="relative z-10 space-y-4">
                   <h3 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-tight tracking-tight">
                     Sua marca pode dominar as respostas das IAs.
-                    <span className="block text-gradient mt-1">Comece grátis hoje.</span>
+                    <span className="block mt-1">Comece grátis hoje.</span>
                   </h3>
                   <Button
                     size="lg"
@@ -1284,7 +1268,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                     Quero subir de patamar
                     <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
-                  <p className="text-[11px] sm:text-xs text-primary-foreground/65">
+                  <p className="text-[11px] sm:text-xs text-primary-foreground/80">
                     Diagnóstico completo grátis · sem cartão
                   </p>
                 </div>
