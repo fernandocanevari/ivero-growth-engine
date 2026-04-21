@@ -25,6 +25,7 @@ import NovaCampanhaPage from "./pages/dashboard/NovaCampanhaPage";
 import PromptTesterPage from "./pages/dashboard/PromptTesterPage";
 import RelatoriosPage from "./pages/dashboard/RelatoriosPage";
 import ConfiguracoesPage from "./pages/dashboard/ConfiguracoesPage";
+import AssinaturaPage from "./pages/dashboard/AssinaturaPage";
 import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="campanhas/nova" element={<NovaCampanhaPage />} />
             <Route path="prompt-tester" element={<PromptTesterPage />} />
             <Route path="relatorios" element={<RelatoriosPage />} />
+            <Route path="assinatura" element={<AssinaturaPage />} />
             <Route path="configuracoes" element={<ConfiguracoesPage />} />
             <Route path="admin/respostas" element={<AdminRespostasPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />

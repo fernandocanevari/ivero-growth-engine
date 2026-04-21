@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
-  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers,
+  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -60,6 +60,7 @@ const menuGroups = [
     label: "Extras",
     items: [
       { title: "Relatórios", url: "/dashboard/relatorios", icon: Download },
+      { title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard },
       { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
     ],
   },

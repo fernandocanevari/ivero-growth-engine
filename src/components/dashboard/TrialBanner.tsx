@@ -79,24 +79,29 @@ export function TrialBanner({ userId }: TrialBannerProps) {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="overflow-hidden border-b border-primary/15 bg-gradient-to-r from-primary/[0.06] via-primary/[0.04] to-transparent"
+            className="overflow-hidden border-b-2 border-primary/30 bg-primary/10"
           >
-            <div className="flex items-center gap-3 px-4 sm:px-6 py-2.5">
-              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5">
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: [1, 1.08, 1] }}
+                transition={{ duration: 1.6, repeat: 2, ease: "easeInOut" }}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/20 shrink-0"
+              >
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-              </div>
+              </motion.div>
 
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm text-foreground leading-tight">
-                  <span className="font-semibold">Você está no plano gratuito</span>
-                  <span className="text-muted-foreground hidden sm:inline">
-                    {" "}— desbloqueie monitoramento contínuo das IAs que falam da sua marca.
-                  </span>
+                  <span className="font-semibold">Teste grátis por 7 dias</span>
                   {daysLeft !== null && (
-                    <span className="ml-2 text-[10px] sm:text-xs font-medium text-primary/80 hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10">
-                      {daysLeft} {daysLeft === 1 ? "dia restante" : "dias restantes"}
+                    <span className="ml-2 text-[10px] sm:text-xs font-semibold text-primary inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/15 border border-primary/25">
+                      {daysLeft} de 7 {daysLeft === 1 ? "dia restante" : "dias restantes"}
                     </span>
                   )}
+                  <span className="text-muted-foreground hidden md:inline">
+                    {" "}— escolha um plano para manter o monitoramento ativo.
+                  </span>
                 </p>
               </div>
 
