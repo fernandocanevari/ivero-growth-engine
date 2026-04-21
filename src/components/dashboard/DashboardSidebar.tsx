@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
-  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard,
+  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard, Lock,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -10,7 +10,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { isRouteAllowedInTrial } from "@/lib/access-control";
 import { resetIdentity } from "@/lib/analytics";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Sidebar,
   SidebarContent,
