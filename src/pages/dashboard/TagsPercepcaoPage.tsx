@@ -6,6 +6,7 @@ import { usePerceptionAlerts } from "@/hooks/usePerceptionAlerts";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { PerceptionTagBadge } from "@/components/dashboard/PerceptionTagBadge";
 import { PerceptionPillarSheet } from "@/components/dashboard/PerceptionPillarSheet";
+import { KeywordCloudSection } from "@/components/dashboard/KeywordCloudSection";
 import {
   buildPerceptionSnapshot,
   isEmptySnapshot,
@@ -408,6 +409,12 @@ export default function TagsPercepcaoPage() {
               </Card>
             </section>
           )}
+
+          {/* Nuvem de percepção — vocabulário concreto que as IAs usam */}
+          <KeywordCloudSection
+            cloudsInPeriod={filteredHistory.map((r) => (r as { keyword_cloud?: unknown }).keyword_cloud)}
+            previousCloud={(previousAnalysis as { keyword_cloud?: unknown } | null)?.keyword_cloud}
+          />
 
           {/* Percepções por pilar (clicáveis) */}
           <section>

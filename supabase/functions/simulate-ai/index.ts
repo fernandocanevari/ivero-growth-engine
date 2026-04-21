@@ -367,6 +367,141 @@ async function callModel(
   }
 }
 
+/**
+ * Extrai uma "nuvem de percepção" das respostas dos 5 modelos.
+ * Concatena todos os textos e usa Lovable AI Gateway via tool calling para
+ * gerar até 30 termos/expressões com frequência, sentimento e nº de modelos.
+ *
+ * Retorna [] em qualquer falha — nunca quebra o diagnóstico principal.
+ */
+async function extractKeywordCloud(
+  modelResults: any[],
+  brandName: string,
+): Promise<Array<{ term: string; frequency: number; sentiment: "positive" | "neutral" | "negative"; mentioned_in_models: number }>> {
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!lovableKey) return [];
+
+  // Coleta texto de cada modelo (pula erros). Usa justificativas dos pilares
+  // como corpus, já que o modo diagnóstico retorna estrutura JSON, não prosa.
+  const perModelTexts: { model: string; text: string }[] = [];
+  for (const r of modelResults) {
+    if (r?.error || !r?.pillars) continue;
+    const parts: string[] = [];
+    for (const k of ["clareza", "autoridade", "posicionamento", "conversao", "relevancia"]) {
+      const p = r.pillars[k];
+      if (p?.justificativa) parts.push(p.justificativa);
+      if (Array.isArray(p?.criterios)) {
+        for (const c of p.criterios) if (c?.justificativa) parts.push(c.justificativa);
+      }
+    }
+    const text = parts.join(" ").trim();
+    if (text) perModelTexts.push({ model: r.model, text });
+  }
+
+  if (perModelTexts.length === 0) return [];
+
+  const corpus = perModelTexts
+    .map((m) => `[${m.model}]\n${m.text}`)
+    .join("\n\n---\n\n");
+
+  const systemPrompt = `Você é um analista de percepção de marca. Receberá respostas de múltiplos modelos de IA descrevendo a marca "${brandName}" e seu site.
+
+Sua tarefa: extrair até 30 termos ou expressões (1 a 4 palavras) que melhor representem COMO essas IAs falam da marca — atributos, qualidades, problemas, vocabulário do nicho.
+
+Regras:
+- Prefira frases-conceito significativas ("ingredientes frescos", "rápido cozimento") a palavras isoladas vagas.
+- Ignore termos genéricos sem valor descritivo ("site", "marca", "empresa", "produto", "serviço").
+- Idioma: português do Brasil, lowercase (exceto siglas).
+- "frequency": número aproximado de menções no corpus.
+- "mentioned_in_models": em quantos dos ${perModelTexts.length} modelos o termo (ou variação clara) aparece.
+- "sentiment": "positive" para qualidades/elogios, "negative" para falhas/críticas, "neutral" para descritivos factuais.
+- Ordene do mais relevante para o menos relevante.`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: corpus },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_keywords",
+              description: "Retorna a nuvem de percepção extraída do corpus.",
+              parameters: {
+                type: "object",
+                properties: {
+                  keywords: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        term: { type: "string" },
+                        frequency: { type: "number" },
+                        sentiment: {
+                          type: "string",
+                          enum: ["positive", "neutral", "negative"],
+                        },
+                        mentioned_in_models: { type: "number" },
+                      },
+                      required: ["term", "frequency", "sentiment", "mentioned_in_models"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["keywords"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "extract_keywords" } },
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("extract_keywords HTTP error:", response.status, await response.text());
+      return [];
+    }
+
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const argsStr = toolCall?.function?.arguments;
+    if (!argsStr) {
+      console.warn("extract_keywords: no tool_call arguments returned");
+      return [];
+    }
+    const parsed = JSON.parse(argsStr);
+    const keywords = Array.isArray(parsed?.keywords) ? parsed.keywords : [];
+
+    const totalModels = perModelTexts.length;
+    return keywords
+      .map((k: any) => ({
+        term: typeof k.term === "string" ? k.term.trim() : "",
+        frequency: Math.max(1, Math.round(Number(k.frequency) || 1)),
+        sentiment:
+          k.sentiment === "positive" || k.sentiment === "negative" ? k.sentiment : "neutral",
+        mentioned_in_models: Math.max(
+          1,
+          Math.min(totalModels, Math.round(Number(k.mentioned_in_models) || 1)),
+        ),
+      }))
+      .filter((k: any) => k.term && k.term.length <= 60)
+      .slice(0, 30);
+  } catch (e) {
+    console.error("extract_keywords failed:", e);
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -397,7 +532,13 @@ serve(async (req) => {
       configs.map((config) => callModel(config, prompt, systemPrompt, brandName, mode))
     );
 
-    return new Response(JSON.stringify({ results }), {
+    // Nuvem de percepção: extraída apenas no modo Diagnóstico (PreviewPage).
+    let keyword_cloud: any[] = [];
+    if (mode === "diagnostico") {
+      keyword_cloud = await extractKeywordCloud(results, brandName);
+    }
+
+    return new Response(JSON.stringify({ results, keyword_cloud }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
