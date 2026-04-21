@@ -5,6 +5,8 @@ interface PerceptionTagBadgeProps {
   tone: PerceptionTone;
   label: string;
   className?: string;
+  onClick?: () => void;
+  interactive?: boolean;
 }
 
 const toneStyles: Record<PerceptionTone, string> = {
@@ -23,17 +25,24 @@ export function PerceptionTagBadge({
   tone,
   label,
   className,
+  onClick,
+  interactive,
 }: PerceptionTagBadgeProps) {
+  const isInteractive = interactive ?? !!onClick;
+  const Comp: "button" | "span" = isInteractive ? "button" : "span";
   return (
-    <span
+    <Comp
+      type={isInteractive ? "button" : undefined}
+      onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
         toneStyles[tone],
+        isInteractive && "hover:shadow-sm hover:scale-[1.03] cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring/40",
         className,
       )}
     >
       <span className={cn("h-1.5 w-1.5 rounded-full", toneDot[tone])} />
       {label}
-    </span>
+    </Comp>
   );
 }
