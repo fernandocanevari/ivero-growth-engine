@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Cloud, Sparkles } from "lucide-react";
+import { KeywordDetailSheet } from "@/components/dashboard/KeywordDetailSheet";
 import {
   asKeywordCloud,
   countsBySentiment,
@@ -11,6 +12,7 @@ import {
   mergeCloudsAcrossPeriod,
   totalMentions,
   type KeywordCloud,
+  type KeywordCloudEntry,
   type KeywordSentiment,
 } from "@/lib/keyword-cloud";
 
