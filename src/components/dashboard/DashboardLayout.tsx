@@ -16,6 +16,8 @@ const SNOOZE_MS = 24 * 60 * 60 * 1000; // 24h
 
 export default function DashboardLayout() {
   const { needsOnboarding, isLoading } = useOnboarding();
+  const { isPaid, isAdmin } = useSubscriptionStatus();
+  const location = useLocation();
   const [dismissed, setDismissed] = useState(false);
   const [snoozed, setSnoozed] = useState(true); // default true to avoid flash
   const [userId, setUserId] = useState<string | null>(null);
