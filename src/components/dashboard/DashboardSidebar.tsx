@@ -77,7 +77,11 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
+  const { isPaid } = useSubscriptionStatus();
   const displayName = settings?.brand_name || "Minha Marca";
+
+  // Trial users (não-admin, não pago) veem itens bloqueados com lock + opacity.
+  const showLockState = !isPaid && !isAdmin;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -102,26 +106,46 @@ export function DashboardSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end={item.url === "/dashboard"}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{item.title}</span>
-                        {"badge" in item && item.badge ? (
-                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {group.items.map((item) => {
+                  const locked = showLockState && !isRouteAllowedInTrial(item.url);
+                  const linkContent = (
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/dashboard"}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground ${
+                        locked ? "opacity-55 hover:opacity-100" : ""
+                      }`}
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{item.title}</span>
+                      {locked ? (
+                        <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+                      ) : "badge" in item && item.badge ? (
+                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </NavLink>
+                  );
+
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        {locked ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                            <TooltipContent side="right" className="text-xs">
+                              Disponível nos planos pagos
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          linkContent
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
