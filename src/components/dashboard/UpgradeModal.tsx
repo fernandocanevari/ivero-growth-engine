@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Bell, Search, BarChart2, Check } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Check, Mail } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -113,6 +114,16 @@ interface UpgradeModalProps {
 
 export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
   const [isAnnual, setIsAnnual] = useState(true);
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+
+  const handleSelectPlan = (planName: string) => {
+    setPendingPlan(planName);
+  };
+
+  const handleContact = () => {
+    const subject = encodeURIComponent(`Quero assinar o plano ${pendingPlan}`);
+    window.location.href = `mailto:contato@ivero.com.br?subject=${subject}`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -263,6 +274,7 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                     variant={plan.highlighted ? "default" : "outline"}
                     size="sm"
                     className="w-full text-xs mt-auto"
+                    onClick={() => handleSelectPlan(plan.name)}
                   >
                     {plan.cta}
                   </Button>
@@ -276,6 +288,30 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
           </p>
         </div>
       </DialogContent>
+
+      {/* Sub-modal: confirmação de interesse (gateway ainda não está ativo) */}
+      <Dialog open={!!pendingPlan} onOpenChange={(o) => !o && setPendingPlan(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Vamos ativar o plano {pendingPlan}</DialogTitle>
+            <DialogDescription className="pt-2 leading-relaxed">
+              Estamos finalizando a integração com o provedor de pagamentos.
+              Para garantir o seu plano{" "}
+              <span className="font-semibold text-foreground">{pendingPlan}</span>{" "}
+              agora, fale com o nosso time — ativamos manualmente em até 1 dia útil.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setPendingPlan(null)}>
+              Voltar
+            </Button>
+            <Button onClick={handleContact} className="gap-1.5">
+              <Mail className="w-3.5 h-3.5" />
+              Falar com o time
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
