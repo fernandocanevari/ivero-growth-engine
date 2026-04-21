@@ -32,6 +32,7 @@ import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
 import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
+import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="score" element={<ScorePage />} />
             <Route path="sentimento" element={<SentimentoPage />} />
             <Route path="acoes" element={<AcoesPage />} />
+            <Route path="conteudo" element={<GeradorConteudoPage />} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="prompts" element={<PromptsPage />} />
             <Route path="dominancia" element={<DominanciaPage />} />
