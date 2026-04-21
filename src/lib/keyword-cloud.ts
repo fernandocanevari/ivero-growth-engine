@@ -9,11 +9,30 @@
 
 export type KeywordSentiment = "positive" | "neutral" | "negative";
 
+/** Frase de exemplo extraída de uma resposta de IA, atrelada ao modelo de origem. */
+export interface KeywordExample {
+  /** Trecho curto (≤ 200 chars) onde o termo (ou variação) aparece. */
+  quote: string;
+  /** Modelo de IA que produziu o trecho — "ChatGPT", "Gemini", "Claude", "Perplexity", "GPT-5". */
+  model: string;
+}
+
+/** Força (peso) de um termo dentro de um modelo específico. */
+export interface KeywordModelStrength {
+  model: string;
+  /** Quantidade de menções do termo (ou variação) na resposta desse modelo. */
+  count: number;
+}
+
 export interface KeywordCloudEntry {
   term: string;
   frequency: number;
   sentiment: KeywordSentiment;
   mentioned_in_models: number;
+  /** Frases curtas onde o termo aparece (até ~5). Opcional para retrocompat. */
+  examples?: KeywordExample[];
+  /** Força do termo por modelo, do mais forte ao mais fraco. Opcional. */
+  models?: KeywordModelStrength[];
 }
 
 export type KeywordCloud = KeywordCloudEntry[];
