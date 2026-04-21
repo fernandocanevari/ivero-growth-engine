@@ -45,6 +45,7 @@ const sentimentLabel: Record<KeywordSentiment, string> = {
 
 export function KeywordCloudSection({ cloudsInPeriod, previousCloud, totalModels = 5 }: Props) {
   const [mode, setMode] = useState<"current" | "compare">("current");
+  const [selected, setSelected] = useState<KeywordCloudEntry | null>(null);
 
   const aggregated: KeywordCloud = useMemo(
     () => mergeCloudsAcrossPeriod(cloudsInPeriod.map(asKeywordCloud)),
