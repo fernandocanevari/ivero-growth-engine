@@ -264,11 +264,7 @@ export default function DiagnosticoPage() {
 
   const level = getScoreLevel(overallScore);
   const overallBand = getScoreBand(overallScore);
-  const overallBandClass =
-    overallBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
-    : overallBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
-    : overallBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
-    : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+  const overallBandClass = getBandClass(overallBand.color);
 
   // Build evolution chart data from history
   const evolutionChartData = history.map((record) => ({
