@@ -134,15 +134,26 @@ export function KeywordCloudSection({ cloudsInPeriod, previousCloud, totalModels
                     return (
                       <Tooltip key={`${entry.term}-${removed ? "rm" : "cur"}`}>
                         <TooltipTrigger asChild>
-                          <span
+                          <button
+                            type="button"
+                            disabled={removed}
+                            onClick={() => !removed && setSelected(entry)}
                             className={cn(
-                              "font-display font-semibold leading-tight cursor-default transition-colors",
+                              "font-display font-semibold leading-tight transition-colors bg-transparent border-0 p-0 m-0",
                               removed
-                                ? "text-muted-foreground/50 line-through"
-                                : sentimentClass[entry.sentiment],
+                                ? "text-muted-foreground/50 line-through cursor-not-allowed"
+                                : cn(
+                                    sentimentClass[entry.sentiment],
+                                    "cursor-pointer hover:underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:underline rounded-sm",
+                                  ),
                               isNew && "underline decoration-dotted decoration-2 underline-offset-4",
                             )}
                             style={{ fontSize: `${fontSizeFor(entry.frequency, maxFreq)}px` }}
+                            aria-label={
+                              removed
+                                ? `${entry.term} (removido)`
+                                : `Ver detalhes de ${entry.term}`
+                            }
                           >
                             {entry.term}
                             {isNew && (
@@ -150,7 +161,7 @@ export function KeywordCloudSection({ cloudsInPeriod, previousCloud, totalModels
                                 novo
                               </span>
                             )}
-                          </span>
+                          </button>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs">
                           {removed ? (
@@ -159,6 +170,7 @@ export function KeywordCloudSection({ cloudsInPeriod, previousCloud, totalModels
                             <>
                               Mencionado por {entry.mentioned_in_models} de {totalModels} IAs ·{" "}
                               {entry.frequency} {entry.frequency === 1 ? "vez" : "vezes"}
+                              <span className="block mt-1 text-muted-foreground">clique para ver exemplos</span>
                             </>
                           )}
                         </TooltipContent>
