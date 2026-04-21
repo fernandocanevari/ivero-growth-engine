@@ -83,9 +83,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 const loadingSteps = [
   { icon: Search, text: "Investigando como as IAs enxergam sua marca..." },
   { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini, Claude..." },
-  { icon: Brain, text: "Cruzando seu posicionamento com o dos concorrentes..." },
   { icon: Bot, text: "Detectando onde sua marca está sendo ignorada..." },
-  { icon: Zap, text: "Calculando o custo da sua invisibilidade..." },
   { icon: BarChart3, text: "Revelando o caminho para virar referência..." },
 ];
 
@@ -1330,7 +1328,7 @@ export default function PreviewPage() {
   const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
   useEffect(() => {
-    const totalDuration = 10000; // increased to allow 5 parallel calls to complete
+    const totalDuration = 4000; // ~4s teatro de loading; chamadas reais à IA continuam em paralelo (await abaixo)
     const stepDuration = totalDuration / loadingSteps.length;
 
     const progressInterval = setInterval(() => {
