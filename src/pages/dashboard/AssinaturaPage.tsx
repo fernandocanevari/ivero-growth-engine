@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   CreditCard, Download, Sparkles, AlertCircle, Calendar, CheckCircle2,
-  ArrowUpRight, Info,
+  ArrowUpRight, Info, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +11,11 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
 import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
+import { track } from "@/lib/analytics";
 
 /**
  * AssinaturaPage — área financeira do cliente.
@@ -36,8 +40,26 @@ export default function AssinaturaPage() {
   const [comingSoonContext, setComingSoonContext] = useState<string>("");
 
   const openComingSoon = (context: string) => {
+    track("billing_action_blocked", { action: context, surface: "assinatura_page" });
     setComingSoonContext(context);
     setComingSoonOpen(true);
+  };
+
+  const handleChangePlan = () => {
+    track("upgrade_plan_clicked", {
+      plan: "open_modal",
+      surface: "assinatura_page_change_plan",
+    });
+    setUpgradeOpen(true);
+  };
+
+  const handleContactSupport = () => {
+    track("upgrade_contact_clicked", {
+      action: comingSoonContext,
+      surface: "assinatura_page_coming_soon",
+    });
+    setComingSoonOpen(false);
+    window.location.href = "mailto:contato@ivero.com.br?subject=Suporte%20Assinatura";
   };
 
   return (
