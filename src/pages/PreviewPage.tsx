@@ -1089,17 +1089,16 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                             <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                             <span className="text-xs text-muted-foreground">/100</span>
                           </div>
+                          <div className="h-2 w-36 rounded-full bg-muted overflow-hidden">
+                            <motion.div
+                              className={`h-full rounded-full ${barColor}`}
+                              initial={{ width: 0 }}
+                              whileInView={{ width: `${pillar.score}%` }}
+                              viewport={{ once: true }}
+                              transition={{ duration: 1.2, ease: "easeOut" }}
+                            />
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                        <motion.div
-                          className={`h-full rounded-full ${barColor}`}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${pillar.score}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1.2, ease: "easeOut" }}
-                        />
                       </div>
 
                       {/* Sub-criterio details intentionally reserved for the executive dashboard */}
