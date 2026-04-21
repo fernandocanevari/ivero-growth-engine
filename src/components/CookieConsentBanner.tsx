@@ -73,9 +73,9 @@ export function CookieConsentBanner() {
                   Cookies & privacidade
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Usamos cookies analíticos (PostHog, hospedado na União Europeia) para entender
-                  como você usa a Ivero e melhorar o produto. Nenhum dado é compartilhado com
-                  terceiros para publicidade. Em conformidade com a LGPD, você decide.
+                  Usamos cookies analíticos para entender como você usa a Ivero e melhorar o
+                  produto. Nenhum dado é compartilhado com terceiros para publicidade. Em
+                  conformidade com a LGPD, você decide.
                 </p>
               </div>
             </div>
