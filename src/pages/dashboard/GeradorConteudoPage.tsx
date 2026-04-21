@@ -63,7 +63,7 @@ interface PillarInfo {
 
 export default function GeradorConteudoPage() {
   const { data: brand } = useBrandSettings();
-  const { data: history } = useAnalysisHistory();
+  const { lastAnalysis } = useAnalysisHistory();
   const quota = useGenerationQuota();
   const { data: contentHistory, isLoading: historyLoading } = useContentHistory();
   const generate = useGenerateContent();
@@ -77,7 +77,7 @@ export default function GeradorConteudoPage() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const pillars = useMemo<PillarInfo[]>(() => {
-    const last = history?.[0];
+    const last = lastAnalysis;
     if (!last) return [];
     return [
       { name: "Clareza", score: last.clarity_score, weak: last.clarity_score < 60 },
@@ -86,7 +86,7 @@ export default function GeradorConteudoPage() {
       { name: "Conversão", score: last.conversion_score, weak: last.conversion_score < 60 },
       { name: "Relevância", score: last.experience_score, weak: last.experience_score < 60 },
     ];
-  }, [history]);
+  }, [lastAnalysis]);
 
   const contextItems = useMemo(() => {
     const items: { key: string; label: string; defaultOn: boolean }[] = [];
