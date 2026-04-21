@@ -38,11 +38,12 @@ Rota `/dashboard/tags-percepcao` **NÃO** está em `TRIAL_ALLOWED_ROUTES` — bl
 ## Nuvem de Percepção (lexical)
 Camada complementar às tags semânticas: termos concretos com que as IAs descrevem a marca, extraídos no `simulate-ai` (modo `diagnostico`) via tool calling `extract_keywords` no Lovable AI Gateway. Persistido em `analysis_history.keyword_cloud` (jsonb, default `[]`).
 
-- Estrutura por entrada: `{ term, frequency, sentiment: positive|neutral|negative, mentioned_in_models }` — top 30.
+- Estrutura por entrada: `{ term, frequency, sentiment, mentioned_in_models, examples: [{quote, model}], models: [{model, count}] }` — top 30. `examples`/`models` opcionais (auditorias antigas seguem válidas).
 - Origem: justificativas dos pilares e critérios das 5 IAs no Diagnóstico (corpus). PreviewPage propaga `keyword_cloud` para `sessionStorage:ivero:lastDiagnostic`; `DiagnosticoPage.handleReanalyze` reaproveita ao gravar.
-- UI: `KeywordCloudSection.tsx` com toggle Atual/Comparar, fonte 12-36px proporcional à frequência, cor por sentimento (emerald/cinza/red), tooltip com nº de modelos+menções, badge "novo" para termos surgidos vs auditoria anterior, line-through para removidos.
-- Helpers puros em `src/lib/keyword-cloud.ts`: `mergeCloudsAcrossPeriod`, `diffCloud`, `fontSizeFor`, `countsBySentiment`, `totalMentions`. Respeitam o filtro 7/30/90/all.
-- Auditorias antigas (cloud `[]`) mostram empty state na seção, sem quebrar o resto.
+- UI nuvem (`KeywordCloudSection.tsx`): toggle Atual/Comparar, fonte 12-36px proporcional à frequência, cor por sentimento (emerald/cinza/red), tooltip com nº de modelos+menções, badge "novo" para termos surgidos, line-through para removidos. Cada termo é `<button>` clicável que abre o detalhe.
+- UI detalhe (`KeywordDetailSheet.tsx`): Sheet lateral com força do termo por modelo (barras proporcionais, badge "mais forte" no topo) e lista de exemplos de frases reais com atribuição ao modelo de origem.
+- Helpers puros em `src/lib/keyword-cloud.ts`: `mergeCloudsAcrossPeriod` (preserva exemplos dedup e soma counts por modelo), `diffCloud`, `fontSizeFor`, `countsBySentiment`, `totalMentions`. Respeitam o filtro 7/30/90/all.
+- Auditorias antigas (cloud `[]` ou sem `examples`/`models`) mostram fallback "rode novo Diagnóstico" no sheet, sem quebrar.
 
 ## Fora do escopo
-Editor manual de tags, alertas de mudança de cor, exportação dedicada em PDF, granularidade por modelo de IA (fica para fase 2).
+Editor manual de tags, alertas de mudança de cor, exportação dedicada em PDF, granularidade por modelo de IA na nuvem agregada (a granularidade existe agora dentro do detalhe de cada termo).
