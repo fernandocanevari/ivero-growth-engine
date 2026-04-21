@@ -492,11 +492,7 @@ export default function DiagnosticoPage() {
           const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
           const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
           const pillarBand = getScoreBand(pillar.score);
-          const pillarBandClass =
-            pillarBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
-            : pillarBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
-            : pillarBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
-            : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+          const pillarBandClass = getBandClass(pillarBand.color);
           const criterios = criteriaByPillar[pillar.name] || [];
 
           return (
@@ -516,16 +512,13 @@ export default function DiagnosticoPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-                      <div className="flex items-baseline gap-2">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${pillarBandClass}`}>
-                          {pillarBand.label}
-                        </span>
+                      <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                         <span className="text-xs text-muted-foreground">/100</span>
                       </div>
-                      <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
-                        {pillar.status}
-                      </div>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${pillarBandClass}`}>
+                        {pillarBand.label}
+                      </span>
                     </div>
                   </div>
 
