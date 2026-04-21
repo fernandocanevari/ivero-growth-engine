@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import OnboardingWizard from "./OnboardingWizard";
 import { TrialBanner } from "./TrialBanner";
+import { TrialLockedPage } from "./TrialLockedPage";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
 import { supabase } from "@/integrations/supabase/client";
 
 const SNOOZE_PREFIX = "ivero_onboarding_snoozed_until:";
