@@ -47,12 +47,23 @@ const PILLAR_ICON_MAP: Record<string, typeof Eye> = {
   Relevância: Sparkles,
 };
 
-/* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
+/* ── Score band helper (5 faixas oficiais — score-rubric) ── */
 function getScoreBand(score: number) {
   if (score < 40) return { label: "Crítico", color: "red" as const };
-  if (score < 60) return { label: "Insuficiente", color: "amber" as const };
-  if (score < 80) return { label: "Sólido", color: "blue" as const };
+  if (score < 60) return { label: "Insuficiente", color: "orange" as const };
+  if (score < 75) return { label: "Moderado", color: "amber" as const };
+  if (score < 90) return { label: "Sólido", color: "blue" as const };
   return { label: "Referência", color: "emerald" as const };
+}
+
+function getBandClass(color: "red" | "orange" | "amber" | "blue" | "emerald") {
+  switch (color) {
+    case "red": return "bg-red-50 text-red-700 border-red-200/60";
+    case "orange": return "bg-orange-50 text-orange-700 border-orange-200/60";
+    case "amber": return "bg-amber-50 text-amber-700 border-amber-200/60";
+    case "blue": return "bg-sky-50 text-sky-700 border-sky-200/60";
+    case "emerald": return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+  }
 }
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
