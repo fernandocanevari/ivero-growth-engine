@@ -1,61 +1,110 @@
 
 
-## Reposicionar a barra de progresso nos cards de pilar (PreviewPage)
+## O que vamos resolver
 
-### Situação atual
+Dois pontos levantados após o signup:
 
-Em `src/pages/PreviewPage.tsx` (linhas 1057-1103), cada card de pilar tem:
+1. **Banner dos 7 dias não foi notado** — provavelmente ele apareceu, mas é tão discreto (gradiente leve, badge de dias só aparece em telas md+) que passou batido no fluxo "criei conta → caí no dashboard".
+2. **Falta de área Financeira/Assinatura** — o cliente não tem onde ver: plano atual, valor, data de adesão, forma de pagamento, próxima cobrança, faturas, ou opção de trocar/cancelar.
+
+## Parte 1 — Tornar o banner de trial mais evidente
+
+O banner existe e funciona, mas hoje:
+- Usa fundo gradiente sutil (`primary/[0.06]`) que se confunde com o header.
+- O badge "7 dias restantes" fica oculto em telas < md.
+- Não tem nenhum chamado visual no primeiro acesso.
+
+Alterações em `src/components/dashboard/TrialBanner.tsx`:
+
+- Aumentar contraste: trocar gradiente sutil por fundo sólido `bg-primary/10` com borda inferior mais marcada e ícone com pulse sutil nos primeiros segundos.
+- Tornar o badge de dias **sempre visível** (remover `hidden md:inline-flex`), apenas reduzindo padding em mobile.
+- Adicionar microcopy mais clara: "Teste grátis por 7 dias — **{N} de 7 dias restantes**".
+- Trocar texto truncado em mobile por versão curta porém legível.
+- Manter X de dismiss e CTA "Ver planos" → abre `UpgradeModal` (já existe).
+
+Resultado: a usuária verá imediatamente, mas continua podendo dispensar.
+
+## Parte 2 — Criar página `/dashboard/assinatura` (Financeiro)
+
+Nova página acessível pelo sidebar no grupo **Extras**, com ícone `CreditCard` e label "Assinatura".
+
+### Estrutura visual da página
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ [icon] Clareza                  [INSUFICIENTE] 44 /100  │
-│        Sua comunicação...                               │
-├─────────────────────────────────────────────────────────┤
-│ ████████████░░░░░░░░░░░░░░░░░░░  ← barra largura total  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  Assinatura & Pagamento                                  │
+│  Gerencie seu plano, forma de pagamento e faturas        │
+├──────────────────────────────────────────────────────────┤
+│  ┌─ PLANO ATUAL ──────────┐  ┌─ PRÓXIMA COBRANÇA ─────┐ │
+│  │ Plano Influência       │  │ R$ 497,00              │ │
+│  │ Mensal · R$ 497,00     │  │ em 18 mai 2026         │ │
+│  │ [Mudar plano] [Cancel] │  │ Visa •••• 4242         │ │
+│  └────────────────────────┘  └────────────────────────┘ │
+│                                                          │
+│  Forma de pagamento                                      │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │ 💳 Visa •••• 4242 · expira 12/2027               │   │
+│  │ [Atualizar cartão]                               │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                          │
+│  Histórico de faturas                                    │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │ Data        Valor      Status      Ação          │   │
+│  │ 18/04/2026  R$ 497,00  ✓ Paga     [Baixar PDF]  │   │
+│  │ 18/03/2026  R$ 497,00  ✓ Paga     [Baixar PDF]  │   │
+│  │ 18/02/2026  R$ 497,00  ✓ Paga     [Baixar PDF]  │   │
+│  └──────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────┘
 ```
 
-A barra vermelha "estoura" visualmente porque ocupa toda a largura, distante do score que ela representa.
+### Importante — modo "demonstração"
 
-### Mudança proposta
+Como a Ivero **ainda não tem gateway de pagamento integrado** (não há Stripe/Paddle conectado, conforme conversamos antes), esta primeira versão será uma **interface visual realista com dados mock**, baseada no que será a estrutura final. Decisões:
 
-Mover a barra para **dentro do bloco da direita, logo abaixo do "44 /100"**, com largura compacta (~140px) — ela passa a ser uma extensão visual do score:
+- Plano atual: lê de `brand_settings` ou um campo novo (proposta abaixo).
+- Faturas e cartão: mock visual, claramente etiquetado como "Demonstração" no canto da página até o gateway estar plugado.
+- Botões "Atualizar cartão" / "Mudar plano" / "Cancelar" abrem modal informando "Disponível em breve — entre em contato pelo suporte".
+
+Isso resolve o pedido (cliente vê onde administrar) sem prometer funcionalidade que não existe.
+
+### Mudança opcional no schema (recomendada, mas pode ficar para depois)
+
+Adicionar à tabela `brand_settings` (ou criar `subscriptions` separada) os campos:
+- `plan` (text: 'presenca' | 'influencia' | 'autoridade' | 'dominio' | 'free')
+- `billing_cycle` (text: 'monthly' | 'annual')
+- `subscribed_at` (timestamptz)
+
+Por ora, se a tabela não tiver isso, a página assume "Plano Gratuito (em teste)" para todos os usuários autenticados — coerente com o banner de trial.
+
+### Adicionar item no sidebar
+
+Em `src/components/dashboard/DashboardSidebar.tsx`, grupo **Extras**, adicionar antes de "Configurações":
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ [icon] Clareza                  [INSUFICIENTE] 44 /100  │
-│        Sua comunicação...       ████████░░░░░░░░░       │
-├─────────────────────────────────────────────────────────┤
-│ ANÁLISE DETECTADA                                       │
-│ ✓ Headline objetiva...                                  │
-└─────────────────────────────────────────────────────────┘
+{ title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard }
 ```
 
-Vantagens:
-- A barra fica visualmente atrelada ao número que ela representa.
-- O card fica mais limpo, sem aquele "traço vermelho" cortando o card no meio.
-- Acompanha o padrão do score circular geral (onde a visualização fica grudada no número).
+### Rota
 
-### Alterações técnicas
+Em `src/App.tsx`, adicionar:
 
-Arquivo único: `src/pages/PreviewPage.tsx`.
+```text
+<Route path="assinatura" element={<AssinaturaPage />} />
+```
 
-1. **Remover** o bloco `<div className="h-2.5 rounded-full bg-muted overflow-hidden">…</div>` das linhas 1095-1103 (barra full-width atual).
+## Arquivos afetados
 
-2. **Inserir** a mesma barra dentro do bloco da direita (linhas 1071-1092), logo após o `<div className="flex items-baseline gap-2">…</div>` que contém badge + score, com:
-   - Largura fixa: `w-36` (~144px) para alinhar com o tamanho do score.
-   - Altura: mantém `h-2` (ligeiramente menor que os 2.5 atuais para combinar com o contexto compacto).
-   - Mesma cor dinâmica (`barColor`) e mesma animação `motion.div` com `whileInView`.
+- `src/components/dashboard/TrialBanner.tsx` — aumentar contraste e visibilidade do badge.
+- `src/pages/dashboard/AssinaturaPage.tsx` — **novo arquivo** (página completa com plano, pagamento, faturas).
+- `src/components/dashboard/DashboardSidebar.tsx` — adicionar item "Assinatura" no grupo Extras.
+- `src/App.tsx` — registrar a rota `assinatura`.
+- Memory `mem://features/dashboard/navigation-structure` — atualizar para refletir o novo item.
 
-3. **Manter intactos**: `getScoreBand`, `scoreColor`, `barColor`, badge, animação, ordem dos demais elementos do card (Análise detectada, recomendação, etc.).
+## Fora do escopo (próximos passos)
 
-### Comportamento responsivo
+- Integração real com gateway (Stripe/Paddle) — exige escolher provider e habilitar via tooling de pagamentos.
+- Trocar plano / cancelar de fato — depende do gateway.
+- Geração real de faturas em PDF — depende do gateway.
 
-No mobile (< 640px), o bloco da direita já quebra abaixo do título por causa do `flex items-start justify-between gap-4`. A barra de 144px continua cabendo confortavelmente nessa coluna estreita — não exige media query nova.
-
-### Fora do escopo
-
-- Não toca em `DiagnosticoPage.tsx` nem `PilaresPage.tsx` (dashboard) — a pedido refere-se à PreviewPage (lead magnet) onde aparece o screenshot.
-- Não muda cores, thresholds (`getScoreBand`), nem a lógica do `barColor`.
-- Não mexe no card geral do "Score de Presença GEO" (linhas 416-419) — só nos cards de pilar individuais.
+Quando quiser plugar pagamento real, basta me avisar e eu rodo o fluxo de recomendação de provider (Stripe vs Paddle) e conecto.
 
