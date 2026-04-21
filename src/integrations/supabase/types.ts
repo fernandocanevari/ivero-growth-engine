@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           experience_score: number
           id: string
+          keyword_cloud: Json
           overall_score: number
           perception_snapshot: Json
           positioning_score: number
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string
           experience_score?: number
           id?: string
+          keyword_cloud?: Json
           overall_score?: number
           perception_snapshot?: Json
           positioning_score?: number
@@ -46,6 +48,7 @@ export type Database = {
           created_at?: string
           experience_score?: number
           id?: string
+          keyword_cloud?: Json
           overall_score?: number
           perception_snapshot?: Json
           positioning_score?: number
