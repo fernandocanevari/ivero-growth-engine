@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { buildPerceptionSnapshot, type PerceptionSnapshot } from "@/lib/perception-tags";
+import type { KeywordCloud } from "@/lib/keyword-cloud";
 
 export interface AnalysisRecord {
   id: string;
@@ -14,6 +15,7 @@ export interface AnalysisRecord {
   experience_score: number;
   created_at: string;
   perception_snapshot?: PerceptionSnapshot | Record<string, never>;
+  keyword_cloud?: KeywordCloud;
 }
 
 function randomVariation(base: number, range = 8): number {
@@ -39,7 +41,7 @@ export function useAnalysisHistory() {
         .eq("user_id", userId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as AnalysisRecord[];
+      return (data ?? []) as unknown as AnalysisRecord[];
     },
   });
 
@@ -53,13 +55,20 @@ export function useAnalysisHistory() {
   const daysRemaining = daysSinceLast !== null ? Math.max(0, 30 - daysSinceLast) : 0;
 
   const runAnalysis = useMutation({
-    mutationFn: async (baseScores: { clarity: number; authority: number; conversion: number; positioning: number; experience: number }) => {
+    mutationFn: async (input: {
+      clarity: number;
+      authority: number;
+      conversion: number;
+      positioning: number;
+      experience: number;
+      keyword_cloud?: KeywordCloud;
+    }) => {
       if (!userId) throw new Error("Not authenticated");
-      const clarity = randomVariation(baseScores.clarity);
-      const authority = randomVariation(baseScores.authority);
-      const conversion = randomVariation(baseScores.conversion);
-      const positioning = randomVariation(baseScores.positioning);
-      const experience = randomVariation(baseScores.experience);
+      const clarity = randomVariation(input.clarity);
+      const authority = randomVariation(input.authority);
+      const conversion = randomVariation(input.conversion);
+      const positioning = randomVariation(input.positioning);
+      const experience = randomVariation(input.experience);
       const overall = Math.round((clarity + authority + conversion + positioning + experience) / 5);
       const perception_snapshot = buildPerceptionSnapshot({
         clarity, authority, conversion, positioning, experience,
@@ -74,6 +83,7 @@ export function useAnalysisHistory() {
         positioning_score: positioning,
         experience_score: experience,
         perception_snapshot: perception_snapshot as unknown as never,
+        keyword_cloud: (input.keyword_cloud ?? []) as unknown as never,
       });
       if (error) throw error;
     },
