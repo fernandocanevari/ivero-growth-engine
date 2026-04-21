@@ -31,6 +31,7 @@ import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
 import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
+import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/preview" element={<PreviewPage />} />
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
