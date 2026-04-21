@@ -114,7 +114,7 @@ export default function AssinaturaPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setUpgradeOpen(true)} className="gap-1.5">
+            <Button onClick={handleChangePlan} className="gap-1.5">
               Mudar plano
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
@@ -279,12 +279,7 @@ export default function AssinaturaPage() {
             >
               Entendi
             </Button>
-            <Button
-              onClick={() => {
-                setComingSoonOpen(false);
-                window.location.href = "mailto:contato@ivero.com.br?subject=Suporte%20Assinatura";
-              }}
-            >
+            <Button onClick={handleContactSupport}>
               Falar com suporte
             </Button>
           </DialogFooter>
