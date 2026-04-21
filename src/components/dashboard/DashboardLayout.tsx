@@ -58,6 +58,12 @@ export default function DashboardLayout() {
 
   const showOnboarding = needsOnboarding && !dismissed && !isLoading && !snoozed;
 
+  // Trial gating: admins e usuários pagos passam direto.
+  // Trial users só veem rotas listadas em TRIAL_ALLOWED_ROUTES.
+  const allowAccess =
+    isPaid || isAdmin || isRouteAllowedInTrial(location.pathname);
+  const lockedInfo = allowAccess ? null : getLockedRouteInfo(location.pathname);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -74,7 +80,14 @@ export default function DashboardLayout() {
             </header>
           </div>
           <main className="flex-1 p-6 overflow-auto">
-            <Outlet />
+            {lockedInfo ? (
+              <TrialLockedPage
+                title={lockedInfo.title}
+                description={lockedInfo.description}
+              />
+            ) : (
+              <Outlet />
+            )}
           </main>
         </div>
       </div>
