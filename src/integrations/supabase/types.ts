@@ -176,6 +176,48 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_content: {
+        Row: {
+          article_md: string
+          context_used: Json
+          created_at: string
+          faq_json: Json
+          formats: string[]
+          id: string
+          model_used: string
+          summary_md: string
+          tone: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          article_md?: string
+          context_used?: Json
+          created_at?: string
+          faq_json?: Json
+          formats?: string[]
+          id?: string
+          model_used?: string
+          summary_md?: string
+          tone?: string
+          topic?: string
+          user_id: string
+        }
+        Update: {
+          article_md?: string
+          context_used?: Json
+          created_at?: string
+          faq_json?: Json
+          formats?: string[]
+          id?: string
+          model_used?: string
+          summary_md?: string
+          tone?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
