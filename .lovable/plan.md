@@ -1,62 +1,61 @@
 
 
-## Implementação PostHog EU + 4 eventos do funil de conversão
+## Reposicionar a barra de progresso nos cards de pilar (PreviewPage)
 
-### Configuração confirmada
-- **Região**: EU Cloud (Frankfurt) — endpoint `https://eu.i.posthog.com`
-- **Project token**: `phc_kyHRgaNd3gBskVfVTodQUVLfzqLfjPNroAEMDHj2gUvn`
-- **Conformidade**: GDPR/LGPD-ready
+### Situação atual
 
-### Arquivos a criar/modificar
+Em `src/pages/PreviewPage.tsx` (linhas 1057-1103), cada card de pilar tem:
 
-**1. `src/lib/analytics.ts`** (novo)
-Helpers tipados encapsulando `posthog-js`:
-- `initAnalytics()` — chamado uma vez no boot
-- `track(event, properties)` — dispara evento
-- `identifyLead(email, traits)` — vincula jornada pré-cadastro pelo e-mail
-- `identifyUser(userId, traits)` — vincula ao `auth.users.id` pós-signup
-- `resetIdentity()` — limpa no logout
-
-Config: `api_host: 'https://eu.i.posthog.com'`, `autocapture: false`, `capture_pageview: true`, `persistence: 'localStorage+cookie'`, `respect_dnt: true`. Em DEV, opt-out automático para não poluir métricas.
-
-**2. `src/main.tsx`**
-Chama `initAnalytics()` antes do `createRoot`.
-
-**3. `src/components/landing/HeroSection.tsx`**
-No submit do formulário (após validação Zod já existente):
-```ts
-identifyLead(email);
-track('hero_form_submitted', { email, name, site, has_phone: !!phone, source: 'hero_form' });
+```text
+┌─────────────────────────────────────────────────────────┐
+│ [icon] Clareza                  [INSUFICIENTE] 44 /100  │
+│        Sua comunicação...                               │
+├─────────────────────────────────────────────────────────┤
+│ ████████████░░░░░░░░░░░░░░░░░░░  ← barra largura total  │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**4. `src/pages/PreviewPage.tsx`** (2 eventos)
-- Em `handleLeadSubmit` após gate desbloqueado: `track('preview_gate_unlocked', { email, score_inicial, analyzed_url })`
-- No helper `goToSignup` antes do navigate: `track('signup_started', { email, cta_origin })` — passa origem do CTA como argumento (ex: `'criar_conta'`, `'subir_patamar'`)
+A barra vermelha "estoura" visualmente porque ocupa toda a largura, distante do score que ela representa.
 
-**5. `src/pages/AuthPage.tsx`**
-Após `supabase.auth.signUp` bem-sucedido:
-```ts
-identifyUser(user.id, { email });
-track('signup_completed', { email, user_id: user.id, came_from_lead_gate });
+### Mudança proposta
+
+Mover a barra para **dentro do bloco da direita, logo abaixo do "44 /100"**, com largura compacta (~140px) — ela passa a ser uma extensão visual do score:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│ [icon] Clareza                  [INSUFICIENTE] 44 /100  │
+│        Sua comunicação...       ████████░░░░░░░░░       │
+├─────────────────────────────────────────────────────────┤
+│ ANÁLISE DETECTADA                                       │
+│ ✓ Headline objetiva...                                  │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**6. `src/components/dashboard/DashboardSidebar.tsx`**
-Após `supabase.auth.signOut()` no botão de logout: `resetIdentity()`.
+Vantagens:
+- A barra fica visualmente atrelada ao número que ela representa.
+- O card fica mais limpo, sem aquele "traço vermelho" cortando o card no meio.
+- Acompanha o padrão do score circular geral (onde a visualização fica grudada no número).
 
-**7. `package.json`**
-Adiciona `posthog-js` (~250KB, lazy-loaded internamente).
+### Alterações técnicas
 
-### Pós-implementação — instruções para você
+Arquivo único: `src/pages/PreviewPage.tsx`.
 
-Vou te enviar passo-a-passo para criar o funil no painel PostHog EU:
-1. **Insights → New insight → Funnel**
-2. Steps na ordem: `hero_form_submitted` → `preview_gate_unlocked` → `signup_started` → `signup_completed`
-3. Conversion window: **7 dias**
-4. Breakdown opcional por `cta_origin` para descobrir qual botão converte mais
+1. **Remover** o bloco `<div className="h-2.5 rounded-full bg-muted overflow-hidden">…</div>` das linhas 1095-1103 (barra full-width atual).
 
-### Por que essa abordagem
-- **LGPD**: dados em Frankfurt, `respect_dnt` ativo, sem PII sensível
-- **Jornada unificada**: `identifyLead(email)` antes do signup conecta lead anônimo ao user logado depois
-- **DEV silencioso**: sua máquina não polui métricas
-- **Reversível**: 1 linha em `analytics.ts` desliga tudo se necessário
+2. **Inserir** a mesma barra dentro do bloco da direita (linhas 1071-1092), logo após o `<div className="flex items-baseline gap-2">…</div>` que contém badge + score, com:
+   - Largura fixa: `w-36` (~144px) para alinhar com o tamanho do score.
+   - Altura: mantém `h-2` (ligeiramente menor que os 2.5 atuais para combinar com o contexto compacto).
+   - Mesma cor dinâmica (`barColor`) e mesma animação `motion.div` com `whileInView`.
+
+3. **Manter intactos**: `getScoreBand`, `scoreColor`, `barColor`, badge, animação, ordem dos demais elementos do card (Análise detectada, recomendação, etc.).
+
+### Comportamento responsivo
+
+No mobile (< 640px), o bloco da direita já quebra abaixo do título por causa do `flex items-start justify-between gap-4`. A barra de 144px continua cabendo confortavelmente nessa coluna estreita — não exige media query nova.
+
+### Fora do escopo
+
+- Não toca em `DiagnosticoPage.tsx` nem `PilaresPage.tsx` (dashboard) — a pedido refere-se à PreviewPage (lead magnet) onde aparece o screenshot.
+- Não muda cores, thresholds (`getScoreBand`), nem a lógica do `barColor`.
+- Não mexe no card geral do "Score de Presença GEO" (linhas 416-419) — só nos cards de pilar individuais.
 
