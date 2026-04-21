@@ -62,7 +62,14 @@ export function asKeywordCloud(value: unknown): KeywordCloud {
 export function mergeCloudsAcrossPeriod(clouds: KeywordCloud[]): KeywordCloud {
   const byTerm = new Map<
     string,
-    { term: string; frequency: number; mentioned_in_models: number; sentiments: Record<KeywordSentiment, number> }
+    {
+      term: string;
+      frequency: number;
+      mentioned_in_models: number;
+      sentiments: Record<KeywordSentiment, number>;
+      examples: KeywordExample[];
+      modelCounts: Map<string, number>;
+    }
   >();
 
   for (const cloud of clouds) {
@@ -74,10 +81,30 @@ export function mergeCloudsAcrossPeriod(clouds: KeywordCloud[]): KeywordCloud {
         frequency: 0,
         mentioned_in_models: 0,
         sentiments: { positive: 0, neutral: 0, negative: 0 },
+        examples: [],
+        modelCounts: new Map<string, number>(),
       };
       current.frequency += entry.frequency;
       current.mentioned_in_models = Math.max(current.mentioned_in_models, entry.mentioned_in_models);
       current.sentiments[entry.sentiment] = (current.sentiments[entry.sentiment] ?? 0) + entry.frequency;
+
+      if (Array.isArray(entry.examples)) {
+        const seen = new Set(current.examples.map((e) => `${e.model}::${e.quote}`));
+        for (const ex of entry.examples) {
+          if (!ex?.quote) continue;
+          const k = `${ex.model}::${ex.quote}`;
+          if (!seen.has(k)) {
+            current.examples.push({ quote: ex.quote, model: ex.model });
+            seen.add(k);
+          }
+        }
+      }
+      if (Array.isArray(entry.models)) {
+        for (const m of entry.models) {
+          if (!m?.model) continue;
+          current.modelCounts.set(m.model, (current.modelCounts.get(m.model) ?? 0) + (m.count || 0));
+        }
+      }
       byTerm.set(key, current);
     }
   }
@@ -86,11 +113,16 @@ export function mergeCloudsAcrossPeriod(clouds: KeywordCloud[]): KeywordCloud {
     .map<KeywordCloudEntry>((v) => {
       const dominant = (Object.entries(v.sentiments) as [KeywordSentiment, number][])
         .sort((a, b) => b[1] - a[1])[0][0];
+      const models: KeywordModelStrength[] = Array.from(v.modelCounts.entries())
+        .map(([model, count]) => ({ model, count }))
+        .sort((a, b) => b.count - a.count);
       return {
         term: v.term,
         frequency: v.frequency,
         sentiment: dominant,
         mentioned_in_models: v.mentioned_in_models,
+        examples: v.examples.slice(0, 8),
+        models,
       };
     })
     .sort((a, b) => b.frequency - a.frequency)
