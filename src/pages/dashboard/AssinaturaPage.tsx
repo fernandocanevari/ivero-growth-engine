@@ -57,7 +57,7 @@ export default function AssinaturaPage() {
             Gerencie seu plano, forma de pagamento e histórico de faturas.
           </p>
         </div>
-        <Badge variant="outline" className="gap-1.5 border-amber-300 bg-amber-50 text-amber-700">
+        <Badge variant="outline" className="gap-1.5 border-accent/40 bg-accent/10 text-accent-foreground">
           <Info className="w-3 h-3" />
           Demonstração — gateway em breve
         </Badge>
