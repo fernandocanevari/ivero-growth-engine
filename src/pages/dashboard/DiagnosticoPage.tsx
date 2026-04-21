@@ -47,12 +47,23 @@ const PILLAR_ICON_MAP: Record<string, typeof Eye> = {
   Relevância: Sparkles,
 };
 
-/* ── Score band helper (Crítico / Insuficiente / Sólido / Referência) ── */
+/* ── Score band helper (5 faixas oficiais — score-rubric) ── */
 function getScoreBand(score: number) {
   if (score < 40) return { label: "Crítico", color: "red" as const };
-  if (score < 60) return { label: "Insuficiente", color: "amber" as const };
-  if (score < 80) return { label: "Sólido", color: "blue" as const };
+  if (score < 60) return { label: "Insuficiente", color: "orange" as const };
+  if (score < 75) return { label: "Moderado", color: "amber" as const };
+  if (score < 90) return { label: "Sólido", color: "blue" as const };
   return { label: "Referência", color: "emerald" as const };
+}
+
+function getBandClass(color: "red" | "orange" | "amber" | "blue" | "emerald") {
+  switch (color) {
+    case "red": return "bg-red-50 text-red-700 border-red-200/60";
+    case "orange": return "bg-orange-50 text-orange-700 border-orange-200/60";
+    case "amber": return "bg-amber-50 text-amber-700 border-amber-200/60";
+    case "blue": return "bg-sky-50 text-sky-700 border-sky-200/60";
+    case "emerald": return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+  }
 }
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
@@ -253,11 +264,7 @@ export default function DiagnosticoPage() {
 
   const level = getScoreLevel(overallScore);
   const overallBand = getScoreBand(overallScore);
-  const overallBandClass =
-    overallBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
-    : overallBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
-    : overallBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
-    : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+  const overallBandClass = getBandClass(overallBand.color);
 
   // Build evolution chart data from history
   const evolutionChartData = history.map((record) => ({
@@ -485,11 +492,7 @@ export default function DiagnosticoPage() {
           const statusBg = scoreColor === "emerald" ? "bg-emerald-50 border-emerald-200/60 text-emerald-700" : scoreColor === "amber" ? "bg-amber-50 border-amber-200/60 text-amber-700" : "bg-red-50 border-red-200/60 text-red-700";
           const barColor = scoreColor === "emerald" ? "bg-emerald-500" : scoreColor === "amber" ? "bg-amber-500" : "bg-red-500";
           const pillarBand = getScoreBand(pillar.score);
-          const pillarBandClass =
-            pillarBand.color === "red" ? "bg-red-50 text-red-700 border-red-200/60"
-            : pillarBand.color === "amber" ? "bg-amber-50 text-amber-700 border-amber-200/60"
-            : pillarBand.color === "blue" ? "bg-sky-50 text-sky-700 border-sky-200/60"
-            : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+          const pillarBandClass = getBandClass(pillarBand.color);
           const criterios = criteriaByPillar[pillar.name] || [];
 
           return (
@@ -509,16 +512,13 @@ export default function DiagnosticoPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-                      <div className="flex items-baseline gap-2">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${pillarBandClass}`}>
-                          {pillarBand.label}
-                        </span>
+                      <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
                         <span className="text-xs text-muted-foreground">/100</span>
                       </div>
-                      <div className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusBg}`}>
-                        {pillar.status}
-                      </div>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${pillarBandClass}`}>
+                        {pillarBand.label}
+                      </span>
                     </div>
                   </div>
 
@@ -550,6 +550,7 @@ export default function DiagnosticoPage() {
                             const cBand = getScoreBand(c.score);
                             const cBar =
                               cBand.color === "red" ? "bg-red-500"
+                              : cBand.color === "orange" ? "bg-orange-500"
                               : cBand.color === "amber" ? "bg-amber-500"
                               : cBand.color === "blue" ? "bg-sky-500"
                               : "bg-emerald-500";
