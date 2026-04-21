@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { alertsData } from "@/lib/mock-data";
+import { usePerceptionAlerts } from "@/hooks/usePerceptionAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
@@ -31,7 +31,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const unreadAlerts = alertsData.filter((a) => !a.read).length;
+// unreadAlerts é injetado dinamicamente em runtime via usePerceptionAlerts
 
 const menuGroups = [
   {
@@ -61,7 +61,7 @@ const menuGroups = [
       { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
       { title: "Gerador de Conteúdo", url: "/dashboard/conteudo", icon: PenLine },
       { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
-      { title: "Alertas", url: "/dashboard/alertas", icon: Bell, badge: unreadAlerts },
+      { title: "Alertas", url: "/dashboard/alertas", icon: Bell, dynamicBadge: "perception" as const },
       { title: "Campanhas", url: "/dashboard/campanhas", icon: Megaphone },
     ],
   },
@@ -80,6 +80,7 @@ export function DashboardSidebar() {
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
   const { isPaid } = useSubscriptionStatus();
+  const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const displayName = settings?.brand_name || "Minha Marca";
 
   // Trial users (não-admin, não pago) veem itens bloqueados com lock + opacity.
@@ -110,6 +111,12 @@ export function DashboardSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const locked = showLockState && !isRouteAllowedInTrial(item.url);
+                  const dynamicBadgeValue =
+                    "dynamicBadge" in item && item.dynamicBadge === "perception"
+                      ? perceptionUnread
+                      : 0;
+                  const staticBadge = "badge" in item ? (item as { badge?: number }).badge : 0;
+                  const badgeValue = dynamicBadgeValue || staticBadge || 0;
                   const linkContent = (
                     <NavLink
                       to={item.url}
@@ -123,9 +130,9 @@ export function DashboardSidebar() {
                       <span className="truncate">{item.title}</span>
                       {locked ? (
                         <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
-                      ) : "badge" in item && item.badge ? (
+                      ) : badgeValue ? (
                         <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-                          {item.badge}
+                          {badgeValue}
                         </span>
                       ) : null}
                     </NavLink>
