@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 /**
  * UpgradeModal — 4 planos resumidos exibidos sobre o dashboard.
@@ -117,10 +118,21 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
 
   const handleSelectPlan = (planName: string) => {
+    // Funil de conversão: descobrir quais planos são clicados e onde param.
+    track("upgrade_plan_clicked", {
+      plan: planName,
+      billing_cycle: isAnnual ? "annual" : "monthly",
+      surface: "upgrade_modal",
+    });
     setPendingPlan(planName);
   };
 
   const handleContact = () => {
+    track("upgrade_contact_clicked", {
+      plan: pendingPlan,
+      billing_cycle: isAnnual ? "annual" : "monthly",
+      surface: "upgrade_modal",
+    });
     const subject = encodeURIComponent(`Quero assinar o plano ${pendingPlan}`);
     window.location.href = `mailto:contato@ivero.com.br?subject=${subject}`;
   };

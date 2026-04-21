@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   CreditCard, Download, Sparkles, AlertCircle, Calendar, CheckCircle2,
-  ArrowUpRight, Info,
+  ArrowUpRight, Info, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +11,11 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
 import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
+import { track } from "@/lib/analytics";
 
 /**
  * AssinaturaPage — área financeira do cliente.
@@ -36,8 +40,26 @@ export default function AssinaturaPage() {
   const [comingSoonContext, setComingSoonContext] = useState<string>("");
 
   const openComingSoon = (context: string) => {
+    track("billing_action_blocked", { action: context, surface: "assinatura_page" });
     setComingSoonContext(context);
     setComingSoonOpen(true);
+  };
+
+  const handleChangePlan = () => {
+    track("upgrade_plan_clicked", {
+      plan: "open_modal",
+      surface: "assinatura_page_change_plan",
+    });
+    setUpgradeOpen(true);
+  };
+
+  const handleContactSupport = () => {
+    track("upgrade_contact_clicked", {
+      action: comingSoonContext,
+      surface: "assinatura_page_coming_soon",
+    });
+    setComingSoonOpen(false);
+    window.location.href = "mailto:contato@ivero.com.br?subject=Suporte%20Assinatura";
   };
 
   return (
@@ -92,7 +114,7 @@ export default function AssinaturaPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setUpgradeOpen(true)} className="gap-1.5">
+            <Button onClick={handleChangePlan} className="gap-1.5">
               Mudar plano
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
@@ -235,6 +257,103 @@ export default function AssinaturaPage() {
         </p>
       </Card>
 
+      {/* FAQ — antecipa as 5 dúvidas mais comuns sobre trial e gateway */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-base font-semibold text-foreground">
+            Perguntas frequentes
+          </h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Tudo o que você precisa saber sobre o trial e a cobrança.
+        </p>
+
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="trial">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "como_funciona_trial" })}
+            >
+              Como funciona o trial de 7 dias?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Você tem 7 dias para testar a Ivero com acesso liberado ao{" "}
+              <span className="font-medium text-foreground">Dashboard</span>,{" "}
+              <span className="font-medium text-foreground">Diagnóstico IA</span>,{" "}
+              <span className="font-medium text-foreground">Score GEO</span>,{" "}
+              <span className="font-medium text-foreground">Configurações</span> e{" "}
+              <span className="font-medium text-foreground">Assinatura</span>. Os
+              recursos avançados (Monitoramento Multi-IA, Mapa de Prompts, Planos
+              de Ação, Simulador, etc.) ficam bloqueados até a contratação de um
+              plano pago — você consegue ver o que cada um entrega, mas o conteúdo
+              só destrava com o upgrade.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="gateway">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "por_que_gateway_em_breve" })}
+            >
+              Por que o gateway de pagamento ainda está em finalização?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Estamos integrando o provedor de pagamentos com a infraestrutura da
+              Ivero (cobrança recorrente, emissão de nota fiscal e relatórios
+              financeiros). Enquanto a integração não está 100%, ativamos os planos{" "}
+              <span className="font-medium text-foreground">manualmente em até 1
+              dia útil</span> — você fala com nosso time, escolhe o plano e
+              começamos a cobrar pelo método combinado (Pix, boleto ou cartão). É
+              o mesmo plano, mesmo preço, com atendimento direto.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="cobranca">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "vou_ser_cobrada_no_trial" })}
+            >
+              Vou ser cobrada automaticamente quando o trial acabar?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Não. Como o gateway ainda está em finalização e você não cadastrou
+              nenhuma forma de pagamento, nada será cobrado automaticamente. No
+              fim dos 7 dias o acesso aos recursos do trial continua disponível
+              até você decidir contratar um plano pago.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="trocar">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "como_mudar_de_plano" })}
+            >
+              Como faço para mudar de plano depois?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Quando o gateway estiver no ar, você poderá fazer upgrade ou
+              downgrade direto desta página, com cobrança proporcional ao período
+              restante. Por enquanto, qualquer mudança é feita por contato com o
+              nosso time — sem burocracia, sem multa.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="cancelar">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "como_cancelar" })}
+            >
+              Posso cancelar quando quiser?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Sim. Sem fidelidade e sem multa de cancelamento. Você mantém o
+              acesso até o final do ciclo já pago e nada é cobrado depois disso.
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </Card>
+
       {/* Upgrade modal (planos reais) */}
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
 
@@ -257,12 +376,7 @@ export default function AssinaturaPage() {
             >
               Entendi
             </Button>
-            <Button
-              onClick={() => {
-                setComingSoonOpen(false);
-                window.location.href = "mailto:contato@ivero.com.br?subject=Suporte%20Assinatura";
-              }}
-            >
+            <Button onClick={handleContactSupport}>
               Falar com suporte
             </Button>
           </DialogFooter>
