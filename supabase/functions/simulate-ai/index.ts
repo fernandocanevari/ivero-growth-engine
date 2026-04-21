@@ -377,7 +377,14 @@ async function callModel(
 async function extractKeywordCloud(
   modelResults: any[],
   brandName: string,
-): Promise<Array<{ term: string; frequency: number; sentiment: "positive" | "neutral" | "negative"; mentioned_in_models: number }>> {
+): Promise<Array<{
+  term: string;
+  frequency: number;
+  sentiment: "positive" | "neutral" | "negative";
+  mentioned_in_models: number;
+  examples?: Array<{ quote: string; model: string }>;
+  models?: Array<{ model: string; count: number }>;
+}>> {
   const lovableKey = Deno.env.get("LOVABLE_API_KEY");
   if (!lovableKey) return [];
 
@@ -404,17 +411,22 @@ async function extractKeywordCloud(
     .map((m) => `[${m.model}]\n${m.text}`)
     .join("\n\n---\n\n");
 
-  const systemPrompt = `Você é um analista de percepção de marca. Receberá respostas de múltiplos modelos de IA descrevendo a marca "${brandName}" e seu site.
+  const systemPrompt = `Você é um analista de percepção de marca. Receberá respostas de múltiplos modelos de IA descrevendo a marca "${brandName}" e seu site, cada bloco prefixado com [NomeDoModelo].
 
 Sua tarefa: extrair até 30 termos ou expressões (1 a 4 palavras) que melhor representem COMO essas IAs falam da marca — atributos, qualidades, problemas, vocabulário do nicho.
+
+Para cada termo extraia também:
+- "examples": de 1 a 3 frases curtas (≤180 caracteres) ONDE o termo (ou variação clara) aparece, copiadas literalmente do corpus, junto com o nome do modelo de origem (use exatamente o nome entre colchetes que precede o trecho).
+- "models": lista dos modelos em que o termo apareceu, com a contagem aproximada de menções em cada um. Inclua apenas modelos onde o termo (ou variação) realmente aparece.
 
 Regras:
 - Prefira frases-conceito significativas ("ingredientes frescos", "rápido cozimento") a palavras isoladas vagas.
 - Ignore termos genéricos sem valor descritivo ("site", "marca", "empresa", "produto", "serviço").
 - Idioma: português do Brasil, lowercase (exceto siglas).
-- "frequency": número aproximado de menções no corpus.
-- "mentioned_in_models": em quantos dos ${perModelTexts.length} modelos o termo (ou variação clara) aparece.
+- "frequency": soma das menções no corpus inteiro.
+- "mentioned_in_models": em quantos dos ${perModelTexts.length} modelos o termo aparece.
 - "sentiment": "positive" para qualidades/elogios, "negative" para falhas/críticas, "neutral" para descritivos factuais.
+- Os exemplos devem ser frases REAIS do corpus, nunca inventadas.
 - Ordene do mais relevante para o menos relevante.`;
 
   try {
@@ -435,7 +447,7 @@ Regras:
             type: "function",
             function: {
               name: "extract_keywords",
-              description: "Retorna a nuvem de percepção extraída do corpus.",
+              description: "Retorna a nuvem de percepção extraída do corpus, com exemplos por modelo.",
               parameters: {
                 type: "object",
                 properties: {
@@ -451,8 +463,39 @@ Regras:
                           enum: ["positive", "neutral", "negative"],
                         },
                         mentioned_in_models: { type: "number" },
+                        examples: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              quote: { type: "string" },
+                              model: { type: "string" },
+                            },
+                            required: ["quote", "model"],
+                            additionalProperties: false,
+                          },
+                        },
+                        models: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              model: { type: "string" },
+                              count: { type: "number" },
+                            },
+                            required: ["model", "count"],
+                            additionalProperties: false,
+                          },
+                        },
                       },
-                      required: ["term", "frequency", "sentiment", "mentioned_in_models"],
+                      required: [
+                        "term",
+                        "frequency",
+                        "sentiment",
+                        "mentioned_in_models",
+                        "examples",
+                        "models",
+                      ],
                       additionalProperties: false,
                     },
                   },
@@ -483,17 +526,41 @@ Regras:
     const keywords = Array.isArray(parsed?.keywords) ? parsed.keywords : [];
 
     const totalModels = perModelTexts.length;
+    const validModelNames = new Set(perModelTexts.map((m) => m.model));
+
     return keywords
-      .map((k: any) => ({
-        term: typeof k.term === "string" ? k.term.trim() : "",
-        frequency: Math.max(1, Math.round(Number(k.frequency) || 1)),
-        sentiment:
-          k.sentiment === "positive" || k.sentiment === "negative" ? k.sentiment : "neutral",
-        mentioned_in_models: Math.max(
-          1,
-          Math.min(totalModels, Math.round(Number(k.mentioned_in_models) || 1)),
-        ),
-      }))
+      .map((k: any) => {
+        const examples = Array.isArray(k.examples)
+          ? k.examples
+              .map((e: any) => ({
+                quote: typeof e?.quote === "string" ? e.quote.trim().slice(0, 220) : "",
+                model: typeof e?.model === "string" ? e.model.trim() : "",
+              }))
+              .filter((e: any) => e.quote && validModelNames.has(e.model))
+              .slice(0, 5)
+          : [];
+        const models = Array.isArray(k.models)
+          ? k.models
+              .map((m: any) => ({
+                model: typeof m?.model === "string" ? m.model.trim() : "",
+                count: Math.max(1, Math.round(Number(m?.count) || 1)),
+              }))
+              .filter((m: any) => m.model && validModelNames.has(m.model))
+              .sort((a: any, b: any) => b.count - a.count)
+          : [];
+        return {
+          term: typeof k.term === "string" ? k.term.trim() : "",
+          frequency: Math.max(1, Math.round(Number(k.frequency) || 1)),
+          sentiment:
+            k.sentiment === "positive" || k.sentiment === "negative" ? k.sentiment : "neutral",
+          mentioned_in_models: Math.max(
+            1,
+            Math.min(totalModels, Math.round(Number(k.mentioned_in_models) || 1)),
+          ),
+          examples,
+          models,
+        };
+      })
       .filter((k: any) => k.term && k.term.length <= 60)
       .slice(0, 30);
   } catch (e) {
