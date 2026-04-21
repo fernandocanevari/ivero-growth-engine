@@ -19,7 +19,17 @@ export const TRIAL_ALLOWED_ROUTES: readonly string[] = [
   "/dashboard/score",
   "/dashboard/configuracoes",
   "/dashboard/assinatura",
+  // Gerador de Conteúdo: rota acessível no trial, mas com cota de uso.
+  // O bloqueio real é por uso (ver TRIAL_GENERATION_LIMIT abaixo), não por rota.
+  "/dashboard/conteudo",
 ];
+
+/**
+ * Cota de gerações de conteúdo durante o trial.
+ * Usuários no trial podem gerar até N artigos/FAQs/resumos antes de cair no UpgradeModal.
+ * Admins e usuários pagos: ilimitado.
+ */
+export const TRIAL_GENERATION_LIMIT = 2;
 
 /**
  * Rotas administrativas — sempre liberadas para admins, nunca aparecem
@@ -81,6 +91,11 @@ export const LOCKED_ROUTE_INFO: Record<
     title: "Planos de Ação",
     description:
       "Receba planos estratégicos personalizados para destravar pontos fracos e consolidar pilares fortes.",
+  },
+  "/dashboard/conteudo": {
+    title: "Gerador de Conteúdo Estratégico",
+    description:
+      "Crie artigos, FAQs e resumos otimizados para serem citados pelas IAs — gerados a partir do diagnóstico da sua marca.",
   },
   "/dashboard/prompts": {
     title: "Mapa de Prompts",
