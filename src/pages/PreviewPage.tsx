@@ -1421,7 +1421,9 @@ export default function PreviewPage() {
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
 
-        // Persist criteria payload so the executive dashboard can render the rubric breakdown
+        // Persist criteria payload + keyword cloud so the executive dashboard can render
+        // the rubric breakdown and reuse the perception cloud on the next "Reanalisar".
+        const keywordCloud = Array.isArray(data.keyword_cloud) ? data.keyword_cloud : [];
         try {
           sessionStorage.setItem(
             "ivero:lastDiagnostic",
@@ -1430,6 +1432,7 @@ export default function PreviewPage() {
               geoScore: totalScore,
               radar,
               pillarDetails: details,
+              keyword_cloud: keywordCloud,
               savedAt: new Date().toISOString(),
             })
           );

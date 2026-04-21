@@ -215,8 +215,27 @@ export default function DiagnosticoPage() {
 
   const handleReanalyze = () => {
     if (!canReanalyze) return;
+    // Reaproveita a nuvem de termos extraída no último Diagnóstico (PreviewPage),
+    // armazenada em sessionStorage. Ausente em sessões antigas → grava [].
+    let keyword_cloud: unknown[] = [];
+    try {
+      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.keyword_cloud)) keyword_cloud = parsed.keyword_cloud;
+      }
+    } catch {
+      /* sessionStorage indisponível */
+    }
     runAnalysis.mutate(
-      { clarity: 82, authority: 35, conversion: 58, positioning: 64, experience: 71 },
+      {
+        clarity: 82,
+        authority: 35,
+        conversion: 58,
+        positioning: 64,
+        experience: 71,
+        keyword_cloud: keyword_cloud as never,
+      },
       {
         onSuccess: () => toast.success("Nova análise realizada com sucesso!"),
         onError: () => toast.error("Erro ao realizar análise. Tente novamente."),
