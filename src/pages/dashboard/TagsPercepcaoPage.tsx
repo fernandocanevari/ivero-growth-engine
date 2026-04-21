@@ -124,11 +124,11 @@ export default function TagsPercepcaoPage() {
   if (!lastAnalysis || !lastSnapshot) {
     return (
       <EmptyStatePage
-        icon={Tags}
+        icon={<Tags className="h-10 w-10" />}
         title="Tags de Percepção da IA"
-        description="Execute seu primeiro Diagnóstico IA para que possamos traduzir os sinais do seu site em evidências de percepção."
-        ctaLabel="Ir para Diagnóstico"
-        ctaTo="/dashboard/diagnostico"
+        subtitle="Como as IAs leem os sinais do seu site, traduzido em evidências."
+        message="Execute seu primeiro Diagnóstico IA para ver as tags de percepção."
+        hasBrand={true}
       />
     );
   }
