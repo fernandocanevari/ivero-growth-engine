@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
-  FileText, Map, Bell, FlaskConical, Terminal, Megaphone,
+  FileText, Map, Bell, FlaskConical, Terminal, Megaphone, PenLine,
   Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard, Lock,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -58,6 +58,7 @@ const menuGroups = [
     label: "Ações",
     items: [
       { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
+      { title: "Gerador de Conteúdo", url: "/dashboard/conteudo", icon: PenLine },
       { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
       { title: "Alertas", url: "/dashboard/alertas", icon: Bell, badge: unreadAlerts },
       { title: "Campanhas", url: "/dashboard/campanhas", icon: Megaphone },
