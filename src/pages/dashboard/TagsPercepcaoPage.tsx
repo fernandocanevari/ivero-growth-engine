@@ -410,6 +410,12 @@ export default function TagsPercepcaoPage() {
             </section>
           )}
 
+          {/* Nuvem de percepção — vocabulário concreto que as IAs usam */}
+          <KeywordCloudSection
+            cloudsInPeriod={filteredHistory.map((r) => (r as { keyword_cloud?: unknown }).keyword_cloud)}
+            previousCloud={(previousAnalysis as { keyword_cloud?: unknown } | null)?.keyword_cloud}
+          />
+
           {/* Percepções por pilar (clicáveis) */}
           <section>
             <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3 px-1">
