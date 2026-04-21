@@ -1328,7 +1328,7 @@ export default function PreviewPage() {
   const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
   useEffect(() => {
-    const totalDuration = 10000; // increased to allow 5 parallel calls to complete
+    const totalDuration = 4000; // ~4s teatro de loading; chamadas reais à IA continuam em paralelo (await abaixo)
     const stepDuration = totalDuration / loadingSteps.length;
 
     const progressInterval = setInterval(() => {
