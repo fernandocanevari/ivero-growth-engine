@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import OnboardingWizard from "./OnboardingWizard";
+import { TrialBanner } from "./TrialBanner";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -57,13 +58,16 @@ export default function DashboardLayout() {
       <div className="min-h-screen flex w-full bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-4 border-b border-border px-4 bg-background sticky top-0 z-10">
-            <SidebarTrigger />
-            <div className="flex-1" />
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Fev 2026</span>
-            </div>
-          </header>
+          <div className="sticky top-0 z-10 bg-background">
+            <TrialBanner userId={userId} />
+            <header className="h-14 flex items-center gap-4 border-b border-border px-4">
+              <SidebarTrigger />
+              <div className="flex-1" />
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Fev 2026</span>
+              </div>
+            </header>
+          </div>
           <main className="flex-1 p-6 overflow-auto">
             <Outlet />
           </main>
