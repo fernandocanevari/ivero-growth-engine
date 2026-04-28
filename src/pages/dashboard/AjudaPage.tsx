@@ -54,9 +54,25 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
+function normalize(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export default function AjudaPage() {
   const { data: settings } = useBrandSettings();
   const brandName = settings?.brand_name;
+  const [query, setQuery] = useState("");
+
+  const filteredFaq = useMemo(() => {
+    const q = normalize(query.trim());
+    if (!q) return FAQ;
+    return FAQ.filter(
+      (item) => normalize(item.q).includes(q) || normalize(item.a).includes(q),
+    );
+  }, [query]);
 
   return (
     <div className="max-w-4xl mx-auto">
