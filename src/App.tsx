@@ -34,6 +34,7 @@ import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
+import AjudaPage from "./pages/dashboard/AjudaPage";
 import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="relatorios" element={<RelatoriosPage />} />
             <Route path="assinatura" element={<AssinaturaPage />} />
             <Route path="configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="ajuda" element={<AjudaPage />} />
             <Route path="admin/respostas" element={<AdminRespostasPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="admin/clientes" element={<AdminClientesPage />} />

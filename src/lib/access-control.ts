@@ -19,6 +19,8 @@ export const TRIAL_ALLOWED_ROUTES: readonly string[] = [
   "/dashboard/score",
   "/dashboard/configuracoes",
   "/dashboard/assinatura",
+  // Central de Ajuda — sempre acessível, inclusive no trial.
+  "/dashboard/ajuda",
   // Gerador de Conteúdo: rota acessível no trial, mas com cota de uso.
   // O bloqueio real é por uso (ver TRIAL_GENERATION_LIMIT abaixo), não por rota.
   "/dashboard/conteudo",

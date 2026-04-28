@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import OnboardingWizard from "./OnboardingWizard";
+import SupportWidget from "./SupportWidget";
 import { TrialBanner } from "./TrialBanner";
 import { TrialLockedPage } from "./TrialLockedPage";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -92,6 +93,7 @@ export default function DashboardLayout() {
         </div>
       </div>
       {showOnboarding && <OnboardingWizard onComplete={handleComplete} onDismiss={handleDismiss} />}
+      <SupportWidget />
     </SidebarProvider>
   );
 }
