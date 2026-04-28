@@ -110,7 +110,7 @@ const Footer = () => {
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Empresa</h4>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Sobre</a>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Blog</a>
+              
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
             </div>
             <div className="flex flex-col gap-1">
