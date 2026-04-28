@@ -81,14 +81,6 @@ export function CookieConsentBanner() {
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-2.5 mt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleReject}
-                className="text-xs h-9 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              >
-                Rejeitar
-              </Button>
               <a
                 href="/politica-de-privacidade"
                 target="_blank"
