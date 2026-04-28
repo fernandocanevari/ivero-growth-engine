@@ -1,5 +1,6 @@
-import { MessageCircle, Mail, Clock } from "lucide-react";
+import { MessageCircle, Mail, Clock, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -7,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import {
   WHATSAPP_DISPLAY,
@@ -52,9 +54,25 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
+function normalize(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export default function AjudaPage() {
   const { data: settings } = useBrandSettings();
   const brandName = settings?.brand_name;
+  const [query, setQuery] = useState("");
+
+  const filteredFaq = useMemo(() => {
+    const q = normalize(query.trim());
+    if (!q) return FAQ;
+    return FAQ.filter(
+      (item) => normalize(item.q).includes(q) || normalize(item.a).includes(q),
+    );
+  }, [query]);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -114,20 +132,54 @@ export default function AjudaPage() {
 
       {/* FAQ */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Perguntas frequentes</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 className="text-xl font-semibold text-foreground">Perguntas frequentes</h2>
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar dúvida..."
+              aria-label="Buscar nas perguntas frequentes"
+              className="pl-9 pr-9 h-10"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Limpar busca"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
         <div className="rounded-2xl border border-border bg-card p-2 sm:p-4">
-          <Accordion type="single" collapsible className="w-full">
-            {FAQ.map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`}>
-                <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:no-underline">
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                  {item.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {filteredFaq.length === 0 ? (
+            <div className="px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma dúvida encontrada para <span className="font-medium text-foreground">"{query}"</span>.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Não achou o que procurava? Fale com o time pelo WhatsApp ou email acima.
+              </p>
+            </div>
+          ) : (
+            <Accordion type="single" collapsible className="w-full">
+              {filteredFaq.map((item, i) => (
+                <AccordionItem key={item.q} value={`faq-${i}`}>
+                  <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:no-underline">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
         </div>
       </div>
 
