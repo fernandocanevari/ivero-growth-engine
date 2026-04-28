@@ -1,5 +1,6 @@
-import { MessageCircle, Mail, Clock } from "lucide-react";
+import { MessageCircle, Mail, Clock, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -7,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import {
   WHATSAPP_DISPLAY,
