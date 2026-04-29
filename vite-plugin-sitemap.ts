@@ -37,9 +37,8 @@ async function loadPosts(projectRoot: string): Promise<BlogPostMeta[]> {
   // We use a cache-busting query so dev re-imports pick up edits.
   const registryPath = path.resolve(projectRoot, "src/content/blog/index.ts");
   const url = `${pathToFileURL(registryPath).href}?t=${Date.now()}`;
-  // @ts-expect-error — runtime ESM import of TS source via Vite/tsx isn't typed
-  const mod = await import(url);
-  const posts = (mod.POSTS ?? []) as BlogPostMeta[];
+  const mod = (await import(/* @vite-ignore */ url)) as { POSTS?: BlogPostMeta[] };
+  const posts = mod.POSTS ?? [];
   return posts;
 }
 
