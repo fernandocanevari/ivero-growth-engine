@@ -1,19 +1,14 @@
 import type { Plugin, ViteDevServer } from "vite";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 
 /**
  * Vite plugin that auto-generates `public/sitemap.xml` from the blog registry.
  *
- * Why a Vite plugin (and not a `prebuild` npm script):
- *  - We can't edit package.json in this project
- *  - Runs automatically on `vite` and `vite build`
- *  - Watches blog files in dev and regenerates on save
- *
- * Strategy: dynamically import the registry as ESM so we always read the
- * canonical source of truth. If the import fails (syntax error in a post),
- * we keep the existing sitemap intact and log a warning.
+ * We parse the post .ts files with simple regex (no dynamic import) to avoid
+ * Node ESM trying to resolve TS/`@/` aliases at build time. Each post file
+ * is plain data — `slug`, `publishedAt`, optional `updatedAt` — so regex is
+ * safe and stable.
  */
 
 const SITE_URL = "https://ivero.com.br";
@@ -33,13 +28,57 @@ interface BlogPostMeta {
   updatedAt?: string;
 }
 
-async function loadPosts(projectRoot: string): Promise<BlogPostMeta[]> {
-  // We use a cache-busting query so dev re-imports pick up edits.
-  const registryPath = path.resolve(projectRoot, "src/content/blog/index.ts");
-  const url = `${pathToFileURL(registryPath).href}?t=${Date.now()}`;
-  const mod = (await import(/* @vite-ignore */ url)) as { POSTS?: BlogPostMeta[] };
-  const posts = mod.POSTS ?? [];
-  return posts;
+/** Extract the ordered list of post-file basenames from `index.ts`. */
+async function readRegistryOrder(blogDir: string): Promise<string[]> {
+  const indexPath = path.join(blogDir, "index.ts");
+  const src = await fs.readFile(indexPath, "utf-8");
+  // Match `import { post as <alias> } from "./<filename>";`
+  const importRe = /from\s+["']\.\/([\w-]+)["']/g;
+  const aliasToFile = new Map<string, string>();
+  // We also need alias order from the POSTS array
+  const aliasImportRe = /import\s+\{\s*post\s+as\s+(\w+)\s*\}\s+from\s+["']\.\/([\w-]+)["']/g;
+  let m: RegExpExecArray | null;
+  while ((m = aliasImportRe.exec(src))) {
+    aliasToFile.set(m[1], m[2]);
+  }
+  // Suppress unused-var lint for importRe (kept for documentation)
+  void importRe;
+
+  const postsArrMatch = src.match(/export\s+const\s+POSTS\s*:\s*BlogPost\[\]\s*=\s*\[([\s\S]*?)\]/);
+  if (!postsArrMatch) return [];
+  const arrBody = postsArrMatch[1];
+  const aliasOrderRe = /(\w+)\s*,/g;
+  const order: string[] = [];
+  while ((m = aliasOrderRe.exec(arrBody))) {
+    const file = aliasToFile.get(m[1]);
+    if (file) order.push(file);
+  }
+  // Also catch a trailing alias without a comma
+  const tail = arrBody.trim().replace(/,$/, "").split(",").pop()?.trim();
+  if (tail && aliasToFile.has(tail) && !order.includes(aliasToFile.get(tail)!)) {
+    order.push(aliasToFile.get(tail)!);
+  }
+  return order;
+}
+
+/** Parse slug/publishedAt/updatedAt out of a single post .ts file. */
+async function readPostMeta(filePath: string): Promise<BlogPostMeta | null> {
+  const src = await fs.readFile(filePath, "utf-8");
+  const slug = src.match(/slug:\s*["']([^"']+)["']/)?.[1];
+  const publishedAt = src.match(/publishedAt:\s*["']([^"']+)["']/)?.[1];
+  const updatedAt = src.match(/updatedAt:\s*["']([^"']+)["']/)?.[1];
+  if (!slug || !publishedAt) return null;
+  return { slug, publishedAt, updatedAt };
+}
+
+async function loadPosts(blogDir: string): Promise<BlogPostMeta[]> {
+  const order = await readRegistryOrder(blogDir);
+  const out: BlogPostMeta[] = [];
+  for (const file of order) {
+    const meta = await readPostMeta(path.join(blogDir, `${file}.ts`));
+    if (meta) out.push(meta);
+  }
+  return out;
 }
 
 function buildSitemap(posts: BlogPostMeta[]): string {
@@ -54,7 +93,7 @@ function buildSitemap(posts: BlogPostMeta[]): string {
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i];
     const lastmod = (post.updatedAt ?? post.publishedAt).slice(0, 10);
-    const priority = i === 0 ? "0.9" : "0.8"; // first post (pillar) gets higher priority
+    const priority = i === 0 ? "0.9" : "0.8";
     urls.push(
       `  <url>\n    <loc>${SITE_URL}/blog/${post.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>${priority}</priority>\n  </url>`,
     );
@@ -68,7 +107,8 @@ export function sitemapPlugin(): Plugin {
 
   async function generate(reason: string) {
     try {
-      const posts = await loadPosts(projectRoot);
+      const blogDir = path.resolve(projectRoot, "src/content/blog");
+      const posts = await loadPosts(blogDir);
       const xml = buildSitemap(posts);
       const outPath = path.resolve(projectRoot, "public/sitemap.xml");
       const existing = await fs.readFile(outPath, "utf-8").catch(() => "");
@@ -82,7 +122,7 @@ export function sitemapPlugin(): Plugin {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn(
-        `\x1b[33m[sitemap]\x1b[0m skipped regeneration (${reason}):`,
+        `\x1b[33m[sitemap]\x1b[0m skipped (${reason}):`,
         err instanceof Error ? err.message : err,
       );
     }
@@ -90,7 +130,6 @@ export function sitemapPlugin(): Plugin {
 
   return {
     name: "ivero-sitemap",
-    apply: () => true,
     configResolved(config) {
       projectRoot = config.root;
     },
@@ -99,7 +138,6 @@ export function sitemapPlugin(): Plugin {
     },
     configureServer(server: ViteDevServer) {
       const blogDir = path.resolve(projectRoot, "src/content/blog");
-      server.watcher.add(blogDir);
       server.watcher.on("change", (file) => {
         if (file.startsWith(blogDir) && file.endsWith(".ts")) {
           void generate(`change: ${path.basename(file)}`);
