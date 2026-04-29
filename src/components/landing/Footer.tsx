@@ -110,8 +110,8 @@ const Footer = () => {
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Empresa</h4>
               <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Sobre</a>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Blog</a>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
+              <a href="/blog" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Blog</a>
+              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Contato</a>
             </div>
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Produto</h4>
@@ -128,9 +128,9 @@ const Footer = () => {
             </div>
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Legal</h4>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Termos</a>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Privacidade</a>
-              <a href="#" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">LGPD</a>
+              <a href="/politica-de-privacidade" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Privacidade</a>
+              <a href="/politica-de-cookies" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Cookies</a>
+              <a href="/politica-de-privacidade#direitos" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">LGPD</a>
             </div>
           </div>
         </div>

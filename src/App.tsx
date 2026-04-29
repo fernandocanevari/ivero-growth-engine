@@ -36,6 +36,9 @@ import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
 import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
+import PoliticaCookiesPage from "./pages/PoliticaCookiesPage";
+import BlogIndexPage from "./pages/BlogIndexPage";
+import BlogPostPage from "./pages/BlogPostPage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
@@ -53,6 +56,9 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/preview" element={<PreviewPage />} />
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
+          <Route path="/politica-de-cookies" element={<PoliticaCookiesPage />} />
+          <Route path="/blog" element={<BlogIndexPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
