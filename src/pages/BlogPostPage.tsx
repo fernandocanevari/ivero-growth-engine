@@ -5,6 +5,7 @@ import { BlogLayout } from "@/components/blog/BlogLayout";
 import { BlogPostHero } from "@/components/blog/BlogPostHero";
 import { BlogContent } from "@/components/blog/BlogContent";
 import { BlogFAQ } from "@/components/blog/BlogFAQ";
+import { BlogPostCTA } from "@/components/blog/BlogPostCTA";
 import { RelatedPosts } from "@/components/blog/RelatedPosts";
 import {
   getPostBySlug,
@@ -101,6 +102,8 @@ const BlogPostPage = () => {
         />
 
         <BlogFAQ items={post.faq} />
+
+        <BlogPostCTA postSlug={post.slug} />
 
         <RelatedPosts posts={related} />
       </article>
