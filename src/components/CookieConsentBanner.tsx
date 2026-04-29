@@ -82,12 +82,20 @@ export function CookieConsentBanner() {
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-2.5 mt-4">
               <a
+                href="/politica-de-cookies"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs h-9 inline-flex items-center justify-center px-2 text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+              >
+                Política de cookies
+              </a>
+              <a
                 href="/politica-de-privacidade"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs h-9 inline-flex items-center justify-center px-3 text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+                className="text-xs h-9 inline-flex items-center justify-center px-2 text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
               >
-                Saiba mais
+                Privacidade
               </a>
               <Button
                 variant="hero"
