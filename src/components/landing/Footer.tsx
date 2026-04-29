@@ -128,9 +128,10 @@ const Footer = () => {
             </div>
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-primary-foreground mb-1">Legal</h4>
+              <a href="/legal" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Central Legal</a>
+              <a href="/termos-de-uso" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Termos</a>
               <a href="/politica-de-privacidade" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Privacidade</a>
               <a href="/politica-de-cookies" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">Cookies</a>
-              <a href="/politica-de-privacidade#direitos" className="text-ivero-slate-light hover:text-primary-foreground transition-colors">LGPD</a>
             </div>
           </div>
         </div>
