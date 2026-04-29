@@ -3,12 +3,16 @@ import { useMemo, type ReactNode } from "react";
 /**
  * Highlights the FIRST occurrence of each keyword inside a text block.
  *
- * Why first-occurrence-only: avoids keyword stuffing (Google penalty)
- * while still giving the term semantic weight via <mark> for both
- * search engines and LLM extractors (Perplexity, ChatGPT search).
+ * Why first-occurrence-only:
+ *  - Avoids keyword stuffing (Google penalty) while still giving the term
+ *    semantic weight via <mark> for both search engines and LLM extractors
+ *    (Perplexity, ChatGPT search, Gemini).
  *
- * Sort longest-first so "Generative Engine Optimization" wins over "GEO".
- * Case-insensitive match preserves the author's casing in the rendered output.
+ * Behavior:
+ *  - Sort longest-first so multi-word phrases ("Generative Engine
+ *    Optimization") win over their substrings ("GEO").
+ *  - Case-insensitive match preserves the author's casing in output.
+ *  - Each keyword is consumed after its first hit (one highlight per kw).
  */
 interface Props {
   text: string;
@@ -17,64 +21,43 @@ interface Props {
 
 export function KeywordHighlight({ text, keywords }: Props) {
   const nodes = useMemo<ReactNode[]>(() => {
-    if (!keywords.length) return [text];
+    if (!keywords.length || !text) return [text];
 
-    // Sort longest first so multi-word phrases match before their shorter substrings.
     const sorted = [...keywords].sort((a, b) => b.length - a.length);
     const used = new Set<string>();
-
-    // Walk the string left-to-right. For each position, find the earliest matching
-    // keyword that hasn't been used yet. This guarantees first-occurrence-only.
-    const result: ReactNode[] = [];
+    const segments: ReactNode[] = [];
+    let cursor = 0; // start of next un-emitted slice
     let i = 0;
     let key = 0;
+
     while (i < text.length) {
-      let matchKw: string | null = null;
-      let matchLen = 0;
+      let matched: string | null = null;
       for (const kw of sorted) {
         if (used.has(kw)) continue;
         if (kw.length > text.length - i) continue;
-        const slice = text.substr(i, kw.length);
-        if (slice.toLowerCase() === kw.toLowerCase()) {
-          if (kw.length > matchLen) {
-            matchKw = kw;
-            matchLen = kw.length;
-          }
+        if (text.substr(i, kw.length).toLowerCase() === kw.toLowerCase()) {
+          if (!matched || kw.length > matched.length) matched = kw;
         }
       }
-      if (matchKw) {
-        // Find the end of the chunk before this match
-        const before = text.slice(lastFlush(), i);
-        if (before) result.push(<span key={key++}>{before}</span>);
-        result.push(
+      if (matched) {
+        if (i > cursor) segments.push(<span key={key++}>{text.slice(cursor, i)}</span>);
+        segments.push(
           <mark
             key={key++}
             className="bg-[linear-gradient(transparent_60%,hsl(var(--primary)/0.22)_60%)] text-foreground font-semibold px-0.5 rounded-sm"
           >
-            {text.substr(i, matchLen)}
+            {text.substr(i, matched.length)}
           </mark>,
         );
-        used.add(matchKw);
-        i += matchLen;
-        flushTo(i);
+        used.add(matched);
+        i += matched.length;
+        cursor = i;
       } else {
         i += 1;
       }
     }
-    const tail = text.slice(lastFlush());
-    if (tail) result.push(<span key={key++}>{tail}</span>);
-    return result;
-
-    // Closure helpers (using variables in scope)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function lastFlush() {
-      return flushPos;
-    }
-    function flushTo(pos: number) {
-      flushPos = pos;
-    }
-    // mutable cursor for "where we last emitted up to"
-    var flushPos = 0;
+    if (cursor < text.length) segments.push(<span key={key++}>{text.slice(cursor)}</span>);
+    return segments;
   }, [text, keywords]);
 
   return <>{nodes}</>;
