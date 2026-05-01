@@ -41,11 +41,7 @@ export function BlogPostCTA({ postSlug }: BlogPostCTAProps) {
         />
 
         <div className="relative">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            Próximo passo
-          </div>
-
+          
           <h2
             id="post-cta-title"
             className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3"
