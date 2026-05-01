@@ -43,8 +43,6 @@ import BlogIndexPage from "./pages/BlogIndexPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import LegalPage from "./pages/LegalPage";
 import TermosDeUsoPage from "./pages/TermosDeUsoPage";
-import PropostaValorPage from "./pages/PropostaValorPage";
-import PropostaComercialPage from "./pages/PropostaComercialPage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
@@ -64,8 +62,6 @@ const App = () => (
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
           <Route path="/politica-de-cookies" element={<PoliticaCookiesPage />} />
           <Route path="/termos-de-uso" element={<TermosDeUsoPage />} />
-          <Route path="/propostadevalor" element={<PropostaValorPage />} />
-          <Route path="/propostacomercial" element={<PropostaComercialPage />} />
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
