@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle2,
+  Download,
   Loader2,
   Sparkles,
   Target,
 } from "lucide-react";
+import { generateProposalPDF } from "@/lib/proposal-pdf";
 
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
