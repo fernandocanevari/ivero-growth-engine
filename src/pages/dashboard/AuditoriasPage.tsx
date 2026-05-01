@@ -150,7 +150,7 @@ function CompareDialog({
 
         <div className="flex items-center justify-between gap-3 pt-2">
           <p className="text-xs text-muted-foreground">
-            Deltas comparam a auditoria mais recente em relação à anterior.
+            Deltas comparam o relatório mais recente em relação ao anterior.
           </p>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm">
