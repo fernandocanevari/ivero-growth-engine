@@ -1,72 +1,108 @@
-## Histórico navegável de auditorias
 
-### O problema que isso resolve
+# Proposta de Valor + Proposta Comercial — Funil consultivo de IA
 
-Hoje o `DiagnosticoPage` mostra o relatório completo lendo de `sessionStorage`. Quando o cliente fecha o navegador, todo o detalhe (radar, justificativas, pontos fortes/fracos, critérios, nuvem de keywords) **desaparece** — só sobram os 6 números no `analysis_history` que alimentam o gráfico de evolução. E cada nova análise sobrescreve a anterior, então não dá pra comparar "como meu relatório de março era diferente do de abril".
+Duas páginas públicas, sem login, no padrão dark premium do Hero. Funcionam como funil único: o lead entra pelo manifesto, roda um diagnóstico leve da marca e recebe uma proposta comercial personalizada — captura de dados só no CTA final.
 
-### O que será construído
-
-**1. Nova tabela `audit_reports` no Supabase** — guarda o snapshot completo de cada auditoria:
+## Fluxo
 
 ```text
-id, user_id, created_at, source ('preview' | 'reanalise')
-overall_score, status_label
-radar_data        (jsonb — 5 pilares com value)
-pillar_details    (jsonb — array com nome, score, justificativa, critérios, strengths, weaknesses, recommendation)
-keyword_cloud     (jsonb)
-ai_engines        (jsonb — quais modelos responderam, com quais scores)
-site_url          (text — pra distinguir auditorias de sites diferentes no futuro)
+/propostadevalor  ──submit do site──▶  /propostacomercial?url=marca.com
+   manifesto +                            loading premium 8s
+   CTA agressivo                          ▼
+                                          diagnóstico enxuto (5 pilares)
+                                          ▼
+                                          proposta comercial montada por regras
+                                          ▼
+                                          CTA "Quero falar com um especialista"
+                                              └─▶ modal captura nome+email+telefone
+                                                  └─▶ salva em leads (source=proposta_comercial)
 ```
 
-RLS: usuário vê só os próprios; admin vê tudo (mesmo padrão das outras tabelas).
+## Página 1 — `/propostadevalor`
 
-**2. Salvar o snapshot em 3 momentos:**
-- Quando a `PreviewPage` termina e o usuário está logado → grava direto no banco.
-- Quando o `DiagnosticoPage` roda re-análise → grava novo snapshot (não sobrescreve).
-- Adoção pós-signup: se um lead anônimo rodou o `/preview`, o payload no `sessionStorage` é "adotado" e gravado no banco no primeiro acesso autenticado.
+Manifesto disruptivo, scroll fluido, mesmo padrão dark do Hero.
 
-**3. Nova página `/dashboard/auditorias`** — lista cronológica das auditorias:
+Seções (na ordem):
+1. **Hero manifesto** — headline forte ("Sua marca não está sendo encontrada. Está sendo *recomendada*."), input pill idêntico ao Hero da landing + botão "Descubra sua visibilidade em IA" → leva pra `/propostacomercial?url=...`.
+2. **O problema** — 3 cards: "Google morreu pra decisão B2B", "ChatGPT virou o novo SDR", "Sua marca está fora dessa conversa".
+3. **A virada** — bloco com a tese da Ivero (auditoria de influência em IA, não SEO).
+4. **Os 5 pilares** — preview enxuto de Clareza, Autoridade, Posicionamento, Conversão, Relevância (ícones + 1 frase cada).
+5. **Por que agora** — urgência (LLMs estão consolidando rankings de marca *agora*).
+6. **CTA final repetido** — mesmo input pill do hero, ancora a conversão.
+
+Visual: bg `ivero-dark`, glows roxo/pink parallax, `Space Grotesk` headings, gradiente magenta nos destaques. Sem navbar da landing — header próprio enxuto só com logo Ivero (link pra `/`).
+
+## Página 2 — `/propostacomercial`
+
+Recebe `?url=...` na query. Se vier sem URL, mostra input no topo pra digitar.
+
+Sequência na tela:
+1. **Loading premium** — 8s estilo `/preview`, com mensagens estratégicas rotativas ("Consultando ChatGPT…", "Cruzando com Gemini…", "Avaliando os 5 pilares…").
+2. **Diagnóstico enxuto** — card grande com:
+   - Score geral (0–100) + faixa (Crítico / Insuficiente / Sólido / Referência).
+   - 5 pilares em formato de barra horizontal com cor (vermelho/amarelo/verde) e 1 linha de veredito.
+   - Sem tabelas, sem sub-critérios, sem nuvem de percepção (isso fica no `/preview` completo).
+3. **Diagnóstico executivo** — 1 parágrafo "O que isso significa pra sua marca" gerado por regras simples (template baseado nos pilares mais fracos).
+4. **Proposta comercial personalizada** — montada por regras a partir do score:
+   - **O que vamos resolver** — bullets dos 2-3 pilares mais fracos, com ação concreta pra cada.
+   - **Plano recomendado** — escolhido pela faixa de score:
+     - 0–39 → Domínio (situação crítica, precisa de tudo)
+     - 40–59 → Autoridade
+     - 60–79 → Influência
+     - 80–100 → Presença (já está bem, só monitora)
+   - **Investimento** — preço do plano + comparativo "vs custo de 1 mês perdido em tráfego de IA".
+   - **Próximos passos** — 3 bullets do que acontece após o aceite.
+5. **CTA final** — botão grande "Quero falar com um especialista" → abre modal de captura (nome, email, telefone, opcional empresa). Submit grava em `leads` com `source = "proposta_comercial"` e mostra tela de confirmação ("Recebemos seu contato — falaremos em até 24h").
+6. **Footer enxuto** — só logo + link pra `/preview` ("Quer ver o diagnóstico completo, com nuvem de percepção e benchmarks? →").
+
+## Diagnóstico leve (nova edge function)
+
+Nova edge function `propose-diagnostic` separada da `simulate-ai` pra controlar custo:
+- Roda **2 modelos em paralelo**: Gemini 2.0 Flash (chave própria, custo ~zero) + Claude 3.5 Haiku (chave própria, barato e rápido).
+- Reusa o `DIAGNOSTICO_SYSTEM_PROMPT` da `simulate-ai`.
+- Score final = média dos 2 modelos por pilar.
+- Tempo esperado: 8–12s. Sem extração de nuvem de percepção (economia de chamada Lovable AI).
+- Retorna JSON enxuto: `{ overall, pillars: { clareza, autoridade, posicionamento, conversao, relevancia }, status_label }`.
+- CORS aberto, sem JWT (é público).
+
+## Lógica da proposta (template por regras)
+
+Arquivo `src/lib/commercial-proposal.ts` puro TypeScript, sem IA:
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│ Histórico de Auditorias                                  │
-├──────────────────────────────────────────────────────────┤
-│ 📊 12 abr 2026 · voeazul.com.br · Score 72 · Sólido  →  │
-│ 📊 12 mar 2026 · voeazul.com.br · Score 68 · Moderado→  │
-│ 📊 09 fev 2026 · voeazul.com.br · Score 61 · Moderado→  │
-└──────────────────────────────────────────────────────────┘
+buildProposal(pillarScores) → {
+  diagnosis: string,           // 1 parágrafo baseado nos 2 piores pilares
+  weakPoints: Action[],        // 1 ação por pilar < 60
+  recommendedPlan: PlanId,     // por faixa de score geral
+  comparativeNarrative: string // "Cada mês sem isso = X leads perdidos"
+}
 ```
 
-Cada linha mostra data, site, score, faixa (Crítico/Insuficiente/Moderado/Sólido/Referência) e delta vs. anterior (▲ +4 / ▼ -2). Click reabre o relatório completo daquela data.
+Mapas estáticos: pilar → ação recomendada + plano → preço + bullets. Zero custo, zero latência.
 
-**4. Nova página `/dashboard/auditorias/:id`** — reusa o componente do `DiagnosticoPage` hidratado com o snapshot daquele ID específico, em vez do `sessionStorage`. Mostra um chip "Auditoria de 12/mar/2026" no topo + botão "Voltar para histórico".
+## Captura de lead
 
-**5. Refactor leve no `DiagnosticoPage` atual** — ele continua sendo o "último relatório" (default), mas a fonte de dados passa a ser:
-   1º: snapshot mais recente de `audit_reports` (banco)  
-   2º: fallback para `sessionStorage` (sessão atual)  
-   3º: fallback para mock (nunca rodou nada)
+Modal shadcn `Dialog`. Schema Zod igual ao do Hero (nome ≥2, email válido, telefone opcional). Insert em `leads` com `source = 'proposta_comercial'` + campo extra `site` com a URL diagnosticada. RLS atual já permite insert anônimo.
 
-**6. Sidebar** — adicionar item "Auditorias" no grupo "Visão Geral" com ícone `History`, posicionado logo após "Diagnóstico IA". Liberado em trial (mesma lógica do Diagnóstico).
+Bônus: salvar o snapshot do diagnóstico em `sessionStorage` (mesma chave que o `useAdoptPendingAudit` já usa) — se o lead virar usuário depois, o diagnóstico migra pra conta dele automaticamente.
 
-### O que NÃO entra neste escopo
+## Detalhes técnicos
 
-- Status assíncronos "em fila / em análise" — a análise continua sendo síncrona de ~7s. Status só faz sentido com fila real (Inngest), que é outro projeto.
-- Comparar dois snapshots lado a lado — pode vir depois.
-- Auditar múltiplos sites por usuário — a tabela já tem `site_url` previsto, mas a UI ainda assume 1 site por usuário.
+- **Rotas novas em `App.tsx`** (públicas, fora de `ProtectedRoute`):
+  - `/propostadevalor` → `PropostaValorPage`
+  - `/propostacomercial` → `PropostaComercialPage`
+- **Arquivos novos**:
+  - `src/pages/PropostaValorPage.tsx`
+  - `src/pages/PropostaComercialPage.tsx`
+  - `src/components/proposta/ManifestoHero.tsx`, `ProblemaSection.tsx`, `PilaresPreview.tsx`, `CTAFinal.tsx`
+  - `src/components/proposta/DiagnosticoEnxuto.tsx`, `PropostaComercial.tsx`, `LeadCaptureModal.tsx`
+  - `src/lib/commercial-proposal.ts` (regras de proposta)
+  - `supabase/functions/propose-diagnostic/index.ts` (edge function leve)
+- **Reuso**: paleta `ivero-dark`/`ivero-purple`/`ivero-gradient`, glows do Hero, fontes `font-display`, animações Framer Motion já existentes.
+- **Sem mudança de schema** — usa tabela `leads` com `source` novo.
+- **SEO**: meta tags próprias em cada página (titles/descriptions otimizadas pra venda consultiva), sem entrar no sitemap por enquanto (são páginas de conversão, não conteúdo).
+- **Acessível pelo header da landing?** Não — são páginas de funil acionadas por links externos / campanhas / outbound. Sem item de navegação na navbar pública.
 
-### Detalhes técnicos
+## Memória a salvar após build
 
-- **Migração**: criar `audit_reports` com índice em `(user_id, created_at DESC)` para listagem rápida.
-- **Hook novo `useAuditReports`**: `list()`, `get(id)`, `create(payload)`. Substitui parcialmente o uso de `sessionStorage` no `DiagnosticoPage`.
-- **`PreviewPage`**: após gerar o payload, se `auth.uid()` existe, chama `useAuditReports.create()` em paralelo ao `sessionStorage.setItem`.
-- **Adoção pós-signup**: hook `useAdoptPendingAudit` que roda 1x no `DashboardLayout` após login — se há `sessionStorage("ivero:lastDiagnostic")` e nenhum `audit_report` ainda, faz o insert.
-- **`useAnalysisHistory` (existente)**: continua gravando em `analysis_history` para o gráfico de evolução. As duas tabelas convivem — uma é "score ao longo do tempo" (leve, pro chart), outra é "snapshot completo" (pesado, pro relatório navegável).
-- **Rota `/dashboard/auditorias/:id`**: protegida pelo `ProtectedRoute` + RLS garante que só o dono lê.
-
-### Resumo visual da arquitetura final
-
-```text
-analysis_history     → 6 números × N datas    → gráfico de evolução
-audit_reports (NEW)  → snapshot completo × N  → relatórios navegáveis
-sessionStorage       → último da sessão atual → fallback offline
-```
+Nova memory `mem://features/proposta-comercial-funil` descrevendo o fluxo, edge function leve e regras da proposta — pra não recriar isso por engano depois.
