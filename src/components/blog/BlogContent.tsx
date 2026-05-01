@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Info, AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
 import type { Block } from "@/content/blog/types";
 import { KeywordHighlight } from "./KeywordHighlight";
 import { track } from "@/lib/analytics";
@@ -101,19 +101,29 @@ export function BlogContent({ blocks, keywords, postSlug }: Props) {
             return (
               <div
                 key={idx}
-                className="my-4 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-6 sm:p-8 not-prose"
+                className="relative my-8 overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-card p-6 sm:p-8 shadow-lg shadow-primary/5 not-prose"
               >
-                <p className="text-lg sm:text-xl font-display font-bold text-foreground mb-4">
-                  {block.text}
-                </p>
-                <Link
-                  to={block.href}
-                  onClick={() => track("blog_cta_click", { slug: postSlug, href: block.href })}
-                  className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-5 py-3 text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
-                  {block.label}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-primary/20 blur-3xl"
+                />
+                <div className="relative">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-primary">
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                    Ação
+                  </div>
+                  <p className="text-xl sm:text-2xl font-display font-bold text-foreground leading-tight mb-5">
+                    {block.text}
+                  </p>
+                  <Link
+                    to={block.href}
+                    onClick={() => track("blog_cta_click", { slug: postSlug, href: block.href })}
+                    className="group inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-6 py-3.5 text-sm font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
+                  >
+                    {block.label}
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
               </div>
             );
 

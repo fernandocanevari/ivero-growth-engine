@@ -97,7 +97,7 @@ export const post: BlogPost = {
       type: "cta",
       text: "Pronto para executar? Comece pela ação #1 — auditoria gratuita do seu AI Influence Score.",
       label: "Fazer diagnóstico grátis",
-      href: "/preview",
+      href: "/#diagnostico",
     },
   ],
   faq: [

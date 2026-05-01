@@ -97,7 +97,7 @@ export const post: BlogPost = {
       type: "cta",
       text: "Calcule seu AI Influence Score agora — leva 60 segundos.",
       label: "Fazer diagnóstico grátis",
-      href: "/preview",
+      href: "/#diagnostico",
     },
   ],
   faq: [

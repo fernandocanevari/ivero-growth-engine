@@ -87,7 +87,7 @@ export const post: BlogPost = {
       type: "cta",
       text: "Pare de monitorar só o passado. Comece a monitorar a nova superfície de decisão.",
       label: "Auditar marca grátis",
-      href: "/preview",
+      href: "/#diagnostico",
     },
   ],
   faq: [
