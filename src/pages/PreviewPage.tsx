@@ -1332,14 +1332,15 @@ function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: st
     e.preventDefault();
     if (submitting) return;
     const result = normalizeAndValidateUrl(value);
-    if (!result.ok) {
+    if (result.ok === false) {
       setError(result.reason);
       return;
     }
     setError(null);
     setSubmitting(true);
+    const finalUrl = result.url;
     // Brief feedback delay so the user perceives the transition into the scanner
-    setTimeout(() => onSubmit(result.url), 700);
+    setTimeout(() => onSubmit(finalUrl), 700);
   };
 
   return (
