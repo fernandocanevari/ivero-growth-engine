@@ -416,7 +416,7 @@ export default function AuditoriasPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-foreground">
-                          Auditoria de {formatDate(r.created_at)}
+                          Relatório de {formatDate(r.created_at)}
                         </p>
                         <span
                           className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${band.cls}`}
