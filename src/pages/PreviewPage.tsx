@@ -1554,8 +1554,33 @@ export default function PreviewPage() {
               savedAt: new Date().toISOString(),
             })
           );
+          // Reset adoção: novo diagnóstico → permite que useAdoptPendingAudit grave de novo
+          // se o usuário acabou de criar conta.
+          sessionStorage.removeItem("ivero:audit_adopted");
         } catch {
           /* storage may be unavailable (private mode); ignore */
+        }
+
+        // Se já estiver logado, persiste o snapshot direto no banco para
+        // alimentar o histórico navegável de auditorias (/dashboard/auditorias).
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("audit_reports").insert({
+              user_id: user.id,
+              source: "preview",
+              site_url: siteUrl,
+              overall_score: totalScore,
+              status_label: "",
+              radar_data: radar,
+              pillar_details: details,
+              keyword_cloud: keywordCloud,
+              ai_engines: [],
+            } as never);
+            sessionStorage.setItem("ivero:audit_adopted", "1");
+          }
+        } catch (e) {
+          console.warn("Audit persistence skipped:", e);
         }
 
         // Aggregate AI engines: a model is "found" if average score across pillars >= 50
