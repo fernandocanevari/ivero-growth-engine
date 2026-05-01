@@ -1295,24 +1295,24 @@ function extractBrandFromUrl(url: string): string {
 /* ── URL normalization + validation ── */
 // Accepts "marca.com.br", "www.marca.com", "https://marca.com/sub" etc.
 // Rejects emails, IPs, localhost, missing TLD, invalid characters.
-function normalizeAndValidateUrl(raw: string): { ok: true; url: string } | { ok: false; error: string } {
+function normalizeAndValidateUrl(raw: string): { ok: true; url: string } | { ok: false; reason: string } {
   let v = raw.trim().toLowerCase();
-  if (!v) return { ok: false, error: "Informe o site da sua marca." };
-  if (v.includes("@")) return { ok: false, error: "Insira uma URL, não um e-mail." };
-  if (v.includes(" ")) return { ok: false, error: "URLs não podem conter espaços." };
+  if (!v) return { ok: false, reason: "Informe o site da sua marca." };
+  if (v.includes("@")) return { ok: false, reason: "Insira uma URL, não um e-mail." };
+  if (v.includes(" ")) return { ok: false, reason: "URLs não podem conter espaços." };
 
   // Strip protocol + path/query for hostname validation
   v = v.replace(/^https?:\/\//, "");
   const host = v.split(/[/?#]/)[0];
 
-  if (!host) return { ok: false, error: "URL inválida." };
+  if (!host) return { ok: false, reason: "URL inválida." };
   if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
-    return { ok: false, error: "Use o domínio público da sua marca." };
+    return { ok: false, reason: "Use o domínio público da sua marca." };
   }
   // Domain regex: labels separated by dots + TLD with 2+ letters
   const domainRegex = /^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
   if (!domainRegex.test(host)) {
-    return { ok: false, error: "Domínio inválido (ex: suamarca.com.br)." };
+    return { ok: false, reason: "Domínio inválido (ex: suamarca.com.br)." };
   }
   return { ok: true, url: `https://${v}` };
 }
