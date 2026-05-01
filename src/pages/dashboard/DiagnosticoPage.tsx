@@ -192,6 +192,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
   const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
+  const queryClient = useQueryClient();
 
   // TODO: Replace with real plan status check
   const hasPlan = true;
