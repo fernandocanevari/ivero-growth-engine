@@ -33,7 +33,7 @@ export default function AuditoriaDetalhePage() {
     const dateSlug = new Date(report.created_at).toISOString().slice(0, 10);
     try {
       await exportReportToPDF(root, {
-        filename: `auditoria-ivero-${safeFileSlug(report.site_url || settings?.brand_name || "marca")}-${dateSlug}.pdf`,
+        filename: `relatorio-ivero-${safeFileSlug(report.site_url || settings?.brand_name || "marca")}-${dateSlug}.pdf`,
       });
       toast.success("PDF gerado com sucesso!");
     } catch (e) {
@@ -119,7 +119,7 @@ export default function AuditoriaDetalhePage() {
       <div className="max-w-2xl">
         <Card>
           <CardContent className="p-8 text-center space-y-4">
-            <p className="text-muted-foreground">Auditoria não encontrada ou você não tem acesso a ela.</p>
+            <p className="text-muted-foreground">Relatório não encontrado ou você não tem acesso a ele.</p>
             <Button asChild variant="outline">
               <Link to="/dashboard/auditorias">Voltar ao histórico</Link>
             </Button>
@@ -153,7 +153,7 @@ export default function AuditoriaDetalhePage() {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/15">
             <History className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-medium text-foreground">
-              Auditoria de <strong>{dateLabel}</strong>
+              Relatório de <strong>{dateLabel}</strong>
             </span>
           </div>
         </div>
