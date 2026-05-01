@@ -35,6 +35,8 @@ import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
+import AuditoriasPage from "./pages/dashboard/AuditoriasPage";
+import AuditoriaDetalhePage from "./pages/dashboard/AuditoriaDetalhePage";
 import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
 import PoliticaCookiesPage from "./pages/PoliticaCookiesPage";
 import BlogIndexPage from "./pages/BlogIndexPage";
@@ -66,6 +68,8 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
+            <Route path="auditorias" element={<AuditoriasPage />} />
+            <Route path="auditorias/:id" element={<AuditoriaDetalhePage />} />
             <Route path="pilares" element={<PilaresPage />} />
             <Route path="monitoramento" element={<MonitoramentoPage />} />
             <Route path="comparativo" element={<ComparativoPage />} />
