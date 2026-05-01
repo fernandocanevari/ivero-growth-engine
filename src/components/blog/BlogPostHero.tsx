@@ -42,14 +42,17 @@ export function BlogPostHero({
         transition={{ duration: 0.5 }}
       >
         <div className="flex items-center gap-2 mb-5 flex-wrap">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[11px] font-bold uppercase tracking-wider text-primary px-2.5 py-1 rounded-md bg-primary/10"
-            >
-              {tag}
-            </span>
-          ))}
+          {tags.map((tag) => {
+            const v = tagVariant(tag);
+            return (
+              <span
+                key={tag}
+                className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${v.pill}`}
+              >
+                {tag}
+              </span>
+            );
+          })}
         </div>
 
         <h1 className="font-display text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-foreground tracking-tight leading-[1.15] mb-5">
