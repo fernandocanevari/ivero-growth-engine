@@ -3,6 +3,7 @@ import { ArrowUpRight, Clock, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import type { BlogPost } from "@/content/blog/types";
 import { readingMinutes } from "@/content/blog/types";
+import { tagVariant } from "@/lib/blog-tag-style";
 
 interface Props {
   post: BlogPost;
