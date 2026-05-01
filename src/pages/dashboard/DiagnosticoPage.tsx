@@ -275,20 +275,28 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
           // Persiste snapshot completo no histórico navegável de auditorias.
           try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase.from("audit_reports").insert({
-                user_id: user.id,
-                source: "reanalise",
-                site_url: settings?.website ?? "",
-                overall_score: overallScore,
-                status_label: overallBand.label,
-                radar_data: effectiveRadar,
-                pillar_details: effectivePillars.map(({ icon: _icon, ...rest }) => rest),
-                keyword_cloud: keyword_cloud as never,
-                ai_engines: [],
-              } as never);
-              queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
-            }
+            if (!user) return;
+            // Recalcula a partir do estado corrente (closure captura valores ao chamar).
+            const radarNow = liveRadar ?? [];
+            const pillarsNow = (livePillars ?? []).map(({ criterios, ...rest }) => ({
+              ...rest,
+              criterios: criterios ?? [],
+            }));
+            const scoreNow = liveScore ?? (radarNow.length
+              ? Math.round(radarNow.reduce((s, d) => s + d.value, 0) / radarNow.length)
+              : 0);
+            await supabase.from("audit_reports").insert({
+              user_id: user.id,
+              source: "reanalise",
+              site_url: settings?.website ?? "",
+              overall_score: scoreNow,
+              status_label: "",
+              radar_data: radarNow,
+              pillar_details: pillarsNow,
+              keyword_cloud: keyword_cloud as never,
+              ai_engines: [],
+            } as never);
+            queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
           } catch (e) {
             console.warn("Audit snapshot skipped:", e);
           }
