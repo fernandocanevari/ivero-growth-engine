@@ -56,6 +56,48 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_reports: {
+        Row: {
+          ai_engines: Json
+          created_at: string
+          id: string
+          keyword_cloud: Json
+          overall_score: number
+          pillar_details: Json
+          radar_data: Json
+          site_url: string
+          source: string
+          status_label: string
+          user_id: string
+        }
+        Insert: {
+          ai_engines?: Json
+          created_at?: string
+          id?: string
+          keyword_cloud?: Json
+          overall_score?: number
+          pillar_details?: Json
+          radar_data?: Json
+          site_url?: string
+          source?: string
+          status_label?: string
+          user_id: string
+        }
+        Update: {
+          ai_engines?: Json
+          created_at?: string
+          id?: string
+          keyword_cloud?: Json
+          overall_score?: number
+          pillar_details?: Json
+          radar_data?: Json
+          site_url?: string
+          source?: string
+          status_label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_settings: {
         Row: {
           brand_name: string
