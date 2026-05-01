@@ -1,90 +1,72 @@
-# Correções no Blog
+## Histórico navegável de auditorias
 
-7 ajustes pontuais em 4 arquivos. Sem novas dependências, sem mudança estrutural.
+### O problema que isso resolve
 
-## 1. Header do /blog — remover chip e subtítulo (anexos 1 e 2)
+Hoje o `DiagnosticoPage` mostra o relatório completo lendo de `sessionStorage`. Quando o cliente fecha o navegador, todo o detalhe (radar, justificativas, pontos fortes/fracos, critérios, nuvem de keywords) **desaparece** — só sobram os 6 números no `analysis_history` que alimentam o gráfico de evolução. E cada nova análise sobrescreve a anterior, então não dá pra comparar "como meu relatório de março era diferente do de abril".
 
-**Arquivo:** `src/pages/BlogIndexPage.tsx`
+### O que será construído
 
-Remover:
-- O chip "BLOG IVERO" com ícone Sparkles (já redundante com o `<h1>` e o Navbar).
-- O parágrafo subtítulo "Análises e roteiros táticos…".
-
-Manter apenas o `<h1>` "Inteligência editorial sobre GEO e IAs", que fica mais limpo e direto.
-
-## 2. Layout do grid de artigos — simetria (anexo 3)
-
-**Arquivo:** `src/pages/BlogIndexPage.tsx`
-
-Hoje o grid é `lg:grid-cols-3` e o post pilar ocupa `col-span-3` (largura total). Os 4 posts restantes formam **3 + 1 órfão**, gerando a desproporção.
-
-Mudar para grid de 2 colunas no desktop:
-- `grid-cols-1 sm:grid-cols-2` (sem `lg:grid-cols-3`)
-- Card pilar: `sm:col-span-2` (ocupa toda a primeira linha)
-- 4 cards restantes: 2 + 2 (duas linhas simétricas)
-
-Resultado: layout `1 + 2 + 2`, todos os cards com largura proporcional.
-
-## 3. Cards de artigo — mais ênfase visual
-
-**Arquivo:** `src/components/blog/BlogCard.tsx`
-
-Atualmente: borda `border-border` (cinza neutro), hover discreto. Vai ganhar:
-- Borda base mais visível (`border-foreground/10`) e shadow sutil de repouso (`shadow-sm`).
-- Hover: `border-primary/50`, `shadow-xl`, `-translate-y-1` (lift).
-- Tag "PILAR" com gradient da marca (em vez de preto sólido).
-- Seta `ArrowUpRight` num círculo com `bg-primary/10`, ganha `bg-primary text-white` no hover.
-- Card pilar ganha um glow lateral sutil no hover (`shadow-primary/20`).
-
-## 4. CTA dentro do conteúdo (block "cta") — mais ênfase
-
-**Arquivo:** `src/components/blog/BlogContent.tsx` (case `"cta"`)
-
-Hoje: gradient muito sutil, botão preto pequeno. Vai virar:
-- Fundo: `bg-gradient-to-br from-primary/15 via-primary/5 to-card` com borda `border-primary/30` (2px).
-- Decorative glow no canto (mesmo padrão do `BlogPostCTA`).
-- Texto principal maior (`text-xl sm:text-2xl`).
-- Botão `bg-primary text-primary-foreground` com `shadow-lg shadow-primary/30` e hover lift.
-- Ícone `Sparkles` no chip "AÇÃO" no topo do bloco para criar consistência visual com o CTA do final.
-
-## 5. Corrigir destino do CTA "Auditar marca grátis" (anexo 4)
-
-**Arquivo:** `src/content/blog/monitorar-ias-vs-google.ts` (linha 87-91)
-
-Hoje aponta para `/preview` direto — pula o lead-gate (não pede nome/email/site).
-
-Trocar `href: "/preview"` por `href: "/#diagnostico"` para enviar o usuário ao mesmo fluxo padronizado de captura de lead do hero.
-
-(Os outros 4 posts já apontam para `/preview` também — vou padronizar todos para `/#diagnostico` para consistência.)
-
-## 6. Corrigir âncora #diagnostico na home (anexo 5)
-
-**Problema:** `BlogPostCTA` e os blocks `cta` mandam para `/#diagnostico`, mas a home não tem nenhum elemento com `id="diagnostico"` — por isso o usuário cai no topo da página inicial sem nada acontecer.
-
-**Arquivo:** `src/components/landing/HeroSection.tsx`
-
-Adicionar `id="diagnostico"` no `<section>` do hero (linha 90). Como o hero já contém **os dois** capturadores de lead (input pill + form completo no desktop), aterrissar nele é a UX correta — o usuário chega exatamente onde deve digitar o site.
-
-## 7. Padronizar todos os CTAs em conteúdo
-
-**Arquivos:** `src/content/blog/*.ts` (5 posts)
-
-Todos os blocks `type: "cta"` vão apontar para `/#diagnostico` (preservando os UTMs onde já existem). Garante uma única jornada de conversão a partir do blog.
-
----
-
-## Resumo dos arquivos
+**1. Nova tabela `audit_reports` no Supabase** — guarda o snapshot completo de cada auditoria:
 
 ```text
-src/pages/BlogIndexPage.tsx              (header + grid)
-src/components/blog/BlogCard.tsx         (ênfase nos cards)
-src/components/blog/BlogContent.tsx      (ênfase no CTA inline)
-src/components/landing/HeroSection.tsx   (id="diagnostico")
-src/content/blog/geo-vs-aeo-vs-aio.ts    (href CTA)
-src/content/blog/como-marca-aparece-em-ias.ts (href CTA)
-src/content/blog/ai-influence-score.ts   (href CTA)
-src/content/blog/checklist-geo-12-acoes.ts (href CTA)
-src/content/blog/monitorar-ias-vs-google.ts (href CTA + label)
+id, user_id, created_at, source ('preview' | 'reanalise')
+overall_score, status_label
+radar_data        (jsonb — 5 pilares com value)
+pillar_details    (jsonb — array com nome, score, justificativa, critérios, strengths, weaknesses, recommendation)
+keyword_cloud     (jsonb)
+ai_engines        (jsonb — quais modelos responderam, com quais scores)
+site_url          (text — pra distinguir auditorias de sites diferentes no futuro)
 ```
 
-Posso aplicar?
+RLS: usuário vê só os próprios; admin vê tudo (mesmo padrão das outras tabelas).
+
+**2. Salvar o snapshot em 3 momentos:**
+- Quando a `PreviewPage` termina e o usuário está logado → grava direto no banco.
+- Quando o `DiagnosticoPage` roda re-análise → grava novo snapshot (não sobrescreve).
+- Adoção pós-signup: se um lead anônimo rodou o `/preview`, o payload no `sessionStorage` é "adotado" e gravado no banco no primeiro acesso autenticado.
+
+**3. Nova página `/dashboard/auditorias`** — lista cronológica das auditorias:
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│ Histórico de Auditorias                                  │
+├──────────────────────────────────────────────────────────┤
+│ 📊 12 abr 2026 · voeazul.com.br · Score 72 · Sólido  →  │
+│ 📊 12 mar 2026 · voeazul.com.br · Score 68 · Moderado→  │
+│ 📊 09 fev 2026 · voeazul.com.br · Score 61 · Moderado→  │
+└──────────────────────────────────────────────────────────┘
+```
+
+Cada linha mostra data, site, score, faixa (Crítico/Insuficiente/Moderado/Sólido/Referência) e delta vs. anterior (▲ +4 / ▼ -2). Click reabre o relatório completo daquela data.
+
+**4. Nova página `/dashboard/auditorias/:id`** — reusa o componente do `DiagnosticoPage` hidratado com o snapshot daquele ID específico, em vez do `sessionStorage`. Mostra um chip "Auditoria de 12/mar/2026" no topo + botão "Voltar para histórico".
+
+**5. Refactor leve no `DiagnosticoPage` atual** — ele continua sendo o "último relatório" (default), mas a fonte de dados passa a ser:
+   1º: snapshot mais recente de `audit_reports` (banco)  
+   2º: fallback para `sessionStorage` (sessão atual)  
+   3º: fallback para mock (nunca rodou nada)
+
+**6. Sidebar** — adicionar item "Auditorias" no grupo "Visão Geral" com ícone `History`, posicionado logo após "Diagnóstico IA". Liberado em trial (mesma lógica do Diagnóstico).
+
+### O que NÃO entra neste escopo
+
+- Status assíncronos "em fila / em análise" — a análise continua sendo síncrona de ~7s. Status só faz sentido com fila real (Inngest), que é outro projeto.
+- Comparar dois snapshots lado a lado — pode vir depois.
+- Auditar múltiplos sites por usuário — a tabela já tem `site_url` previsto, mas a UI ainda assume 1 site por usuário.
+
+### Detalhes técnicos
+
+- **Migração**: criar `audit_reports` com índice em `(user_id, created_at DESC)` para listagem rápida.
+- **Hook novo `useAuditReports`**: `list()`, `get(id)`, `create(payload)`. Substitui parcialmente o uso de `sessionStorage` no `DiagnosticoPage`.
+- **`PreviewPage`**: após gerar o payload, se `auth.uid()` existe, chama `useAuditReports.create()` em paralelo ao `sessionStorage.setItem`.
+- **Adoção pós-signup**: hook `useAdoptPendingAudit` que roda 1x no `DashboardLayout` após login — se há `sessionStorage("ivero:lastDiagnostic")` e nenhum `audit_report` ainda, faz o insert.
+- **`useAnalysisHistory` (existente)**: continua gravando em `analysis_history` para o gráfico de evolução. As duas tabelas convivem — uma é "score ao longo do tempo" (leve, pro chart), outra é "snapshot completo" (pesado, pro relatório navegável).
+- **Rota `/dashboard/auditorias/:id`**: protegida pelo `ProtectedRoute` + RLS garante que só o dono lê.
+
+### Resumo visual da arquitetura final
+
+```text
+analysis_history     → 6 números × N datas    → gráfico de evolução
+audit_reports (NEW)  → snapshot completo × N  → relatórios navegáveis
+sessionStorage       → último da sessão atual → fallback offline
+```
