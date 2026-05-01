@@ -11,6 +11,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
@@ -173,10 +175,24 @@ function SoftBlur({ children, label }: { children: React.ReactNode; label?: stri
   );
 }
 
-export default function DiagnosticoPage() {
+interface DiagnosticoPageProps {
+  /** Snapshot histórico — quando setado, renderiza esse relatório em vez do último da sessão. */
+  snapshotOverride?: {
+    pillarDetails: PillarPayload[];
+    radar: { subject: string; value: number; fullMark: number }[];
+    overallScore: number;
+    createdAt?: string;
+    siteUrl?: string;
+  };
+  /** Esconde botão de re-análise + comparativo — usado nas páginas de auditoria histórica. */
+  readOnly?: boolean;
+}
+
+export default function DiagnosticoPage({ snapshotOverride, readOnly }: DiagnosticoPageProps = {}) {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
   const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
+  const queryClient = useQueryClient();
 
   // TODO: Replace with real plan status check
   const hasPlan = true;
@@ -186,6 +202,12 @@ export default function DiagnosticoPage() {
   const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
   const [liveScore, setLiveScore] = useState<number | null>(null);
   useEffect(() => {
+    if (snapshotOverride) {
+      setLivePillars(snapshotOverride.pillarDetails ?? null);
+      setLiveRadar(snapshotOverride.radar ?? null);
+      setLiveScore(snapshotOverride.overallScore ?? null);
+      return;
+    }
     try {
       const raw = sessionStorage.getItem("ivero:lastDiagnostic");
       if (!raw) return;
@@ -202,7 +224,7 @@ export default function DiagnosticoPage() {
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [snapshotOverride]);
 
   // Merge live data with mock fallback (mock used only if no analysis was run yet)
   const effectiveRadar = liveRadar ?? radarData;
@@ -248,7 +270,37 @@ export default function DiagnosticoPage() {
         keyword_cloud: keyword_cloud as never,
       },
       {
-        onSuccess: () => toast.success("Nova análise realizada com sucesso!"),
+        onSuccess: async () => {
+          toast.success("Nova análise realizada com sucesso!");
+          // Persiste snapshot completo no histórico navegável de auditorias.
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            // Recalcula a partir do estado corrente (closure captura valores ao chamar).
+            const radarNow = liveRadar ?? [];
+            const pillarsNow = (livePillars ?? []).map(({ criterios, ...rest }) => ({
+              ...rest,
+              criterios: criterios ?? [],
+            }));
+            const scoreNow = liveScore ?? (radarNow.length
+              ? Math.round(radarNow.reduce((s, d) => s + d.value, 0) / radarNow.length)
+              : 0);
+            await supabase.from("audit_reports").insert({
+              user_id: user.id,
+              source: "reanalise",
+              site_url: settings?.website ?? "",
+              overall_score: scoreNow,
+              status_label: "",
+              radar_data: radarNow,
+              pillar_details: pillarsNow,
+              keyword_cloud: keyword_cloud as never,
+              ai_engines: [],
+            } as never);
+            queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
+          } catch (e) {
+            console.warn("Audit snapshot skipped:", e);
+          }
+        },
         onError: () => toast.error("Erro ao realizar análise. Tente novamente."),
       }
     );
@@ -307,45 +359,47 @@ export default function DiagnosticoPage() {
       </motion.div>
 
       {/* Re-analysis button */}
-      <motion.div {...fade} transition={{ delay: 0.03 }}>
-        <Card>
-          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                <RefreshCw className="w-5 h-5 text-primary" />
+      {!readOnly && (
+        <motion.div {...fade} transition={{ delay: 0.03 }}>
+          <Card>
+            <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                  <RefreshCw className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Re-análise do site</p>
+                  {daysSinceLast !== null ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Última análise há {daysSinceLast} {daysSinceLast === 1 ? "dia" : "dias"}
+                      {!canReanalyze && ` · Disponível em ${daysRemaining} dias`}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Nenhuma análise salva ainda</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Re-análise do site</p>
-                {daysSinceLast !== null ? (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Última análise há {daysSinceLast} {daysSinceLast === 1 ? "dia" : "dias"}
-                    {!canReanalyze && ` · Disponível em ${daysRemaining} dias`}
-                  </p>
+              <Button
+                onClick={handleReanalyze}
+                disabled={!canReanalyze || runAnalysis.isPending}
+                size="sm"
+                className="gap-2"
+              >
+                {runAnalysis.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
-                  <p className="text-xs text-muted-foreground">Nenhuma análise salva ainda</p>
+                  <CalendarDays className="w-4 h-4" />
                 )}
-              </div>
-            </div>
-            <Button
-              onClick={handleReanalyze}
-              disabled={!canReanalyze || runAnalysis.isPending}
-              size="sm"
-              className="gap-2"
-            >
-              {runAnalysis.isPending ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <CalendarDays className="w-4 h-4" />
-              )}
-              {canReanalyze ? "Realizar nova análise" : `Aguarde ${daysRemaining} dias`}
-            </Button>
-          </CardContent>
-        </Card>
-      </motion.div>
+                {canReanalyze ? "Realizar nova análise" : `Aguarde ${daysRemaining} dias`}
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Delta comparison between last two analyses */}
-      {deltas && (
+      {!readOnly && deltas && (
         <motion.div {...fade} transition={{ delay: 0.04 }}>
           <Card>
             <CardContent className="p-5 space-y-3">
@@ -664,7 +718,7 @@ export default function DiagnosticoPage() {
       {/* WhatsApp CTA removed — client already in dashboard */}
 
       {/* ── Evolução do Score (histórico de re-análises) ── */}
-      {evolutionChartData.length >= 2 && (
+      {!readOnly && evolutionChartData.length >= 2 && (
         <motion.div {...fade} transition={{ delay: 0.5 }}>
           <Card>
             <CardContent className="p-6 space-y-4">

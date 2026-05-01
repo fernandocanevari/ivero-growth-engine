@@ -16,6 +16,7 @@
 export const TRIAL_ALLOWED_ROUTES: readonly string[] = [
   "/dashboard",
   "/dashboard/diagnostico",
+  "/dashboard/auditorias",
   "/dashboard/score",
   "/dashboard/configuracoes",
   "/dashboard/assinatura",

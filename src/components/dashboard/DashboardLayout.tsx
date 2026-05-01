@@ -10,6 +10,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdoptPendingAudit } from "@/hooks/useAdoptPendingAudit";
 
 const SNOOZE_PREFIX = "ivero_onboarding_snoozed_until:";
 const LEGACY_KEY = "ivero_onboarding_snoozed_until";
@@ -22,6 +23,9 @@ export default function DashboardLayout() {
   const [dismissed, setDismissed] = useState(false);
   const [snoozed, setSnoozed] = useState(true); // default true to avoid flash
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Adopta snapshot anônimo do sessionStorage (caso o usuário tenha vindo do /preview).
+  useAdoptPendingAudit();
 
   // Resolve current user, then check per-user snooze (and clear legacy global key)
   useEffect(() => {
