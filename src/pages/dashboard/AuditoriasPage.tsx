@@ -345,7 +345,7 @@ export default function AuditoriasPage() {
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm text-foreground">
-                <strong>{selected.length}/2</strong> auditorias selecionadas para comparação.
+                <strong>{selected.length}/2</strong> relatórios selecionados para comparação.
                 {selected.length < 2 && " Marque mais uma para visualizar os deltas lado a lado."}
               </p>
               <div className="flex items-center gap-2">
@@ -373,7 +373,7 @@ export default function AuditoriasPage() {
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            Nenhuma auditoria encontrada com esses filtros.
+            Nenhum relatório encontrado com esses filtros.
           </CardContent>
         </Card>
       ) : (
