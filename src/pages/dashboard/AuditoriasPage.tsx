@@ -202,22 +202,27 @@ export default function AuditoriasPage() {
     return (
       <EmptyStatePage
         icon={<History className="h-12 w-12" />}
-        title="Histórico de Auditorias"
-        subtitle="Acesse todos os relatórios de auditoria já gerados para sua marca."
-        message="Nenhuma auditoria salva ainda. Rode seu primeiro Diagnóstico para começar a montar seu histórico."
+        title="Histórico de Relatórios"
+        subtitle="Acesse todos os relatórios já gerados para sua marca."
+        message="Nenhum relatório salvo ainda. Rode seu primeiro Diagnóstico para começar a montar seu histórico."
         hasBrand={hasBrand}
+        cta={{
+          label: "Fazer meu diagnóstico",
+          to: "/dashboard/diagnostico",
+          icon: <Brain className="h-4 w-4 mr-2" />,
+        }}
       />
     );
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm("Remover esta auditoria do histórico? Esta ação não pode ser desfeita.")) return;
+    if (!confirm("Remover este relatório do histórico? Esta ação não pode ser desfeita.")) return;
     remove.mutate(id, {
       onSuccess: () => {
-        toast.success("Auditoria removida");
+        toast.success("Relatório removido");
         setSelected((prev) => prev.filter((s) => s !== id));
       },
-      onError: () => toast.error("Erro ao remover auditoria"),
+      onError: () => toast.error("Erro ao remover relatório"),
     });
   };
 
@@ -225,7 +230,7 @@ export default function AuditoriasPage() {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= 2) {
-        toast.info("Você só pode comparar 2 auditorias por vez. Desmarque uma para trocar.");
+        toast.info("Você só pode comparar 2 relatórios por vez. Desmarque um para trocar.");
         return prev;
       }
       return [...prev, id];
