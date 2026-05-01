@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { BlogLayout } from "@/components/blog/BlogLayout";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { getOrderedPosts } from "@/content/blog";
@@ -37,21 +36,14 @@ const BlogIndexPage = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-12 text-center"
+          className="mb-14 text-center"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-5">
-            <Sparkles className="w-3.5 h-3.5" />
-            Blog Ivero
-          </div>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight leading-[1.05] mb-4">
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight leading-[1.05]">
             Inteligência editorial sobre <span className="text-gradient">GEO</span> e IAs
           </h1>
-          <p className="text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed">
-            Análises e roteiros táticos para marcas que querem ser citadas — não apenas indexadas — pelas IAs generativas.
-          </p>
         </motion.header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <BlogCard post={pilar} featured index={0} />
           {rest.map((post, i) => (
             <BlogCard key={post.slug} post={post} index={i + 1} />

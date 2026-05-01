@@ -87,7 +87,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden bg-ivero-dark">
+    <section id="diagnostico" ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden bg-ivero-dark scroll-mt-20">
       {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[hsl(230,25%,6%)] via-ivero-dark to-[hsl(230,25%,6%)]" />
       

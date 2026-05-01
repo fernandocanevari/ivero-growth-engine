@@ -24,25 +24,30 @@ export function BlogCard({ post, featured, index }: Props) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5, delay: index * 0.05 }}
+      className={featured ? "sm:col-span-2" : ""}
     >
       <Link
         to={`/blog/${post.slug}`}
-        className={`group block rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-lg transition-all overflow-hidden ${
-          featured ? "sm:col-span-2 lg:col-span-3" : ""
-        }`}
+        className={`group relative block rounded-2xl border-2 border-foreground/10 bg-card shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden h-full`}
       >
+        {/* Glow decorativo no hover */}
         <div
-          className={`p-6 sm:p-8 ${
-            featured ? "lg:flex lg:items-center lg:gap-10" : ""
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        />
+
+        <div
+          className={`relative p-6 sm:p-8 h-full flex ${
+            featured ? "flex-col lg:flex-row lg:items-center lg:gap-10" : "flex-col"
           }`}
         >
           {featured && (
-            <div className="hidden lg:block lg:w-1/2 aspect-[16/10] rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border border-primary/10 shrink-0" />
+            <div className="hidden lg:block lg:w-1/2 aspect-[16/10] rounded-xl bg-gradient-to-br from-primary/25 via-primary/10 to-transparent border border-primary/15 shrink-0" />
           )}
-          <div className={featured ? "lg:flex-1" : ""}>
-            <div className="flex items-center gap-2 mb-3">
+          <div className={`flex flex-col flex-1 ${featured ? "lg:flex-1" : ""}`}>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
               {featured && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-foreground text-background">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-sm">
                   Pilar
                 </span>
               )}
@@ -62,10 +67,10 @@ export function BlogCard({ post, featured, index }: Props) {
             >
               {post.title}
             </h2>
-            <p className="text-foreground/70 leading-relaxed mb-5 text-[0.95rem]">
+            <p className="text-foreground/70 leading-relaxed mb-5 text-[0.95rem] flex-1">
               {post.description}
             </p>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-auto">
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>{date}</span>
                 <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
@@ -74,7 +79,12 @@ export function BlogCard({ post, featured, index }: Props) {
                   {minutes} min
                 </span>
               </div>
-              <ArrowUpRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />
+              <span
+                aria-hidden
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md group-hover:shadow-primary/30 transition-all"
+              >
+                <ArrowUpRight className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
+              </span>
             </div>
           </div>
         </div>
