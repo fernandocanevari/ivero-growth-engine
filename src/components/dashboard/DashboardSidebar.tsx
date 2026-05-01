@@ -69,7 +69,7 @@ const menuGroups = [
   {
     label: "Extras",
     items: [
-      { title: "Relatórios", url: "/dashboard/relatorios", icon: Download },
+      { title: "Exportar Dados", url: "/dashboard/relatorios", icon: Download },
       { title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard },
       { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
     ],
