@@ -1518,6 +1518,18 @@ export default function PreviewPage() {
     };
   }, [siteUrl]);
 
+  if (!siteUrl) {
+    return (
+      <PreScanUrlModal
+        open
+        onSubmit={(url) => {
+          const next = new URLSearchParams(searchParams);
+          next.set("url", url);
+          setSearchParams(next, { replace: true });
+        }}
+      />
+    );
+  }
   if (loading) return <LoadingScreen currentStep={currentStep} progress={progress} />;
   return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />;
 }
