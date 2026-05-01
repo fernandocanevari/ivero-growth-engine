@@ -26,7 +26,7 @@ export function BlogPostHero({
   });
 
   return (
-    <header className="mb-10">
+    <header className="mb-12">
       <Link
         to="/blog"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -40,21 +40,21 @@ export function BlogPostHero({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
           {tags.map((tag) => (
             <span
               key={tag}
-              className="text-[11px] font-semibold uppercase tracking-wider text-primary"
+              className="text-[11px] font-bold uppercase tracking-wider text-primary px-2.5 py-1 rounded-md bg-primary/10"
             >
               {tag}
             </span>
           ))}
         </div>
 
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight leading-[1.1] mb-5">
+        <h1 className="font-display text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-foreground tracking-tight leading-[1.15] mb-5">
           {title}
         </h1>
-        <p className="text-lg sm:text-xl text-foreground/70 leading-relaxed mb-7 max-w-2xl">
+        <p className="text-lg text-foreground/70 leading-relaxed mb-7">
           {description}
         </p>
 
