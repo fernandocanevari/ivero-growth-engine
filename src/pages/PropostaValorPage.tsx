@@ -55,15 +55,13 @@ export default function PropostaValorPage() {
     navigate(`/propostacomercial${url ? `?url=${encodeURIComponent(url)}` : ""}`);
   };
 
+  useEffect(() => {
+    document.title = "Proposta de Valor — Ivero | Auditoria de Influência em IA";
+  }, []);
+
   return (
     <div className="min-h-screen bg-ivero-dark text-primary-foreground font-sans overflow-x-hidden">
-      <Helmet>
-        <title>Proposta de Valor — Ivero | Auditoria de Influência em IA</title>
-        <meta
-          name="description"
-          content="Sua marca está sendo recomendada pelas IAs ou está perdendo oportunidades a cada segundo? Descubra agora."
-        />
-      </Helmet>
+
 
       {/* Header enxuto */}
       <header className="sticky top-0 z-50 bg-ivero-dark/80 backdrop-blur-md border-b border-ivero-purple/10">

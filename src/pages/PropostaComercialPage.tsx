@@ -8,7 +8,7 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import { Helmet } from "react-helmet-async";
+
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
