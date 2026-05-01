@@ -267,7 +267,29 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
         keyword_cloud: keyword_cloud as never,
       },
       {
-        onSuccess: () => toast.success("Nova análise realizada com sucesso!"),
+        onSuccess: async () => {
+          toast.success("Nova análise realizada com sucesso!");
+          // Persiste snapshot completo no histórico navegável de auditorias.
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from("audit_reports").insert({
+                user_id: user.id,
+                source: "reanalise",
+                site_url: settings?.website ?? "",
+                overall_score: overallScore,
+                status_label: overallBand.label,
+                radar_data: effectiveRadar,
+                pillar_details: effectivePillars.map(({ icon: _icon, ...rest }) => rest),
+                keyword_cloud: keyword_cloud as never,
+                ai_engines: [],
+              } as never);
+              queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
+            }
+          } catch (e) {
+            console.warn("Audit snapshot skipped:", e);
+          }
+        },
         onError: () => toast.error("Erro ao realizar análise. Tente novamente."),
       }
     );
