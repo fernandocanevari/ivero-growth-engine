@@ -685,7 +685,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
       {/* WhatsApp CTA removed — client already in dashboard */}
 
       {/* ── Evolução do Score (histórico de re-análises) ── */}
-      {evolutionChartData.length >= 2 && (
+      {!readOnly && evolutionChartData.length >= 2 && (
         <motion.div {...fade} transition={{ delay: 0.5 }}>
           <Card>
             <CardContent className="p-6 space-y-4">
