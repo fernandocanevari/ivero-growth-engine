@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   History, ArrowRight, Trash2, Globe, Search, Calendar as CalendarIcon,
-  X, GitCompareArrows, ArrowUpRight, ArrowDownRight, Minus,
+  X, GitCompareArrows, ArrowUpRight, ArrowDownRight, Minus, Brain,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
