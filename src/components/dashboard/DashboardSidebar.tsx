@@ -39,7 +39,7 @@ const menuGroups = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain },
-      { title: "Auditorias", url: "/dashboard/auditorias", icon: History },
+      { title: "Relatórios", url: "/dashboard/auditorias", icon: History },
       { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
     ],
   },
