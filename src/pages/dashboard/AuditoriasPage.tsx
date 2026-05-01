@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   History, ArrowRight, Trash2, Globe, Search, Calendar as CalendarIcon,
-  X, GitCompareArrows, ArrowUpRight, ArrowDownRight, Minus,
+  X, GitCompareArrows, ArrowUpRight, ArrowDownRight, Minus, Brain,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ function DeltaCell({ value }: { value: number }) {
   );
 }
 
-/** Modal de comparação lado a lado de duas auditorias. */
+/** Modal de comparação lado a lado de dois relatórios. */
 function CompareDialog({
   open,
   onOpenChange,
@@ -103,10 +103,10 @@ function CompareDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitCompareArrows className="w-4 h-4 text-primary" />
-            Comparativo de Auditorias
+            Comparativo de Relatórios
           </DialogTitle>
           <DialogDescription>
-            Variação dos pilares entre duas auditorias selecionadas.
+            Variação dos pilares entre dois relatórios selecionados.
           </DialogDescription>
         </DialogHeader>
 
@@ -150,7 +150,7 @@ function CompareDialog({
 
         <div className="flex items-center justify-between gap-3 pt-2">
           <p className="text-xs text-muted-foreground">
-            Deltas comparam a auditoria mais recente em relação à anterior.
+            Deltas comparam o relatório mais recente em relação ao anterior.
           </p>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm">
@@ -202,22 +202,27 @@ export default function AuditoriasPage() {
     return (
       <EmptyStatePage
         icon={<History className="h-12 w-12" />}
-        title="Histórico de Auditorias"
-        subtitle="Acesse todos os relatórios de auditoria já gerados para sua marca."
-        message="Nenhuma auditoria salva ainda. Rode seu primeiro Diagnóstico para começar a montar seu histórico."
+        title="Histórico de Relatórios"
+        subtitle="Acesse todos os relatórios já gerados para sua marca."
+        message="Nenhum relatório salvo ainda. Rode seu primeiro Diagnóstico para começar a montar seu histórico."
         hasBrand={hasBrand}
+        cta={{
+          label: "Fazer meu diagnóstico",
+          to: "/dashboard/diagnostico",
+          icon: <Brain className="h-4 w-4 mr-2" />,
+        }}
       />
     );
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm("Remover esta auditoria do histórico? Esta ação não pode ser desfeita.")) return;
+    if (!confirm("Remover este relatório do histórico? Esta ação não pode ser desfeita.")) return;
     remove.mutate(id, {
       onSuccess: () => {
-        toast.success("Auditoria removida");
+        toast.success("Relatório removido");
         setSelected((prev) => prev.filter((s) => s !== id));
       },
-      onError: () => toast.error("Erro ao remover auditoria"),
+      onError: () => toast.error("Erro ao remover relatório"),
     });
   };
 
@@ -225,7 +230,7 @@ export default function AuditoriasPage() {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= 2) {
-        toast.info("Você só pode comparar 2 auditorias por vez. Desmarque uma para trocar.");
+        toast.info("Você só pode comparar 2 relatórios por vez. Desmarque um para trocar.");
         return prev;
       }
       return [...prev, id];
@@ -251,9 +256,9 @@ export default function AuditoriasPage() {
               <History className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-display text-foreground">Histórico de Auditorias</h1>
+              <h1 className="text-2xl font-bold font-display text-foreground">Histórico de Relatórios</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {reports.length} {reports.length === 1 ? "auditoria salva" : "auditorias salvas"}
+                {reports.length} {reports.length === 1 ? "relatório salvo" : "relatórios salvos"}
                 {filtersActive && ` · ${filtered.length} após filtro`}
               </p>
             </div>
@@ -269,7 +274,7 @@ export default function AuditoriasPage() {
             className="gap-1.5"
           >
             <GitCompareArrows className="w-4 h-4" />
-            {compareMode ? "Sair do modo comparação" : "Comparar auditorias"}
+            {compareMode ? "Sair do modo comparação" : "Comparar relatórios"}
           </Button>
         </div>
       </motion.div>
@@ -340,7 +345,7 @@ export default function AuditoriasPage() {
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm text-foreground">
-                <strong>{selected.length}/2</strong> auditorias selecionadas para comparação.
+                <strong>{selected.length}/2</strong> relatórios selecionados para comparação.
                 {selected.length < 2 && " Marque mais uma para visualizar os deltas lado a lado."}
               </p>
               <div className="flex items-center gap-2">
@@ -368,7 +373,7 @@ export default function AuditoriasPage() {
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            Nenhuma auditoria encontrada com esses filtros.
+            Nenhum relatório encontrado com esses filtros.
           </CardContent>
         </Card>
       ) : (
@@ -411,7 +416,7 @@ export default function AuditoriasPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-foreground">
-                          Auditoria de {formatDate(r.created_at)}
+                          Relatório de {formatDate(r.created_at)}
                         </p>
                         <span
                           className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${band.cls}`}
