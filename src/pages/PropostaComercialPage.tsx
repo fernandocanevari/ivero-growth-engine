@@ -187,15 +187,12 @@ export default function PropostaComercialPage() {
     }
   }
 
+  useEffect(() => {
+    document.title = "Sua Proposta Personalizada — Ivero";
+  }, []);
+
   return (
     <div className="min-h-screen bg-ivero-dark text-primary-foreground font-sans">
-      <Helmet>
-        <title>Sua Proposta Personalizada — Ivero</title>
-        <meta
-          name="description"
-          content="Diagnóstico de visibilidade em IA + proposta comercial sob medida para sua marca."
-        />
-      </Helmet>
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-ivero-dark/80 backdrop-blur-md border-b border-ivero-purple/10">
