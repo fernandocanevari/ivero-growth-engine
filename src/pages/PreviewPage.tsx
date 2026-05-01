@@ -1292,9 +1292,54 @@ function extractBrandFromUrl(url: string): string {
   }
 }
 
+/* ── Pre-scan modal: ask the URL before starting the audit when missing ── */
+function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: string) => void }) {
+  const [value, setValue] = useState("");
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = value.trim();
+    if (!trimmed) {
+      toast({ title: "Informe o site da sua marca", description: "Precisamos da URL para iniciar a auditoria.", variant: "destructive" });
+      return;
+    }
+    onSubmit(trimmed);
+  };
+  return (
+    <Dialog open={open}>
+      <DialogContent className="sm:max-w-lg border-primary/20 bg-card" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient">
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <DialogTitle className="font-display text-xl">Antes de começar a auditoria</DialogTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini, Claude e Perplexity enxergam você.
+          </p>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          <Input
+            autoFocus
+            type="text"
+            placeholder="ex: suamarca.com.br"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="h-12"
+          />
+          <Button type="submit" variant="hero" size="lg" className="w-full h-12">
+            Iniciar auditoria
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* ── Main Page ── */
 export default function PreviewPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const siteUrl = searchParams.get("url") || "";
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
@@ -1311,6 +1356,7 @@ export default function PreviewPage() {
   const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!siteUrl) return; // wait for the modal submission
     const totalDuration = 4000; // ~4s teatro de loading; chamadas reais à IA continuam em paralelo (await abaixo)
     const stepDuration = totalDuration / loadingSteps.length;
 
@@ -1472,6 +1518,18 @@ export default function PreviewPage() {
     };
   }, [siteUrl]);
 
+  if (!siteUrl) {
+    return (
+      <PreScanUrlModal
+        open
+        onSubmit={(url) => {
+          const next = new URLSearchParams(searchParams);
+          next.set("url", url);
+          setSearchParams(next, { replace: true });
+        }}
+      />
+    );
+  }
   if (loading) return <LoadingScreen currentStep={currentStep} progress={progress} />;
   return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />;
 }

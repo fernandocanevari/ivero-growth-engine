@@ -101,24 +101,34 @@ export function BlogContent({ blocks, keywords, postSlug }: Props) {
             return (
               <div
                 key={idx}
-                className="relative my-8 overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-card p-6 sm:p-8 shadow-lg shadow-primary/5 not-prose"
+                className="group relative my-10 overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/20 via-accent/10 to-card p-7 sm:p-9 shadow-xl shadow-primary/10 not-prose"
               >
+                {/* Animated glow */}
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-primary/20 blur-3xl"
+                  className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/25 blur-3xl group-hover:bg-primary/40 transition-colors duration-700"
                 />
-                <div className="relative">
-                  <p className="text-xl sm:text-2xl font-display font-bold text-foreground leading-tight mb-5">
-                    {block.text}
-                  </p>
-                  <Link
-                    to={block.href}
-                    onClick={() => track("blog_cta_click", { slug: postSlug, href: block.href })}
-                    className="group inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-6 py-3.5 text-sm font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
-                  >
-                    {block.label}
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-accent/20 blur-3xl"
+                />
+                <div className="relative flex flex-col sm:flex-row sm:items-center gap-6">
+                  <div className="shrink-0 flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30">
+                    <Sparkles className="w-7 h-7 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xl sm:text-2xl font-display font-bold text-foreground leading-tight mb-4">
+                      {block.text}
+                    </p>
+                    <Link
+                      to={block.href}
+                      onClick={() => track("blog_cta_click", { slug: postSlug, href: block.href })}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground px-6 py-3.5 text-sm font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/50 hover:-translate-y-0.5 transition-all"
+                    >
+                      {block.label}
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             );
