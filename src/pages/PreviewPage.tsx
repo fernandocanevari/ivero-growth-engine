@@ -1333,7 +1333,7 @@ function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: st
     if (submitting) return;
     const result = normalizeAndValidateUrl(value);
     if (!result.ok) {
-      setError(result.error);
+      setError(result.reason);
       return;
     }
     setError(null);
