@@ -256,9 +256,9 @@ export default function AuditoriasPage() {
               <History className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-display text-foreground">Histórico de Auditorias</h1>
+              <h1 className="text-2xl font-bold font-display text-foreground">Histórico de Relatórios</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {reports.length} {reports.length === 1 ? "auditoria salva" : "auditorias salvas"}
+                {reports.length} {reports.length === 1 ? "relatório salvo" : "relatórios salvos"}
                 {filtersActive && ` · ${filtered.length} após filtro`}
               </p>
             </div>
@@ -274,7 +274,7 @@ export default function AuditoriasPage() {
             className="gap-1.5"
           >
             <GitCompareArrows className="w-4 h-4" />
-            {compareMode ? "Sair do modo comparação" : "Comparar auditorias"}
+            {compareMode ? "Sair do modo comparação" : "Comparar relatórios"}
           </Button>
         </div>
       </motion.div>
