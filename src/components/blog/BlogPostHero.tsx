@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
+import { tagVariant } from "@/lib/blog-tag-style";
 
 interface Props {
   title: string;
