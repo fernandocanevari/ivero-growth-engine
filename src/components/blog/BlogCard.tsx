@@ -61,14 +61,17 @@ export function BlogCard({ post, featured, index }: Props) {
             </span>
           )}
           <div className="absolute bottom-4 left-5 right-5 flex items-center gap-2 flex-wrap">
-            {post.tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag}
-                className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-background/80 backdrop-blur-sm text-primary"
-              >
-                {tag}
-              </span>
-            ))}
+            {post.tags.slice(0, 2).map((tag) => {
+              const v = tagVariant(tag);
+              return (
+                <span
+                  key={tag}
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${v.overlay}`}
+                >
+                  {tag}
+                </span>
+              );
+            })}
           </div>
         </div>
 
