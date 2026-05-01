@@ -173,7 +173,20 @@ function SoftBlur({ children, label }: { children: React.ReactNode; label?: stri
   );
 }
 
-export default function DiagnosticoPage() {
+interface DiagnosticoPageProps {
+  /** Snapshot histórico — quando setado, renderiza esse relatório em vez do último da sessão. */
+  snapshotOverride?: {
+    pillarDetails: PillarPayload[];
+    radar: { subject: string; value: number; fullMark: number }[];
+    overallScore: number;
+    createdAt?: string;
+    siteUrl?: string;
+  };
+  /** Esconde botão de re-análise + comparativo — usado nas páginas de auditoria histórica. */
+  readOnly?: boolean;
+}
+
+export default function DiagnosticoPage({ snapshotOverride, readOnly }: DiagnosticoPageProps = {}) {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
   const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
@@ -186,6 +199,12 @@ export default function DiagnosticoPage() {
   const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
   const [liveScore, setLiveScore] = useState<number | null>(null);
   useEffect(() => {
+    if (snapshotOverride) {
+      setLivePillars(snapshotOverride.pillarDetails ?? null);
+      setLiveRadar(snapshotOverride.radar ?? null);
+      setLiveScore(snapshotOverride.overallScore ?? null);
+      return;
+    }
     try {
       const raw = sessionStorage.getItem("ivero:lastDiagnostic");
       if (!raw) return;
@@ -202,7 +221,7 @@ export default function DiagnosticoPage() {
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [snapshotOverride]);
 
   // Merge live data with mock fallback (mock used only if no analysis was run yet)
   const effectiveRadar = liveRadar ?? radarData;
