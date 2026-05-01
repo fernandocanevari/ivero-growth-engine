@@ -107,7 +107,7 @@ export const post: BlogPost = {
       type: "cta",
       text: "Descubra em 60 segundos como sua marca aparece nas 5 principais IAs.",
       label: "Auditar minha marca agora",
-      href: "/preview",
+      href: "/#diagnostico",
     },
   ],
   faq: [

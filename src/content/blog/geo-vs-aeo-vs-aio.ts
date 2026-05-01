@@ -120,7 +120,7 @@ export const post: BlogPost = {
       type: "cta",
       text: "Quer saber como sua marca aparece hoje no ChatGPT, Gemini, Perplexity, Claude e Copilot?",
       label: "Fazer diagnóstico grátis",
-      href: "/preview",
+      href: "/#diagnostico",
     },
   ],
   faq: [
