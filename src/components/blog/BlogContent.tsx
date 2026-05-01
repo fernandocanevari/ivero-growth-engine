@@ -108,10 +108,6 @@ export function BlogContent({ blocks, keywords, postSlug }: Props) {
                   className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-primary/20 blur-3xl"
                 />
                 <div className="relative">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-primary">
-                    <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                    Ação
-                  </div>
                   <p className="text-xl sm:text-2xl font-display font-bold text-foreground leading-tight mb-5">
                     {block.text}
                   </p>
