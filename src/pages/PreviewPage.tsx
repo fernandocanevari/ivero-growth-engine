@@ -1356,6 +1356,7 @@ export default function PreviewPage() {
   const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!siteUrl) return; // wait for the modal submission
     const totalDuration = 4000; // ~4s teatro de loading; chamadas reais à IA continuam em paralelo (await abaixo)
     const stepDuration = totalDuration / loadingSteps.length;
 
