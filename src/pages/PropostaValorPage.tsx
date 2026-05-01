@@ -13,7 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 
 const PILLARS = [
   { icon: Eye, name: "Clareza", desc: "Sua proposta é entendida em <5s?" },
