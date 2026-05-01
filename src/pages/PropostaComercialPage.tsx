@@ -530,15 +530,38 @@ export default function PropostaComercialPage() {
                 Nosso time entra em contato em até 24h para validar o
                 diagnóstico e desenhar o roadmap de execução.
               </p>
-              <Button
-                variant="hero"
-                size="lg"
-                className="px-8 h-14 text-base"
-                onClick={() => setLeadModalOpen(true)}
-              >
-                Quero falar com um especialista
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="px-8 h-14 text-base"
+                  onClick={() => setLeadModalOpen(true)}
+                >
+                  Quero falar com um especialista
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="px-8 h-14 text-base bg-transparent border-ivero-purple/40 text-primary-foreground hover:bg-ivero-purple/10 hover:text-primary-foreground"
+                  onClick={() => {
+                    try {
+                      generateProposalPDF(diagnostic, proposal);
+                      toast({ title: "Proposta gerada", description: "Seu PDF foi baixado." });
+                    } catch (err) {
+                      console.error(err);
+                      toast({
+                        title: "Nao foi possivel gerar o PDF",
+                        description: "Tente novamente em instantes.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <Download className="mr-2 w-5 h-5" />
+                  Baixar proposta em PDF
+                </Button>
+              </div>
             </motion.section>
 
             {/* link para diagnóstico completo */}
