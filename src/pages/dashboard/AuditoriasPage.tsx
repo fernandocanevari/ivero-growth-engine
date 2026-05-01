@@ -67,7 +67,7 @@ function DeltaCell({ value }: { value: number }) {
   );
 }
 
-/** Modal de comparação lado a lado de duas auditorias. */
+/** Modal de comparação lado a lado de dois relatórios. */
 function CompareDialog({
   open,
   onOpenChange,
@@ -103,10 +103,10 @@ function CompareDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitCompareArrows className="w-4 h-4 text-primary" />
-            Comparativo de Auditorias
+            Comparativo de Relatórios
           </DialogTitle>
           <DialogDescription>
-            Variação dos pilares entre duas auditorias selecionadas.
+            Variação dos pilares entre dois relatórios selecionados.
           </DialogDescription>
         </DialogHeader>
 
