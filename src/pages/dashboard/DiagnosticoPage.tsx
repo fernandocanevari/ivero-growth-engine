@@ -337,7 +337,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
   ] : null;
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div id="diagnostico-report-root" className="space-y-8 max-w-4xl">
       {/* Header */}
       <motion.div {...fade}>
         <div className="flex items-center gap-3 mb-1">
