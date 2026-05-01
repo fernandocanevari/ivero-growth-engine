@@ -1292,50 +1292,122 @@ function extractBrandFromUrl(url: string): string {
   }
 }
 
+/* ── URL normalization + validation ── */
+// Accepts "marca.com.br", "www.marca.com", "https://marca.com/sub" etc.
+// Rejects emails, IPs, localhost, missing TLD, invalid characters.
+function normalizeAndValidateUrl(raw: string): { ok: true; url: string } | { ok: false; reason: string } {
+  let v = raw.trim().toLowerCase();
+  if (!v) return { ok: false, reason: "Informe o site da sua marca." };
+  if (v.includes("@")) return { ok: false, reason: "Insira uma URL, não um e-mail." };
+  if (v.includes(" ")) return { ok: false, reason: "URLs não podem conter espaços." };
+
+  // Strip protocol + path/query for hostname validation
+  v = v.replace(/^https?:\/\//, "");
+  const host = v.split(/[/?#]/)[0];
+
+  if (!host) return { ok: false, reason: "URL inválida." };
+  if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    return { ok: false, reason: "Use o domínio público da sua marca." };
+  }
+  // Domain regex: labels separated by dots + TLD with 2+ letters
+  const domainRegex = /^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+  if (!domainRegex.test(host)) {
+    return { ok: false, reason: "Domínio inválido (ex: suamarca.com.br)." };
+  }
+  return { ok: true, url: `https://${v}` };
+}
+
 /* ── Pre-scan modal: ask the URL before starting the audit when missing ── */
 function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: string) => void }) {
   const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(e.target.value);
+    if (error) setError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = value.trim();
-    if (!trimmed) {
-      toast({ title: "Informe o site da sua marca", description: "Precisamos da URL para iniciar a auditoria.", variant: "destructive" });
+    if (submitting) return;
+    const result = normalizeAndValidateUrl(value);
+    if (result.ok === false) {
+      setError(result.reason);
       return;
     }
-    onSubmit(trimmed);
+    setError(null);
+    setSubmitting(true);
+    const finalUrl = result.url;
+    // Brief feedback delay so the user perceives the transition into the scanner
+    setTimeout(() => onSubmit(finalUrl), 700);
   };
+
   return (
     <Dialog open={open}>
-      <DialogContent className="sm:max-w-lg border-primary/20 bg-card" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-lg border-primary/20 bg-card"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
-            <DialogTitle className="font-display text-xl">Antes de começar a auditoria</DialogTitle>
+            <DialogTitle className="font-display text-xl">
+              {submitting ? "Preparando sua auditoria…" : "Antes de começar a auditoria"}
+            </DialogTitle>
           </div>
           <p className="text-sm text-muted-foreground">
-            Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini, Claude e Perplexity enxergam você.
+            {submitting
+              ? "Conectando aos modelos de IA. A análise vai iniciar automaticamente."
+              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini, Claude e Perplexity enxergam você."}
           </p>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <Input
-            autoFocus
-            type="text"
-            placeholder="ex: suamarca.com.br"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="h-12"
-          />
-          <Button type="submit" variant="hero" size="lg" className="w-full h-12">
-            Iniciar auditoria
-            <ArrowRight className="ml-2 w-4 h-4" />
-          </Button>
-        </form>
+
+        {submitting ? (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <Loader2 className="w-5 h-5 text-primary animate-spin shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{value}</p>
+                <p className="text-xs text-muted-foreground">Iniciando varredura nas IAs…</p>
+              </div>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full w-1/3 bg-ivero-gradient animate-[shimmer_1.2s_ease-in-out_infinite]" style={{ animation: "preScanShimmer 1.2s ease-in-out infinite" }} />
+            </div>
+            <style>{`@keyframes preScanShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }`}</style>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+            <div>
+              <Input
+                autoFocus
+                type="text"
+                inputMode="url"
+                placeholder="ex: suamarca.com.br"
+                value={value}
+                onChange={handleChange}
+                aria-invalid={!!error}
+                className={`h-12 ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+              />
+              {error && (
+                <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>
+              )}
+            </div>
+            <Button type="submit" variant="hero" size="lg" className="w-full h-12">
+              Iniciar auditoria
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
+
 
 /* ── Main Page ── */
 export default function PreviewPage() {
