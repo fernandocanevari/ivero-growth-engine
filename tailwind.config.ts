@@ -51,6 +51,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        surface: {
+          0: "hsl(var(--surface-0))",
+          1: "hsl(var(--surface-1))",
+          2: "hsl(var(--surface-2))",
+          3: "hsl(var(--surface-3))",
+        },
+        "footer-bg": "hsl(var(--footer-bg))",
         ivero: {
           purple: "hsl(var(--ivero-purple))",
           "purple-light": "hsl(var(--ivero-purple-light))",

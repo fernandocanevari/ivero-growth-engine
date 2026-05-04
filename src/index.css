@@ -49,6 +49,11 @@ html {
     --ivero-slate-light: 220 10% 65%;
     --ivero-dark: 230 25% 8%;
     --ivero-dark-surface: 230 20% 12%;
+    --surface-0: 0 0% 100%;
+    --surface-1: 230 20% 98.5%;
+    --surface-2: 265 30% 97%;
+    --surface-3: 230 15% 95%;
+    --footer-bg: 265 25% 94%;
     --ivero-card-inner: 228 14% 95%;
     --ivero-gradient: linear-gradient(135deg, hsl(265 70% 28%), hsl(330 85% 55%));
     --ivero-gradient-soft: linear-gradient(135deg, hsl(265 60% 45% / 0.1), hsl(330 85% 55% / 0.1));
