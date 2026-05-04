@@ -167,11 +167,11 @@ const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             className="hidden lg:flex justify-center -mt-2"
           >
-            <div className="w-full max-w-md bg-ivero-dark-surface border border-ivero-purple/20 rounded-2xl p-8 shadow-xl">
-              <h3 className="font-display text-xl font-semibold text-primary-foreground mb-2">
+            <div className="w-full max-w-md bg-white border border-ivero-purple/20 rounded-2xl p-8 shadow-[0_8px_30px_hsl(265,60%,55%/0.10)]">
+              <h3 className="font-display text-xl font-semibold text-foreground mb-2">
                 Descubra se sua marca já aparece nas respostas da IA.
               </h3>
-              <p className="text-ivero-slate-light text-sm mb-6">Preencha os dados abaixo e comece agora.</p>
+              <p className="text-muted-foreground text-sm mb-6">Preencha os dados abaixo e comece agora.</p>
 
               <form className="flex flex-col gap-4" onSubmit={handleHeroFormSubmit}>
                 <input
@@ -181,7 +181,7 @@ const HeroSection = () => {
                   placeholder="Nome"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                  className="h-12 rounded-lg bg-surface-1 border border-ivero-purple/20 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <input
                   type="email"
@@ -190,7 +190,7 @@ const HeroSection = () => {
                   placeholder="E-mail corporativo"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                  className="h-12 rounded-lg bg-surface-1 border border-ivero-purple/20 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <input
                   type="text"
@@ -198,7 +198,7 @@ const HeroSection = () => {
                   placeholder="Site da empresa"
                   value={formSite}
                   onChange={(e) => setFormSite(e.target.value)}
-                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                  className="h-12 rounded-lg bg-surface-1 border border-ivero-purple/20 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <input
                   type="tel"
@@ -206,7 +206,7 @@ const HeroSection = () => {
                   placeholder="Celular"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  className="h-12 rounded-lg bg-ivero-dark border border-ivero-purple/20 px-4 text-primary-foreground placeholder:text-ivero-slate text-sm outline-none focus:border-ivero-purple/50 transition-colors"
+                  className="h-12 rounded-lg bg-surface-1 border border-ivero-purple/20 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="submit" disabled={submitting}>
                   {submitting ? "Processando..." : "Começar agora"}
