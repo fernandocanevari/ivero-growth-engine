@@ -123,7 +123,7 @@ const TypingText = () => {
 
 const AudienceSection = () => {
   return (
-    <section className="relative py-14 sm:py-20 overflow-hidden bg-background">
+    <section className="relative py-14 sm:py-20 overflow-hidden bg-surface-2">
       <div className="absolute top-0 left-1/3 w-[600px] h-[600px] rounded-full bg-ivero-purple/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-ivero-pink/5 blur-[100px] pointer-events-none" />
 

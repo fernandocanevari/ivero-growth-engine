@@ -24,9 +24,9 @@ const stats = [
 const CTASection = () => {
   const navigate = useNavigate();
   return (
-    <section className="py-14 sm:py-16 bg-ivero-dark relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-ivero-purple/15 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/10 rounded-full blur-3xl" />
+    <section className="py-14 sm:py-16 bg-surface-0 relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-ivero-purple/8 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
@@ -41,14 +41,14 @@ const CTASection = () => {
             {stats.map((stat, i) => (
               <div
                 key={i}
-                className="flex items-start gap-3 sm:gap-4 bg-ivero-dark-surface/60 border border-ivero-purple/15 rounded-xl p-3 sm:p-4"
+                className="flex items-start gap-3 sm:gap-4 bg-surface-2 border border-ivero-purple/15 rounded-xl p-3 sm:p-4 shadow-sm"
               >
                 <div className="p-2 rounded-lg bg-accent/10 shrink-0">
                   <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
                 </div>
                 <div>
                   <span className="text-2xl sm:text-3xl font-bold text-gradient">{stat.value}</span>
-                  <p className="text-sm sm:text-base text-ivero-slate-light mt-0.5">{stat.label}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-0.5">{stat.label}</p>
                 </div>
               </div>
             ))}
@@ -62,11 +62,11 @@ const CTASection = () => {
             className="text-center flex-1 max-w-2xl"
           >
             <h2 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-5 sm:mb-6">
-              <span className="text-primary-foreground">Sua marca será </span>
+              <span className="text-foreground">Sua marca será </span>
               <span className="text-gradient">lembrada ou esquecida?</span>
             </h2>
 
-            <p className="text-base sm:text-lg text-ivero-slate-light mb-8 sm:mb-10 max-w-xl mx-auto">
+            <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-xl mx-auto">
               Milhões de decisões de compra já passam pelas IAs generativas. 
               Garanta que sua marca esteja presente quando alguém perguntar.
             </p>

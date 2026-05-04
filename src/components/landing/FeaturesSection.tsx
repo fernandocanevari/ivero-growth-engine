@@ -365,7 +365,7 @@ const FeaturesSection = () => {
 
   return (
     <section
-      className="py-16 bg-background relative overflow-hidden"
+      className="py-16 bg-surface-3 relative overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
