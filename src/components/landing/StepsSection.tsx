@@ -24,9 +24,9 @@ const steps = [
 
 const StepsSection = () => {
   return (
-    <section className="py-14 sm:py-16 bg-ivero-dark relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-ivero-purple/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+    <section className="py-14 sm:py-16 bg-surface-2 relative overflow-hidden">
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-ivero-purple/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/3 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
@@ -36,7 +36,7 @@ const StepsSection = () => {
           className="text-center mb-12 sm:mb-20"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
-            <span className="text-primary-foreground">3 passos para </span>
+            <span className="text-foreground">3 passos para </span>
             <span className="text-gradient">dominar a IA</span>
           </h2>
         </motion.div>
@@ -61,17 +61,17 @@ const StepsSection = () => {
               )}
 
               <div className="relative z-10 text-center sm:text-center flex sm:block items-start sm:items-center gap-5 sm:gap-0">
-                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-ivero-dark-surface border border-ivero-purple/30 shrink-0 mb-0 sm:mb-6 group-hover:border-accent/50 transition-all duration-300">
+                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white border border-ivero-purple/20 shrink-0 mb-0 sm:mb-6 group-hover:border-accent/50 shadow-sm transition-all duration-300">
                   <step.icon className="w-7 h-7 sm:w-9 sm:h-9 text-accent" />
                 </div>
                 <div className="text-left sm:text-center">
                   <span className="block text-xs sm:text-sm font-bold text-ivero-purple-light mb-1 sm:mb-2 tracking-widest">
                     PASSO {step.number}
                   </span>
-                  <h3 className="font-display text-xl sm:text-2xl font-semibold text-primary-foreground mb-2 sm:mb-4">
+                  <h3 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-2 sm:mb-4">
                     {step.title}
                   </h3>
-                  <p className="text-sm sm:text-base text-ivero-slate-light leading-relaxed">
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                     {step.description}
                   </p>
                 </div>
