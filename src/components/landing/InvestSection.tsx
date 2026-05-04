@@ -90,9 +90,9 @@ const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
 
   return (
-    <section id="planos" className="py-14 sm:py-20 bg-ivero-dark relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-ivero-purple/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+    <section id="planos" className="py-14 sm:py-20 bg-surface-1 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-ivero-purple/6 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/4 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
@@ -102,21 +102,21 @@ const InvestSection = () => {
           className="text-center mb-8 sm:mb-10"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-            <span className="text-primary-foreground">Nossos </span>
+            <span className="text-foreground">Nossos </span>
             <span className="text-gradient">Planos</span>
           </h2>
-          <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto mb-6 sm:mb-8">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8">
             Escolha o plano ideal e garanta que sua marca seja vista pelas IAs que o mundo usa.
           </p>
 
           {/* Toggle mensal/anual */}
-          <div className="inline-flex items-center gap-3 bg-ivero-dark-surface border border-ivero-purple/20 rounded-full p-1.5">
+          <div className="inline-flex items-center gap-3 bg-white border border-ivero-purple/20 rounded-full p-1.5 shadow-sm">
             <button
               onClick={() => setIsAnnual(false)}
               className={`text-sm font-medium px-4 sm:px-5 py-2 rounded-full transition-all duration-200 ${
                 !isAnnual
                   ? "bg-ivero-gradient text-primary-foreground shadow-md"
-                  : "text-ivero-slate-light hover:text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Mensal
@@ -126,11 +126,11 @@ const InvestSection = () => {
               className={`text-sm font-medium px-4 sm:px-5 py-2 rounded-full transition-all duration-200 flex items-center gap-2 ${
                 isAnnual
                   ? "bg-ivero-gradient text-primary-foreground shadow-md"
-                  : "text-ivero-slate-light hover:text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Anual
-              <span className="text-[10px] font-bold bg-accent/30 text-white border border-accent/40 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 rounded-full">
                 -20%
               </span>
             </button>
@@ -156,15 +156,15 @@ const InvestSection = () => {
                 }}
                 className={`group relative flex flex-col rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer ${
                   plan.highlighted
-                    ? "border-accent/50 bg-ivero-dark-surface shadow-2xl shadow-accent/15 sm:scale-[1.02] hover:border-accent/80 hover:shadow-accent/30"
-                    : "border-ivero-purple/20 bg-ivero-dark-surface hover:border-ivero-purple/60 hover:shadow-xl hover:shadow-ivero-purple/20"
+                    ? "border-accent/60 bg-white shadow-xl shadow-accent/10 sm:scale-[1.02] hover:border-accent hover:shadow-accent/20"
+                    : "border-ivero-purple/20 bg-white hover:border-ivero-purple/50 hover:shadow-lg hover:shadow-ivero-purple/10"
                 }`}
               >
                 {/* Brilho de borda no hover */}
                 <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ${
                   plan.highlighted
-                    ? "shadow-[inset_0_0_20px_hsl(var(--accent)/0.15)]"
-                    : "shadow-[inset_0_0_20px_hsl(var(--ivero-purple-light)/0.1)]"
+                    ? "shadow-[inset_0_0_20px_hsl(var(--accent)/0.10)]"
+                    : "shadow-[inset_0_0_20px_hsl(var(--ivero-purple-light)/0.08)]"
                 }`} />
 
                 {/* Badge */}
@@ -172,7 +172,7 @@ const InvestSection = () => {
                   plan.badge
                     ? plan.highlighted
                       ? "bg-ivero-gradient text-primary-foreground"
-                      : "bg-ivero-purple/20 text-primary-foreground"
+                      : "bg-ivero-purple/10 text-ivero-purple"
                     : "opacity-0 pointer-events-none"
                 }`}>
                   {plan.badge ?? "‌"}
@@ -182,10 +182,10 @@ const InvestSection = () => {
                   {/* Plan header */}
                   <div className={`relative px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6 mb-1 overflow-hidden min-h-[100px] sm:min-h-[120px] ${
                     plan.highlighted
-                      ? "bg-gradient-to-br from-accent/20 via-accent/5 to-ivero-dark-surface"
-                      : "bg-gradient-to-br from-ivero-purple/20 via-ivero-purple/5 to-ivero-dark-surface"
+                      ? "bg-gradient-to-br from-accent/12 via-accent/4 to-white"
+                      : "bg-gradient-to-br from-ivero-purple/10 via-ivero-purple/3 to-white"
                   }`}>
-                    <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full blur-2xl opacity-60 ${
+                    <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full blur-2xl opacity-40 ${
                       plan.highlighted ? "bg-accent" : "bg-ivero-purple-light"
                     }`} />
                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -199,15 +199,13 @@ const InvestSection = () => {
                         <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0 shadow-[0_0_8px_hsl(var(--accent))]" />
                       )}
                       <h3 className={`font-display text-xl sm:text-2xl font-black tracking-widest uppercase leading-none ${
-                        plan.highlighted
-                          ? "text-white drop-shadow-[0_2px_16px_hsl(var(--accent)/0.9)] [text-shadow:0_0_20px_hsl(var(--accent)/0.5)]"
-                          : "text-white drop-shadow-[0_0_8px_hsl(var(--ivero-purple-light)/0.8)]"
+                        plan.highlighted ? "text-accent" : "text-ivero-purple"
                       }`}>
                         {plan.name}
                       </h3>
                     </div>
 
-                    <p className="relative text-xs sm:text-sm leading-snug font-semibold text-white/80">
+                    <p className="relative text-xs sm:text-sm leading-snug font-semibold text-foreground/80">
                       {plan.tagline}
                     </p>
 
@@ -227,36 +225,36 @@ const InvestSection = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <span className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground">
+                        <span className="font-display text-2xl sm:text-3xl font-bold text-foreground">
                           {price}
                         </span>
                         {!isCustom && (
-                          <span className="text-white/60 text-xs ml-1">/mês</span>
+                          <span className="text-muted-foreground text-xs ml-1">/mês</span>
                         )}
                       </motion.div>
                       {isAnnual && !isCustom && plan.annualSaving && (
-                        <p className="text-accent/80 text-xs sm:text-sm font-bold mt-1">
+                        <p className="text-accent text-xs sm:text-sm font-bold mt-1">
                           ✦ Economia de {plan.annualSaving}/ano
                         </p>
                       )}
                       {isAnnual && isCustom && (
-                        <p className="text-ivero-slate-light/60 text-[10px] mt-1">
+                        <p className="text-muted-foreground text-[10px] mt-1">
                           Proposta personalizada
                         </p>
                       )}
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5 p-3 sm:p-4 rounded-xl border border-accent/20 bg-accent/5">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5 p-3 sm:p-4 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
                           <div key={metric.label} className="flex flex-col items-center text-center gap-1 sm:gap-1.5 py-2 sm:py-3">
                             <Icon className={`w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
-                            <span className="text-lg sm:text-xl font-bold leading-none text-primary-foreground">
+                            <span className="text-lg sm:text-xl font-bold leading-none text-foreground">
                               {metric.value}
                             </span>
-                            <span className="text-[10px] sm:text-xs text-white/70 leading-tight">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
                                {metric.label}
                             </span>
                           </div>
@@ -267,7 +265,7 @@ const InvestSection = () => {
                     {/* Diferenciais */}
                     <ul className="space-y-1.5 mb-5 sm:mb-6 flex-1">
                       {plan.highlights.map((highlight) => (
-                        <li key={highlight} className="flex items-start gap-2 text-xs text-white/80">
+                        <li key={highlight} className="flex items-start gap-2 text-xs text-foreground/80">
                           <span className={`shrink-0 mt-0.5 font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
                           {highlight}
                         </li>
@@ -295,11 +293,11 @@ const InvestSection = () => {
           viewport={{ once: true }}
           className="mt-8 sm:mt-10 text-center space-y-2 sm:space-y-3 px-2"
         >
-          <p className="text-xs sm:text-sm font-semibold text-primary-foreground drop-shadow-[0_0_12px_hsl(var(--accent)/0.6)] [text-shadow:0_0_16px_hsl(var(--accent)/0.4)]">
+          <p className="text-xs sm:text-sm font-semibold text-foreground">
             <span className="text-accent font-bold">✦</span>{" "}
             Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
           </p>
-          <p className="text-xs sm:text-sm font-semibold text-primary-foreground drop-shadow-[0_0_12px_hsl(var(--accent)/0.6)] [text-shadow:0_0_16px_hsl(var(--accent)/0.4)]">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground">
             <span className="text-accent font-bold">✦</span>{" "}
             Todos os planos incluem: Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
