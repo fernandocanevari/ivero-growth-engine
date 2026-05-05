@@ -1252,6 +1252,64 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               </PremiumCard>
             </AnimatedSection>
 
+            {/* ── CTA Proposta Comercial ── */}
+            <AnimatedSection delay={0.7}>
+              <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 sm:p-7 max-w-2xl mx-auto">
+                <div className="flex items-start gap-4">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-ivero-gradient shrink-0">
+                    <Sparkles className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h3 className="font-display text-lg sm:text-xl font-bold text-foreground">
+                        Receba uma proposta personalizada
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Com base no seu diagnóstico, geramos um plano comercial sob medida — pronto em segundos.
+                      </p>
+                    </div>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-primary/40 hover:bg-primary/5"
+                      onClick={async () => {
+                        try {
+                          const radar = dynamicRadarData;
+                          const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
+                            body: {
+                              empresa_nome: extractBrandFromUrl(siteUrl),
+                              empresa_site: siteUrl,
+                              contato_nome: leadData?.name || null,
+                              contato_email: leadData?.email || null,
+                              contato_telefone: leadData?.phone || null,
+                              origem: "preview",
+                              score_geral: geoScore,
+                              diagnostico_snapshot: {
+                                radar,
+                                pillarDetails: dynamicPillarDetails,
+                                aiEngines,
+                                siteUrl,
+                              },
+                            },
+                          });
+                          if (error || !data?.slug) {
+                            toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
+                            return;
+                          }
+                          navigate(`/propostacomercial/${data.slug}`);
+                        } catch (e: any) {
+                          toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      Ver minha proposta personalizada
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </AnimatedSection>
+
             {/* ── Final CTA — fechamento estratégico ── */}
             <AnimatedSection delay={0.75}>
               <div className="relative overflow-hidden rounded-2xl bg-ivero-gradient p-6 sm:p-7 max-w-2xl mx-auto text-center">
