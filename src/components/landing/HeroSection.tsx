@@ -119,15 +119,13 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <h1 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-5 sm:mb-6">
-              <span className="text-foreground">A sua marca está </span>
-              <span className="whitespace-nowrap"><span className="text-foreground">sendo </span><span className="text-gradient">recomendada</span></span>
-              <br />
-              <span className="text-gradient">pelas IAs?</span>
+              <span className="text-foreground">Se a IA não cita sua marca, </span>
+              <span className="text-gradient">você não existe</span>
+              <span className="text-foreground"> para o seu cliente.</span>
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mb-8 sm:mb-10 leading-relaxed">
-              A Ivero monitora como sua marca é citada (ou ignorada) por ChatGPT, Gemini, Perplexity 
-              e outras IAs — e transforma isso em inteligência estratégica para você agir.
+              A Ivero revela se sua marca é citada ou ignorada pelas principais IAs — e transforma esse dado em vantagem competitiva.
             </p>
 
             <div className="flex flex-col gap-3 w-full">
@@ -149,7 +147,7 @@ const HeroSection = () => {
                     className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
                     onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
                   >
-                    Descubra sua visibilidade em IA
+                    Ver agora se minha marca aparece nas IAs
                     <ArrowRight className="ml-1.5 w-4 h-4" />
                   </Button>
                 </div>
