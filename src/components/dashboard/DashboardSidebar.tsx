@@ -205,6 +205,30 @@ export function DashboardSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/admin/propostas"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <FileText className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Propostas</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/admin/convites"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <Mail className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Convites</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

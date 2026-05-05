@@ -320,6 +320,90 @@ export type Database = {
         }
         Relationships: []
       }
+      propostas: {
+        Row: {
+          contato_email: string | null
+          contato_nome: string | null
+          contato_telefone: string | null
+          created_at: string
+          created_by: string | null
+          diagnostico_snapshot: Json
+          empresa_nome: string
+          empresa_site: string
+          expires_at: string
+          id: string
+          motivo_recusa_categoria:
+            | Database["public"]["Enums"]["proposta_motivo_recusa"]
+            | null
+          motivo_recusa_texto: string | null
+          notas_admin: string
+          origem: Database["public"]["Enums"]["proposta_origem"]
+          plano_sugerido: Database["public"]["Enums"]["proposta_plano"]
+          responded_at: string | null
+          score_geral: number
+          slug: string
+          status: Database["public"]["Enums"]["proposta_status"]
+          updated_at: string
+          valor_negociado: number | null
+          valor_proposto: number
+          viewed_at: string | null
+        }
+        Insert: {
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnostico_snapshot?: Json
+          empresa_nome?: string
+          empresa_site?: string
+          expires_at?: string
+          id?: string
+          motivo_recusa_categoria?:
+            | Database["public"]["Enums"]["proposta_motivo_recusa"]
+            | null
+          motivo_recusa_texto?: string | null
+          notas_admin?: string
+          origem?: Database["public"]["Enums"]["proposta_origem"]
+          plano_sugerido?: Database["public"]["Enums"]["proposta_plano"]
+          responded_at?: string | null
+          score_geral?: number
+          slug: string
+          status?: Database["public"]["Enums"]["proposta_status"]
+          updated_at?: string
+          valor_negociado?: number | null
+          valor_proposto?: number
+          viewed_at?: string | null
+        }
+        Update: {
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnostico_snapshot?: Json
+          empresa_nome?: string
+          empresa_site?: string
+          expires_at?: string
+          id?: string
+          motivo_recusa_categoria?:
+            | Database["public"]["Enums"]["proposta_motivo_recusa"]
+            | null
+          motivo_recusa_texto?: string | null
+          notas_admin?: string
+          origem?: Database["public"]["Enums"]["proposta_origem"]
+          plano_sugerido?: Database["public"]["Enums"]["proposta_plano"]
+          responded_at?: string | null
+          score_geral?: number
+          slug?: string
+          status?: Database["public"]["Enums"]["proposta_status"]
+          updated_at?: string
+          valor_negociado?: number | null
+          valor_proposto?: number
+          viewed_at?: string | null
+        }
+        Relationships: []
+      }
       simulation_results: {
         Row: {
           autoridade: number | null
@@ -395,6 +479,22 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      proposta_motivo_recusa:
+        | "preco"
+        | "momento"
+        | "concorrente"
+        | "sem_fit"
+        | "sem_resposta"
+        | "outro"
+      proposta_origem: "preview" | "convite"
+      proposta_plano: "presenca" | "influencia" | "autoridade" | "dominio"
+      proposta_status:
+        | "enviada"
+        | "visualizada"
+        | "em_negociacao"
+        | "aceita"
+        | "recusada"
+        | "expirada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -523,6 +623,24 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      proposta_motivo_recusa: [
+        "preco",
+        "momento",
+        "concorrente",
+        "sem_fit",
+        "sem_resposta",
+        "outro",
+      ],
+      proposta_origem: ["preview", "convite"],
+      proposta_plano: ["presenca", "influencia", "autoridade", "dominio"],
+      proposta_status: [
+        "enviada",
+        "visualizada",
+        "em_negociacao",
+        "aceita",
+        "recusada",
+        "expirada",
+      ],
     },
   },
 } as const

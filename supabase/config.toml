@@ -2,3 +2,12 @@ project_id = "klscginkmflwanzjxtqy"
 
 [functions.simulate-ai]
 verify_jwt = false
+
+[functions.gerar-proposta-from-preview]
+verify_jwt = false
+
+[functions.get-proposta-public]
+verify_jwt = false
+
+[functions.responder-proposta]
+verify_jwt = false
