@@ -37,6 +37,10 @@ import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
 import AuditoriasPage from "./pages/dashboard/AuditoriasPage";
 import AuditoriaDetalhePage from "./pages/dashboard/AuditoriaDetalhePage";
+import AdminPropostasPage from "./pages/dashboard/AdminPropostasPage";
+import AdminConvitesPage from "./pages/dashboard/AdminConvitesPage";
+import PropostaComercialPage from "./pages/PropostaComercialPage";
+import ConvitePage from "./pages/ConvitePage";
 import PoliticaPrivacidadePage from "./pages/PoliticaPrivacidadePage";
 import PoliticaCookiesPage from "./pages/PoliticaCookiesPage";
 import BlogIndexPage from "./pages/BlogIndexPage";
@@ -59,6 +63,8 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/preview" element={<PreviewPage />} />
+          <Route path="/propostacomercial/:slug" element={<PropostaComercialPage />} />
+          <Route path="/convite/:slug" element={<ConvitePage />} />
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
           <Route path="/politica-de-cookies" element={<PoliticaCookiesPage />} />
           <Route path="/termos-de-uso" element={<TermosDeUsoPage />} />
@@ -93,6 +99,8 @@ const App = () => (
             <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="admin/clientes" element={<AdminClientesPage />} />
             <Route path="admin/leads" element={<AdminLeadsPage />} />
+            <Route path="admin/propostas" element={<AdminPropostasPage />} />
+            <Route path="admin/convites" element={<AdminConvitesPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
