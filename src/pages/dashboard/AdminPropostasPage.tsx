@@ -77,8 +77,8 @@ export default function AdminPropostasPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Proposta> }) => {
-      const { error } = await supabase.from("propostas").update(patch).eq("id", id);
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, any> }) => {
+      const { error } = await supabase.from("propostas").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
