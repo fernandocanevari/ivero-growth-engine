@@ -147,13 +147,13 @@ const HeroSection = () => {
                     className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
                     onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
                   >
-                    Ver agora se minha marca aparece nas IAs
+                    Quero ver agora
                     <ArrowRight className="ml-1.5 w-4 h-4" />
                   </Button>
                 </div>
               </div>
               <p className="text-foreground text-sm sm:text-base font-medium ml-1 sm:ml-5">
-                Veja análise instantânea da sua presença nas respostas da IA 🚀
+                Diagnóstico instantâneo. Sem cadastro, sem enrolação. ⚡
               </p>
             </div>
           </motion.div>
@@ -167,9 +167,9 @@ const HeroSection = () => {
           >
             <div className="w-full max-w-md bg-white border border-ivero-purple/20 rounded-2xl p-8 shadow-[0_8px_30px_hsl(265,60%,55%/0.10)]">
               <h3 className="font-display text-xl font-semibold text-foreground mb-2">
-                Descubra se sua marca já aparece nas respostas da IA.
+                Descubra agora se sua marca está sendo ignorada pelas IAs.
               </h3>
-              <p className="text-muted-foreground text-sm mb-6">Preencha os dados abaixo e comece agora.</p>
+              <p className="text-muted-foreground text-sm mb-6">Preencha os dados e receba seu diagnóstico em segundos.</p>
 
               <form className="flex flex-col gap-4" onSubmit={handleHeroFormSubmit}>
                 <input
@@ -207,7 +207,7 @@ const HeroSection = () => {
                   className="h-12 rounded-lg bg-surface-1 border border-ivero-purple/20 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="submit" disabled={submitting}>
-                  {submitting ? "Processando..." : "Começar agora"}
+                  {submitting ? "Processando..." : "Quero meu diagnóstico agora"}
                 </Button>
               </form>
             </div>
