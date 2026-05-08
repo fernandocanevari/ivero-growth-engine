@@ -229,7 +229,13 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
               </div>
 
               <ul className="space-y-2 pt-2">
-                {plano.highlights.map((h) => (
+                {[
+                  ...plano.highlights,
+                  "Dashboard GEO completo",
+                  "Análise Comparativa com concorrentes",
+                  "Suporte prioritário",
+                  "Sem contrato — cancele quando quiser",
+                ].map((h) => (
                   <li key={h} className="flex items-start gap-2 text-sm text-foreground">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                     {h}
@@ -240,8 +246,22 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
           </div>
         </motion.section>
 
+        {/* CTA principal — destaque máximo */}
+        {!expired && (
+          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.22 }}>
+            <Button
+              size="lg"
+              className="w-full h-16 text-lg font-bold bg-ivero-gradient hover:opacity-90 text-primary-foreground rounded-2xl shadow-[0_12px_40px_-10px_hsl(var(--primary)/0.55)]"
+              onClick={handleAceitar}
+            >
+              Sim, quero ativar o Plano {plano.name} agora
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </motion.section>
+        )}
+
         {/* Garantia / valor */}
-        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25 }}>
           <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-start gap-3">
             <ShieldCheck className="w-5 h-5 text-primary mt-0.5 shrink-0" />
             <div>
@@ -253,18 +273,12 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
           </div>
         </motion.section>
 
-        {/* CTAs */}
+        {/* Recusa secundária */}
         {!expired && (
-          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25 }}>
-            <div className="space-y-3">
-              <Button size="lg" className="w-full h-14 text-base bg-ivero-gradient hover:opacity-90" onClick={handleAceitar}>
-                Quero começar
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="lg" className="w-full h-12 text-muted-foreground hover:text-foreground" onClick={() => setRecusaOpen(true)}>
-                Não tenho interesse
-              </Button>
-            </div>
+          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.28 }}>
+            <Button variant="ghost" size="lg" className="w-full h-12 text-muted-foreground hover:text-foreground" onClick={() => setRecusaOpen(true)}>
+              Não tenho interesse
+            </Button>
           </motion.section>
         )}
 
