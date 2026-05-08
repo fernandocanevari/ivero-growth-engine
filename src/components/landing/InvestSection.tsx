@@ -353,6 +353,77 @@ const InvestSection = () => {
             Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
         </motion.div>
+        </motion.div>
+
+        {/* Acordeão: detalhes por plano */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.4 }}
+          className="mt-10 sm:mt-14 max-w-3xl mx-auto px-2"
+        >
+          <div className="text-center mb-5 sm:mb-6">
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground">
+              Veja tudo que está incluso em cada plano
+            </h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Clique no plano para expandir os detalhes.
+            </p>
+          </div>
+
+          <Accordion type="single" collapsible className="space-y-2 sm:space-y-3">
+            {Object.entries(planFeatures).map(([planName, features]) => {
+              const isHighlighted = planName === "Autoridade";
+              return (
+                <AccordionItem
+                  key={planName}
+                  value={planName}
+                  className={`rounded-xl border bg-white px-4 sm:px-5 transition-colors ${
+                    isHighlighted
+                      ? "border-accent/40 hover:border-accent/60"
+                      : "border-ivero-purple/20 hover:border-ivero-purple/40"
+                  }`}
+                >
+                  <AccordionTrigger className="hover:no-underline py-4">
+                    <div className="flex items-center gap-3 text-left">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isHighlighted ? "bg-accent" : "bg-ivero-purple-light"
+                        }`}
+                      />
+                      <span className="font-display text-sm sm:text-base font-bold uppercase tracking-wider text-foreground">
+                        {planName}
+                      </span>
+                      {isHighlighted && (
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-full">
+                          Recomendado
+                        </span>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-2 pt-1">
+                      {features.map((feature) => (
+                        <li
+                          key={feature}
+                          className="flex items-start gap-2 text-xs sm:text-sm text-foreground/85"
+                        >
+                          <Check
+                            className={`shrink-0 w-4 h-4 mt-0.5 ${
+                              isHighlighted ? "text-accent" : "text-ivero-purple-light"
+                            }`}
+                          />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </motion.div>
       </div>
     </section>
   );
