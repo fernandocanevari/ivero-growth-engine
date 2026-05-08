@@ -147,7 +147,7 @@ const HeroSection = () => {
                     className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
                     onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
                   >
-                    Quero ver agora
+                    Descobrir agora
                     <ArrowRight className="ml-1.5 w-4 h-4" />
                   </Button>
                 </div>
