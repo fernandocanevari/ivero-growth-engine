@@ -353,7 +353,6 @@ const InvestSection = () => {
             Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser
           </p>
         </motion.div>
-        </motion.div>
 
         {/* Acordeão: detalhes por plano */}
         <motion.div
