@@ -286,77 +286,22 @@ const InvestSection = () => {
           })}
         </div>
 
-        {/* Rodapé comum — Vantagem competitiva destacada */}
+        {/* Rodapé comum */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mt-10 sm:mt-14 max-w-5xl mx-auto px-2"
+          className="mt-8 sm:mt-10 text-center space-y-2 sm:space-y-3 px-2"
         >
-          {/* Linha de inheritance */}
-          <p className="text-center text-sm sm:text-base font-semibold text-foreground mb-5 sm:mb-6">
+          <p className="text-xs sm:text-sm font-semibold text-foreground">
             <span className="text-accent font-bold">✦</span>{" "}
             Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
           </p>
-
-          {/* Bloco de vantagem competitiva */}
-          <div className="relative rounded-2xl overflow-hidden border-2 border-accent/30 bg-gradient-to-br from-ivero-purple/5 via-white to-accent/5 shadow-xl shadow-ivero-purple/5">
-            {/* Glow decorativo */}
-            <div className="absolute -top-16 -right-16 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-ivero-purple/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative px-5 sm:px-8 py-6 sm:py-8">
-              {/* Selo */}
-              <div className="flex justify-center mb-4">
-                <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-ivero-gradient text-primary-foreground px-4 py-1.5 rounded-full shadow-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  Incluso em TODOS os planos
-                </span>
-              </div>
-
-              <h3 className="text-center font-display text-lg sm:text-2xl font-bold text-foreground mb-2">
-                A vantagem Ivero — sem letras miúdas
-              </h3>
-              <p className="text-center text-xs sm:text-sm text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Independente do plano escolhido, você sempre tem acesso aos pilares essenciais para competir em IA:
-              </p>
-
-              {/* Grid de benefícios inclusos */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                {[
-                  { label: "Dashboard GEO", desc: "Painel completo de visibilidade" },
-                  { label: "Score de Visibilidade", desc: "Sua nota nas IAs em tempo real" },
-                  { label: "Análise Comparativa", desc: "Compare-se aos concorrentes" },
-                  { label: "Suporte prioritário", desc: "Atendimento humano e rápido" },
-                  { label: "Sem contrato", desc: "Sem fidelidade ou multa" },
-                  { label: "Cancele quando quiser", desc: "Liberdade total, 100%" },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-start gap-2 sm:gap-3 p-3 rounded-xl bg-white/80 border border-ivero-purple/15 hover:border-accent/40 transition-colors duration-200"
-                  >
-                    <span className="shrink-0 mt-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ivero-gradient flex items-center justify-center text-primary-foreground text-[10px] sm:text-xs font-bold">
-                      ✓
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-foreground leading-tight">
-                        {item.label}
-                      </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight mt-0.5">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Reforço final */}
-              <p className="text-center text-[11px] sm:text-xs text-muted-foreground mt-6 italic">
-                Enquanto outras plataformas cobram extra por cada recurso, na Ivero o essencial já vem incluso.
-              </p>
-            </div>
-          </div>
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground max-w-4xl mx-auto">
+            <span className="text-accent font-bold">✦</span>{" "}
+            <span className="font-semibold text-foreground">Incluso em todos os planos:</span>{" "}
+            Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser
+          </p>
         </motion.div>
       </div>
     </section>
