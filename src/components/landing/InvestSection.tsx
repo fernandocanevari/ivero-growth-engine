@@ -1,7 +1,57 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2 } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Check } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+const planFeatures: Record<string, string[]> = {
+  Presença: [
+    "Score GEO de Visibilidade",
+    "Monitoramento em 2 IAs (ChatGPT + Gemini)",
+    "10 prompts monitorados",
+    "500 consultas/mês",
+    "50 avisos/mês por e-mail",
+    "Relatório semanal automatizado",
+    "Dashboard GEO completo",
+    "Suporte prioritário por e-mail",
+  ],
+  Influência: [
+    "Tudo do Presença +",
+    "Monitoramento em 3 IAs (+ Perplexity)",
+    "30 prompts monitorados",
+    "2.000 consultas/mês",
+    "200 avisos/mês",
+    "Análise de Sentimento por IA",
+    "Análise Comparativa com concorrentes",
+    "Tags de Percepção (verde/amarelo/vermelho)",
+  ],
+  Autoridade: [
+    "Tudo do Influência +",
+    "Monitoramento em 4 IAs (+ Claude)",
+    "100 prompts monitorados",
+    "10.000 consultas/mês",
+    "Avisos ilimitados",
+    "Mapa de Prompts Estratégicos",
+    "Plano de Ação Estratégico personalizado",
+    "Gerador de Conteúdo GEO (Artigo + FAQ)",
+    "Histórico de auditorias completo",
+  ],
+  Domínio: [
+    "Tudo do Autoridade +",
+    "Monitoramento em 5 IAs (+ GPT-5)",
+    "Prompts e consultas ilimitados",
+    "Dominância por Modelo de IA",
+    "Simulador de Influência em IA",
+    "Evolução Estratégica com radar e KPIs",
+    "Onboarding dedicado e Account Manager",
+    "SLA premium e integrações sob demanda",
+  ],
+};
 
 const plans = [
   {
