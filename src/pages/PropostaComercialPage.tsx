@@ -156,9 +156,6 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
         {/* Hero */}
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" /> {headerLabel}
-            </span>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground leading-tight">
               {data.empresa_nome || data.empresa_site || "Sua marca"}
             </h1>
