@@ -1462,13 +1462,23 @@ export default function PreviewPage() {
 
   useEffect(() => {
     if (!siteUrl) return; // wait for the modal submission
-    const totalDuration = 4000; // ~4s teatro de loading; chamadas reais à IA continuam em paralelo (await abaixo)
+    const totalDuration = 10000; // ~10s teatro de loading; cliente precisa de tempo para ler as frases
     const stepDuration = totalDuration / loadingSteps.length;
+
+    let apiDone = false;
+    let minTimeDone = false;
+    const tryFinish = () => {
+      if (apiDone && minTimeDone) {
+        setProgress(100);
+        setCurrentStep(loadingSteps.length - 1);
+        setTimeout(() => setLoading(false), 400);
+      }
+    };
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) return 100;
-        return prev + 100 / (totalDuration / 50);
+        if (prev >= 95) return 95;
+        return prev + 95 / (totalDuration / 50);
       });
     }, 50);
 
@@ -1537,11 +1547,9 @@ export default function PreviewPage() {
               if (!ref) continue;
               const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
               const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
-              // Convergence: how many models scored within ±15 of the average for this criterion
               const CONVERGENCE_TOLERANCE = 15;
               const agree = scores.filter((s) => Math.abs(s - avg) <= CONVERGENCE_TOLERANCE).length;
               const consenso = { agree, total: scores.length };
-              // Pick the longest non-empty justificativa across models for this criterion
               const justificativas = validModelPillars
                 .map((arr) => arr[i]?.justificativa)
                 .filter((j): j is string => typeof j === "string" && j.trim().length > 0);
@@ -1572,8 +1580,6 @@ export default function PreviewPage() {
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
 
-        // Persist criteria payload + keyword cloud so the executive dashboard can render
-        // the rubric breakdown and reuse the perception cloud on the next "Reanalisar".
         const keywordCloud = Array.isArray(data.keyword_cloud) ? data.keyword_cloud : [];
         try {
           sessionStorage.setItem(
@@ -1587,15 +1593,11 @@ export default function PreviewPage() {
               savedAt: new Date().toISOString(),
             })
           );
-          // Reset adoção: novo diagnóstico → permite que useAdoptPendingAudit grave de novo
-          // se o usuário acabou de criar conta.
           sessionStorage.removeItem("ivero:audit_adopted");
         } catch {
           /* storage may be unavailable (private mode); ignore */
         }
 
-        // Se já estiver logado, persiste o snapshot direto no banco para
-        // alimentar o histórico navegável de auditorias (/dashboard/auditorias).
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
@@ -1616,7 +1618,6 @@ export default function PreviewPage() {
           console.warn("Audit persistence skipped:", e);
         }
 
-        // Aggregate AI engines: a model is "found" if average score across pillars >= 50
         const engines: AIEngineResult[] = modelResults.map((r) => {
           if (r.error) {
             return { name: r.model, found: false, error: true, errorMessage: r.errorMessage };
@@ -1628,6 +1629,9 @@ export default function PreviewPage() {
         setAiEngines(engines);
       } catch (e) {
         console.error("Pillar analysis failed:", e);
+      } finally {
+        apiDone = true;
+        tryFinish();
       }
     };
 
@@ -1636,9 +1640,8 @@ export default function PreviewPage() {
     const timeout = setTimeout(() => {
       clearInterval(progressInterval);
       clearInterval(stepInterval);
-      setProgress(100);
-      setCurrentStep(loadingSteps.length - 1);
-      setTimeout(() => setLoading(false), 500);
+      minTimeDone = true;
+      tryFinish();
     }, totalDuration);
 
     return () => {
