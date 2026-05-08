@@ -1185,43 +1185,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               </PremiumCard>
             </AnimatedSection>
 
-            {/* ── Plano de Ação ── */}
-            <AnimatedSection delay={0.58}>
-              <PremiumCard>
-                <div className="space-y-4">
-                  <SectionHeader icon={TrendingUp} title="Plano de Ação Recomendado" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {["Otimizar conteúdo para perguntas frequentes", "Criar páginas de comparação", "Backlinks autoritativos", "Monitorar menções"].map((a, i) => (
-                      <div key={i} className="flex items-start gap-2 rounded-xl bg-muted/30 border border-border/40 p-3">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">{i + 1}</span>
-                        <span className="text-sm text-muted-foreground">{a}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </PremiumCard>
-            </AnimatedSection>
-
-            {/* ── Previsão de Impacto ── */}
-            <AnimatedSection delay={0.62}>
-              <PremiumCard>
-                <div className="space-y-4">
-                  <SectionHeader icon={Rocket} title="Previsão de Impacto" />
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { metric: "+180%", label: "Menções em IAs" },
-                      { metric: "Top 3", label: "Posição no setor" },
-                      { metric: "+65%", label: "Tráfego qualificado" },
-                    ].map((item, i) => (
-                      <div key={i} className="rounded-xl bg-muted/30 border border-border/40 p-4 text-center">
-                        <p className="text-2xl font-display font-bold text-foreground">{item.metric}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </PremiumCard>
-            </AnimatedSection>
+            {/* Plano de Ação e Previsão de Impacto removidos para preservar valor comercial. */}
 
             {/* ── Ivero Features ── */}
             <AnimatedSection delay={0.68}>
@@ -1250,58 +1214,51 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
 
             {/* ── CTA Proposta Comercial ── */}
             <AnimatedSection delay={0.7}>
-              <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 sm:p-7 max-w-2xl mx-auto">
-                <div className="flex items-start gap-4">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-ivero-gradient shrink-0">
-                    <Sparkles className="w-6 h-6 text-primary-foreground" />
+              <div className="relative rounded-2xl bg-ivero-gradient p-[2px] shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
+                <div className="rounded-[14px] bg-card p-6 sm:p-8 text-center space-y-5">
+                  <div className="mx-auto flex items-center justify-center w-14 h-14 rounded-2xl bg-ivero-gradient shadow-lg">
+                    <Sparkles className="w-7 h-7 text-primary-foreground" />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="font-display text-lg sm:text-xl font-bold text-foreground">
-                        Receba uma proposta personalizada
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Com base no seu diagnóstico, geramos um plano comercial sob medida — pronto em segundos.
-                      </p>
-                    </div>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-primary/40 hover:bg-primary/5"
-                      onClick={async () => {
-                        try {
-                          const radar = dynamicRadarData;
-                          const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
-                            body: {
-                              empresa_nome: extractBrandFromUrl(siteUrl),
-                              empresa_site: siteUrl,
-                              contato_nome: leadData?.name || null,
-                              contato_email: leadData?.email || null,
-                              contato_telefone: leadData?.phone || null,
-                              origem: "preview",
-                              score_geral: geoScore,
-                              diagnostico_snapshot: {
-                                radar,
-                                pillarDetails: dynamicPillarDetails,
-                                aiEngines,
-                                siteUrl,
-                              },
+                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                    Receba uma proposta personalizada
+                  </h3>
+                  <Button
+                    size="lg"
+                    variant="hero"
+                    className="h-14 px-8 text-base font-bold shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.55)]"
+                    onClick={async () => {
+                      try {
+                        const radar = dynamicRadarData;
+                        const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
+                          body: {
+                            empresa_nome: extractBrandFromUrl(siteUrl),
+                            empresa_site: siteUrl,
+                            contato_nome: leadData?.name || null,
+                            contato_email: leadData?.email || null,
+                            contato_telefone: leadData?.phone || null,
+                            origem: "preview",
+                            score_geral: geoScore,
+                            diagnostico_snapshot: {
+                              radar,
+                              pillarDetails: dynamicPillarDetails,
+                              aiEngines,
+                              siteUrl,
                             },
-                          });
-                          if (error || !data?.slug) {
-                            toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
-                            return;
-                          }
-                          navigate(`/propostacomercial/${data.slug}`);
-                        } catch (e: any) {
-                          toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                          },
+                        });
+                        if (error || !data?.slug) {
+                          toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
+                          return;
                         }
-                      }}
-                    >
-                      Ver minha proposta personalizada
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </div>
+                        navigate(`/propostacomercial/${data.slug}`);
+                      } catch (e: any) {
+                        toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    Ver minha proposta personalizada
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
                 </div>
               </div>
             </AnimatedSection>
@@ -1462,13 +1419,23 @@ export default function PreviewPage() {
 
   useEffect(() => {
     if (!siteUrl) return; // wait for the modal submission
-    const totalDuration = 4000; // ~4s teatro de loading; chamadas reais à IA continuam em paralelo (await abaixo)
+    const totalDuration = 10000; // ~10s teatro de loading; cliente precisa de tempo para ler as frases
     const stepDuration = totalDuration / loadingSteps.length;
+
+    let apiDone = false;
+    let minTimeDone = false;
+    const tryFinish = () => {
+      if (apiDone && minTimeDone) {
+        setProgress(100);
+        setCurrentStep(loadingSteps.length - 1);
+        setTimeout(() => setLoading(false), 400);
+      }
+    };
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) return 100;
-        return prev + 100 / (totalDuration / 50);
+        if (prev >= 95) return 95;
+        return prev + 95 / (totalDuration / 50);
       });
     }, 50);
 
@@ -1537,11 +1504,9 @@ export default function PreviewPage() {
               if (!ref) continue;
               const scores = validModelPillars.map((arr) => arr[i]?.score).filter((s) => typeof s === "number");
               const avg = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0;
-              // Convergence: how many models scored within ±15 of the average for this criterion
               const CONVERGENCE_TOLERANCE = 15;
               const agree = scores.filter((s) => Math.abs(s - avg) <= CONVERGENCE_TOLERANCE).length;
               const consenso = { agree, total: scores.length };
-              // Pick the longest non-empty justificativa across models for this criterion
               const justificativas = validModelPillars
                 .map((arr) => arr[i]?.justificativa)
                 .filter((j): j is string => typeof j === "string" && j.trim().length > 0);
@@ -1572,8 +1537,6 @@ export default function PreviewPage() {
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
 
-        // Persist criteria payload + keyword cloud so the executive dashboard can render
-        // the rubric breakdown and reuse the perception cloud on the next "Reanalisar".
         const keywordCloud = Array.isArray(data.keyword_cloud) ? data.keyword_cloud : [];
         try {
           sessionStorage.setItem(
@@ -1587,15 +1550,11 @@ export default function PreviewPage() {
               savedAt: new Date().toISOString(),
             })
           );
-          // Reset adoção: novo diagnóstico → permite que useAdoptPendingAudit grave de novo
-          // se o usuário acabou de criar conta.
           sessionStorage.removeItem("ivero:audit_adopted");
         } catch {
           /* storage may be unavailable (private mode); ignore */
         }
 
-        // Se já estiver logado, persiste o snapshot direto no banco para
-        // alimentar o histórico navegável de auditorias (/dashboard/auditorias).
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
@@ -1616,7 +1575,6 @@ export default function PreviewPage() {
           console.warn("Audit persistence skipped:", e);
         }
 
-        // Aggregate AI engines: a model is "found" if average score across pillars >= 50
         const engines: AIEngineResult[] = modelResults.map((r) => {
           if (r.error) {
             return { name: r.model, found: false, error: true, errorMessage: r.errorMessage };
@@ -1628,6 +1586,9 @@ export default function PreviewPage() {
         setAiEngines(engines);
       } catch (e) {
         console.error("Pillar analysis failed:", e);
+      } finally {
+        apiDone = true;
+        tryFinish();
       }
     };
 
@@ -1636,9 +1597,8 @@ export default function PreviewPage() {
     const timeout = setTimeout(() => {
       clearInterval(progressInterval);
       clearInterval(stepInterval);
-      setProgress(100);
-      setCurrentStep(loadingSteps.length - 1);
-      setTimeout(() => setLoading(false), 500);
+      minTimeDone = true;
+      tryFinish();
     }, totalDuration);
 
     return () => {
