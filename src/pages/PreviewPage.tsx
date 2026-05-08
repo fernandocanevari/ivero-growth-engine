@@ -1139,24 +1139,23 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               );
             })}
 
-            {/* ── CTA WhatsApp ── */}
+            {/* ── CTA Tensão — fechamento ── */}
             <AnimatedSection delay={0.5}>
               <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
                 <p className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                  💜 Queremos você como nosso cliente
+                  Cada dia invisível nas IAs é cliente indo para o concorrente.
                 </p>
                 <p className="text-base text-muted-foreground max-w-md mx-auto">
-                  Sua marca merece aparecer nas respostas das IAs.
+                  Escolha o plano certo para sua marca virar referência — e comece em minutos.
                 </p>
-                <a
-                  href="https://wa.me/5511999999999?text=Quero%20que%20minha%20marca%20apareça%20nas%20IAs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 px-10 py-4.5 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-white font-bold text-base shadow-[0_4px_24px_-4px_hsl(142,70%,45%/0.45)] hover:shadow-[0_8px_36px_-4px_hsl(142,70%,45%/0.55)] transition-all hover:scale-105"
+                <Button
+                  size="lg"
+                  className="h-12 px-8 bg-ivero-gradient hover:opacity-90 text-primary-foreground font-bold text-base rounded-full shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)]"
+                  onClick={() => goToSignup("cta_tensao_preview")}
                 >
-                  <Phone className="w-6 h-6" />
-                  <span className="text-lg font-bold">Falar com a Ivero no WhatsApp</span>
-                </a>
+                  Quero garantir meu plano agora
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
               </div>
             </AnimatedSection>
 
@@ -1310,28 +1309,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               </div>
             </AnimatedSection>
 
-            {/* ── Final CTA — fechamento estratégico ── */}
-            <AnimatedSection delay={0.75}>
-              <div className="relative overflow-hidden rounded-2xl bg-ivero-gradient p-6 sm:p-7 max-w-2xl mx-auto text-center">
-                <div className="relative z-10 space-y-4">
-                  <h3 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-tight tracking-tight">
-                    Sua marca pode dominar as respostas das IAs.
-                    <span className="block mt-1">Comece grátis hoje.</span>
-                  </h3>
-                  <Button
-                    size="lg"
-                    className="group h-11 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:shadow-[0_16px_40px_-16px_hsl(var(--primary-foreground)/0.85)] hover:scale-[1.02] transition-all duration-300 gap-2.5"
-                    onClick={() => goToSignup("subir_patamar")}
-                  >
-                    Quero subir de patamar
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-                  <p className="text-[11px] sm:text-xs text-primary-foreground/80">
-                    Diagnóstico completo grátis · sem cartão
-                  </p>
-                </div>
-              </div>
-            </AnimatedSection>
+            {/* Final gradient CTA removido — proposta personalizada acima é o fechamento. */}
           </>
         )}
       </div>
