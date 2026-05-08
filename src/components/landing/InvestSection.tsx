@@ -423,6 +423,148 @@ const InvestSection = () => {
             })}
           </Accordion>
         </motion.div>
+
+        {/* Comparativo lado a lado */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.4 }}
+          className="mt-12 sm:mt-16 max-w-6xl mx-auto"
+        >
+          <div className="text-center mb-6 sm:mb-8 px-2">
+            <span className="inline-block text-[10px] sm:text-xs font-bold uppercase tracking-widest text-accent mb-2">
+              Comparar planos
+            </span>
+            <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              A diferença principal entre cada plano
+            </h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
+              Use este resumo para identificar rapidamente em qual estágio a sua marca está e o próximo nível a conquistar.
+            </p>
+          </div>
+
+          {/* Mobile: cards empilhados */}
+          <div className="grid grid-cols-1 sm:hidden gap-3 px-2">
+            {[
+              { name: "Presença", color: "ivero-purple", focus: "Visibilidade básica", diff: "Você descobre se as IAs te conhecem.", best: "Marcas iniciando em GEO" },
+              { name: "Influência", color: "ivero-purple", focus: "Comparação ativa", diff: "Você entende como aparece vs. concorrentes.", best: "Marcas com concorrência direta em IA" },
+              { name: "Autoridade", color: "accent", focus: "Ação estratégica", diff: "Você executa um plano para dominar prompts-chave.", best: "Marcas que querem virar referência", highlight: true },
+              { name: "Domínio", color: "accent", focus: "Liderança total", diff: "Você opera com inteligência preditiva e simulações.", best: "Líderes de mercado e enterprise" },
+            ].map((p) => (
+              <div
+                key={p.name}
+                className={`rounded-xl border bg-white p-4 ${
+                  p.highlight ? "border-accent/50 shadow-md shadow-accent/10" : "border-ivero-purple/20"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`font-display text-sm font-bold uppercase tracking-wider ${
+                    p.color === "accent" ? "text-accent" : "text-ivero-purple"
+                  }`}>
+                    {p.name}
+                  </span>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {p.focus}
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-foreground mb-1.5">{p.diff}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-semibold">Ideal para:</span> {p.best}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop/tablet: tabela */}
+          <div className="hidden sm:block overflow-hidden rounded-2xl border border-ivero-purple/20 bg-white shadow-lg shadow-ivero-purple/5">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gradient-to-r from-ivero-purple/8 via-white to-accent/8 border-b border-ivero-purple/15">
+                  <th className="py-4 px-5 text-xs font-bold uppercase tracking-wider text-muted-foreground w-[160px]">
+                    Critério
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase tracking-wider text-ivero-purple text-center">
+                    Presença
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase tracking-wider text-ivero-purple text-center">
+                    Influência
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase tracking-wider text-accent text-center bg-accent/5 relative">
+                    Autoridade
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-accent/80 mt-0.5">
+                      ★ Recomendado
+                    </span>
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase tracking-wider text-accent text-center">
+                    Domínio
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {[
+                  {
+                    label: "Foco principal",
+                    rows: ["Visibilidade", "Comparação", "Ação estratégica", "Liderança total"],
+                  },
+                  {
+                    label: "Diferencial-chave",
+                    rows: [
+                      "Descobre se as IAs te conhecem",
+                      "Compara você vs. concorrentes",
+                      "Executa plano para dominar prompts-chave",
+                      "Inteligência preditiva e simulações",
+                    ],
+                  },
+                  {
+                    label: "IAs monitoradas",
+                    rows: ["2", "3", "4", "5 (todas)"],
+                  },
+                  {
+                    label: "Prompts monitorados",
+                    rows: ["10", "30", "100", "Ilimitados"],
+                  },
+                  {
+                    label: "Ideal para",
+                    rows: [
+                      "Marcas iniciando em GEO",
+                      "Marcas com concorrência direta",
+                      "Marcas que querem virar referência",
+                      "Líderes de mercado / enterprise",
+                    ],
+                  },
+                ].map((row, idx) => (
+                  <tr
+                    key={row.label}
+                    className={`border-b border-ivero-purple/10 last:border-b-0 ${
+                      idx % 2 === 1 ? "bg-surface-1/40" : ""
+                    }`}
+                  >
+                    <td className="py-3.5 px-5 font-semibold text-foreground text-xs uppercase tracking-wider">
+                      {row.label}
+                    </td>
+                    {row.rows.map((cell, i) => (
+                      <td
+                        key={i}
+                        className={`py-3.5 px-4 text-center text-xs sm:text-sm ${
+                          i === 2
+                            ? "bg-accent/5 text-foreground font-semibold"
+                            : "text-foreground/80"
+                        }`}
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="text-center text-[11px] sm:text-xs text-muted-foreground mt-4 italic px-2">
+            Cada plano herda todos os recursos do anterior — você nunca perde o que já conquistou.
+          </p>
+        </motion.div>
       </div>
     </section>
   );
