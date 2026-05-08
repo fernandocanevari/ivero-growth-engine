@@ -1214,58 +1214,51 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
 
             {/* ── CTA Proposta Comercial ── */}
             <AnimatedSection delay={0.7}>
-              <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 sm:p-7 max-w-2xl mx-auto">
-                <div className="flex items-start gap-4">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-ivero-gradient shrink-0">
-                    <Sparkles className="w-6 h-6 text-primary-foreground" />
+              <div className="relative rounded-2xl bg-ivero-gradient p-[2px] shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
+                <div className="rounded-[14px] bg-card p-6 sm:p-8 text-center space-y-5">
+                  <div className="mx-auto flex items-center justify-center w-14 h-14 rounded-2xl bg-ivero-gradient shadow-lg">
+                    <Sparkles className="w-7 h-7 text-primary-foreground" />
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="font-display text-lg sm:text-xl font-bold text-foreground">
-                        Receba uma proposta personalizada
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Com base no seu diagnóstico, geramos um plano comercial sob medida — pronto em segundos.
-                      </p>
-                    </div>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-primary/40 hover:bg-primary/5"
-                      onClick={async () => {
-                        try {
-                          const radar = dynamicRadarData;
-                          const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
-                            body: {
-                              empresa_nome: extractBrandFromUrl(siteUrl),
-                              empresa_site: siteUrl,
-                              contato_nome: leadData?.name || null,
-                              contato_email: leadData?.email || null,
-                              contato_telefone: leadData?.phone || null,
-                              origem: "preview",
-                              score_geral: geoScore,
-                              diagnostico_snapshot: {
-                                radar,
-                                pillarDetails: dynamicPillarDetails,
-                                aiEngines,
-                                siteUrl,
-                              },
+                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                    Receba uma proposta personalizada
+                  </h3>
+                  <Button
+                    size="lg"
+                    variant="hero"
+                    className="h-14 px-8 text-base font-bold shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.55)]"
+                    onClick={async () => {
+                      try {
+                        const radar = dynamicRadarData;
+                        const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
+                          body: {
+                            empresa_nome: extractBrandFromUrl(siteUrl),
+                            empresa_site: siteUrl,
+                            contato_nome: leadData?.name || null,
+                            contato_email: leadData?.email || null,
+                            contato_telefone: leadData?.phone || null,
+                            origem: "preview",
+                            score_geral: geoScore,
+                            diagnostico_snapshot: {
+                              radar,
+                              pillarDetails: dynamicPillarDetails,
+                              aiEngines,
+                              siteUrl,
                             },
-                          });
-                          if (error || !data?.slug) {
-                            toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
-                            return;
-                          }
-                          navigate(`/propostacomercial/${data.slug}`);
-                        } catch (e: any) {
-                          toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                          },
+                        });
+                        if (error || !data?.slug) {
+                          toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
+                          return;
                         }
-                      }}
-                    >
-                      Ver minha proposta personalizada
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </div>
+                        navigate(`/propostacomercial/${data.slug}`);
+                      } catch (e: any) {
+                        toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    Ver minha proposta personalizada
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
                 </div>
               </div>
             </AnimatedSection>
