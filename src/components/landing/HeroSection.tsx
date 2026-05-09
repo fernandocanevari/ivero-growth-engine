@@ -149,7 +149,15 @@ const HeroSection = () => {
                     variant="hero"
                     size="lg"
                     className="text-sm px-5 sm:px-6 h-12 sm:h-14 w-full sm:w-auto rounded-none rounded-b-2xl sm:rounded-none mx-0 shrink-0"
-                    onClick={() => navigate(`/preview${siteUrl ? `?url=${encodeURIComponent(siteUrl)}` : ""}`)}
+                    onClick={() => {
+                      const trimmed = siteUrl.trim();
+                      track("hero_cta_clicked", {
+                        source: "hero_quick_input",
+                        has_site: !!trimmed,
+                        site: trimmed || null,
+                      });
+                      navigate(`/preview${trimmed ? `?url=${encodeURIComponent(trimmed)}` : ""}`);
+                    }}
                   >
                     Descobrir minha visibilidade agora
                     <ArrowRight className="ml-1.5 w-4 h-4" />

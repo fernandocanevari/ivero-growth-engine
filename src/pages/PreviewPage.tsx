@@ -1500,6 +1500,17 @@ export default function PreviewPage() {
   ]);
   const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
 
+  // Funnel step 1.5: preview page viewed. Tracks landing on /preview with or
+  // without a pre-filled site, so we can compute hero_cta_clicked → preview_view rate.
+  useEffect(() => {
+    track("preview_view", {
+      has_site: !!siteUrl,
+      site: siteUrl || null,
+      came_from_hero: !!searchParams.get("name"), // hero form sets name; quick CTA does not
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!siteUrl) return; // wait for the modal submission
     const totalDuration = 10000; // ~10s teatro de loading; cliente precisa de tempo para ler as frases
