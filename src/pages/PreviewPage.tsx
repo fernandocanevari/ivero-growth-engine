@@ -1566,7 +1566,18 @@ export default function PreviewPage() {
           return;
         }
 
+        // Falha total: todos os 5 modelos retornaram erro (cota/crédito/conexão).
+        // Não popular dados, não persistir, exibir tela de erro.
+        if (data.allModelsFailed) {
+          setAllModelsFailed(true);
+          setFailureSummary(Array.isArray(data.errorSummary) ? data.errorSummary : []);
+          return;
+        }
+
         const modelResults: any[] = data.results;
+        const partial = modelResults.filter((r: any) => r?.error === true).length;
+        setPartialFailures(partial);
+        setAllModelsFailed(false);
 
         // Build per-pillar aggregation
         const results: PillarAnalysis[] = pillarKeys.map(({ key, name }) => {
