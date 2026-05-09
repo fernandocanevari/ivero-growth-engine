@@ -129,16 +129,10 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col gap-2 w-full">
-              {/* Label-instrução: deixa explícito o que fazer */}
-              <label htmlFor="hero-site-input" className="text-xs sm:text-sm font-semibold text-foreground ml-1 sm:ml-2 inline-flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                Cole o site da sua empresa para começar a auditoria
-              </label>
-
               {/* Input pill — empilhado no mobile */}
               <div className="relative group">
-                {/* Animated glow behind */}
-                <div className="absolute -inset-1 rounded-full sm:rounded-full rounded-2xl bg-gradient-to-r from-ivero-purple-light via-accent to-ivero-purple-light opacity-25 blur-md group-hover:opacity-40 group-focus-within:opacity-50 transition-opacity duration-500 animate-pulse" />
+                {/* Static glow behind */}
+                <div className="absolute -inset-1 rounded-full sm:rounded-full rounded-2xl bg-gradient-to-r from-ivero-purple-light via-accent to-ivero-purple-light opacity-25 blur-md group-hover:opacity-40 group-focus-within:opacity-50 transition-opacity duration-500" />
                 <div className="relative flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-white border border-ivero-purple/25 overflow-hidden shadow-[0_4px_16px_hsl(265,60%,55%/0.12)] focus-within:shadow-[0_6px_24px_hsl(265,60%,55%/0.18)] transition-shadow duration-300">
                   <div className="flex items-center flex-1 min-w-0">
                     <Globe className="hidden sm:block w-4 h-4 text-ivero-purple ml-5 shrink-0" aria-hidden />
