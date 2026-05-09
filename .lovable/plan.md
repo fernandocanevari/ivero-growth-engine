@@ -1,64 +1,32 @@
-## Diagnóstico
+## Objetivo
 
-Os 5 pilares e o score aparecem zerados porque **todas as 5 contas de IA estão sem créditos/cota**. Confirmado nos logs da edge `simulate-ai`:
+Adicionar um banner persistente no topo do dashboard informando que as análises estão rodando com 3 de 5 modelos de IA (OpenAI, Gemini e GPT-5), enquanto Claude e Perplexity estão em **modo de implementação**.
 
-- OpenAI (`key_Open_IA`) → 429 `insufficient_quota`
-- Gemini (`Key_gemini`) → 429 free tier esgotado
-- Claude (`Key_antropic_claude`) → 400 credit balance too low
-- Perplexity (via Lovable Gateway) → 402 not enough credits
-- GPT-5 (via `LOVABLE_API_KEY`) → 402 not enough credits
+## O que será criado
 
-O código está correto: quando um modelo falha ele retorna `emptyPillars()` (zeros). Como **todos** falharam, a média ficou 0 em tudo.
+**Novo componente** `src/components/dashboard/ModelsStatusBanner.tsx`:
+- Banner discreto, full-width, ancorado no topo do `DashboardLayout` (logo abaixo do header, antes do conteúdo da página)
+- Visual: faixa âmbar suave (`bg-amber-50 border-amber-200`), ícone `Info` da Lucide, alinhada ao tom Light do dashboard
+- Texto: **"Análises rodando com 3 de 5 modelos de IA — Claude e Perplexity estão em modo de implementação. As métricas refletem a média dos modelos ativos (OpenAI, Gemini, GPT-5)."**
+- Botão "x" para dispensar na sessão (estado em `sessionStorage`, chave `ivero:models-banner-dismissed`)
+- Visível para **todos os usuários logados** no `/dashboard/*` (inclusive admin) — não aparece em landing, preview ou áreas públicas
 
-## Etapa 1 — Ação fora do código (você faz)
+## Onde será integrado
 
-Recarregar/aumentar cota nas 5 contas:
+`src/components/dashboard/DashboardLayout.tsx` — inserir `<ModelsStatusBanner />` imediatamente acima do `<Outlet />` / área de conteúdo, dentro do container principal.
 
-| Provedor | Onde recarregar |
-|---|---|
-| OpenAI (ChatGPT) | platform.openai.com → Billing |
-| Anthropic (Claude) | console.anthropic.com → Plans & Billing |
-| Google Gemini | aistudio.google.com → ativar billing no projeto (ou trocar para chave paga) |
-| Perplexity | perplexity.ai/settings/api → Buy credits |
-| Lovable AI (GPT-5) | Lovable → Settings → Workspace → Usage → Add funds |
+## O que NÃO será mexido
 
-Sem isso, qualquer mudança de código continuará retornando 0.
+- Edge function `simulate-ai` continua igual (lógica de tolerância a falhas já existe)
+- Banner no `PreviewPage` (parcial, dinâmico por análise) permanece como está
+- Sem mudanças em schema, secrets, ou rotas
 
-## Etapa 2 — Mudanças no código (eu faço)
+## Como remover quando Claude/Perplexity voltarem
 
-### 2.1 Edge `simulate-ai`: sinalizar falha total
-- Após agregar os 5 resultados, contar quantos modelos retornaram com `error: true`.
-- Se **todos os 5 falharam**, a resposta passa a incluir:
-  ```json
-  { "allModelsFailed": true, "errorSummary": [{ "model": "...", "errorMessage": "..." }] }
-  ```
-  com HTTP 200 (para o cliente conseguir ler o JSON sem cair em catch).
-- Manter o comportamento atual quando 1–4 modelos falham (média parcial dos que funcionaram).
-
-### 2.2 `PreviewPage.tsx`: tela de erro dedicada
-- Detectar `allModelsFailed` na resposta.
-- Substituir os cards de pilares/score por um bloco centralizado:
-  - Ícone de alerta (Lucide `AlertTriangle`)
-  - Título: "Não foi possível concluir a análise agora"
-  - Texto: "Estamos com instabilidade temporária nos provedores de IA. Nenhum modelo conseguiu responder. Tente novamente em alguns minutos."
-  - Lista compacta dos 5 modelos com seus erros (somente se admin estiver logado, para diagnóstico)
-  - Botão primário "Tentar novamente" (re-dispara `simulate-ai`)
-  - Botão secundário "Voltar para o início" (→ `/`)
-- Toast `sonner` com `toast.error("Provedores de IA indisponíveis")` ao detectar.
-- **Não persistir** em `analysis_history` / `audit_reports` quando `allModelsFailed = true` (evita poluir o histórico do dashboard com zeros).
-
-### 2.3 Mensagem mais útil no caso parcial (1–4 falharam)
-- Já existe `errorMessage` por modelo. Acrescentar um banner discreto no topo do PreviewPage: "X de 5 modelos indisponíveis no momento — score calculado com os disponíveis." Sem bloquear o fluxo.
-
-## Critérios de aceite
-
-1. Com créditos recarregados: pilares e score voltam a sair > 0.
-2. Se eu remover/zerar todas as chaves para testar: aparece a tela de erro clara, sem cards zerados, sem registro novo no histórico.
-3. Se 2 modelos caírem: análise continua, com banner de aviso.
+Basta deletar o `<ModelsStatusBanner />` do `DashboardLayout` (ou trocar por uma flag em `src/lib/ai-models-status.ts` que eu posso já criar exportando `MODELS_IN_STANDBY = ["Claude", "Perplexity"]` — assim no futuro é só esvaziar o array para ocultar o banner automaticamente).
 
 ## Arquivos afetados
 
-- `supabase/functions/simulate-ai/index.ts` (lógica de agregação + flag)
-- `src/pages/PreviewPage.tsx` (tela de erro + banner parcial + bloqueio de persistência)
-
-Sem mudanças de schema ou novos secrets.
+- `src/components/dashboard/ModelsStatusBanner.tsx` (novo)
+- `src/lib/ai-models-status.ts` (novo, fonte única dos modelos em standby)
+- `src/components/dashboard/DashboardLayout.tsx` (1 import + 1 linha)
