@@ -1743,7 +1743,7 @@ export default function PreviewPage() {
       clearInterval(stepInterval);
       clearTimeout(timeout);
     };
-  }, [siteUrl]);
+  }, [siteUrl, retryToken]);
 
   if (!siteUrl) {
     return (
