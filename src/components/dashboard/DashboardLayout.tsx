@@ -5,6 +5,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import OnboardingWizard from "./OnboardingWizard";
 import SupportWidget from "./SupportWidget";
 import { TrialBanner } from "./TrialBanner";
+import ModelsStatusBanner from "./ModelsStatusBanner";
 import { TrialLockedPage } from "./TrialLockedPage";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
