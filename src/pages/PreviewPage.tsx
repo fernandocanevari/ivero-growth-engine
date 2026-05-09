@@ -1758,5 +1758,60 @@ export default function PreviewPage() {
     );
   }
   if (loading) return <LoadingScreen currentStep={currentStep} progress={progress} />;
-  return <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />;
+  if (allModelsFailed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white px-6 py-16">
+        <div className="max-w-xl w-full text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+            Não foi possível concluir a análise agora
+          </h1>
+          <p className="text-base text-gray-600 leading-relaxed">
+            Estamos com instabilidade temporária nos provedores de IA. Nenhum modelo conseguiu responder no momento. Tente novamente em alguns minutos.
+          </p>
+          {failureSummary.length > 0 && (
+            <details className="text-left text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <summary className="cursor-pointer font-medium text-gray-700">Detalhes técnicos ({failureSummary.length} modelos)</summary>
+              <ul className="mt-2 space-y-1">
+                {failureSummary.map((f, i) => (
+                  <li key={i}><span className="font-mono text-gray-700">{f.model}</span>: {f.errorMessage}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Button
+              onClick={() => {
+                setAllModelsFailed(false);
+                setFailureSummary([]);
+                setLoading(true);
+                setProgress(0);
+                setCurrentStep(0);
+                setGeoScore(0);
+                setRetryToken((t) => t + 1);
+              }}
+              className="bg-gray-900 text-white hover:bg-gray-800"
+            >
+              Tentar novamente
+            </Button>
+            <Button variant="outline" onClick={() => (window.location.href = "/")}>
+              Voltar para o início
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <>
+      {partialFailures > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-sm px-4 py-2 text-center">
+          {partialFailures} de 5 modelos indisponíveis no momento — score calculado com os disponíveis.
+        </div>
+      )}
+      <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />
+    </>
+  );
 }
