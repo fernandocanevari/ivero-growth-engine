@@ -1143,7 +1143,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
             <AnimatedSection delay={0.5}>
               <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
                 <p className="text-2xl sm:text-3xl font-display font-bold text-foreground max-w-2xl mx-auto leading-tight">
-                  Escolha o plano certo para sua marca virar referência — e comece em minutos.
+                  Escolha o plano certo para sua marca virar referência.
                 </p>
                 <Button
                   size="lg"
