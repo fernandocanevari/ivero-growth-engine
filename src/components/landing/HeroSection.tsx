@@ -110,37 +110,47 @@ const HeroSection = () => {
       />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-28 pb-16 sm:py-32 sm:pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-start">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-24 pb-10 sm:pt-28 sm:pb-14 lg:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           {/* Left - Text */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <h1 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-5 sm:mb-6">
+            <h1 className="font-display text-[28px] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-5">
               <span className="text-foreground">Sua marca pode estar </span>
               <span className="text-gradient">invisível agora</span>
               <span className="text-foreground"> para o seu cliente e você não sabe.</span>
             </h1>
 
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mb-8 sm:mb-10 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mb-5 sm:mb-7 leading-relaxed">
               A Ivero mostra exatamente onde sua marca deixa de existir nas IAs e o que fazer para mudar isso.
             </p>
 
-            <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col gap-2 w-full">
+              {/* Label-instrução: deixa explícito o que fazer */}
+              <label htmlFor="hero-site-input" className="text-xs sm:text-sm font-semibold text-foreground ml-1 sm:ml-2 inline-flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                Cole o site da sua empresa para começar a auditoria
+              </label>
+
               {/* Input pill — empilhado no mobile */}
               <div className="relative group">
                 {/* Animated glow behind */}
                 <div className="absolute -inset-1 rounded-full sm:rounded-full rounded-2xl bg-gradient-to-r from-ivero-purple-light via-accent to-ivero-purple-light opacity-25 blur-md group-hover:opacity-40 group-focus-within:opacity-50 transition-opacity duration-500 animate-pulse" />
                 <div className="relative flex flex-col sm:flex-row sm:items-center sm:h-14 sm:rounded-full rounded-2xl bg-white border border-ivero-purple/25 overflow-hidden shadow-[0_4px_16px_hsl(265,60%,55%/0.12)] focus-within:shadow-[0_6px_24px_hsl(265,60%,55%/0.18)] transition-shadow duration-300">
-                  <input
-                    type="url"
-                    placeholder="Digite o site da sua marca"
-                    value={siteUrl}
-                    onChange={(e) => setSiteUrl(e.target.value)}
-                    className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-5 sm:py-0"
-                  />
+                  <div className="flex items-center flex-1 min-w-0">
+                    <Globe className="hidden sm:block w-4 h-4 text-ivero-purple ml-5 shrink-0" aria-hidden />
+                    <input
+                      id="hero-site-input"
+                      type="url"
+                      placeholder="Ex.: www.suaempresa.com.br"
+                      value={siteUrl}
+                      onChange={(e) => setSiteUrl(e.target.value)}
+                      className="flex-1 min-w-0 bg-transparent text-foreground placeholder:text-muted-foreground text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-3 sm:py-0"
+                    />
+                  </div>
                   <Button
                     variant="hero"
                     size="lg"
@@ -152,7 +162,7 @@ const HeroSection = () => {
                   </Button>
                 </div>
               </div>
-              <p className="text-foreground text-sm sm:text-base font-medium ml-1 sm:ml-5">
+              <p className="text-foreground text-xs sm:text-sm font-medium ml-1 sm:ml-5">
                 Diagnóstico instantâneo. Sem cadastro, sem enrolação. ⚡
               </p>
             </div>
