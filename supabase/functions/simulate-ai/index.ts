@@ -599,15 +599,25 @@ serve(async (req) => {
       configs.map((config) => callModel(config, prompt, systemPrompt, brandName, mode))
     );
 
-    // Nuvem de percepção: extraída apenas no modo Diagnóstico (PreviewPage).
+    // Detecta falha total: todos os modelos retornaram erro (cota/crédito/conexão).
+    const failedResults = results.filter((r: any) => r?.error === true);
+    const allModelsFailed = results.length > 0 && failedResults.length === results.length;
+    const errorSummary = failedResults.map((r: any) => ({
+      model: r.model,
+      errorMessage: r.errorMessage || "Erro desconhecido",
+    }));
+
+    // Nuvem de percepção: extraída apenas no modo Diagnóstico (PreviewPage)
+    // e apenas quando há ao menos um modelo válido (evita chamada inútil ao gateway).
     let keyword_cloud: any[] = [];
-    if (mode === "diagnostico") {
+    if (mode === "diagnostico" && !allModelsFailed) {
       keyword_cloud = await extractKeywordCloud(results, brandName);
     }
 
-    return new Response(JSON.stringify({ results, keyword_cloud }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ results, keyword_cloud, allModelsFailed, errorSummary }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     console.error("simulate-ai error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
