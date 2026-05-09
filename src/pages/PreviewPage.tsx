@@ -1696,10 +1696,11 @@ export default function PreviewPage() {
       } catch (e) {
         console.error("Pillar analysis failed:", e);
       } finally {
-        // Fallback: se a API falhou ou retornou tudo zerado, popular com dados de exemplo
-        // realistas para nunca exibir uma auditoria em branco ao cliente.
+        // Fallback de exemplo apenas quando NÃO foi falha total declarada.
+        // Em falha total, mantemos score 0 para a tela de erro tomar conta.
         setGeoScore((prev) => {
           if (prev > 0) return prev;
+          if (allModelsFailed) return 0;
           const fallback: PillarAnalysis[] = [
             { name: "Clareza",        mentions: 3, score: 62, radarValue: 62, criterios: [], aiDetails: [] },
             { name: "Autoridade",     mentions: 1, score: 38, radarValue: 38, criterios: [], aiDetails: [] },
