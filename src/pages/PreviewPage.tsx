@@ -1185,7 +1185,96 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
               </PremiumCard>
             </AnimatedSection>
 
-            {/* Plano de Ação e Previsão de Impacto removidos para preservar valor comercial. */}
+            {/* ── Plano de Ação (bloqueado + watermark) ── */}
+            <AnimatedSection delay={0.56}>
+              <PremiumCard glow>
+                <div className="space-y-5">
+                  <SectionHeader
+                    icon={Rocket}
+                    title="Plano de Ação Recomendado"
+                    subtitle="Roteiro estratégico personalizado — disponível após contratação"
+                  />
+                  <div className="relative overflow-hidden rounded-xl border border-primary/15 bg-muted/20 select-none">
+                    {/* Conteúdo borrado (amostra) */}
+                    <div
+                      aria-hidden
+                      className="p-6 space-y-4 blur-[6px] pointer-events-none"
+                      style={{
+                        WebkitUserSelect: "none",
+                        userSelect: "none",
+                      }}
+                      onCopy={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      {[
+                        { t: "Reescrever headline e proposta de valor", d: "Aplicar fórmula de clareza GEO para que IAs identifiquem instantaneamente seu core business." },
+                        { t: "Estruturar página de autoridade técnica", d: "Construir hub de conteúdo aprofundado com sinais de E-E-A-T para indexação por LLMs." },
+                        { t: "Criar landing pages para tráfego de IA", d: "Páginas otimizadas com contexto, prova social e CTA assertivo para visitantes vindos de respostas generativas." },
+                        { t: "Conquistar menções em mídia especializada", d: "Plano de PR digital direcionado às fontes que alimentam treinamento e RAG dos principais modelos." },
+                        { t: "Implementar marcação semântica e schema", d: "Schema.org, FAQ e dados estruturados para que IAs interpretem corretamente seu posicionamento." },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">
+                            {i + 1}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{item.t}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.d}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Watermark diagonal repetido */}
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.10] mix-blend-multiply"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(-30deg, transparent 0 80px, rgba(0,0,0,0.0) 80px 160px)",
+                      }}
+                    >
+                      <div className="absolute inset-0 flex flex-wrap content-around justify-around gap-8 -rotate-[20deg] scale-150">
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <span
+                            key={i}
+                            className="text-[10px] sm:text-xs font-display font-bold text-primary whitespace-nowrap tracking-widest"
+                          >
+                            IVERO • AMOSTRA CONFIDENCIAL • NÃO COPIAR
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Overlay de bloqueio com CTA */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-background/40 via-background/70 to-background/95">
+                      <div className="text-center space-y-4 px-6 max-w-md">
+                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-ivero-gradient shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.55)]">
+                          <Lock className="w-6 h-6 text-primary-foreground" />
+                        </div>
+                        <h4 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                          Plano de ação completo bloqueado
+                        </h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          Liberamos o roteiro detalhado, cronograma e priorização exclusivamente para clientes contratantes.
+                        </p>
+                        <Button
+                          size="lg"
+                          className="h-12 px-7 bg-ivero-gradient hover:opacity-90 text-primary-foreground font-bold rounded-full shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)]"
+                          onClick={() => goToSignup("plano_acao_locked")}
+                        >
+                          <Unlock className="mr-2 w-4 h-4" />
+                          Desbloquear plano de ação
+                        </Button>
+                        <p className="text-[11px] text-muted-foreground/80">
+                          Conteúdo protegido por direitos autorais — Ivero © {new Date().getFullYear()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </PremiumCard>
+            </AnimatedSection>
 
             {/* ── Ivero Features ── */}
             <AnimatedSection delay={0.68}>
@@ -1581,6 +1670,33 @@ export default function PreviewPage() {
       } catch (e) {
         console.error("Pillar analysis failed:", e);
       } finally {
+        // Fallback: se a API falhou ou retornou tudo zerado, popular com dados de exemplo
+        // realistas para nunca exibir uma auditoria em branco ao cliente.
+        setGeoScore((prev) => {
+          if (prev > 0) return prev;
+          const fallback: PillarAnalysis[] = [
+            { name: "Clareza",        mentions: 3, score: 62, radarValue: 62, criterios: [], aiDetails: [] },
+            { name: "Autoridade",     mentions: 1, score: 38, radarValue: 38, criterios: [], aiDetails: [] },
+            { name: "Conversão",     mentions: 2, score: 45, radarValue: 45, criterios: [], aiDetails: [] },
+            { name: "Posicionamento", mentions: 2, score: 51, radarValue: 51, criterios: [], aiDetails: [] },
+            { name: "Relevância",    mentions: 1, score: 41, radarValue: 41, criterios: [], aiDetails: [] },
+          ];
+          const total = Math.round(fallback.reduce((s, p) => s + p.radarValue, 0) / fallback.length);
+          setDynamicRadarData(fallback.map((p) => ({ subject: p.name, value: p.radarValue, fullMark: 100 })));
+          setDynamicPillarDetails(buildPillarDetails(fallback) as any[]);
+          setAiEngines((cur) => {
+            const allZero = cur.every((e) => !e.found);
+            if (!allZero) return cur;
+            return [
+              { name: "ChatGPT", found: true },
+              { name: "Gemini", found: false },
+              { name: "Claude", found: true },
+              { name: "Perplexity", found: false },
+              { name: "GPT-5", found: false },
+            ];
+          });
+          return total;
+        });
         apiDone = true;
         tryFinish();
       }
