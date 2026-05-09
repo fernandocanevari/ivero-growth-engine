@@ -77,6 +77,7 @@ export default function DashboardLayout() {
         <div className="flex-1 flex flex-col min-w-0">
           <div className="sticky top-0 z-10 bg-background">
             <TrialBanner userId={userId} />
+            <ModelsStatusBanner />
             <header className="h-14 flex items-center gap-4 border-b border-border px-4">
               <SidebarTrigger />
               <div className="flex-1" />
