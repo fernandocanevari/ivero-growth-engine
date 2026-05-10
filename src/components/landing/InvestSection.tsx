@@ -90,7 +90,7 @@ const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
 
   return (
-    <section id="planos" className="py-14 sm:py-20 bg-surface-1 relative overflow-hidden">
+    <section id="planos" className="pt-14 sm:pt-20 pb-8 sm:pb-12 bg-surface-1 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-ivero-purple/6 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/4 rounded-full blur-3xl" />
 
@@ -295,11 +295,6 @@ const InvestSection = () => {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="mt-10 sm:mt-12 max-w-7xl mx-auto"
         >
-          <p className="text-center text-xs sm:text-sm font-medium text-muted-foreground mb-4">
-            <span className="text-accent font-bold">✦</span>{" "}
-            Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
-          </p>
-
           <div className="relative rounded-2xl border border-ivero-purple/20 bg-gradient-to-br from-ivero-purple/5 via-white to-accent/5 shadow-lg shadow-ivero-purple/5 overflow-hidden">
             {/* Faixa superior gradiente */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-ivero-gradient" />
@@ -309,6 +304,12 @@ const InvestSection = () => {
             <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative px-5 sm:px-8 py-5 sm:py-6">
+              {/* Frase de inheritance */}
+              <p className="text-center text-xs sm:text-sm font-medium text-foreground/85 mb-5 pb-4 border-b border-ivero-purple/10">
+                <span className="text-accent font-bold">✦</span>{" "}
+                Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
+              </p>
+
               <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
                 {/* Header compacto */}
                 <div className="flex items-center gap-3 lg:shrink-0 lg:border-r lg:border-ivero-purple/15 lg:pr-8">
