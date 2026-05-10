@@ -105,9 +105,6 @@ const InvestSection = () => {
             <span className="text-foreground">Nossos </span>
             <span className="text-gradient">Planos</span>
           </h2>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8">
-            Escolha o plano ideal e garanta que sua marca seja vista pelas IAs que o mundo usa.
-          </p>
 
           {/* Toggle mensal/anual */}
           <div className="inline-flex items-center gap-3 bg-white border border-ivero-purple/20 rounded-full p-1.5 shadow-sm">
