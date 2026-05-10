@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { identifyLead, track } from "@/lib/analytics";
+import { formatPhoneBR } from "@/lib/format-phone";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer,
@@ -1019,7 +1020,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                       className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
                     <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255}
                       className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                    <input name="phone" type="tel" placeholder="Celular" maxLength={20}
+                    <input name="phone" type="tel" inputMode="numeric" placeholder="(11) 99999-9999" maxLength={16}
+                      onInput={(e) => { const t = e.currentTarget; t.value = formatPhoneBR(t.value); }}
                       className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
                     <Button type="submit" size="lg"
                       className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">

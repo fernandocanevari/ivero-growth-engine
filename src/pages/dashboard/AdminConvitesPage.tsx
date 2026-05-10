@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ShieldAlert, Mail, Plus, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { formatPhoneBR } from "@/lib/format-phone";
 
 interface ConviteRow {
   id: string;
@@ -165,7 +166,7 @@ export default function AdminConvitesPage() {
               </div>
               <div>
                 <Label>Telefone</Label>
-                <Input value={form.contato_telefone} onChange={(e) => setForm({ ...form, contato_telefone: e.target.value })} />
+                <Input type="tel" inputMode="numeric" maxLength={16} placeholder="(11) 99999-9999" value={form.contato_telefone} onChange={(e) => setForm({ ...form, contato_telefone: formatPhoneBR(e.target.value) })} />
               </div>
             </div>
             <div className="flex justify-end gap-2">
