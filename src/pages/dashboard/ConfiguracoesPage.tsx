@@ -12,6 +12,7 @@ import { useBrandSettings, useUpdateBrandSettings } from "@/hooks/useBrandSettin
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { formatPhoneBR } from "@/lib/format-phone";
 
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
