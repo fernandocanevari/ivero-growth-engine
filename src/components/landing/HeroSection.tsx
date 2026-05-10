@@ -213,10 +213,11 @@ const HeroSection = () => {
                 />
                 <input
                   type="tel"
-                  maxLength={20}
-                  placeholder="Celular"
+                  inputMode="numeric"
+                  maxLength={16}
+                  placeholder="(11) 99999-9999"
                   value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
+                  onChange={(e) => setFormPhone(formatPhoneBR(e.target.value))}
                   className="h-12 rounded-lg bg-surface-1 border border-ivero-purple/20 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none focus:border-ivero-purple/50 transition-colors"
                 />
                 <Button variant="hero" size="lg" className="w-full h-12 text-base mt-2" type="submit" disabled={submitting}>
