@@ -80,9 +80,10 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
-  const { isPaid } = useSubscriptionStatus();
+  const { isPaid, isTrial } = useSubscriptionStatus();
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const displayName = settings?.brand_name || "Minha Marca";
+  const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
 
   // Trial users (não-admin, não pago) veem itens bloqueados com lock + opacity.
   const showLockState = !isPaid && !isAdmin;
