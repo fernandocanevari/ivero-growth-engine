@@ -160,7 +160,7 @@ export default function ConfiguracoesPage() {
           <h2 className="text-base font-semibold text-foreground">Dados de Contato</h2>
           <div><Label>Nome do Contato</Label><Input value={form.contact_name} onChange={(e) => setForm((p) => ({ ...p, contact_name: e.target.value }))} className="mt-1" placeholder="Nome completo" /></div>
           <div><Label>E-mail</Label><Input type="email" value={form.contact_email} onChange={(e) => setForm((p) => ({ ...p, contact_email: e.target.value }))} className="mt-1" placeholder="email@empresa.com" /></div>
-          <div><Label>Celular</Label><Input type="tel" value={form.contact_phone} onChange={(e) => setForm((p) => ({ ...p, contact_phone: e.target.value }))} className="mt-1" placeholder="(11) 99999-9999" /></div>
+          <div><Label>Celular</Label><Input type="tel" inputMode="numeric" maxLength={16} value={form.contact_phone} onChange={(e) => setForm((p) => ({ ...p, contact_phone: formatPhoneBR(e.target.value) }))} className="mt-1" placeholder="(11) 99999-9999" /></div>
         </CardContent>
       </Card>
 
