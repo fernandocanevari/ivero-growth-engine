@@ -49,11 +49,10 @@ const menuGroups = [
       { title: "Monitoramento Multi-IA", url: "/dashboard/monitoramento", icon: Radar },
       { title: "Análise Comparativa", url: "/dashboard/comparativo", icon: GitCompare },
       { title: "Dominância por Modelo", url: "/dashboard/dominancia", icon: BarChart3 },
-      { title: "Score GEO", url: "/dashboard/score", icon: TrendingUp },
+      { title: "Score GEO", url: "/dashboard/score", icon: Gauge },
       { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
       { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
-      { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: Terminal },
     ],
   },
   {
@@ -72,6 +71,7 @@ const menuGroups = [
       { title: "Exportar Dados", url: "/dashboard/relatorios", icon: Download },
       { title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard },
       { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
+      { title: "Central de Ajuda", url: "/dashboard/ajuda", icon: HelpCircle },
     ],
   },
 ];
