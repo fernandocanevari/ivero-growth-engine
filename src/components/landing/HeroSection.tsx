@@ -7,6 +7,7 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { identifyLead, track } from "@/lib/analytics";
+import { formatPhoneBR } from "@/lib/format-phone";
 
 // Same strict schema used in the PreviewPage lead gate — keeps lead quality consistent
 const heroLeadSchema = z.object({
