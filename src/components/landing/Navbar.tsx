@@ -21,7 +21,7 @@ const Navbar = () => {
       className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm"
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="#" className="font-display text-2xl font-bold text-gradient">
+        <a href="/" className="font-display text-2xl font-bold text-gradient">
           Ivero
         </a>
 
@@ -39,8 +39,8 @@ const Navbar = () => {
           <a href="/login" className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors">
             Entrar
           </a>
-          <Button variant="hero" size="sm" className="px-6">
-            Começar grátis
+          <Button variant="hero" size="sm" className="px-6" asChild>
+            <a href="/preview">Rodar diagnóstico</a>
           </Button>
         </div>
 
@@ -75,8 +75,8 @@ const Navbar = () => {
             <a href="/login" className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors py-2">
               Entrar
             </a>
-            <Button variant="hero" size="sm" className="px-6 w-fit">
-              Começar grátis
+            <Button variant="hero" size="sm" className="px-6 w-fit" asChild>
+              <a href="/preview" onClick={() => setIsOpen(false)}>Rodar diagnóstico</a>
             </Button>
           </div>
         </motion.div>
