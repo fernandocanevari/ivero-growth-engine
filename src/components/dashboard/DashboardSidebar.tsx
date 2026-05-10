@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
-  FileText, Map, Bell, FlaskConical, Terminal, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard, Lock, Tags, History,
+  FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
