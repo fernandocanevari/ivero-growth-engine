@@ -139,8 +139,8 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground text-center md:text-left">© 2026 Ivero. Todos os direitos reservados.</p>
           <div className="flex flex-col items-center md:items-end gap-2">
             <Button variant="hero" size="default" className="px-5 text-sm w-full sm:w-auto" asChild>
-              <a href="/preview">
-                Rodar meu diagnóstico
+              <a href="#">
+                Falar com o fundador da Ivero!
                 <ArrowRight className="ml-1.5 w-4 h-4" />
               </a>
             </Button>
