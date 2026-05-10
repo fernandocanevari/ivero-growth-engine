@@ -25,7 +25,7 @@ function getModelConfigs(): ModelConfig[] {
     configs.push({
       name: "ChatGPT",
       url: "https://api.openai.com/v1/chat/completions",
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       getHeaders: () => ({
         Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
