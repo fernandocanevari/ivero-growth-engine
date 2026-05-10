@@ -296,7 +296,7 @@ const InvestSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="mt-10 sm:mt-14 max-w-5xl mx-auto px-2"
+          className="mt-10 sm:mt-14 max-w-7xl mx-auto px-2"
         >
           <p className="text-center text-xs sm:text-sm font-medium text-muted-foreground mb-4">
             <span className="text-accent font-bold">✦</span>{" "}
