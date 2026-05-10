@@ -24,7 +24,7 @@ const faqs = [
     icon: Eye,
     question: "Quais IAs a Ivero monitora?",
     answer:
-      "Atualmente monitoramos ChatGPT (OpenAI), Gemini (Google), Perplexity, Claude (Anthropic) e Microsoft Copilot. Estamos constantemente expandindo para cobrir novas IAs relevantes do mercado.",
+      "Atualmente monitoramos ChatGPT (OpenAI), Gemini (Google), Claude (Anthropic), Perplexity e GPT-5. Estamos constantemente expandindo para cobrir novas IAs relevantes do mercado.",
   },
   {
     icon: BarChart3,
