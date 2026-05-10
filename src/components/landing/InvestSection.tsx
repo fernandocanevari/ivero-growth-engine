@@ -11,7 +11,7 @@ const plans = [
     monthlyPrice: "R$ 197",
     annualPrice: "R$ 157",
     annualSaving: "R$ 480",
-    cta: "Garantir minha presença →",
+    cta: "Quero ser visto pelas IAs →",
     highlighted: false,
     metrics: [
       { icon: Cpu, label: "IAs monitoradas", value: "2" },
@@ -31,7 +31,7 @@ const plans = [
     monthlyPrice: "R$ 397",
     annualPrice: "R$ 317",
     annualSaving: "R$ 960",
-    cta: "Ampliar minha influência →",
+    cta: "Quero superar meus concorrentes →",
     highlighted: false,
     metrics: [
       { icon: Cpu, label: "IAs monitoradas", value: "3" },
@@ -51,7 +51,7 @@ const plans = [
     monthlyPrice: "R$ 697",
     annualPrice: "R$ 557",
     annualSaving: "R$ 1.680",
-    cta: "Consolidar minha autoridade →",
+    cta: "Quero dominar meu setor nas IAs →",
     highlighted: true,
     metrics: [
       { icon: Cpu, label: "IAs monitoradas", value: "4" },
@@ -71,7 +71,7 @@ const plans = [
     monthlyPrice: "Custom",
     annualPrice: "Custom",
     annualSaving: null,
-    cta: "Receber uma proposta personalizada →",
+    cta: "Quero minha estratégia exclusiva →",
     highlighted: false,
     metrics: [
       { icon: Cpu, label: "IAs monitoradas", value: "5" },
