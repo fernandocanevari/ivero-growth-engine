@@ -166,7 +166,7 @@ export default function AdminConvitesPage() {
               </div>
               <div>
                 <Label>Telefone</Label>
-                <Input value={form.contato_telefone} onChange={(e) => setForm({ ...form, contato_telefone: e.target.value })} />
+                <Input type="tel" inputMode="numeric" maxLength={16} placeholder="(11) 99999-9999" value={form.contato_telefone} onChange={(e) => setForm({ ...form, contato_telefone: formatPhoneBR(e.target.value) })} />
               </div>
             </div>
             <div className="flex justify-end gap-2">
