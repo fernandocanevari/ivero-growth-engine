@@ -109,22 +109,20 @@ const Footer = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm w-full md:w-auto shrink-0">
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-foreground mb-1">Empresa</h4>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Sobre</a>
               <a href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</a>
-              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">Contato</a>
+              <a href="/preview" className="text-muted-foreground hover:text-foreground transition-colors">Diagnóstico</a>
             </div>
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-foreground mb-1">Produto</h4>
-              <a href="#recursos" className="text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
-              <a href="#como-funciona" className="text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
-              <a href="#para-quem" className="text-muted-foreground hover:text-foreground transition-colors">Pra quem</a>
-              <a href="#precos" className="text-muted-foreground hover:text-foreground transition-colors">Preços</a>
+              <a href="/#recursos" className="text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
+              <a href="/#como-funciona" className="text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
+              <a href="/#para-quem" className="text-muted-foreground hover:text-foreground transition-colors">Para quem</a>
+              <a href="/#precos" className="text-muted-foreground hover:text-foreground transition-colors">Preços</a>
             </div>
             <div className="flex flex-col gap-1">
-              <h4 className="font-semibold text-foreground mb-1">Redes Sociais</h4>
-              <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">Instagram</a>
-              <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">LinkedIn</a>
-              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">WhatsApp</a>
+              <h4 className="font-semibold text-foreground mb-1">Conta</h4>
+              <a href="/auth" className="text-muted-foreground hover:text-foreground transition-colors">Entrar</a>
+              <a href="/auth" className="text-muted-foreground hover:text-foreground transition-colors">Criar conta</a>
             </div>
             <div className="flex flex-col gap-1">
               <h4 className="font-semibold text-foreground mb-1">Legal</h4>
@@ -141,8 +139,8 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground text-center md:text-left">© 2026 Ivero. Todos os direitos reservados.</p>
           <div className="flex flex-col items-center md:items-end gap-2">
             <Button variant="hero" size="default" className="px-5 text-sm w-full sm:w-auto" asChild>
-              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-                Fale com o fundador da Ivero!
+              <a href="/preview">
+                Rodar meu diagnóstico
                 <ArrowRight className="ml-1.5 w-4 h-4" />
               </a>
             </Button>
