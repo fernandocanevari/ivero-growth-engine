@@ -304,7 +304,7 @@ const InvestSection = () => {
           <p className="text-xs sm:text-sm font-medium text-muted-foreground max-w-4xl mx-auto">
             <span className="text-accent font-bold">✦</span>{" "}
             <span className="font-semibold text-foreground">Incluso em todos os planos:</span>{" "}
-            Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser · Demonstração guiada da plataforma e tour completo pelos recursos da Ivero
+            Dashboard GEO · Score de Visibilidade · Análise Comparativa · Suporte prioritário · Sem contrato · Cancele quando quiser · Demo guiada da Ivero ao vivo
           </p>
         </motion.div>
 
