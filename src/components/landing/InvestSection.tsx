@@ -217,36 +217,38 @@ const InvestSection = () => {
                     }`} />
                   </div>
 
-                  <div className="px-5 sm:px-7 pt-4 sm:pt-5 pb-5 sm:pb-7 flex flex-col flex-1">
+                  <div className="px-5 sm:px-7 pt-5 sm:pt-6 pb-5 sm:pb-7 flex flex-col flex-1">
                     {/* Preço */}
-                    <div className="mb-4 sm:mb-5 h-14 sm:h-16 flex flex-col justify-start">
+                    <div className="mb-5 sm:mb-6 min-h-[68px] sm:min-h-[76px] flex flex-col justify-start gap-2">
                       <motion.div
                         key={price}
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2 }}
+                        className="flex items-baseline gap-1"
                       >
-                        <span className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+                        <span className="font-display text-3xl sm:text-[2rem] font-bold text-foreground leading-none tracking-tight">
                           {price}
                         </span>
                         {!isCustom && (
-                          <span className="text-muted-foreground text-xs ml-1">/mês</span>
+                          <span className="text-muted-foreground text-xs font-medium">/mês</span>
                         )}
                       </motion.div>
                       {isAnnual && !isCustom && plan.annualSaving && (
-                        <p className="text-accent text-xs sm:text-sm font-bold mt-1">
-                          ✦ Economia de {plan.annualSaving}/ano
-                        </p>
+                        <span className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[11px] sm:text-xs font-semibold">
+                          <span className="text-[10px]">✦</span>
+                          Economia de {plan.annualSaving}/ano
+                        </span>
                       )}
                       {isAnnual && isCustom && (
-                        <p className="text-muted-foreground text-[10px] mt-1">
+                        <span className="inline-flex items-center self-start px-2 py-0.5 rounded-md bg-muted/60 border border-border text-muted-foreground text-[11px] font-medium">
                           Proposta personalizada
-                        </p>
+                        </span>
                       )}
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5 p-3 sm:p-4 rounded-xl border border-accent/15 bg-accent/3">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-6 p-3 sm:p-4 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
@@ -264,11 +266,11 @@ const InvestSection = () => {
                     </div>
 
                     {/* Diferenciais */}
-                    <ul className="space-y-1.5 mb-5 sm:mb-6 flex-1">
+                    <ul className="space-y-2 mb-5 sm:mb-6 flex-1">
                       {plan.highlights.map((highlight) => (
-                        <li key={highlight} className="flex items-start gap-2 text-xs text-foreground/80">
-                          <span className={`shrink-0 mt-0.5 font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
-                          {highlight}
+                        <li key={highlight} className="flex items-start gap-2 text-xs sm:text-[13px] leading-snug text-foreground/85 font-medium">
+                          <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
+                          <span>{highlight}</span>
                         </li>
                       ))}
                     </ul>
