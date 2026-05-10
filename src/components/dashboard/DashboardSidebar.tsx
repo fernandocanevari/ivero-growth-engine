@@ -244,7 +244,7 @@ export function DashboardSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
-            <p className="text-xs text-muted-foreground">Plano Pro</p>
+            <p className="text-xs text-muted-foreground">{planLabel}</p>
           </div>
           <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title="Sair">
             <LogOut className="h-4 w-4" />
