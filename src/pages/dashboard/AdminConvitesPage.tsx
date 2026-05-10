@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ShieldAlert, Mail, Plus, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { formatPhoneBR } from "@/lib/format-phone";
 
 interface ConviteRow {
   id: string;
