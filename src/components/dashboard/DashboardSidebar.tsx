@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
-  FileText, Map, Bell, FlaskConical, Terminal, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Brain, Layers, CreditCard, Lock, Tags, History,
+  FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -49,11 +49,10 @@ const menuGroups = [
       { title: "Monitoramento Multi-IA", url: "/dashboard/monitoramento", icon: Radar },
       { title: "Análise Comparativa", url: "/dashboard/comparativo", icon: GitCompare },
       { title: "Dominância por Modelo", url: "/dashboard/dominancia", icon: BarChart3 },
-      { title: "Score GEO", url: "/dashboard/score", icon: TrendingUp },
+      { title: "Score GEO", url: "/dashboard/score", icon: Gauge },
       { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
       { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
-      { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: Terminal },
     ],
   },
   {
@@ -72,6 +71,7 @@ const menuGroups = [
       { title: "Exportar Dados", url: "/dashboard/relatorios", icon: Download },
       { title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard },
       { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
+      { title: "Central de Ajuda", url: "/dashboard/ajuda", icon: HelpCircle },
     ],
   },
 ];
@@ -80,9 +80,10 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
-  const { isPaid } = useSubscriptionStatus();
+  const { isPaid, isTrial } = useSubscriptionStatus();
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const displayName = settings?.brand_name || "Minha Marca";
+  const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
 
   // Trial users (não-admin, não pago) veem itens bloqueados com lock + opacity.
   const showLockState = !isPaid && !isAdmin;
@@ -212,7 +213,7 @@ export function DashboardSidebar() {
                       className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
-                      <FileText className="h-4 w-4 shrink-0" />
+                      <FileSignature className="h-4 w-4 shrink-0" />
                       <span className="truncate">Propostas</span>
                     </NavLink>
                   </SidebarMenuButton>
@@ -224,7 +225,7 @@ export function DashboardSidebar() {
                       className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
-                      <Mail className="h-4 w-4 shrink-0" />
+                      <Send className="h-4 w-4 shrink-0" />
                       <span className="truncate">Convites</span>
                     </NavLink>
                   </SidebarMenuButton>
@@ -243,7 +244,7 @@ export function DashboardSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
-            <p className="text-xs text-muted-foreground">Plano Pro</p>
+            <p className="text-xs text-muted-foreground">{planLabel}</p>
           </div>
           <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title="Sair">
             <LogOut className="h-4 w-4" />
