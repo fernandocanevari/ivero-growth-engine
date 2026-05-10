@@ -213,7 +213,7 @@ export function DashboardSidebar() {
                       className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
-                      <FileText className="h-4 w-4 shrink-0" />
+                      <FileSignature className="h-4 w-4 shrink-0" />
                       <span className="truncate">Propostas</span>
                     </NavLink>
                   </SidebarMenuButton>
