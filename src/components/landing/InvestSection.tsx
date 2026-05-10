@@ -101,7 +101,7 @@ const InvestSection = () => {
           viewport={{ once: true }}
           className="text-center mb-8 sm:mb-10"
         >
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
             <span className="text-foreground">Nossos </span>
             <span className="text-gradient">Planos</span>
           </h2>
