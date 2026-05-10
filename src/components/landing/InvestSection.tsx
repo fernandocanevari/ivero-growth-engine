@@ -304,7 +304,7 @@ const InvestSection = () => {
           <p className="text-xs sm:text-sm font-medium text-muted-foreground max-w-4xl mx-auto">
             <span className="text-accent font-bold">✦</span>{" "}
             <span className="font-semibold text-foreground">Todos os planos incluem</span>{" "}
-            inteligência GEO, Score de Visibilidade, benchmark competitivo com IA, suporte prioritário e onboarding estratégico guiado pela equipe Ivero.{" "}
+            Score GEO de Visibilidade, monitoramento de IAs, alertas de menções, relatório semanal por e-mail, suporte prioritário e onboarding estratégico guiado pela equipe Ivero.{" "}
             <span className="text-foreground/90">Sem fidelidade • Evolua conforme sua operação cresce.</span>
           </p>
         </motion.div>
