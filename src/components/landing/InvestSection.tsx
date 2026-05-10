@@ -311,12 +311,12 @@ const InvestSection = () => {
             <div className="absolute -top-16 -left-16 w-48 h-48 bg-ivero-purple/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="relative p-4 sm:p-5">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+            <div className="relative px-5 sm:px-8 py-5 sm:py-6">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
                 {/* Header compacto */}
-                <div className="flex items-center gap-3 lg:shrink-0 lg:border-r lg:border-ivero-purple/15 lg:pr-6">
-                  <div className="w-9 h-9 rounded-full bg-ivero-gradient flex items-center justify-center shadow-md shadow-ivero-purple/30 shrink-0">
-                    <ShieldCheck className="w-4.5 h-4.5 text-primary-foreground" strokeWidth={2.5} />
+                <div className="flex items-center gap-3 lg:shrink-0 lg:border-r lg:border-ivero-purple/15 lg:pr-8">
+                  <div className="w-10 h-10 rounded-full bg-ivero-gradient flex items-center justify-center shadow-md shadow-ivero-purple/30 shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
                   </div>
                   <h3 className="font-display text-sm sm:text-base font-bold text-foreground tracking-tight leading-tight">
                     Incluso em<br className="hidden lg:block" />{" "}
@@ -325,7 +325,7 @@ const InvestSection = () => {
                 </div>
 
                 {/* Grid horizontal de benefícios */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 flex-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 flex-1">
                   {[
                     { icon: Gauge, label: "Score GEO" },
                     { icon: Radar, label: "Monitoramento de IAs" },
@@ -336,7 +336,7 @@ const InvestSection = () => {
                   ].map(({ icon: Icon, label }) => (
                     <div
                       key={label}
-                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/60 border border-ivero-purple/10"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/60 border border-ivero-purple/10"
                     >
                       <Icon className="w-3.5 h-3.5 text-accent shrink-0" strokeWidth={2.25} />
                       <span className="text-[11px] sm:text-xs font-medium text-foreground/85 leading-tight">
@@ -348,7 +348,7 @@ const InvestSection = () => {
               </div>
 
               {/* Faixa inferior */}
-              <div className="mt-4 pt-3 border-t border-ivero-purple/10">
+              <div className="mt-5 pt-4 border-t border-ivero-purple/10">
                 <p className="text-center text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">
                   Sem fidelidade <span className="text-accent">•</span> Cancele quando quiser <span className="text-accent">•</span> Evolua conforme sua operação cresce
                 </p>
