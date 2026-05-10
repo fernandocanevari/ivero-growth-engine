@@ -130,7 +130,11 @@ const InvestSection = () => {
               }`}
             >
               Anual
-              <span className="text-[10px] font-bold bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 rounded-full">
+              <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm ${
+                isAnnual
+                  ? "bg-white text-accent"
+                  : "bg-accent text-white"
+              }`}>
                 -20%
               </span>
             </button>
