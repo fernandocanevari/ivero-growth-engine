@@ -40,7 +40,7 @@ const Navbar = () => {
             Entrar
           </a>
           <Button variant="hero" size="sm" className="px-6" asChild>
-            <a href="/preview">Rodar diagnóstico</a>
+            <a href="/preview">Ver como apareço nas IAs</a>
           </Button>
         </div>
 
@@ -76,7 +76,7 @@ const Navbar = () => {
               Entrar
             </a>
             <Button variant="hero" size="sm" className="px-6 w-fit" asChild>
-              <a href="/preview" onClick={() => setIsOpen(false)}>Rodar diagnóstico</a>
+              <a href="/preview" onClick={() => setIsOpen(false)}>Ver como apareço nas IAs</a>
             </Button>
           </div>
         </motion.div>
