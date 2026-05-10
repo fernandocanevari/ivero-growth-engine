@@ -296,7 +296,7 @@ const InvestSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="mt-10 sm:mt-14 max-w-5xl mx-auto px-2"
+          className="mt-10 sm:mt-14 max-w-7xl mx-auto px-2"
         >
           <p className="text-center text-xs sm:text-sm font-medium text-muted-foreground mb-4">
             <span className="text-accent font-bold">✦</span>{" "}
@@ -311,42 +311,45 @@ const InvestSection = () => {
             <div className="absolute -top-16 -left-16 w-48 h-48 bg-ivero-purple/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="relative p-6 sm:p-8">
-              {/* Header */}
-              <div className="flex items-center justify-center gap-3 mb-6 sm:mb-7">
-                <div className="w-10 h-10 rounded-full bg-ivero-gradient flex items-center justify-center shadow-md shadow-ivero-purple/30 shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
-                </div>
-                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                  Incluso em <span className="text-gradient">todos os planos</span>
-                </h3>
-              </div>
-
-              {/* Grid de benefícios */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-7">
-                {[
-                  { icon: Gauge, label: "Score GEO de Visibilidade" },
-                  { icon: Radar, label: "Monitoramento de IAs" },
-                  { icon: BellRing, label: "Alertas de menções" },
-                  { icon: Mail, label: "Relatório semanal por e-mail" },
-                  { icon: Headphones, label: "Suporte prioritário" },
-                  { icon: Compass, label: "Onboarding estratégico Ivero" },
-                ].map(({ icon: Icon, label }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-white/60 border border-ivero-purple/10"
-                  >
-                    <Icon className="w-4 h-4 text-accent shrink-0" strokeWidth={2.25} />
-                    <span className="text-xs sm:text-sm font-medium text-foreground/85 leading-tight">
-                      {label}
-                    </span>
+            <div className="relative p-4 sm:p-5">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                {/* Header compacto */}
+                <div className="flex items-center gap-3 lg:shrink-0 lg:border-r lg:border-ivero-purple/15 lg:pr-6">
+                  <div className="w-9 h-9 rounded-full bg-ivero-gradient flex items-center justify-center shadow-md shadow-ivero-purple/30 shrink-0">
+                    <ShieldCheck className="w-4.5 h-4.5 text-primary-foreground" strokeWidth={2.5} />
                   </div>
-                ))}
+                  <h3 className="font-display text-sm sm:text-base font-bold text-foreground tracking-tight leading-tight">
+                    Incluso em<br className="hidden lg:block" />{" "}
+                    <span className="text-gradient">todos os planos</span>
+                  </h3>
+                </div>
+
+                {/* Grid horizontal de benefícios */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 flex-1">
+                  {[
+                    { icon: Gauge, label: "Score GEO" },
+                    { icon: Radar, label: "Monitoramento de IAs" },
+                    { icon: BellRing, label: "Alertas de menções" },
+                    { icon: Mail, label: "Relatório semanal" },
+                    { icon: Headphones, label: "Suporte prioritário" },
+                    { icon: Compass, label: "Onboarding Ivero" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/60 border border-ivero-purple/10"
+                    >
+                      <Icon className="w-3.5 h-3.5 text-accent shrink-0" strokeWidth={2.25} />
+                      <span className="text-[11px] sm:text-xs font-medium text-foreground/85 leading-tight">
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Faixa inferior */}
-              <div className="pt-4 sm:pt-5 border-t border-ivero-purple/10">
-                <p className="text-center text-[11px] sm:text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">
+              <div className="mt-4 pt-3 border-t border-ivero-purple/10">
+                <p className="text-center text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">
                   Sem fidelidade <span className="text-accent">•</span> Cancele quando quiser <span className="text-accent">•</span> Evolua conforme sua operação cresce
                 </p>
               </div>
