@@ -387,9 +387,9 @@ async function callModel(
 
     const mentionsBrand = content.toLowerCase().includes(brandName.toLowerCase());
     if (mode === "simulator") {
-      return { model: config.name, response: content, mentionsBrand };
+      return { model: config.name, response: content, mentionsBrand, citations };
     } else {
-      return { model: config.name, mentioned: mentionsBrand };
+      return { model: config.name, mentioned: mentionsBrand, citations };
     }
   } catch (e) {
     console.error(`${config.name} call failed:`, e);
