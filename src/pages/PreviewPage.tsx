@@ -83,7 +83,7 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 /* ── Loading steps ── */
 const loadingSteps = [
   { icon: Search, text: "Investigando como as IAs enxergam sua marca..." },
-  { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini, Claude..." },
+  { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini e Gemini Search..." },
   { icon: Bot, text: "Detectando onde sua marca está sendo ignorada..." },
   { icon: BarChart3, text: "Revelando o caminho para virar referência..." },
 ];
@@ -230,7 +230,7 @@ function getScoreLevel(score: number) {
 }
 
 const iveroFeatures = [
-  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Gemini e GPT-5" },
+  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Gemini, GPT-5 e Gemini Search" },
   { icon: Gauge, label: "Score GEO em Tempo Real", desc: "Índice de visibilidade atualizado continuamente" },
   { icon: LineChart, label: "Análise Comparativa", desc: "Benchmark contra concorrentes do seu setor" },
   { icon: Radio, label: "Alertas Inteligentes", desc: "Notificações quando sua marca é mencionada" },
@@ -1435,7 +1435,7 @@ function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: st
           <p className="text-sm text-muted-foreground">
             {submitting
               ? "Conectando aos modelos de IA. A análise vai iniciar automaticamente."
-              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini e GPT-5 enxergam você."}
+              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini, GPT-5 e Gemini Search enxergam você."}
           </p>
         </DialogHeader>
 
