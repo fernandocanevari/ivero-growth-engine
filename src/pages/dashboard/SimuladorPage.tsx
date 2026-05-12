@@ -4,11 +4,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
+import { Send, CheckCircle2, XCircle, Loader2, AlertTriangle, ExternalLink, Globe } from "lucide-react";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+
+interface Citation {
+  title: string;
+  uri: string;
+}
 
 interface SimResult {
   model: string;
@@ -16,6 +21,7 @@ interface SimResult {
   mentionsBrand: boolean;
   error?: boolean;
   errorMessage?: string;
+  citations?: Citation[];
 }
 
 export default function SimuladorPage() {
@@ -97,6 +103,39 @@ export default function SimuladorPage() {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {r.error ? `Este modelo está temporariamente indisponível (${r.errorMessage}).` : `"${r.response}"`}
                 </p>
+
+                {!r.error && r.citations && r.citations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Globe className="h-3.5 w-3.5 text-primary" />
+                      <p className="text-xs font-semibold text-foreground">
+                        Fontes citadas ({r.citations.length})
+                      </p>
+                      <Badge variant="outline" className="text-[9px] ml-1 border-primary/30 text-primary bg-primary/5">
+                        Grounding em tempo real
+                      </Badge>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {r.citations.map((c, i) => (
+                        <li key={`${c.uri}-${i}`} className="flex items-start gap-1.5">
+                          <span className="text-[10px] font-mono text-muted-foreground mt-0.5 shrink-0">
+                            [{i + 1}]
+                          </span>
+                          <a
+                            href={c.uri}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline inline-flex items-start gap-1 line-clamp-2 leading-snug"
+                            title={c.uri}
+                          >
+                            <span>{c.title}</span>
+                            <ExternalLink className="h-3 w-3 shrink-0 mt-0.5 opacity-60" />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
