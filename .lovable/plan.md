@@ -1,62 +1,51 @@
-# Atualizar IAs monitoradas: de 5 para 3 modelos ativos
+## Objetivo
 
-## Contexto
-O MVP da Ivero vai operar com 3 IAs ativas (OpenAI/ChatGPT, Gemini, GPT-5) em vez de 5. Claude e Perplexity saem do standby e não aparecem na interface. O banner de modelos em implementação deve desaparecer automaticamente.
+Adicionar uma nova engine **"Gemini Search"** ao `simulate-ai` que chama o Gemini com a tool nativa `google_search` (Google Search Retrieval). O modelo responde com base em resultados reais da web, em tempo real, sem scraping — o mais próximo possível do comportamento do Google AI Overview, via API oficial.
 
-## Mudancas
+## O que muda
 
-### 1. Fonte unica de verdade dos modelos
-- `src/lib/ai-models-status.ts`
-  - Esvaziar `MODELS_IN_STANDBY` (remover Claude e Perplexity)
-  - Manter `MODELS_ACTIVE`: ["OpenAI", "Gemini", "GPT-5"]
-  - `TOTAL_MODELS` = 3
-  - Efeito: banner `ModelsStatusBanner` desaparece automaticamente (condicao `MODELS_IN_STANDBY.length === 0`)
+### 1. Edge Function `supabase/functions/simulate-ai/index.ts`
 
-### 2. Landing page
+- Em `getModelConfigs()`, adicionar nova entrada quando `Key_gemini` existe:
+  - `name: "Gemini Search"`
+  - `url`: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+  - `parseResponse`: igual ao Gemini atual (`candidates[0].content.parts[0].text`)
+- Em `callModel()`, criar um branch específico para `"Gemini Search"`:
+  ```ts
+  body = {
+    contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: { maxOutputTokens: maxTokens },
+  };
+  ```
+- Mesmo fluxo de erro/parse dos outros modelos. Sem mudanças em `extractKeywordCloud` (ele ignora erros e usa qualquer modelo válido).
 
-- `src/components/landing/FeaturesSection.tsx`
-  - Card "Monitoramento Multi-IA": trocar descricao de "ChatGPT, Gemini, Perplexity, Claude e outros" para "ChatGPT, Gemini e GPT-5"
+### 2. `src/lib/ai-models-status.ts`
 
-- `src/components/landing/StepsSection.tsx`
-  - Passo 01: trocar "ChatGPT, Gemini, Perplexity e outras" para "ChatGPT, Gemini e GPT-5"
+- `MODELS_ACTIVE`: `["OpenAI", "Gemini", "GPT-5", "Gemini Search"]`
+- `TOTAL_MODELS`: 4
+- `MODELS_IN_STANDBY`: continua `[]` (banner segue oculto)
 
-- `src/components/landing/ProblemSection.tsx`
-  - Card 1: trocar "ChatGPT, Gemini ou Perplexity" para "ChatGPT e Gemini"
+### 3. Copy da landing (atualizar contagem de "3 IAs" → "4 IAs")
 
-- `src/components/landing/FAQSection.tsx`
-  - Pergunta "Quais IAs monitora?": remover "Claude (Anthropic), Perplexity" da resposta
+Arquivos a ajustar (mesmas frases já alteradas no último ciclo):
+- `FeaturesSection.tsx`, `StepsSection.tsx`, `FAQSection.tsx`, `ProblemSection.tsx`, `Footer.tsx` (adicionar 4º ícone), `InvestSection.tsx`, `AjudaPage.tsx`, `access-control.ts`, `keyword-cloud.ts`, `mock-data.ts`
 
-- `src/components/landing/Footer.tsx`
-  - NeuralNetwork: substituir os 7 icons de IA por apenas 3 (ChatGPT, Gemini, GPT-5)
+Mensagem nova nas explicações: **"ChatGPT, Gemini, GPT-5 e Gemini Search (com grounding em tempo real do Google)"**.
 
-- `src/components/landing/InvestSection.tsx`
-  - Cards de planos: ajustar metricas "IAs monitoradas" para refletir 3 modelos (Presenca: 2 -> 2; Influencia: 3 -> 3; Autoridade: 4 -> 3; Dominio: 5 -> 3)
+### 4. Sem mudanças em
 
-### 3. PreviewPage (diagnostico publico)
+- Schema do banco — `analysis_history.results_by_model` é JSONB, aceita o novo modelo automaticamente.
+- Outras edge functions.
+- Lógica de score / pilares.
 
-- `src/pages/PreviewPage.tsx`
-  - `defaultAiEngines`: reduzir de 5 para 3 (ChatGPT, Gemini, GPT-5)
-  - `iveroFeatures`: descricao do Monitoramento Multi-IA
-  - Dialog de auditoria: ajustar texto "ChatGPT, Gemini, Claude e Perplexity"
-  - Fallback engines (em `finally`): reduzir de 5 para 3 entradas
+## Observações técnicas
 
-### 4. Dashboard / Ajuda
+- O parâmetro correto na API v1beta do Gemini 2.0+ é `tools: [{ google_search: {} }]` (não `googleSearchRetrieval`, que era da 1.5).
+- `gemini-2.5-flash` suporta grounding nativo. Caso a chave atual não tenha acesso, fallback para `gemini-2.0-flash` com a mesma sintaxe.
+- O Gemini Search retorna `groundingMetadata` (citações + URLs) junto com o texto. Por enquanto **ignoramos** — só usamos o texto. Em iteração futura podemos exibir as fontes citadas no dashboard como diferencial.
+- Custo: uso da tool de busca é cobrado à parte pelo Google (~$35/1k queries em Search Grounding). Para o MVP, controlar via cota mensal já existente.
 
-- `src/pages/dashboard/AjudaPage.tsx`
-  - FAQ "Como interpretar o Score": remover "Claude, Perplexity" da lista de IAs
+## Pergunta antes de implementar
 
-### 5. Libs de suporte
-
-- `src/lib/access-control.ts`
-  - Descricoes dos recursos premium: ajustar "5 modelos" para "3 modelos" e remover Claude/Perplexity das copys
-
-- `src/lib/keyword-cloud.ts`
-  - Comentario: ajustar "5 modelos" para "3 modelos"
-
-- `src/lib/mock-data.ts`
-  - Todos os dados mockados: remover entradas Claude e Perplexity, reduzir arrays de 5 para 3 modelos
-
-## Technical details
-- Nenhuma mudanca no schema do banco.
-- Nenhuma mudanca na edge function `simulate-ai` (ela ja lida com modelos ativos dinamicamente).
-- Os dados historicos em `analysis_history` com 5 modelos permanecem validos (nao ha migracao).
+Quer que eu já capture e exiba as **fontes citadas** (`groundingMetadata.groundingChunks`) no dashboard como prova de evidência da resposta, ou deixa essa camada para uma próxima entrega e fica só com o texto agora?

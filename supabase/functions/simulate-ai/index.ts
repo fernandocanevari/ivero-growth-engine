@@ -42,6 +42,19 @@ function getModelConfigs(): ModelConfig[] {
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: (data) => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
     });
+
+    // Gemini com grounding em tempo real (Google Search Retrieval).
+    // Usa a tool nativa `google_search` da API v1beta — sem scraping.
+    configs.push({
+      name: "Gemini Search",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash",
+      getHeaders: () => ({ "Content-Type": "application/json" }),
+      parseResponse: (data) => {
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        return parts.map((p: any) => p?.text || "").join("").trim();
+      },
+    });
   }
 
   if (claudeKey) {
@@ -235,6 +248,16 @@ async function callModel(
         contents: [
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
         ],
+        generationConfig: { maxOutputTokens: maxTokens },
+      };
+    } else if (config.name === "Gemini Search") {
+      // Gemini com Google Search grounding — respostas ancoradas em resultados
+      // reais da web em tempo real. Tool nativa `google_search` (v1beta, 2.0+).
+      body = {
+        contents: [
+          { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
+        ],
+        tools: [{ google_search: {} }],
         generationConfig: { maxOutputTokens: maxTokens },
       };
     } else if (config.name === "Claude") {
