@@ -182,6 +182,46 @@ export default function ConfiguracoesPage() {
       </Card>
 
 
+      {/* AI Models Monitorados */}
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Modelos de IA Monitorados</h2>
+            <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">
+              <CheckCircle2 className="h-3 w-3" />
+              {MODELS_ACTIVE.length} ativos
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Estes são os modelos de IA que a Ivero consulta em paralelo durante cada análise e simulação.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {MODELS_ACTIVE.map((name) => {
+              const meta = MODEL_META[name] || { icon: Cpu, desc: "" };
+              const Icon = meta.icon;
+              return (
+                <div key={name} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/40 border border-border">
+                  <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground">{name}</p>
+                      {meta.badge && (
+                        <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                          {meta.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{meta.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <Button onClick={handleSave} disabled={updateMutation.isPending} className="bg-primary text-primary-foreground">
         {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
       </Button>
