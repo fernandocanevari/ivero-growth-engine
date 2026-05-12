@@ -7,12 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Upload, Building2 } from "lucide-react";
+import { Upload, Building2, Cpu, Globe, CheckCircle2 } from "lucide-react";
 import { useBrandSettings, useUpdateBrandSettings } from "@/hooks/useBrandSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
+import { MODELS_ACTIVE } from "@/lib/ai-models-status";
+
+const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
+  OpenAI: { icon: Cpu, desc: "GPT-5 Mini via API OpenAI" },
+  Gemini: { icon: Globe, desc: "Google Gemini 2.0 Flash" },
+  "GPT-5": { icon: Cpu, desc: "GPT-5 Mini via Lovable AI Gateway" },
+  "Gemini Search": { icon: Globe, desc: "Gemini 2.5 Flash com grounding de busca em tempo real", badge: "Novo" },
+};
 
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
