@@ -12,7 +12,7 @@ const faqs = [
     icon: HelpCircle,
     question: "O que é GEO (Generative Engine Optimization)?",
     answer:
-      "GEO é a disciplina de otimizar a presença e visibilidade de uma marca nas respostas geradas por IAs como ChatGPT, Gemini e Perplexity. Diferente do SEO tradicional, que foca em buscadores, o GEO garante que sua marca seja recomendada quando usuários fazem perguntas diretamente a assistentes de IA.",
+      "GEO é a disciplina de otimizar a presença e visibilidade de uma marca nas respostas geradas por IAs como ChatGPT, Gemini e GPT-5. Diferente do SEO tradicional, que foca em buscadores, o GEO garante que sua marca seja recomendada quando usuários fazem perguntas diretamente a assistentes de IA.",
   },
   {
     icon: Bot,
@@ -24,7 +24,7 @@ const faqs = [
     icon: Eye,
     question: "Quais IAs a Ivero monitora?",
     answer:
-      "Atualmente monitoramos ChatGPT (OpenAI), Gemini (Google), Claude (Anthropic), Perplexity e GPT-5. Estamos constantemente expandindo para cobrir novas IAs relevantes do mercado.",
+      "No MVP monitoramos as três IAs com maior alcance hoje: ChatGPT (OpenAI), Gemini (Google) e GPT-5. Estamos avaliando incluir Claude (Anthropic), Perplexity e Copilot nas próximas fases.",
   },
   {
     icon: BarChart3,

@@ -68,7 +68,7 @@ export const LOCKED_ROUTE_INFO: Record<
   "/dashboard/monitoramento": {
     title: "Monitoramento Multi-IA",
     description:
-      "Veja em tempo real quando e como ChatGPT, Gemini, Perplexity, Claude e GPT-5 mencionam (ou ignoram) sua marca.",
+      "Veja em tempo real quando e como ChatGPT, Gemini e GPT-5 mencionam (ou ignoram) sua marca.",
   },
   "/dashboard/comparativo": {
     title: "Análise Comparativa",
@@ -93,7 +93,7 @@ export const LOCKED_ROUTE_INFO: Record<
   "/dashboard/prompt-tester": {
     title: "Prompt Tester",
     description:
-      "Teste prompts customizados nos 5 modelos de IA e veja exatamente como sua marca aparece em cada resposta.",
+      "Teste prompts customizados nos 3 modelos de IA monitorados e veja exatamente como sua marca aparece em cada resposta.",
   },
   "/dashboard/acoes": {
     title: "Planos de Ação",
