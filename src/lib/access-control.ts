@@ -68,7 +68,7 @@ export const LOCKED_ROUTE_INFO: Record<
   "/dashboard/monitoramento": {
     title: "Monitoramento Multi-IA",
     description:
-      "Veja em tempo real quando e como ChatGPT, Gemini e GPT-5 mencionam (ou ignoram) sua marca.",
+      "Veja em tempo real quando e como ChatGPT, Gemini, GPT-5 e Gemini Search mencionam (ou ignoram) sua marca.",
   },
   "/dashboard/comparativo": {
     title: "Análise Comparativa",
