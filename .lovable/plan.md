@@ -1,36 +1,62 @@
-## Destacar o rodapé "Incluso em todos os planos" da InvestSection
+# Atualizar IAs monitoradas: de 5 para 3 modelos ativos
 
-O texto final está ótimo em conteúdo, mas hoje vive solto, em fonte pequena e cinza, logo abaixo da grade de cards — visualmente parece "letra miúda de contrato" em vez de uma promessa institucional da Ivero.
+## Contexto
+O MVP da Ivero vai operar com 3 IAs ativas (OpenAI/ChatGPT, Gemini, GPT-5) em vez de 5. Claude e Perplexity saem do standby e não aparecem na interface. O banner de modelos em implementação deve desaparecer automaticamente.
 
-A proposta é encapsular esse rodapé em um **bloco-âncora** que funcione como selo de garantia da seção, mantendo o tom premium dark/light já estabelecido (sem quebrar a hierarquia dos cards).
+## Mudancas
 
-### Tratamento visual proposto
+### 1. Fonte unica de verdade dos modelos
+- `src/lib/ai-models-status.ts`
+  - Esvaziar `MODELS_IN_STANDBY` (remover Claude e Perplexity)
+  - Manter `MODELS_ACTIVE`: ["OpenAI", "Gemini", "GPT-5"]
+  - `TOTAL_MODELS` = 3
+  - Efeito: banner `ModelsStatusBanner` desaparece automaticamente (condicao `MODELS_IN_STANDBY.length === 0`)
 
-Um card horizontal único, centralizado, largura ~max-w-5xl, com:
+### 2. Landing page
 
-- **Fundo:** gradiente sutil `from-ivero-purple/5 via-white to-accent/5` com borda `border-ivero-purple/20` e `rounded-2xl`. Sombra leve (`shadow-lg shadow-ivero-purple/5`) para ganhar peso sem competir com os cards.
-- **Glow decorativo:** dois blobs blur (purple + accent) nos cantos, baixíssima opacidade — coerente com o resto da seção.
-- **Faixa superior fina:** linha de 2px com `bg-ivero-gradient` no topo do card, sinalizando "selo Ivero".
-- **Header do bloco:** ícone (ShieldCheck ou Sparkles do lucide) num badge circular gradiente + título curto **"Incluso em todos os planos"** em `font-display`, tamanho `text-lg sm:text-xl`, peso bold, cor foreground (não mais muted).
-- **Lista de benefícios:** trocar o parágrafo corrido por uma **grid de 3 colunas (desktop) / 1 coluna (mobile)** com 6 itens curtos e ícones lucide pequenos:
-  - Score GEO de Visibilidade
-  - Monitoramento de IAs
-  - Alertas de menções
-  - Relatório semanal por e-mail
-  - Suporte prioritário
-  - Onboarding estratégico Ivero
-  
-  Cada item: ícone accent + texto `text-sm font-medium text-foreground/85`. Fica escaneável em 2 segundos em vez de um parágrafo de 3 linhas.
-- **Faixa inferior:** separador sutil + linha final centralizada com **"Sem fidelidade • Cancele quando quiser • Evolua conforme sua operação cresce"** em `text-xs uppercase tracking-wider text-muted-foreground`, dando fechamento institucional.
-- **Linha "Cada plano inclui todos os recursos do anterior…"**: mantida acima do bloco como legenda fina ligando os cards ao selo, mas deslocada para reforçar a hierarquia (cards → legenda → selo).
-- **Animação:** `motion.div` com fade+slide igual ao restante da seção, com `delay` levemente maior para o selo aparecer por último.
+- `src/components/landing/FeaturesSection.tsx`
+  - Card "Monitoramento Multi-IA": trocar descricao de "ChatGPT, Gemini, Perplexity, Claude e outros" para "ChatGPT, Gemini e GPT-5"
 
-### Resultado esperado
+- `src/components/landing/StepsSection.tsx`
+  - Passo 01: trocar "ChatGPT, Gemini, Perplexity e outras" para "ChatGPT, Gemini e GPT-5"
 
-O rodapé deixa de ser texto perdido e vira um **"selo de garantia Ivero"** ao final da seção de planos — visualmente alinhado ao restante (gradientes purple/accent, ícones lucide, cards em white com glow), mas com presença suficiente para o executivo ler em 3 segundos: *"qualquer plano que eu escolher, recebo isso"*.
+- `src/components/landing/ProblemSection.tsx`
+  - Card 1: trocar "ChatGPT, Gemini ou Perplexity" para "ChatGPT e Gemini"
 
-### Arquivos afetados
+- `src/components/landing/FAQSection.tsx`
+  - Pergunta "Quais IAs monitora?": remover "Claude (Anthropic), Perplexity" da resposta
 
-- `src/components/landing/InvestSection.tsx` — apenas o bloco do rodapé (após o grid de cards). Sem alterações de lógica, preço, planos ou CTAs.
+- `src/components/landing/Footer.tsx`
+  - NeuralNetwork: substituir os 7 icons de IA por apenas 3 (ChatGPT, Gemini, GPT-5)
 
-Posso seguir com a implementação?
+- `src/components/landing/InvestSection.tsx`
+  - Cards de planos: ajustar metricas "IAs monitoradas" para refletir 3 modelos (Presenca: 2 -> 2; Influencia: 3 -> 3; Autoridade: 4 -> 3; Dominio: 5 -> 3)
+
+### 3. PreviewPage (diagnostico publico)
+
+- `src/pages/PreviewPage.tsx`
+  - `defaultAiEngines`: reduzir de 5 para 3 (ChatGPT, Gemini, GPT-5)
+  - `iveroFeatures`: descricao do Monitoramento Multi-IA
+  - Dialog de auditoria: ajustar texto "ChatGPT, Gemini, Claude e Perplexity"
+  - Fallback engines (em `finally`): reduzir de 5 para 3 entradas
+
+### 4. Dashboard / Ajuda
+
+- `src/pages/dashboard/AjudaPage.tsx`
+  - FAQ "Como interpretar o Score": remover "Claude, Perplexity" da lista de IAs
+
+### 5. Libs de suporte
+
+- `src/lib/access-control.ts`
+  - Descricoes dos recursos premium: ajustar "5 modelos" para "3 modelos" e remover Claude/Perplexity das copys
+
+- `src/lib/keyword-cloud.ts`
+  - Comentario: ajustar "5 modelos" para "3 modelos"
+
+- `src/lib/mock-data.ts`
+  - Todos os dados mockados: remover entradas Claude e Perplexity, reduzir arrays de 5 para 3 modelos
+
+## Technical details
+- Nenhuma mudanca no schema do banco.
+- Nenhuma mudanca na edge function `simulate-ai` (ela ja lida com modelos ativos dinamicamente).
+- Os dados historicos em `analysis_history` com 5 modelos permanecem validos (nao ha migracao).

@@ -14,7 +14,7 @@ const plans = [
     cta: "Quero ser visto pelas IAs →",
     highlighted: false,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "2" },
+      { icon: Cpu, label: "IAs monitoradas", value: "1" },
       { icon: Bell, label: "Avisos/mês", value: "50" },
       { icon: Search, label: "Prompts monitorados", value: "10" },
       { icon: BarChart2, label: "Consultas/mês", value: "500" },
@@ -34,7 +34,7 @@ const plans = [
     cta: "Quero superar meus concorrentes →",
     highlighted: false,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "3" },
+      { icon: Cpu, label: "IAs monitoradas", value: "2" },
       { icon: Bell, label: "Avisos/mês", value: "200" },
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
@@ -54,7 +54,7 @@ const plans = [
     cta: "Quero dominar meu setor nas IAs →",
     highlighted: true,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "4" },
+      { icon: Cpu, label: "IAs monitoradas", value: "3" },
       { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
       { icon: Search, label: "Prompts monitorados", value: "100" },
       { icon: BarChart2, label: "Consultas/mês", value: "10.000" },
@@ -74,7 +74,7 @@ const plans = [
     cta: "Quero minha estratégia exclusiva →",
     highlighted: false,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "5" },
+      { icon: Cpu, label: "IAs monitoradas", value: "3+" },
       { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
       { icon: Search, label: "Prompts monitorados", value: "Ilimitados" },
       { icon: BarChart2, label: "Consultas/mês", value: "Ilimitadas" },

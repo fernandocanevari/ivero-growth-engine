@@ -2,7 +2,7 @@
  * Keyword Cloud — vocabulário com que as IAs descrevem a marca.
  *
  * Termos extraídos pela função edge `simulate-ai` (modo diagnóstico) a partir
- * das respostas dos 5 modelos. Persistidos em `analysis_history.keyword_cloud`.
+ * das respostas dos modelos ativos. Persistidos em `analysis_history.keyword_cloud`.
  *
  * Helpers puros: agregação por período, diff entre auditorias, escala de fonte.
  */
@@ -13,7 +13,7 @@ export type KeywordSentiment = "positive" | "neutral" | "negative";
 export interface KeywordExample {
   /** Trecho curto (≤ 200 chars) onde o termo (ou variação) aparece. */
   quote: string;
-  /** Modelo de IA que produziu o trecho — "ChatGPT", "Gemini", "Claude", "Perplexity", "GPT-5". */
+  /** Modelo de IA que produziu o trecho — "ChatGPT", "Gemini", "GPT-5". */
   model: string;
 }
 
