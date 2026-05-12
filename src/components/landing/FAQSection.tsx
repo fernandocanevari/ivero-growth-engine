@@ -12,7 +12,7 @@ const faqs = [
     icon: HelpCircle,
     question: "O que é GEO (Generative Engine Optimization)?",
     answer:
-      "GEO é a disciplina de otimizar a presença e visibilidade de uma marca nas respostas geradas por IAs como ChatGPT, Gemini e GPT-5. Diferente do SEO tradicional, que foca em buscadores, o GEO garante que sua marca seja recomendada quando usuários fazem perguntas diretamente a assistentes de IA.",
+      "GEO é a disciplina de otimizar a presença e visibilidade de uma marca nas respostas geradas por IAs como ChatGPT, Gemini, GPT-5 e Gemini com grounding de busca em tempo real. Diferente do SEO tradicional, que foca em buscadores, o GEO garante que sua marca seja recomendada quando usuários fazem perguntas diretamente a assistentes de IA.",
   },
   {
     icon: Bot,

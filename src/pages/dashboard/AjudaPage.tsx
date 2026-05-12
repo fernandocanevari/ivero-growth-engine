@@ -22,7 +22,7 @@ import { track } from "@/lib/analytics";
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Como interpretar o Score de Influência?",
-    a: "O Score (0–100) mede a presença e a qualidade com que sua marca aparece nas IAs (ChatGPT, Gemini e GPT-5). É composto por 5 pilares — Clareza, Autoridade, Conversão, Posicionamento e Experiência — cada um com 3 sub-critérios ponderados. Faixas: 0–39 Crítico, 40–59 Insuficiente, 60–74 Moderado, 75–89 Sólido, 90–100 Referência.",
+    a: "O Score (0–100) mede a presença e a qualidade com que sua marca aparece nas IAs (ChatGPT, Gemini, GPT-5 e Gemini Search com grounding do Google em tempo real). É composto por 5 pilares — Clareza, Autoridade, Conversão, Posicionamento e Experiência — cada um com 3 sub-critérios ponderados. Faixas: 0–39 Crítico, 40–59 Insuficiente, 60–74 Moderado, 75–89 Sólido, 90–100 Referência.",
   },
   {
     q: "Com que frequência posso rodar uma nova análise?",
