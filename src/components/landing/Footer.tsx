@@ -6,6 +6,7 @@ const aiIcons = [
   { name: "ChatGPT", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" },
   { name: "Gemini", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" },
   { name: "GPT-5", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" },
+  { name: "Gemini Search", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/google.svg" },
 ];
 
 const NeuralNetwork = () => {
