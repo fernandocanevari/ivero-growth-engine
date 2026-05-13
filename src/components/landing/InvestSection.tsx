@@ -228,7 +228,7 @@ const InvestSection = () => {
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className="grid grid-cols-2 gap-2 mb-4 p-2.5 sm:p-3 rounded-xl border border-accent/15 bg-accent/3">
+                    <div className="grid grid-cols-2 gap-2 mb-3 p-2 sm:p-2.5 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
