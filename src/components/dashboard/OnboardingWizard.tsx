@@ -146,13 +146,37 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
               <Textarea
                 value={answers[step]}
                 onChange={(e) => updateAnswer(e.target.value)}
+                onBlur={() =>
+                  setTouched((t) => {
+                    const next = [...t];
+                    next[step] = true;
+                    return next;
+                  })
+                }
                 placeholder={current.placeholder}
-                className="flex-1 min-h-[120px] resize-none text-sm"
+                aria-invalid={showError}
+                aria-describedby={showError ? `onboarding-error-${step}` : undefined}
+                className={`flex-1 min-h-[120px] resize-none text-sm ${
+                  showError ? "border-destructive focus-visible:ring-destructive" : ""
+                }`}
                 maxLength={1000}
               />
-              <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                {answers[step].length}/1000
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                {showError ? (
+                  <p
+                    id={`onboarding-error-${step}`}
+                    role="alert"
+                    className="text-[11px] text-destructive font-medium"
+                  >
+                    {errorMessage}
+                  </p>
+                ) : (
+                  <span />
+                )}
+                <p className="text-[10px] text-muted-foreground">
+                  {answers[step].length}/1000
+                </p>
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>
