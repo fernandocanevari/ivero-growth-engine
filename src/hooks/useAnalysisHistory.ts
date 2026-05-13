@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { buildPerceptionSnapshot, type PerceptionSnapshot } from "@/lib/perception-tags";
 import type { KeywordCloud } from "@/lib/keyword-cloud";
+import { toast } from "@/hooks/use-toast";
 
 export interface AnalysisRecord {
   id: string;
@@ -89,6 +90,13 @@ export function useAnalysisHistory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["analysis-history", userId] });
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Não foi possível salvar a análise",
+        description: err.message,
+        variant: "destructive",
+      });
     },
   });
 
