@@ -272,7 +272,7 @@ const InvestSection = () => {
                     <Button
                       variant="hero"
                       size="sm"
-                      className="w-full mt-auto text-xs py-4"
+                      className="w-full mt-auto text-xs py-3"
                     >
                       {plan.cta}
                     </Button>
