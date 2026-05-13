@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { buildPerceptionSnapshot, type PerceptionSnapshot } from "@/lib/perception-tags";
 import type { KeywordCloud } from "@/lib/keyword-cloud";
-import { toast } from "@/hooks/use-toast";
+import { mutationErrorToast } from "@/lib/mutation-toast";
 
 export interface AnalysisRecord {
   id: string;
@@ -91,13 +91,7 @@ export function useAnalysisHistory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["analysis-history", userId] });
     },
-    onError: (err: Error) => {
-      toast({
-        title: "Não foi possível salvar a análise",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorToast("salvar a análise"),
   });
 
   return { history: history.data ?? [], lastAnalysis, canReanalyze, daysRemaining, daysSinceLast, runAnalysis, isLoading: history.isLoading };
