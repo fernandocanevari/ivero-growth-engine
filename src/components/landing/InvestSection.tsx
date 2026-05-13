@@ -232,8 +232,8 @@ const InvestSection = () => {
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
-                          <div key={metric.label} className="flex flex-col items-center text-center gap-1 py-1.5 sm:py-2">
-                            <Icon className={`w-5 h-5 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
+                          <div key={metric.label} className="flex flex-col items-center text-center gap-0.5 py-1 sm:py-1.5">
+                            <Icon className={`w-4 h-4 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
                             <span className="text-base sm:text-lg font-bold leading-none text-foreground">
                               {metric.value}
                             </span>
