@@ -247,7 +247,7 @@ const InvestSection = () => {
 
                     {/* Diferenciais — minimal e tipográfico */}
                     <div className="flex-1 flex flex-col mb-3">
-                      <div className={`h-px w-full mb-3 ${
+                      <div className={`h-px w-full mb-2 ${
                         plan.highlighted
                           ? "bg-gradient-to-r from-accent/40 via-accent/15 to-transparent"
                           : "bg-gradient-to-r from-ivero-purple/30 via-ivero-purple/10 to-transparent"
