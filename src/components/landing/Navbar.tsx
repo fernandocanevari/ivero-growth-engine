@@ -9,7 +9,7 @@ const navLinks = [
   { label: "Para quem", href: "#para-quem" },
   { label: "Preços", href: "#precos" },
   { label: "Blog", href: "/blog" },
-  { label: "Legal", href: "/legal" },
+  { label: "Sobre nós", href: "/sobre" },
 ];
 
 const Navbar = () => {
