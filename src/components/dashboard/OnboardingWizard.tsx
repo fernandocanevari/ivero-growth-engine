@@ -195,7 +195,7 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
           </div>
           <Button
             onClick={goNext}
-            disabled={!canProceed || saveAnswers.isPending}
+            disabled={saveAnswers.isPending}
             className="gap-2"
           >
             {saveAnswers.isPending ? (
