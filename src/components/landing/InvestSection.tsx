@@ -253,7 +253,7 @@ const InvestSection = () => {
                           : "bg-gradient-to-r from-ivero-purple/30 via-ivero-purple/10 to-transparent"
                       }`} />
 
-                      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-2.5 leading-none ${
+                      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-2 leading-none ${
                         plan.highlighted ? "text-accent" : "text-ivero-purple"
                       }`}>
                         Exclusivos do plano
