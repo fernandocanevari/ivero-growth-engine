@@ -15,9 +15,9 @@ const Footer = () => {
             <p className="text-base sm:text-lg text-muted-foreground italic">Visibilidade constrói marcas duradoras.</p>
           </div>
 
-          {/* Neural network — oculto no mobile */}
-          <div className="hidden md:block w-full max-w-xs lg:max-w-lg mx-auto">
-            <NeuralNetwork />
+          {/* Neural network — removido, serão adicionadas novas IAs em breve */}
+          <div className="hidden md:flex flex-col items-center justify-center w-full max-w-xs lg:max-w-lg mx-auto">
+            <p className="text-xs text-muted-foreground italic text-center">Em breve: Claude, OpenAI Azure e Perplexity</p>
           </div>
 
           {/* Links — grid 2x2 no mobile, 4 cols no desktop */}
