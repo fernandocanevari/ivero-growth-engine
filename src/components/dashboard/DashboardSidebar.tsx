@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -227,6 +227,30 @@ export function DashboardSidebar() {
                     >
                       <Send className="h-4 w-4 shrink-0" />
                       <span className="truncate">Convites</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/admin/respostas"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <MessageSquare className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Respostas</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/prompt-tester"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary font-medium"
+                    >
+                      <TestTube className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Prompt Tester</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
