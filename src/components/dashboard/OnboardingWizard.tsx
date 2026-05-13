@@ -36,13 +36,29 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [answers, setAnswers] = useState(["", "", ""]);
+  const [touched, setTouched] = useState<boolean[]>([false, false, false]);
   const { saveAnswers } = useOnboarding();
 
   const current = questions[step];
   const isLast = step === questions.length - 1;
-  const canProceed = answers[step].trim().length > 10;
+  const trimmedLen = answers[step].trim().length;
+  const minChars = 20;
+  const canProceed = trimmedLen >= minChars;
+  const showError = touched[step] && !canProceed;
+  const errorMessage =
+    trimmedLen === 0
+      ? "Esta resposta é obrigatória para continuar."
+      : `Conte um pouco mais — escreva pelo menos ${minChars} caracteres (faltam ${minChars - trimmedLen}).`;
 
   const goNext = () => {
+    if (!canProceed) {
+      setTouched((t) => {
+        const next = [...t];
+        next[step] = true;
+        return next;
+      });
+      return;
+    }
     if (isLast) {
       saveAnswers.mutate(
         { question_1: answers[0], question_2: answers[1], question_3: answers[2] },
