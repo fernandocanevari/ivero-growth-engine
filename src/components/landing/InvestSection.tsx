@@ -234,7 +234,7 @@ const InvestSection = () => {
                         return (
                           <div key={metric.label} className="flex flex-col items-center text-center gap-0.5 py-1 sm:py-1.5">
                             <Icon className={`w-4 h-4 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
-                            <span className="text-base sm:text-lg font-bold leading-none text-foreground">
+                            <span className="text-sm sm:text-base font-bold leading-none text-foreground">
                               {metric.value}
                             </span>
                             <span className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight">
