@@ -26,7 +26,7 @@ const milestones = [
     year: "2025",
     title: "Multi-modelo",
     description:
-      "Desenvolvemos nossa infraestrutura para consultar simultaneamente OpenAI, Gemini, GPT-5 e Gemini Search. Cada modelo "pensa" diferente — entender todos é a única forma de mapear a verdadeira percepção da marca.",
+      "Desenvolvemos nossa infraestrutura para consultar simultaneamente OpenAI, Gemini, GPT-5 e Gemini Search. Cada modelo &quot;pensa&quot; diferente — entender todos é a única forma de mapear a verdadeira percepção da marca.",
     icon: Zap,
     highlight: "Tecnologia",
   },
@@ -43,7 +43,7 @@ const milestones = [
 const values = [
   {
     title: "Transparência algorítmica",
-    text: "Mostramos exatamente como cada IA "vê" a marca, sem caixa-preta. O executivo merece entender o que está por trás do veredito.",
+    text: "Mostramos exatamente como cada IA &quot;vê&quot; a marca, sem caixa-preta. O executivo merece entender o que está por trás do veredito.",
   },
   {
     title: "Ação sobre dados",
@@ -189,10 +189,10 @@ export default function SobrePage() {
             <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto mb-8">
               A Ivero é construída por uma equipe híbrida: engenheiros de machine learning,
               estrategistas de marca e copywriters que entendem como linguagem molda percepção.
-              Não acreditamos em dashboards genéricos — acreditamoss em inteligência que gera ação.
+              Não acreditamos em dashboards genéricos — acreditamos em inteligência que gera ação.
             </p>
             <p className="text-sm text-muted-foreground italic">
-              "Feito com o coração." — Ivero
+              &quot;Feito com o coração.&quot; — Ivero
             </p>
           </motion.div>
         </div>
