@@ -1,51 +1,62 @@
-## Objetivo
+## Resumo
 
-Adicionar uma nova engine **"Gemini Search"** ao `simulate-ai` que chama o Gemini com a tool nativa `google_search` (Google Search Retrieval). O modelo responde com base em resultados reais da web, em tempo real, sem scraping — o mais próximo possível do comportamento do Google AI Overview, via API oficial.
+Atualizar a seção de planos da landing page (`InvestSection`) de 4 para 3 planos, ajustar preços, transferir o destaque visual para o plano do meio, e substituir o card "Domínio" por uma linha de texto de contato. Atualizar também a fonte única de verdade dos preços (`pricing-rules.ts`).
 
-## O que muda
+## Arquivos
 
-### 1. Edge Function `supabase/functions/simulate-ai/index.ts`
+- `src/components/landing/InvestSection.tsx`
+- `src/lib/pricing-rules.ts`
 
-- Em `getModelConfigs()`, adicionar nova entrada quando `Key_gemini` existe:
-  - `name: "Gemini Search"`
-  - `url`: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
-  - `parseResponse`: igual ao Gemini atual (`candidates[0].content.parts[0].text`)
-- Em `callModel()`, criar um branch específico para `"Gemini Search"`:
-  ```ts
-  body = {
-    contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] }],
-    tools: [{ google_search: {} }],
-    generationConfig: { maxOutputTokens: maxTokens },
-  };
-  ```
-- Mesmo fluxo de erro/parse dos outros modelos. Sem mudanças em `extractKeywordCloud` (ele ignora erros e usa qualquer modelo válido).
+## Mudanças detalhadas
 
-### 2. `src/lib/ai-models-status.ts`
+### 1. Remover plano Domínio, manter 3 planos
 
-- `MODELS_ACTIVE`: `["OpenAI", "Gemini", "GPT-5", "Gemini Search"]`
-- `TOTAL_MODELS`: 4
-- `MODELS_IN_STANDBY`: continua `[]` (banner segue oculto)
+Remover o quarto item do array `plans` em `InvestSection.tsx`.
 
-### 3. Copy da landing (atualizar contagem de "3 IAs" → "4 IAs")
+### 2. Atualizar preços dos 3 planos restantes
 
-Arquivos a ajustar (mesmas frases já alteradas no último ciclo):
-- `FeaturesSection.tsx`, `StepsSection.tsx`, `FAQSection.tsx`, `ProblemSection.tsx`, `Footer.tsx` (adicionar 4º ícone), `InvestSection.tsx`, `AjudaPage.tsx`, `access-control.ts`, `keyword-cloud.ts`, `mock-data.ts`
+| Plano | Mensal | Anual | Economia/ano |
+|-------|--------|-------|--------------|
+| Presença | R$ 497 | R$ 397 | R$ 1.200 |
+| Influência | R$ 897 | R$ 717 | R$ 2.160 |
+| Autoridade | R$ 1.497 | R$ 1.197 | R$ 3.600 |
 
-Mensagem nova nas explicações: **"ChatGPT, Gemini, GPT-5 e Gemini Search (com grounding em tempo real do Google)"**.
+### 3. Toggle mensal/anual
 
-### 4. Sem mudanças em
+O toggle já existe na interface (`isAnnual` state). Nenhuma mudança estrutural necessária — apenas garantir que os novos preços e badges de economia funcionem corretamente com a alternância.
 
-- Schema do banco — `analysis_history.results_by_model` é JSONB, aceita o novo modelo automaticamente.
-- Outras edge functions.
-- Lógica de score / pilares.
+### 4. Badge "Mais escolhido" no plano Influência
 
-## Observações técnicas
+- Transferir `highlighted: true` do plano Autoridade para o plano Influência.
+- No plano Influência, definir `badge: "Mais escolhido"`.
+- No plano Autoridade, definir `highlighted: false` e `badge: null`.
 
-- O parâmetro correto na API v1beta do Gemini 2.0+ é `tools: [{ google_search: {} }]` (não `googleSearchRetrieval`, que era da 1.5).
-- `gemini-2.5-flash` suporta grounding nativo. Caso a chave atual não tenha acesso, fallback para `gemini-2.0-flash` com a mesma sintaxe.
-- O Gemini Search retorna `groundingMetadata` (citações + URLs) junto com o texto. Por enquanto **ignoramos** — só usamos o texto. Em iteração futura podemos exibir as fontes citadas no dashboard como diferencial.
-- Custo: uso da tool de busca é cobrado à parte pelo Google (~$35/1k queries em Search Grounding). Para o MVP, controlar via cota mensal já existente.
+### 5. Atualizar CTAs
 
-## Pergunta antes de implementar
+CTAs já estão conforme solicitado na base de código. Verificar e manter:
+- Presença: "Quero ser visto pelas IAs →"
+- Influência: "Quero superar meus concorrentes →"
+- Autoridade: "Quero dominar meu setor nas IAs →"
 
-Quer que eu já capture e exiba as **fontes citadas** (`groundingMetadata.groundingChunks`) no dashboard como prova de evidência da resposta, ou deixa essa camada para uma próxima entrega e fica só com o texto agora?
+### 6. Substituir card Domínio por linha de texto
+
+Após o grid de 3 cards, adicionar uma linha de texto discreta e centralizada:
+"Precisa de algo personalizado? Fale com a gente →"
+Link: `https://wa.me/SEUNUMERO` (ou fallback para `/preview` se WhatsApp não estiver configurado no projeto).
+
+### 7. Atualizar `pricing-rules.ts`
+
+- Remover `dominio` do tipo `PlanoSugerido` e do objeto `PLANOS`.
+- Atualizar `monthlyPrice` e `annualPrice` dos 3 planos restantes conforme tabela acima.
+- Ajustar `planoFromScore` para retornar apenas 3 planos (último threshold fica `autoridade`).
+
+## Design / Responsivo
+
+- Grid de cards: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3` (anteriormente era 4).
+- Manter todos os estilos existentes (bordas gradientes, glows, tipografia).
+- A linha de contato personalizado deve ser discreta: texto `text-sm text-muted-foreground` com link `hover:text-accent`.
+
+## Fora de escopo
+
+- Nenhuma outra página ou funcionalidade será alterada.
+- Não modificar o toggle visual existente, apenas os dados.

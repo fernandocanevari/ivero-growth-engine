@@ -2,19 +2,20 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass } from "lucide-react";
+import { getWhatsappUrl } from "@/lib/support";
 
 const plans = [
   {
     name: "Presença",
     badge: null,
     tagline: "Descubra se as IAs reconhecem sua marca",
-    monthlyPrice: "R$ 197",
-    annualPrice: "R$ 157",
-    annualSaving: "R$ 480",
+    monthlyPrice: "R$ 497",
+    annualPrice: "R$ 397",
+    annualSaving: "R$ 1.200",
     cta: "Quero ser visto pelas IAs →",
     highlighted: false,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "1" },
+      { icon: Cpu, label: "IAs monitoradas", value: "2" },
       { icon: Bell, label: "Avisos/mês", value: "50" },
       { icon: Search, label: "Prompts monitorados", value: "10" },
       { icon: BarChart2, label: "Consultas/mês", value: "500" },
@@ -26,15 +27,15 @@ const plans = [
   },
   {
     name: "Influência",
-    badge: null,
+    badge: "Mais escolhido",
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
-    monthlyPrice: "R$ 397",
-    annualPrice: "R$ 317",
-    annualSaving: "R$ 960",
+    monthlyPrice: "R$ 897",
+    annualPrice: "R$ 717",
+    annualSaving: "R$ 2.160",
     cta: "Quero superar meus concorrentes →",
-    highlighted: false,
+    highlighted: true,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "2" },
+      { icon: Cpu, label: "IAs monitoradas", value: "3" },
       { icon: Bell, label: "Avisos/mês", value: "200" },
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
@@ -46,15 +47,15 @@ const plans = [
   },
   {
     name: "Autoridade",
-    badge: "🔥 Recomendado",
+    badge: null,
     tagline: "Sua marca citada quando o cliente está decidindo",
-    monthlyPrice: "R$ 697",
-    annualPrice: "R$ 557",
-    annualSaving: "R$ 1.680",
+    monthlyPrice: "R$ 1.497",
+    annualPrice: "R$ 1.197",
+    annualSaving: "R$ 3.600",
     cta: "Quero dominar meu setor nas IAs →",
-    highlighted: true,
+    highlighted: false,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "3" },
+      { icon: Cpu, label: "IAs monitoradas", value: "4" },
       { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
       { icon: Search, label: "Prompts monitorados", value: "100" },
       { icon: BarChart2, label: "Consultas/mês", value: "10.000" },
@@ -62,26 +63,6 @@ const plans = [
     highlights: [
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
-    ],
-  },
-  {
-    name: "Domínio",
-    badge: "🔴 Estratégico",
-    tagline: "Presença em IA como vantagem competitiva real",
-    monthlyPrice: "Custom",
-    annualPrice: "Custom",
-    annualSaving: null,
-    cta: "Quero minha estratégia exclusiva →",
-    highlighted: false,
-    metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "3+" },
-      { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
-      { icon: Search, label: "Prompts monitorados", value: "Ilimitados" },
-      { icon: BarChart2, label: "Consultas/mês", value: "Ilimitadas" },
-    ],
-    highlights: [
-      "Dominância por Modelo de IA",
-      "Simulador de Influência em IA",
     ],
   },
 ];
@@ -138,8 +119,8 @@ const InvestSection = () => {
           </div>
         </motion.div>
 
-        {/* Cards — 1 col mobile, 2 col tablet, 4 col desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto items-start">
+        {/* Cards — 1 col mobile, 2 col tablet, 3 col desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-6xl mx-auto items-start">
           {plans.map((plan, index) => {
             const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
             const isCustom = price === "Custom";
@@ -288,6 +269,25 @@ const InvestSection = () => {
             );
           })}
         </div>
+
+        {/* Contato personalizado */}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="text-center text-sm sm:text-base text-muted-foreground mt-6 sm:mt-8"
+        >
+          Precisa de algo personalizado?{" "}
+          <a
+            href={getWhatsappUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-ivero-purple hover:text-accent transition-colors underline-offset-4 hover:underline"
+          >
+            Fale com a gente →
+          </a>
+        </motion.p>
 
         {/* Selo de garantia Ivero */}
         <motion.div
