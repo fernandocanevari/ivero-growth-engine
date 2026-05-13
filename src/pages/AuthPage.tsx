@@ -181,10 +181,6 @@ export default function AuthPage() {
         </div>
 
         <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm text-white/90">
-            <Sparkles className="w-4 h-4" />
-            Inteligência de marca para IA
-          </div>
           <h2 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight">
             Seu painel de inteligência está a um login de distância.
           </h2>
