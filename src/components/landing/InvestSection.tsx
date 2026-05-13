@@ -259,7 +259,7 @@ const InvestSection = () => {
                         Exclusivos do plano
                       </p>
 
-                      <ul className="space-y-1.5">
+                      <ul className="space-y-1">
                         {plan.highlights.map((highlight) => (
                           <li key={highlight} className="flex items-start gap-2 text-[13px] leading-snug text-foreground font-semibold">
                             <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
