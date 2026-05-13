@@ -186,7 +186,7 @@ const InvestSection = () => {
                       </h3>
                     </div>
 
-                    <p className="relative text-xs sm:text-[13px] leading-snug font-semibold text-foreground/80 min-h-[34px] sm:min-h-[36px]">
+                    <p className="relative text-xs sm:text-[13px] leading-snug font-semibold text-foreground/80 min-h-[28px] sm:min-h-[30px]">
                       {plan.tagline}
                     </p>
 
