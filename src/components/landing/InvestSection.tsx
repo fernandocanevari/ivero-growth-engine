@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass, Plus, Sparkles } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass } from "lucide-react";
 
 const plans = [
   {
@@ -248,38 +248,40 @@ const InvestSection = () => {
                       })}
                     </div>
 
-                    {/* Diferenciais exclusivos */}
-                    <div className={`relative mb-5 sm:mb-6 rounded-xl border-l-[3px] p-3.5 sm:p-4 flex-1 min-h-[140px] sm:min-h-[160px] ${
-                      plan.highlighted
-                        ? "border-l-accent bg-gradient-to-br from-accent/8 via-accent/3 to-transparent"
-                        : "border-l-ivero-purple bg-gradient-to-br from-ivero-purple/8 via-ivero-purple/3 to-transparent"
-                    }`}>
-                      <div className="flex items-center gap-1.5 mb-2.5">
+                    {/* Diferenciais — minimal e tipográfico */}
+                    <div className="flex-1 flex flex-col">
+                      {/* Separador gradiente */}
+                      <div className={`h-px w-full mb-4 ${
+                        plan.highlighted
+                          ? "bg-gradient-to-r from-accent/40 via-accent/15 to-transparent"
+                          : "bg-gradient-to-r from-ivero-purple/30 via-ivero-purple/10 to-transparent"
+                      }`} />
+
+                      {/* Chip de inheritance — só texto, sem caixa */}
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-3 leading-none">
                         {plan.inheritsFrom ? (
                           <>
-                            <Plus className={`w-3.5 h-3.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`} strokeWidth={3} />
-                            <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`}>
-                              Tudo do {plan.inheritsFrom} <span className="opacity-70">+ exclusivos</span>
-                            </span>
+                            <span className="text-muted-foreground">Tudo do {plan.inheritsFrom}</span>
+                            <span className={`mx-1.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`}>+</span>
+                            <span className={plan.highlighted ? "text-accent" : "text-ivero-purple"}>exclusivos</span>
                           </>
                         ) : (
-                          <>
-                            <Sparkles className="w-3.5 h-3.5 text-ivero-purple" strokeWidth={2.5} />
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-ivero-purple">
-                              O essencial para começar
-                            </span>
-                          </>
+                          <span className="text-ivero-purple">Diferenciais inclusos</span>
                         )}
-                      </div>
-                      <ul className="space-y-2">
+                      </p>
+
+                      {/* Lista limpa */}
+                      <ul className="space-y-2 min-h-[64px] sm:min-h-[72px]">
                         {plan.highlights.map((highlight) => (
                           <li key={highlight} className="flex items-start gap-2 text-[13px] sm:text-sm leading-snug text-foreground font-semibold">
-                            <Sparkles className={`shrink-0 mt-0.5 w-3.5 h-3.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} strokeWidth={2.5} />
+                            <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
                             <span>{highlight}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
+
+                    <div className="h-5 sm:h-6" />
 
                     <Button
                       variant="hero"

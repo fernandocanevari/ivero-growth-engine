@@ -1,59 +1,47 @@
-## Resumo
+## Diagnóstico
 
-Resolver dois pontos no `InvestSection.tsx`:
-1. **Alinhar a base dos 3 cards** (botões CTA na mesma linha mesmo com conteúdos diferentes).
-2. **Destacar visualmente os "diferenciais exclusivos"** — comunicar que cada plano herda tudo do anterior + adiciona estes itens novos.
+O bloco atual ficou pesado porque empilha **duas caixas** seguidas (métricas com borda+fundo accent/3 e logo abaixo outra caixa com borda lateral grossa + fundo gradiente). Isso quebra o ritmo do card, cria visual de "alerta" e destoa do design system limpo da Ivero.
+
+## Nova abordagem — minimal e tipográfica
+
+Manter a comunicação ("tudo do plano anterior + estes exclusivos") sem adicionar uma segunda caixa. Usar tipografia, hierarquia e separadores — o mesmo idioma visual que já existe no card (texto + ✦, gradient line, accent color).
+
+### Estrutura proposta para o bloco de diferenciais
+
+```
+─────────────────────────────────  (linha gradiente sutil, separa das métricas)
+
+TUDO DO PRESENÇA  +  EXCLUSIVOS DESTE PLANO    (chip de texto, sem caixa)
+
+✦  Análise de Sentimento                (texto limpo, peso semibold)
+✦  Análise Comparativa com concorrentes
+```
+
+### Detalhes visuais
+
+- **Separador superior**: linha de 1px com gradiente `from-ivero-purple/30 via-ivero-purple/10 to-transparent` (ou accent no card destacado), igual ao já usado no header do plano. Cria a transição sem peso.
+- **Chip de inheritance** (substitui a caixa pesada): apenas texto uppercase pequeno, ex.:
+  - Presença: `Diferenciais inclusos`
+  - Influência: `Tudo do Presença · + exclusivos`
+  - Autoridade: `Tudo do Influência · + exclusivos`
+  - Cor accent/ivero-purple, font-bold, tracking-wider, sem fundo nem borda.
+  - A palavra "+ exclusivos" recebe peso visual leve (gradient text ou color cheia).
+- **Lista de diferenciais**: voltar ao ✦ original (consistente com o resto da landing), mas com texto em `text-foreground font-semibold` para ganhar peso vs. a versão anterior. Sem caixa, sem fundo.
+- **Espaçamento**: `pt-4 mt-4 border-t-0` (a linha gradiente faz o papel da borda).
+- **Alinhamento da base**: usar `min-h-[110px] sm:min-h-[120px]` apenas no `<ul>` para garantir que os 3 CTAs alinhem.
+
+### Por que fica coerente com a Ivero
+
+- Não introduz componente novo nem cor nova.
+- Mantém a "linguagem ✦ + texto" já presente em outros blocos.
+- Aproveita a linha gradiente que já é assinatura visual dos cards.
+- Respeita o ritmo: caixa de métricas → respiro → lista limpa → botão.
 
 ## Arquivo
 
-- `src/components/landing/InvestSection.tsx`
-
-## Mudanças
-
-### 1. Alinhamento da base dos cards
-
-Hoje cada card tem altura natural — o bloco de "Diferenciais" usa `flex-1`, mas o número de itens varia (2 por plano, ok), e variações de tagline/preço empurram os botões para alturas diferentes.
-
-Para forçar alinhamento perfeito do CTA:
-- Adicionar `min-h` fixo ao bloco de diferenciais (por ex. `min-h-[120px] sm:min-h-[140px]`) para acomodar até 3 linhas com folga.
-- Manter `mt-auto` no botão (já existe) para garantir que o CTA encoste no fundo.
-- Garantir `h-full` no container interno do card para ocupar toda a altura disponível do grid (já está com `flex-1`).
-
-### 2. Bloco "Diferenciais exclusivos" reformulado
-
-Substituir a `<ul>` simples atual por uma **caixa destacada** com:
-
-- **Header de contexto** (linha pequena, uppercase, em accent):
-  - Plano Presença: "✦ O essencial para começar"
-  - Plano Influência: "✦ Tudo do Presença + exclusivos"
-  - Plano Autoridade: "✦ Tudo do Influência + exclusivos"
-
-- **Container destacado** com:
-  - Fundo gradiente sutil (accent/5 ou ivero-purple/5 conforme `highlighted`)
-  - Borda `border-l-2` colorida (faixa lateral em accent ou ivero-purple)
-  - Padding generoso, cantos arredondados
-  - Itens com ícone de "+" ou "Sparkles" (lucide) ao invés de ✦, mais expressivo
-  - Texto dos diferenciais em `font-semibold text-foreground` (mais peso visual)
-
-Resultado: o cliente bate o olho e entende imediatamente "esse plano tem TUDO do anterior MAIS isso aqui de novo".
-
-### 3. Texto do header dependente do plano
-
-Adicionar nova propriedade no array `plans`:
-```ts
-inheritsFrom: null | "Presença" | "Influência"
-```
-- Presença: `null` → header "✦ O essencial para começar"
-- Influência: `"Presença"` → "Tudo do Presença +"
-- Autoridade: `"Influência"` → "Tudo do Influência +"
-
-## Design / Responsivo
-
-- Mantém o design system (cores `accent`, `ivero-purple`, fontes existentes).
-- Mobile-first: padding reduzido em telas pequenas, altura mínima ajustada.
-- Animação sutil (Framer Motion) opcional no ícone "+" ao hover do card.
+- `src/components/landing/InvestSection.tsx` — substituir o bloco "Diferenciais exclusivos" (linhas ~251-282) pela versão minimal descrita.
 
 ## Fora de escopo
 
-- Não alterar preços, badges, CTAs ou métricas.
-- Não alterar o "Selo de garantia Ivero" abaixo dos cards.
+- Cores, fonts, métricas, preços, badges, CTAs.
+- Manter `inheritsFrom` no array (já está pronto).
