@@ -14,7 +14,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuditReports, type AuditReport } from "@/hooks/useAuditReports";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
+import { AuditoriasListSkeleton } from "@/components/dashboard/LoadingStates";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -180,6 +185,9 @@ export default function AuditoriasPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
 
+  // ── Dialog de confirmação de remoção ──
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return reports.filter((r) => {
@@ -196,7 +204,7 @@ export default function AuditoriasPage() {
     });
   }, [reports, query, dateRange]);
 
-  if (isLoading) return null;
+  if (isLoading) return <AuditoriasListSkeleton />;
 
   if (reports.length === 0) {
     return (
@@ -216,13 +224,18 @@ export default function AuditoriasPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm("Remover este relatório do histórico? Esta ação não pode ser desfeita.")) return;
+    setPendingDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    const id = pendingDeleteId;
+    if (!id) return;
+    // Otimista: remove da seleção imediatamente; lista atualiza via invalidate.
+    setSelected((prev) => prev.filter((s) => s !== id));
+    setPendingDeleteId(null);
     remove.mutate(id, {
-      onSuccess: () => {
-        toast.success("Relatório removido");
-        setSelected((prev) => prev.filter((s) => s !== id));
-      },
-      onError: () => toast.error("Erro ao remover relatório"),
+      onSuccess: () => toast.success("Relatório removido"),
+      // onError já dispara toast padronizado via mutationErrorToast no hook
     });
   };
 
