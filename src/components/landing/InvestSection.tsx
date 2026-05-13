@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass } from "lucide-react";
-import { getWhatsappUrl } from "@/lib/support";
 
 const plans = [
   {
@@ -269,25 +268,6 @@ const InvestSection = () => {
             );
           })}
         </div>
-
-        {/* Contato personalizado */}
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="text-center text-sm sm:text-base text-muted-foreground mt-6 sm:mt-8"
-        >
-          Precisa de algo personalizado?{" "}
-          <a
-            href={getWhatsappUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-ivero-purple hover:text-accent transition-colors underline-offset-4 hover:underline"
-          >
-            Fale com a gente →
-          </a>
-        </motion.p>
 
         {/* Selo de garantia Ivero */}
         <motion.div
