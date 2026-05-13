@@ -6,6 +6,7 @@ const aiIcons = [
   { name: "ChatGPT", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" },
   { name: "Gemini", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" },
   { name: "GPT-5", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" },
+  { name: "Gemini Search", icon: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/google.svg" },
 ];
 
 const NeuralNetwork = () => {
@@ -68,14 +69,28 @@ const NeuralNetwork = () => {
       </svg>
       <div className="relative w-full h-8 -mt-1">
         {aiIcons.map((ai, i) => (
-          <img
+          <div
             key={ai.name}
-            src={ai.icon}
-            alt={ai.name}
-            title={ai.name}
-            className="absolute w-8 h-8 opacity-70 hover:opacity-100 transition-opacity -translate-x-1/2"
+            className="absolute -translate-x-1/2"
             style={{ left: `${positions[i]}%` }}
-          />
+            title={ai.name}
+          >
+            <img
+              src={ai.icon}
+              alt={ai.name}
+              className="w-8 h-8 opacity-70 hover:opacity-100 transition-opacity"
+            />
+            {ai.name === "GPT-5" && (
+              <span className="absolute -top-1 -right-1 text-[8px] font-bold text-primary-foreground bg-primary rounded-full w-3.5 h-3.5 flex items-center justify-center leading-none">
+                5
+              </span>
+            )}
+            {ai.name === "Gemini Search" && (
+              <span className="absolute -top-1 -right-1 text-[7px] font-bold text-primary-foreground bg-primary rounded-full w-3.5 h-3.5 flex items-center justify-center leading-none">
+                ⌕
+              </span>
+            )}
+          </div>
         ))}
       </div>
     </div>
