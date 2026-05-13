@@ -199,7 +199,7 @@ const InvestSection = () => {
 
                   <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-4 sm:pb-5 flex flex-col flex-1">
                     {/* Preço */}
-                    <div className="mb-4 min-h-[60px] sm:min-h-[64px] flex flex-col justify-start gap-1.5">
+                    <div className="mb-3 min-h-[48px] sm:min-h-[52px] flex flex-col justify-start gap-1">
                       <motion.div
                         key={price}
                         initial={{ opacity: 0, y: -6 }}
