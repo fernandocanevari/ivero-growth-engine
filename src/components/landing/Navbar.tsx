@@ -38,7 +38,10 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <a href="/login" className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors">
+          <a
+            href="/login"
+            className="text-sm font-medium text-ivero-dark px-3 py-1.5 rounded-full border border-ivero-dark/15 hover:border-ivero-dark/40 hover:bg-ivero-dark/5 transition-all"
+          >
             Entrar
           </a>
           <Button variant="hero" size="sm" className="px-6" asChild>
@@ -74,7 +77,11 @@ const Navbar = () => {
                 {link.label}
               </a>
             ))}
-            <a href="/login" className="text-sm font-medium text-ivero-dark/70 hover:text-ivero-dark transition-colors py-2">
+            <a
+              href="/login"
+              className="text-sm font-medium text-ivero-dark py-2 mt-1 pt-3 border-t border-ivero-dark/10"
+              onClick={() => setIsOpen(false)}
+            >
               Entrar
             </a>
             <Button variant="hero" size="sm" className="px-6 w-fit" asChild>
