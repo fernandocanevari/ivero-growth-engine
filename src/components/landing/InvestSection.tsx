@@ -61,6 +61,7 @@ const plans = [
       { icon: Search, label: "Prompts monitorados", value: "100" },
       { icon: BarChart2, label: "Consultas/mês", value: "10.000" },
     ],
+    inheritsFrom: "Influência",
     highlights: [
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
