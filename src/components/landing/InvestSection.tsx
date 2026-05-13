@@ -40,6 +40,7 @@ const plans = [
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
     ],
+    inheritsFrom: "Presença",
     highlights: [
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
