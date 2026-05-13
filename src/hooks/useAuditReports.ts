@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { mutationErrorToast } from "@/lib/mutation-toast";
 
 /**
  * Audit Reports — snapshots completos navegáveis de cada auditoria.
@@ -65,13 +66,7 @@ export function useAuditReports() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["audit-reports", userId] });
     },
-    onError: (err: Error) => {
-      toast({
-        title: "Não foi possível salvar o relatório",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorToast("salvar o relatório"),
   });
 
   const remove = useMutation({
@@ -83,13 +78,7 @@ export function useAuditReports() {
       queryClient.invalidateQueries({ queryKey: ["audit-reports", userId] });
       toast({ title: "Relatório removido" });
     },
-    onError: (err: Error) => {
-      toast({
-        title: "Não foi possível remover",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorToast("remover o relatório"),
   });
 
   return {

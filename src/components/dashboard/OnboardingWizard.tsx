@@ -36,13 +36,29 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [answers, setAnswers] = useState(["", "", ""]);
+  const [touched, setTouched] = useState<boolean[]>([false, false, false]);
   const { saveAnswers } = useOnboarding();
 
   const current = questions[step];
   const isLast = step === questions.length - 1;
-  const canProceed = answers[step].trim().length > 10;
+  const trimmedLen = answers[step].trim().length;
+  const minChars = 20;
+  const canProceed = trimmedLen >= minChars;
+  const showError = touched[step] && !canProceed;
+  const errorMessage =
+    trimmedLen === 0
+      ? "Esta resposta é obrigatória para continuar."
+      : `Conte um pouco mais — escreva pelo menos ${minChars} caracteres (faltam ${minChars - trimmedLen}).`;
 
   const goNext = () => {
+    if (!canProceed) {
+      setTouched((t) => {
+        const next = [...t];
+        next[step] = true;
+        return next;
+      });
+      return;
+    }
     if (isLast) {
       saveAnswers.mutate(
         { question_1: answers[0], question_2: answers[1], question_3: answers[2] },
@@ -130,13 +146,37 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
               <Textarea
                 value={answers[step]}
                 onChange={(e) => updateAnswer(e.target.value)}
+                onBlur={() =>
+                  setTouched((t) => {
+                    const next = [...t];
+                    next[step] = true;
+                    return next;
+                  })
+                }
                 placeholder={current.placeholder}
-                className="flex-1 min-h-[120px] resize-none text-sm"
+                aria-invalid={showError}
+                aria-describedby={showError ? `onboarding-error-${step}` : undefined}
+                className={`flex-1 min-h-[120px] resize-none text-sm ${
+                  showError ? "border-destructive focus-visible:ring-destructive" : ""
+                }`}
                 maxLength={1000}
               />
-              <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                {answers[step].length}/1000
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                {showError ? (
+                  <p
+                    id={`onboarding-error-${step}`}
+                    role="alert"
+                    className="text-[11px] text-destructive font-medium"
+                  >
+                    {errorMessage}
+                  </p>
+                ) : (
+                  <span />
+                )}
+                <p className="text-[10px] text-muted-foreground">
+                  {answers[step].length}/1000
+                </p>
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -155,7 +195,7 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
           </div>
           <Button
             onClick={goNext}
-            disabled={!canProceed || saveAnswers.isPending}
+            disabled={saveAnswers.isPending}
             className="gap-2"
           >
             {saveAnswers.isPending ? (

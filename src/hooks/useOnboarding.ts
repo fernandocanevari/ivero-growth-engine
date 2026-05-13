@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { mutationErrorToast } from "@/lib/mutation-toast";
 
 interface OnboardingData {
   id: string;
@@ -53,13 +53,7 @@ export function useOnboarding() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["client_onboarding"] });
     },
-    onError: (err: Error) => {
-      toast({
-        title: "Não foi possível salvar suas respostas",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorToast("salvar suas respostas"),
   });
 
   return {

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { DiagnosticoSkeleton } from "@/components/dashboard/LoadingStates";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -306,7 +307,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     );
   };
 
-  if (isLoading) return null;
+  if (isLoading) return <DiagnosticoSkeleton />;
 
   // Compute overall score from effective (live or mock) radar
   const overallScore = liveScore ?? Math.round(effectiveRadar.reduce((s, d) => s + d.value, 0) / effectiveRadar.length);
