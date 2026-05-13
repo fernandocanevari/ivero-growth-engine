@@ -1,7 +1,7 @@
 // Regras de precificação reusando os valores da landing (InvestSection)
 // Fonte única de verdade para propostas geradas automaticamente.
 
-export type PlanoSugerido = "presenca" | "influencia" | "autoridade" | "dominio";
+export type PlanoSugerido = "presenca" | "influencia" | "autoridade";
 
 export interface PlanoInfo {
   key: PlanoSugerido;
@@ -18,8 +18,8 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     key: "presenca",
     name: "Presença",
     tagline: "Descubra se as IAs reconhecem sua marca",
-    monthlyPrice: 197,
-    annualPrice: 157,
+    monthlyPrice: 497,
+    annualPrice: 397,
     highlights: ["Score GEO de Visibilidade", "Relatório semanal por e-mail"],
     metrics: [
       { label: "IAs monitoradas", value: "2" },
@@ -32,8 +32,8 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     key: "influencia",
     name: "Influência",
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
-    monthlyPrice: 397,
-    annualPrice: 317,
+    monthlyPrice: 897,
+    annualPrice: 717,
     highlights: ["Análise de Sentimento", "Análise Comparativa com concorrentes"],
     metrics: [
       { label: "IAs monitoradas", value: "3" },
@@ -46,8 +46,8 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     key: "autoridade",
     name: "Autoridade",
     tagline: "Sua marca citada quando o cliente está decidindo",
-    monthlyPrice: 697,
-    annualPrice: 557,
+    monthlyPrice: 1497,
+    annualPrice: 1197,
     highlights: ["Mapa de Prompts Estratégicos", "Plano de Ação Estratégico"],
     metrics: [
       { label: "IAs monitoradas", value: "4" },
@@ -56,27 +56,12 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       { label: "Consultas/mês", value: "10.000" },
     ],
   },
-  dominio: {
-    key: "dominio",
-    name: "Domínio",
-    tagline: "Presença em IA como vantagem competitiva real",
-    monthlyPrice: 1497,
-    annualPrice: 1197,
-    highlights: ["Dominância por Modelo de IA", "Simulador de Influência em IA"],
-    metrics: [
-      { label: "IAs monitoradas", value: "5" },
-      { label: "Avisos/mês", value: "Ilimitados" },
-      { label: "Prompts monitorados", value: "Ilimitados" },
-      { label: "Consultas/mês", value: "Ilimitadas" },
-    ],
-  },
 };
 
 export function planoFromScore(score: number): PlanoSugerido {
   if (score < 40) return "presenca";
-  if (score < 60) return "influencia";
-  if (score < 80) return "autoridade";
-  return "dominio";
+  if (score < 70) return "influencia";
+  return "autoridade";
 }
 
 export function valorPropostoFromScore(score: number): number {
