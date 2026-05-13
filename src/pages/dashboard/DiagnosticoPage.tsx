@@ -306,7 +306,11 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     );
   };
 
-  if (isLoading) return null;
+  if (isLoading) {
+    // Importação inline para evitar quebra de tree-shaking em snapshot mode
+    const { DiagnosticoSkeleton } = require("@/components/dashboard/LoadingStates");
+    return <DiagnosticoSkeleton />;
+  }
 
   // Compute overall score from effective (live or mock) radar
   const overallScore = liveScore ?? Math.round(effectiveRadar.reduce((s, d) => s + d.value, 0) / effectiveRadar.length);
