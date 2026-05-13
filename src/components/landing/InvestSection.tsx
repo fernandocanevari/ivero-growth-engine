@@ -42,6 +42,7 @@ const plans = [
     ],
     inheritsFrom: "Presença",
     highlights: [
+      "Dominância por Modelo de IA",
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
     ],
@@ -63,6 +64,7 @@ const plans = [
     ],
     inheritsFrom: "Influência",
     highlights: [
+      "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
     ],
