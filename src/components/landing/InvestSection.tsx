@@ -164,7 +164,7 @@ const InvestSection = () => {
 
                 <div className="flex flex-col flex-1">
                   {/* Plan header */}
-                  <div className={`relative px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6 mb-1 overflow-hidden min-h-[100px] sm:min-h-[120px] ${
+                  <div className={`relative px-5 sm:px-6 pt-4 sm:pt-5 pb-4 mb-1 overflow-hidden ${
                     plan.highlighted
                       ? "bg-gradient-to-br from-accent/12 via-accent/4 to-white"
                       : "bg-gradient-to-br from-ivero-purple/10 via-ivero-purple/3 to-white"
@@ -172,24 +172,19 @@ const InvestSection = () => {
                     <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full blur-2xl opacity-40 ${
                       plan.highlighted ? "bg-accent" : "bg-ivero-purple-light"
                     }`} />
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                      plan.highlighted
-                        ? "bg-gradient-to-b from-accent via-accent/80 to-accent/10"
-                        : "bg-gradient-to-b from-ivero-purple-light via-ivero-purple/60 to-transparent"
-                    }`} />
 
-                    <div className="relative flex items-center gap-2 mb-2 sm:mb-3">
+                    <div className="relative flex items-center gap-2 mb-1.5 sm:mb-2">
                       {plan.highlighted && (
                         <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0 shadow-[0_0_8px_hsl(var(--accent))]" />
                       )}
-                      <h3 className={`font-display text-xl sm:text-2xl font-black tracking-widest uppercase leading-none ${
+                      <h3 className={`font-display text-lg sm:text-xl font-black tracking-widest uppercase leading-none ${
                         plan.highlighted ? "text-accent" : "text-ivero-purple"
                       }`}>
                         {plan.name}
                       </h3>
                     </div>
 
-                    <p className="relative text-xs sm:text-sm leading-snug font-semibold text-foreground/80">
+                    <p className="relative text-xs sm:text-[13px] leading-snug font-semibold text-foreground/80 min-h-[34px] sm:min-h-[36px]">
                       {plan.tagline}
                     </p>
 
@@ -200,9 +195,9 @@ const InvestSection = () => {
                     }`} />
                   </div>
 
-                  <div className="px-5 sm:px-7 pt-5 sm:pt-6 pb-5 sm:pb-7 flex flex-col flex-1">
+                  <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-6 flex flex-col flex-1">
                     {/* Preço */}
-                    <div className="mb-5 sm:mb-6 min-h-[68px] sm:min-h-[76px] flex flex-col justify-start gap-2">
+                    <div className="mb-4 min-h-[60px] sm:min-h-[64px] flex flex-col justify-start gap-1.5">
                       <motion.div
                         key={price}
                         initial={{ opacity: 0, y: -6 }}
@@ -231,16 +226,16 @@ const InvestSection = () => {
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-6 p-3 sm:p-4 rounded-xl border border-accent/15 bg-accent/3">
+                    <div className="grid grid-cols-2 gap-2 mb-4 p-2.5 sm:p-3 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
-                          <div key={metric.label} className="flex flex-col items-center text-center gap-1 sm:gap-1.5 py-2 sm:py-3">
-                            <Icon className={`w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
-                            <span className="text-lg sm:text-xl font-bold leading-none text-foreground">
+                          <div key={metric.label} className="flex flex-col items-center text-center gap-1 py-1.5 sm:py-2">
+                            <Icon className={`w-5 h-5 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
+                            <span className="text-base sm:text-lg font-bold leading-none text-foreground">
                               {metric.value}
                             </span>
-                            <span className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
+                            <span className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight">
                                {metric.label}
                             </span>
                           </div>
@@ -249,31 +244,22 @@ const InvestSection = () => {
                     </div>
 
                     {/* Diferenciais — minimal e tipográfico */}
-                    <div className="flex-1 flex flex-col">
-                      {/* Separador gradiente */}
-                      <div className={`h-px w-full mb-4 ${
+                    <div className="flex-1 flex flex-col mb-4">
+                      <div className={`h-px w-full mb-3 ${
                         plan.highlighted
                           ? "bg-gradient-to-r from-accent/40 via-accent/15 to-transparent"
                           : "bg-gradient-to-r from-ivero-purple/30 via-ivero-purple/10 to-transparent"
                       }`} />
 
-                      {/* Chip de inheritance — só texto, sem caixa */}
-                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-3 leading-none">
-                        {plan.inheritsFrom ? (
-                          <>
-                            <span className="text-muted-foreground">Tudo do {plan.inheritsFrom}</span>
-                            <span className={`mx-1.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`}>+</span>
-                            <span className={plan.highlighted ? "text-accent" : "text-ivero-purple"}>exclusivos</span>
-                          </>
-                        ) : (
-                          <span className="text-ivero-purple">Diferenciais inclusos</span>
-                        )}
+                      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-2.5 leading-none ${
+                        plan.highlighted ? "text-accent" : "text-ivero-purple"
+                      }`}>
+                        Exclusivos do plano
                       </p>
 
-                      {/* Lista limpa */}
-                      <ul className="space-y-2 min-h-[64px] sm:min-h-[72px]">
+                      <ul className="space-y-1.5">
                         {plan.highlights.map((highlight) => (
-                          <li key={highlight} className="flex items-start gap-2 text-[13px] sm:text-sm leading-snug text-foreground font-semibold">
+                          <li key={highlight} className="flex items-start gap-2 text-[13px] leading-snug text-foreground font-semibold">
                             <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
                             <span>{highlight}</span>
                           </li>
@@ -281,12 +267,10 @@ const InvestSection = () => {
                       </ul>
                     </div>
 
-                    <div className="h-5 sm:h-6" />
-
                     <Button
                       variant="hero"
                       size="sm"
-                      className="w-full mt-auto text-xs py-5"
+                      className="w-full mt-auto text-xs py-4"
                     >
                       {plan.cta}
                     </Button>
