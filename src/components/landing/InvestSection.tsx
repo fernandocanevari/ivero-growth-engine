@@ -166,7 +166,7 @@ const InvestSection = () => {
 
                 <div className="flex flex-col flex-1">
                   {/* Plan header */}
-                  <div className={`relative px-5 sm:px-6 pt-4 sm:pt-5 pb-4 mb-1 overflow-hidden ${
+                  <div className={`relative px-4 sm:px-5 pt-3 sm:pt-4 pb-3 mb-1 overflow-hidden ${
                     plan.highlighted
                       ? "bg-gradient-to-br from-accent/12 via-accent/4 to-white"
                       : "bg-gradient-to-br from-ivero-purple/10 via-ivero-purple/3 to-white"
