@@ -47,6 +47,7 @@ import BlogIndexPage from "./pages/BlogIndexPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import LegalPage from "./pages/LegalPage";
 import TermosDeUsoPage from "./pages/TermosDeUsoPage";
+import SobrePage from "./pages/SobrePage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ const App = () => (
           <Route path="/termos-de-uso" element={<TermosDeUsoPage />} />
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
+          <Route path="/sobre" element={<SobrePage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
