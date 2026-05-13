@@ -19,6 +19,7 @@ const plans = [
       { icon: Search, label: "Prompts monitorados", value: "10" },
       { icon: BarChart2, label: "Consultas/mês", value: "500" },
     ],
+    inheritsFrom: null as string | null,
     highlights: [
       "Score GEO de Visibilidade",
       "Relatório semanal por e-mail",
