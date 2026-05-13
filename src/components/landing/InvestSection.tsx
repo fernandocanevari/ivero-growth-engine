@@ -207,7 +207,7 @@ const InvestSection = () => {
                         transition={{ duration: 0.2 }}
                         className="flex items-baseline gap-1"
                       >
-                        <span className="font-display text-3xl sm:text-[2rem] font-bold text-foreground leading-none tracking-tight">
+                        <span className="font-display text-2xl sm:text-[1.75rem] font-bold text-foreground leading-none tracking-tight">
                           {price}
                         </span>
                         {!isCustom && (
