@@ -119,8 +119,8 @@ const InvestSection = () => {
           </div>
         </motion.div>
 
-        {/* Cards — 1 col mobile, 2 col tablet, 4 col desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto items-start">
+        {/* Cards — 1 col mobile, 2 col tablet, 3 col desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-6xl mx-auto items-start">
           {plans.map((plan, index) => {
             const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
             const isCustom = price === "Custom";
