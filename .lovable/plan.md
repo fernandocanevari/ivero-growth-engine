@@ -1,62 +1,59 @@
 ## Resumo
 
-Atualizar a seção de planos da landing page (`InvestSection`) de 4 para 3 planos, ajustar preços, transferir o destaque visual para o plano do meio, e substituir o card "Domínio" por uma linha de texto de contato. Atualizar também a fonte única de verdade dos preços (`pricing-rules.ts`).
+Resolver dois pontos no `InvestSection.tsx`:
+1. **Alinhar a base dos 3 cards** (botões CTA na mesma linha mesmo com conteúdos diferentes).
+2. **Destacar visualmente os "diferenciais exclusivos"** — comunicar que cada plano herda tudo do anterior + adiciona estes itens novos.
 
-## Arquivos
+## Arquivo
 
 - `src/components/landing/InvestSection.tsx`
-- `src/lib/pricing-rules.ts`
 
-## Mudanças detalhadas
+## Mudanças
 
-### 1. Remover plano Domínio, manter 3 planos
+### 1. Alinhamento da base dos cards
 
-Remover o quarto item do array `plans` em `InvestSection.tsx`.
+Hoje cada card tem altura natural — o bloco de "Diferenciais" usa `flex-1`, mas o número de itens varia (2 por plano, ok), e variações de tagline/preço empurram os botões para alturas diferentes.
 
-### 2. Atualizar preços dos 3 planos restantes
+Para forçar alinhamento perfeito do CTA:
+- Adicionar `min-h` fixo ao bloco de diferenciais (por ex. `min-h-[120px] sm:min-h-[140px]`) para acomodar até 3 linhas com folga.
+- Manter `mt-auto` no botão (já existe) para garantir que o CTA encoste no fundo.
+- Garantir `h-full` no container interno do card para ocupar toda a altura disponível do grid (já está com `flex-1`).
 
-| Plano | Mensal | Anual | Economia/ano |
-|-------|--------|-------|--------------|
-| Presença | R$ 497 | R$ 397 | R$ 1.200 |
-| Influência | R$ 897 | R$ 717 | R$ 2.160 |
-| Autoridade | R$ 1.497 | R$ 1.197 | R$ 3.600 |
+### 2. Bloco "Diferenciais exclusivos" reformulado
 
-### 3. Toggle mensal/anual
+Substituir a `<ul>` simples atual por uma **caixa destacada** com:
 
-O toggle já existe na interface (`isAnnual` state). Nenhuma mudança estrutural necessária — apenas garantir que os novos preços e badges de economia funcionem corretamente com a alternância.
+- **Header de contexto** (linha pequena, uppercase, em accent):
+  - Plano Presença: "✦ O essencial para começar"
+  - Plano Influência: "✦ Tudo do Presença + exclusivos"
+  - Plano Autoridade: "✦ Tudo do Influência + exclusivos"
 
-### 4. Badge "Mais escolhido" no plano Influência
+- **Container destacado** com:
+  - Fundo gradiente sutil (accent/5 ou ivero-purple/5 conforme `highlighted`)
+  - Borda `border-l-2` colorida (faixa lateral em accent ou ivero-purple)
+  - Padding generoso, cantos arredondados
+  - Itens com ícone de "+" ou "Sparkles" (lucide) ao invés de ✦, mais expressivo
+  - Texto dos diferenciais em `font-semibold text-foreground` (mais peso visual)
 
-- Transferir `highlighted: true` do plano Autoridade para o plano Influência.
-- No plano Influência, definir `badge: "Mais escolhido"`.
-- No plano Autoridade, definir `highlighted: false` e `badge: null`.
+Resultado: o cliente bate o olho e entende imediatamente "esse plano tem TUDO do anterior MAIS isso aqui de novo".
 
-### 5. Atualizar CTAs
+### 3. Texto do header dependente do plano
 
-CTAs já estão conforme solicitado na base de código. Verificar e manter:
-- Presença: "Quero ser visto pelas IAs →"
-- Influência: "Quero superar meus concorrentes →"
-- Autoridade: "Quero dominar meu setor nas IAs →"
-
-### 6. Substituir card Domínio por linha de texto
-
-Após o grid de 3 cards, adicionar uma linha de texto discreta e centralizada:
-"Precisa de algo personalizado? Fale com a gente →"
-Link: `https://wa.me/SEUNUMERO` (ou fallback para `/preview` se WhatsApp não estiver configurado no projeto).
-
-### 7. Atualizar `pricing-rules.ts`
-
-- Remover `dominio` do tipo `PlanoSugerido` e do objeto `PLANOS`.
-- Atualizar `monthlyPrice` e `annualPrice` dos 3 planos restantes conforme tabela acima.
-- Ajustar `planoFromScore` para retornar apenas 3 planos (último threshold fica `autoridade`).
+Adicionar nova propriedade no array `plans`:
+```ts
+inheritsFrom: null | "Presença" | "Influência"
+```
+- Presença: `null` → header "✦ O essencial para começar"
+- Influência: `"Presença"` → "Tudo do Presença +"
+- Autoridade: `"Influência"` → "Tudo do Influência +"
 
 ## Design / Responsivo
 
-- Grid de cards: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3` (anteriormente era 4).
-- Manter todos os estilos existentes (bordas gradientes, glows, tipografia).
-- A linha de contato personalizado deve ser discreta: texto `text-sm text-muted-foreground` com link `hover:text-accent`.
+- Mantém o design system (cores `accent`, `ivero-purple`, fontes existentes).
+- Mobile-first: padding reduzido em telas pequenas, altura mínima ajustada.
+- Animação sutil (Framer Motion) opcional no ícone "+" ao hover do card.
 
 ## Fora de escopo
 
-- Nenhuma outra página ou funcionalidade será alterada.
-- Não modificar o toggle visual existente, apenas os dados.
+- Não alterar preços, badges, CTAs ou métricas.
+- Não alterar o "Selo de garantia Ivero" abaixo dos cards.

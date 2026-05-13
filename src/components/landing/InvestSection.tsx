@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass, Plus, Sparkles } from "lucide-react";
 
 const plans = [
   {
@@ -19,6 +19,7 @@ const plans = [
       { icon: Search, label: "Prompts monitorados", value: "10" },
       { icon: BarChart2, label: "Consultas/mês", value: "500" },
     ],
+    inheritsFrom: null as string | null,
     highlights: [
       "Score GEO de Visibilidade",
       "Relatório semanal por e-mail",
@@ -39,6 +40,7 @@ const plans = [
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
     ],
+    inheritsFrom: "Presença",
     highlights: [
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
@@ -59,6 +61,7 @@ const plans = [
       { icon: Search, label: "Prompts monitorados", value: "100" },
       { icon: BarChart2, label: "Consultas/mês", value: "10.000" },
     ],
+    inheritsFrom: "Influência",
     highlights: [
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
@@ -245,15 +248,38 @@ const InvestSection = () => {
                       })}
                     </div>
 
-                    {/* Diferenciais */}
-                    <ul className="space-y-2 mb-5 sm:mb-6 flex-1">
-                      {plan.highlights.map((highlight) => (
-                        <li key={highlight} className="flex items-start gap-2 text-xs sm:text-[13px] leading-snug text-foreground/85 font-medium">
-                          <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
-                          <span>{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Diferenciais exclusivos */}
+                    <div className={`relative mb-5 sm:mb-6 rounded-xl border-l-[3px] p-3.5 sm:p-4 flex-1 min-h-[140px] sm:min-h-[160px] ${
+                      plan.highlighted
+                        ? "border-l-accent bg-gradient-to-br from-accent/8 via-accent/3 to-transparent"
+                        : "border-l-ivero-purple bg-gradient-to-br from-ivero-purple/8 via-ivero-purple/3 to-transparent"
+                    }`}>
+                      <div className="flex items-center gap-1.5 mb-2.5">
+                        {plan.inheritsFrom ? (
+                          <>
+                            <Plus className={`w-3.5 h-3.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`} strokeWidth={3} />
+                            <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`}>
+                              Tudo do {plan.inheritsFrom} <span className="opacity-70">+ exclusivos</span>
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-ivero-purple" strokeWidth={2.5} />
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-ivero-purple">
+                              O essencial para começar
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <ul className="space-y-2">
+                        {plan.highlights.map((highlight) => (
+                          <li key={highlight} className="flex items-start gap-2 text-[13px] sm:text-sm leading-snug text-foreground font-semibold">
+                            <Sparkles className={`shrink-0 mt-0.5 w-3.5 h-3.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} strokeWidth={2.5} />
+                            <span>{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
                     <Button
                       variant="hero"
