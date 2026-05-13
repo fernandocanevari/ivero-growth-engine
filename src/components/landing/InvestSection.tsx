@@ -248,15 +248,38 @@ const InvestSection = () => {
                       })}
                     </div>
 
-                    {/* Diferenciais */}
-                    <ul className="space-y-2 mb-5 sm:mb-6 flex-1">
-                      {plan.highlights.map((highlight) => (
-                        <li key={highlight} className="flex items-start gap-2 text-xs sm:text-[13px] leading-snug text-foreground/85 font-medium">
-                          <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
-                          <span>{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Diferenciais exclusivos */}
+                    <div className={`relative mb-5 sm:mb-6 rounded-xl border-l-[3px] p-3.5 sm:p-4 flex-1 min-h-[140px] sm:min-h-[160px] ${
+                      plan.highlighted
+                        ? "border-l-accent bg-gradient-to-br from-accent/8 via-accent/3 to-transparent"
+                        : "border-l-ivero-purple bg-gradient-to-br from-ivero-purple/8 via-ivero-purple/3 to-transparent"
+                    }`}>
+                      <div className="flex items-center gap-1.5 mb-2.5">
+                        {plan.inheritsFrom ? (
+                          <>
+                            <Plus className={`w-3.5 h-3.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`} strokeWidth={3} />
+                            <span className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ${plan.highlighted ? "text-accent" : "text-ivero-purple"}`}>
+                              Tudo do {plan.inheritsFrom} <span className="opacity-70">+ exclusivos</span>
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-ivero-purple" strokeWidth={2.5} />
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-ivero-purple">
+                              O essencial para começar
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <ul className="space-y-2">
+                        {plan.highlights.map((highlight) => (
+                          <li key={highlight} className="flex items-start gap-2 text-[13px] sm:text-sm leading-snug text-foreground font-semibold">
+                            <Sparkles className={`shrink-0 mt-0.5 w-3.5 h-3.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} strokeWidth={2.5} />
+                            <span>{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
                     <Button
                       variant="hero"
