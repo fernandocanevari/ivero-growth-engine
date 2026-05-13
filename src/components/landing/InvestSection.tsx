@@ -124,7 +124,7 @@ const InvestSection = () => {
         </motion.div>
 
         {/* Cards — 1 col mobile, 2 col tablet, 3 col desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-6xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto items-stretch">
           {plans.map((plan, index) => {
             const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
             const isCustom = price === "Custom";
@@ -166,7 +166,7 @@ const InvestSection = () => {
 
                 <div className="flex flex-col flex-1">
                   {/* Plan header */}
-                  <div className={`relative px-5 sm:px-6 pt-4 sm:pt-5 pb-4 mb-1 overflow-hidden ${
+                  <div className={`relative px-4 sm:px-5 pt-3 sm:pt-4 pb-3 mb-1 overflow-hidden ${
                     plan.highlighted
                       ? "bg-gradient-to-br from-accent/12 via-accent/4 to-white"
                       : "bg-gradient-to-br from-ivero-purple/10 via-ivero-purple/3 to-white"
@@ -186,7 +186,7 @@ const InvestSection = () => {
                       </h3>
                     </div>
 
-                    <p className="relative text-xs sm:text-[13px] leading-snug font-semibold text-foreground/80 min-h-[34px] sm:min-h-[36px]">
+                    <p className="relative text-xs sm:text-[13px] leading-snug font-semibold text-foreground/80 min-h-[28px] sm:min-h-[30px]">
                       {plan.tagline}
                     </p>
 
@@ -197,9 +197,9 @@ const InvestSection = () => {
                     }`} />
                   </div>
 
-                  <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-6 flex flex-col flex-1">
+                  <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-4 sm:pb-5 flex flex-col flex-1">
                     {/* Preço */}
-                    <div className="mb-4 min-h-[60px] sm:min-h-[64px] flex flex-col justify-start gap-1.5">
+                    <div className="mb-3 min-h-[48px] sm:min-h-[52px] flex flex-col justify-start gap-1">
                       <motion.div
                         key={price}
                         initial={{ opacity: 0, y: -6 }}
@@ -207,7 +207,7 @@ const InvestSection = () => {
                         transition={{ duration: 0.2 }}
                         className="flex items-baseline gap-1"
                       >
-                        <span className="font-display text-3xl sm:text-[2rem] font-bold text-foreground leading-none tracking-tight">
+                        <span className="font-display text-2xl sm:text-[1.75rem] font-bold text-foreground leading-none tracking-tight">
                           {price}
                         </span>
                         {!isCustom && (
@@ -228,13 +228,13 @@ const InvestSection = () => {
                     </div>
 
                     {/* Métricas-chave — grid 2x2 */}
-                    <div className="grid grid-cols-2 gap-2 mb-4 p-2.5 sm:p-3 rounded-xl border border-accent/15 bg-accent/3">
+                    <div className="grid grid-cols-2 gap-2 mb-3 p-2 sm:p-2.5 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
                         const Icon = metric.icon;
                         return (
-                          <div key={metric.label} className="flex flex-col items-center text-center gap-1 py-1.5 sm:py-2">
-                            <Icon className={`w-5 h-5 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
-                            <span className="text-base sm:text-lg font-bold leading-none text-foreground">
+                          <div key={metric.label} className="flex flex-col items-center text-center gap-0.5 py-1 sm:py-1.5">
+                            <Icon className={`w-4 h-4 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
+                            <span className="text-sm sm:text-base font-bold leading-none text-foreground">
                               {metric.value}
                             </span>
                             <span className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight">
@@ -246,20 +246,20 @@ const InvestSection = () => {
                     </div>
 
                     {/* Diferenciais — minimal e tipográfico */}
-                    <div className="flex-1 flex flex-col mb-4">
-                      <div className={`h-px w-full mb-3 ${
+                    <div className="flex-1 flex flex-col mb-3">
+                      <div className={`h-px w-full mb-2 ${
                         plan.highlighted
                           ? "bg-gradient-to-r from-accent/40 via-accent/15 to-transparent"
                           : "bg-gradient-to-r from-ivero-purple/30 via-ivero-purple/10 to-transparent"
                       }`} />
 
-                      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-2.5 leading-none ${
+                      <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] mb-2 leading-none ${
                         plan.highlighted ? "text-accent" : "text-ivero-purple"
                       }`}>
                         Exclusivos do plano
                       </p>
 
-                      <ul className="space-y-1.5">
+                      <ul className="space-y-1">
                         {plan.highlights.map((highlight) => (
                           <li key={highlight} className="flex items-start gap-2 text-[13px] leading-snug text-foreground font-semibold">
                             <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
@@ -272,7 +272,7 @@ const InvestSection = () => {
                     <Button
                       variant="hero"
                       size="sm"
-                      className="w-full mt-auto text-xs py-4"
+                      className="w-full mt-auto text-xs py-3"
                     >
                       {plan.cta}
                     </Button>
