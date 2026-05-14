@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target } from "lucide-react";
+import { Target, Settings } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { comparativeData } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
@@ -24,8 +24,10 @@ export default function ComparativoPage() {
         icon={<Target className="h-12 w-12" />}
         title="Análise Comparativa"
         subtitle="Compare sua visibilidade com a de concorrentes em cada modelo de IA."
-        message={!hasCompetitor ? "Adicione um concorrente nas configurações para comparar" : "Nenhum dado comparativo disponível ainda"}
+        message={!hasCompetitor ? "Nenhum concorrente cadastrado ainda" : "Nenhum dado comparativo disponível ainda"}
+        description={!hasCompetitor ? "Para ver sua análise comparativa, adicione ao menos um concorrente nas configurações." : undefined}
         hasBrand={hasBrand}
+        cta={!hasCompetitor ? { label: "Adicionar concorrente", to: "/dashboard/configuracoes", icon: <Settings className="h-4 w-4 mr-2" /> } : undefined}
       />
     );
   }

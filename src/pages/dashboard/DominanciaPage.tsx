@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { Target } from "lucide-react";
+import { Target, Settings } from "lucide-react";
 import { dominanceData } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
@@ -18,14 +18,16 @@ export default function DominanciaPage() {
 
   if (isLoading) return null;
 
-  if (!hasData) {
+  if (!hasData || !hasCompetitor) {
     return (
       <EmptyStatePage
         icon={<Target className="h-12 w-12" />}
         title="Dominância por Modelo"
         subtitle="Participação da sua marca nas respostas de cada IA."
-        message={!hasCompetitor ? "Adicione um concorrente nas configurações para ver a dominância" : "Nenhum dado de dominância disponível ainda"}
+        message={!hasCompetitor ? "Nenhum concorrente cadastrado ainda" : "Nenhum dado de dominância disponível ainda"}
+        description={!hasCompetitor ? "Para ver sua dominância por modelo, adicione ao menos um concorrente nas configurações." : undefined}
         hasBrand={hasBrand}
+        cta={!hasCompetitor ? { label: "Adicionar concorrente", to: "/dashboard/configuracoes", icon: <Settings className="h-4 w-4 mr-2" /> } : undefined}
       />
     );
   }
