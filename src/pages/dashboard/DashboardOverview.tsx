@@ -62,7 +62,11 @@ export default function DashboardOverview() {
         </p>
       </motion.div>
 
+      {/* Onboarding checklist — some sozinho quando todas etapas concluídas */}
+      <OnboardingChecklistCard />
+
       {/* Setup banner when brand not configured */}
+
       {!hasBrand && (
         <motion.div {...fade} transition={{ delay: 0.05 }}>
           <Card className="border-primary/30 bg-primary/5">
