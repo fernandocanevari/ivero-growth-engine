@@ -224,6 +224,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_onboarding_progress: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          visited_acoes: boolean
+          visited_diagnostico: boolean
+          visited_score: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          visited_acoes?: boolean
+          visited_diagnostico?: boolean
+          visited_score?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          visited_acoes?: boolean
+          visited_diagnostico?: boolean
+          visited_score?: boolean
+        }
+        Relationships: []
+      }
       generated_content: {
         Row: {
           article_md: string
