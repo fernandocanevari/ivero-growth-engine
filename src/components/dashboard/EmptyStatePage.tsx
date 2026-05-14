@@ -17,7 +17,7 @@ interface EmptyStatePageProps {
   cta?: { label: string; to: string; icon?: ReactNode };
 }
 
-export function EmptyStatePage({ icon, title, subtitle, message, hasBrand, cta }: EmptyStatePageProps) {
+export function EmptyStatePage({ icon, title, subtitle, message, hasBrand, description, cta }: EmptyStatePageProps) {
   const navigate = useNavigate();
 
   return (
@@ -32,12 +32,16 @@ export function EmptyStatePage({ icon, title, subtitle, message, hasBrand, cta }
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
             <div className="text-muted-foreground mb-4">{icon}</div>
             <p className="text-base font-medium text-foreground">{message}</p>
-            {!(hasBrand && cta) && (
-              <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                {hasBrand
-                  ? "Seus dados estão sendo coletados. Assim que estiverem prontos, as informações aparecerão aqui automaticamente."
-                  : "Configure sua marca nas configurações para começar a coletar dados."}
-              </p>
+            {description ? (
+              <p className="text-sm text-muted-foreground mt-2 max-w-md">{description}</p>
+            ) : (
+              !(hasBrand && cta) && (
+                <p className="text-sm text-muted-foreground mt-2 max-w-md">
+                  {hasBrand
+                    ? "Seus dados estão sendo coletados. Assim que estiverem prontos, as informações aparecerão aqui automaticamente."
+                    : "Configure sua marca nas configurações para começar a coletar dados."}
+                </p>
+              )
             )}
             {!hasBrand && (
               <Button className="mt-4" onClick={() => navigate("/dashboard/configuracoes")}>
