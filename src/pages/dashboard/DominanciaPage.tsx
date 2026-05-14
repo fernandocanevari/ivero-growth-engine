@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { Target } from "lucide-react";
+import { Target, Settings } from "lucide-react";
 import { dominanceData } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
