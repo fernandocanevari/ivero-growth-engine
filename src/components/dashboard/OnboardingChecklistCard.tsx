@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Circle, ArrowRight, Sparkles } from "lucide-react";
+import { Check, Circle, ArrowRight, Sparkles, X, ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useDashboardOnboarding } from "@/hooks/useDashboardOnboarding";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Step {
   key: "diagnostico" | "competitor" | "score" | "acoes";
@@ -12,10 +16,28 @@ interface Step {
   done: boolean;
 }
 
+const SNOOZE_PREFIX = "ivero_dashboard_checklist_snoozed_until:";
+const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export function OnboardingChecklistCard() {
   const navigate = useNavigate();
   const { data: progress, isLoading } = useDashboardOnboarding();
   const { data: settings } = useBrandSettings();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [snoozedUntil, setSnoozedUntil] = useState<number>(0);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!active || !user) return;
+      setUserId(user.id);
+      const until = Number(localStorage.getItem(SNOOZE_PREFIX + user.id) || 0);
+      setSnoozedUntil(until);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (isLoading || !progress) return null;
 
@@ -53,6 +75,40 @@ export function OnboardingChecklistCard() {
   if (allDone) return null;
 
   const pct = Math.round((completed / steps.length) * 100);
+  const isSnoozed = Date.now() < snoozedUntil;
+
+  const handleSnooze = () => {
+    if (!userId) return;
+    const until = Date.now() + SNOOZE_MS;
+    localStorage.setItem(SNOOZE_PREFIX + userId, String(until));
+    setSnoozedUntil(until);
+    toast({
+      title: "Checklist ocultado por 7 dias",
+      description: 'Você pode reexibir a qualquer momento clicando em "Reexibir checklist".',
+    });
+  };
+
+  const handleRestore = () => {
+    if (!userId) return;
+    localStorage.removeItem(SNOOZE_PREFIX + userId);
+    setSnoozedUntil(0);
+  };
+
+  if (isSnoozed) {
+    return (
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRestore}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ListChecks className="h-4 w-4" />
+          Reexibir checklist
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -76,7 +132,18 @@ export function OnboardingChecklistCard() {
                 </p>
               </div>
             </div>
-            <div className="hidden sm:block text-xs font-semibold text-primary">{pct}%</div>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline text-xs font-semibold text-primary">{pct}%</span>
+              <button
+                type="button"
+                onClick={handleSnooze}
+                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                aria-label="Ocultar checklist por 7 dias"
+                title="Ocultar por 7 dias"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden mb-4">
@@ -121,6 +188,14 @@ export function OnboardingChecklistCard() {
               </li>
             ))}
           </ul>
+
+          <button
+            type="button"
+            onClick={handleSnooze}
+            className="mt-4 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+          >
+            Lembrar daqui a 7 dias
+          </button>
         </CardContent>
       </Card>
     </motion.div>
