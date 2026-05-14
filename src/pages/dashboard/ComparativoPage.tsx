@@ -25,6 +25,7 @@ export default function ComparativoPage() {
         title="Análise Comparativa"
         subtitle="Compare sua visibilidade com a de concorrentes em cada modelo de IA."
         message={!hasCompetitor ? "Nenhum concorrente cadastrado ainda" : "Nenhum dado comparativo disponível ainda"}
+        description={!hasCompetitor ? "Para ver sua análise comparativa, adicione ao menos um concorrente nas configurações." : undefined}
         hasBrand={hasBrand}
         cta={!hasCompetitor ? { label: "Adicionar concorrente", to: "/dashboard/configuracoes", icon: <Settings className="h-4 w-4 mr-2" /> } : undefined}
       />
