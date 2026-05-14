@@ -12,6 +12,8 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdoptPendingAudit } from "@/hooks/useAdoptPendingAudit";
+import { useTrackOnboardingVisit } from "@/hooks/useDashboardOnboarding";
+import { LibrarySheet } from "./LibrarySheet";
 
 const SNOOZE_PREFIX = "ivero_onboarding_snoozed_until:";
 const LEGACY_KEY = "ivero_onboarding_snoozed_until";
@@ -27,6 +29,8 @@ export default function DashboardLayout() {
 
   // Adopta snapshot anônimo do sessionStorage (caso o usuário tenha vindo do /preview).
   useAdoptPendingAudit();
+  // Marca etapas do onboarding automaticamente conforme o usuário visita rotas.
+  useTrackOnboardingVisit();
 
   // Resolve current user, then check per-user snooze (and clear legacy global key)
   useEffect(() => {
@@ -82,6 +86,7 @@ export default function DashboardLayout() {
               <SidebarTrigger />
               <div className="flex-1" />
               <div className="flex items-center gap-2">
+                <LibrarySheet />
                 <span className="text-sm text-muted-foreground">Fev 2026</span>
               </div>
             </header>

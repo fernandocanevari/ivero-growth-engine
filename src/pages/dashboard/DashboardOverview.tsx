@@ -12,6 +12,7 @@ import {
 } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
+import { OnboardingChecklistCard } from "@/components/dashboard/OnboardingChecklistCard";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
@@ -61,7 +62,11 @@ export default function DashboardOverview() {
         </p>
       </motion.div>
 
+      {/* Onboarding checklist — some sozinho quando todas etapas concluídas */}
+      <OnboardingChecklistCard />
+
       {/* Setup banner when brand not configured */}
+
       {!hasBrand && (
         <motion.div {...fade} transition={{ delay: 0.05 }}>
           <Card className="border-primary/30 bg-primary/5">
