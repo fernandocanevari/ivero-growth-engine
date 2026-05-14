@@ -25,6 +25,7 @@ export default function DominanciaPage() {
         title="Dominância por Modelo"
         subtitle="Participação da sua marca nas respostas de cada IA."
         message={!hasCompetitor ? "Nenhum concorrente cadastrado ainda" : "Nenhum dado de dominância disponível ainda"}
+        description={!hasCompetitor ? "Para ver sua dominância por modelo, adicione ao menos um concorrente nas configurações." : undefined}
         hasBrand={hasBrand}
         cta={!hasCompetitor ? { label: "Adicionar concorrente", to: "/dashboard/configuracoes", icon: <Settings className="h-4 w-4 mr-2" /> } : undefined}
       />
