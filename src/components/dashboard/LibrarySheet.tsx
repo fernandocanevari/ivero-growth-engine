@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Search, BookOpen } from "lucide-react";
+import { ArrowRight, Search, BookOpen, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { useDashboardOnboarding } from "@/hooks/useDashboardOnboarding";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
 
 interface LibraryEntry {
   name: string;
