@@ -11,7 +11,9 @@ interface EmptyStatePageProps {
   subtitle: string;
   message: string;
   hasBrand: boolean;
-  /** CTA opcional exibido quando a marca já está configurada (substitui a frase de "coletando dados"). */
+  /** Texto explicativo exibido abaixo da message (substitui o texto padrão de "coletando dados"). */
+  description?: string;
+  /** CTA opcional exibido quando a marca já está configurada. */
   cta?: { label: string; to: string; icon?: ReactNode };
 }
 
