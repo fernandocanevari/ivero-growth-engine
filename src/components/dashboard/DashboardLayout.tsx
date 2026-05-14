@@ -29,6 +29,8 @@ export default function DashboardLayout() {
 
   // Adopta snapshot anônimo do sessionStorage (caso o usuário tenha vindo do /preview).
   useAdoptPendingAudit();
+  // Marca etapas do onboarding automaticamente conforme o usuário visita rotas.
+  useTrackOnboardingVisit();
 
   // Resolve current user, then check per-user snooze (and clear legacy global key)
   useEffect(() => {
