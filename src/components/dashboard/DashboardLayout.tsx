@@ -12,6 +12,8 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdoptPendingAudit } from "@/hooks/useAdoptPendingAudit";
+import { useTrackOnboardingVisit } from "@/hooks/useDashboardOnboarding";
+import { LibrarySheet } from "./LibrarySheet";
 
 const SNOOZE_PREFIX = "ivero_onboarding_snoozed_until:";
 const LEGACY_KEY = "ivero_onboarding_snoozed_until";
