@@ -188,6 +188,20 @@ export function LibrarySheet() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { data: progress } = useDashboardOnboarding();
+  const { data: settings } = useBrandSettings();
+
+  // URLs ligadas a etapas pendentes do onboarding — destacadas na biblioteca.
+  const pendingUrls = useMemo(() => {
+    const set = new Set<string>();
+    if (!progress) return set;
+    if (!progress.visited_diagnostico) set.add("/dashboard/diagnostico");
+    if (!progress.visited_score) set.add("/dashboard/score");
+    if (!progress.visited_acoes) set.add("/dashboard/acoes");
+    const hasCompetitor = !!(settings?.main_competitor && settings.main_competitor.trim().length);
+    if (!hasCompetitor) set.add("/dashboard/configuracoes");
+    return set;
+  }, [progress, settings]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
