@@ -18,14 +18,15 @@ export default function DominanciaPage() {
 
   if (isLoading) return null;
 
-  if (!hasData) {
+  if (!hasData || !hasCompetitor) {
     return (
       <EmptyStatePage
         icon={<Target className="h-12 w-12" />}
         title="Dominância por Modelo"
         subtitle="Participação da sua marca nas respostas de cada IA."
-        message={!hasCompetitor ? "Adicione um concorrente nas configurações para ver a dominância" : "Nenhum dado de dominância disponível ainda"}
+        message={!hasCompetitor ? "Nenhum concorrente cadastrado ainda" : "Nenhum dado de dominância disponível ainda"}
         hasBrand={hasBrand}
+        cta={!hasCompetitor ? { label: "Adicionar concorrente", to: "/dashboard/configuracoes", icon: <Settings className="h-4 w-4 mr-2" /> } : undefined}
       />
     );
   }
