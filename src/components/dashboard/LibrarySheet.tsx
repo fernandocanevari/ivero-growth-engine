@@ -256,6 +256,16 @@ export function LibrarySheet() {
         </div>
 
         <div className="p-5 space-y-6">
+          {pendingUrls.size > 0 && !query && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
+              <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-xs text-foreground/80">
+                Páginas com <span className="font-semibold text-primary">destaque</span> são
+                seus próximos passos sugeridos no onboarding.
+              </p>
+            </div>
+          )}
+
           {filtered.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
               Nenhuma página encontrada para "{query}".
@@ -268,36 +278,54 @@ export function LibrarySheet() {
                 {section.label}
               </h3>
               <div className="space-y-3">
-                {section.entries.map((entry) => (
-                  <article
-                    key={entry.url}
-                    className="rounded-lg border border-border bg-card p-4"
-                  >
-                    <h4 className="text-sm font-semibold text-foreground mb-2">{entry.name}</h4>
-                    <dl className="space-y-1.5 text-xs">
-                      <div>
-                        <dt className="font-medium text-muted-foreground inline">O que é: </dt>
-                        <dd className="inline text-foreground/80">{entry.what}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-muted-foreground inline">Para que serve: </dt>
-                        <dd className="inline text-foreground/80">{entry.purpose}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-muted-foreground inline">Quando usar: </dt>
-                        <dd className="inline text-foreground/80">{entry.when}</dd>
-                      </div>
-                    </dl>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-3 -ml-2 text-primary hover:text-primary"
-                      onClick={() => handleGo(entry.url)}
+                {section.entries.map((entry) => {
+                  const isPending = pendingUrls.has(entry.url);
+                  return (
+                    <article
+                      key={entry.url}
+                      className={`rounded-lg border p-4 transition-colors ${
+                        isPending
+                          ? "border-primary/40 bg-primary/[0.03] shadow-sm"
+                          : "border-border bg-card"
+                      }`}
                     >
-                      Ir para {entry.name} <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </article>
-                ))}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="text-sm font-semibold text-foreground">{entry.name}</h4>
+                        {isPending && (
+                          <Badge
+                            variant="outline"
+                            className="border-primary/40 bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wide gap-1 shrink-0"
+                          >
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Próximo passo
+                          </Badge>
+                        )}
+                      </div>
+                      <dl className="space-y-1.5 text-xs">
+                        <div>
+                          <dt className="font-medium text-muted-foreground inline">O que é: </dt>
+                          <dd className="inline text-foreground/80">{entry.what}</dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-muted-foreground inline">Para que serve: </dt>
+                          <dd className="inline text-foreground/80">{entry.purpose}</dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-muted-foreground inline">Quando usar: </dt>
+                          <dd className="inline text-foreground/80">{entry.when}</dd>
+                        </div>
+                      </dl>
+                      <Button
+                        variant={isPending ? "default" : "ghost"}
+                        size="sm"
+                        className={`mt-3 ${isPending ? "" : "-ml-2 text-primary hover:text-primary"}`}
+                        onClick={() => handleGo(entry.url)}
+                      >
+                        Ir para {entry.name} <ArrowRight className="h-3 w-3" />
+                      </Button>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ))}
