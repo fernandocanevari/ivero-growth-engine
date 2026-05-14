@@ -86,6 +86,7 @@ export default function DashboardLayout() {
               <SidebarTrigger />
               <div className="flex-1" />
               <div className="flex items-center gap-2">
+                <LibrarySheet />
                 <span className="text-sm text-muted-foreground">Fev 2026</span>
               </div>
             </header>
