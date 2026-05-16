@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
+import { DashboardBreadcrumb } from "./DashboardBreadcrumb";
 import OnboardingWizard from "./OnboardingWizard";
 import SupportWidget from "./SupportWidget";
 import { TrialBanner } from "./TrialBanner";
