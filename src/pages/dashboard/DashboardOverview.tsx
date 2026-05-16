@@ -88,8 +88,8 @@ export default function DashboardOverview() {
 
       {/* BLOCO 1: Como sua marca está sendo percebida? */}
       <motion.section {...fade} transition={{ delay: 0.1 }}>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-primary/15" />
           Como sua marca está sendo percebida?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -173,8 +173,8 @@ export default function DashboardOverview() {
 
       {/* BLOCO 2: Onde você está ganhando ou perdendo? */}
       <motion.section {...fade} transition={{ delay: 0.2 }}>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent ring-4 ring-accent/15" />
           Onde você está ganhando ou perdendo?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -241,8 +241,8 @@ export default function DashboardOverview() {
 
       {/* BLOCO 3: O que fazer agora? */}
       <motion.section {...fade} transition={{ delay: 0.3 }}>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/15" />
           O que fazer agora?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
