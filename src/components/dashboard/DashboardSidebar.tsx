@@ -131,7 +131,7 @@ export function DashboardSidebar() {
                       {/* Indicador ativo: barra lateral com glow (visível só quando aria-current=page) */}
                       <span
                         aria-hidden
-                        className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary opacity-0 shadow-[0_0_12px_2px_hsl(var(--primary)/0.55)] transition-opacity [a[aria-current=page]_>_&]:opacity-100"
+                        className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary opacity-0 shadow-[0_0_12px_2px_hsl(var(--primary)/0.55)] transition-opacity [[aria-current=page]_&]:opacity-100"
                       />
                       <item.icon className="h-4 w-4 shrink-0" />
                       <span className="truncate">{item.title}</span>
