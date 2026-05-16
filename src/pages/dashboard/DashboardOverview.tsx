@@ -171,10 +171,7 @@ export default function DashboardOverview() {
 
       {/* BLOCO 2: Onde você está ganhando ou perdendo? */}
       <motion.section {...fade} transition={{ delay: 0.2 }}>
-        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
-          <span className="h-2.5 w-2.5 rounded-full bg-accent ring-4 ring-accent/15" />
-          Onde você está ganhando ou perdendo?
-        </h2>
+        <SectionHeader tone="accent">Onde você está ganhando ou perdendo?</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Menções por modelo */}
           {hasMonitoringData ? (
