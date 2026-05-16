@@ -1,6 +1,7 @@
 /**
- * Hook-level tests: garante que falhas reais do Supabase em mutations
- * disparam o toast destrutivo padronizado via onError.
+ * Hook-level tests refatorados: percorrem a matriz de cenários do
+ * Supabase (RLS, unique, FK, network, timeout, 5xx, unknown) para cada
+ * mutation crítica, garantindo que onError dispara o toast padronizado.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
@@ -12,10 +13,8 @@ vi.mock("@/hooks/use-toast", () => ({
   toast: (args: unknown) => toastMock(args),
 }));
 
-// Supabase client mock — controla resposta de cada chamada
 const authGetUser = vi.fn();
 const fromMock = vi.fn();
-
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getUser: () => authGetUser() },
@@ -26,6 +25,10 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { useAuditReports } from "./useAuditReports";
 import { useAnalysisHistory } from "./useAnalysisHistory";
 import { useOnboarding } from "./useOnboarding";
+import {
+  SUPABASE_ERROR_SCENARIOS,
+  makeFailingChain,
+} from "@/test/supabase-error-scenarios";
 
 function wrapper() {
   const qc = new QueryClient({
@@ -42,93 +45,75 @@ beforeEach(() => {
   authGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
 });
 
-describe("useAuditReports.remove — Supabase failure → toast", () => {
-  it("dispara toast destrutivo quando delete falha (RLS)", async () => {
-    // SELECT (list query) — vazio mas ok
-    const selectChain = {
-      select: () => selectChain,
-      eq: () => selectChain,
-      order: () => Promise.resolve({ data: [], error: null }),
-      delete: () => selectChain,
-    };
-    // delete().eq() → erro
-    const deleteChain = {
-      delete: () => deleteChain,
-      eq: () => Promise.resolve({ error: { message: "permission denied for table audit_reports" } }),
-    };
+interface HookCase {
+  name: string;
+  expectedTitle: string;
+  terminator: "insert" | "delete";
+  run: () => Promise<void>;
+}
 
-    fromMock.mockImplementation(() => ({
-      ...selectChain,
-      ...deleteChain,
-    }));
+const CASES: HookCase[] = [
+  {
+    name: "useAuditReports.remove",
+    expectedTitle: "Não foi possível remover o relatório",
+    terminator: "delete",
+    run: async () => {
+      const { result } = renderHook(() => useAuditReports(), { wrapper: wrapper() });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        try { await result.current.remove.mutateAsync("abc"); } catch {}
+      });
+    },
+  },
+  {
+    name: "useAnalysisHistory.runAnalysis",
+    expectedTitle: "Não foi possível salvar a análise",
+    terminator: "insert",
+    run: async () => {
+      const { result } = renderHook(() => useAnalysisHistory(), { wrapper: wrapper() });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        try {
+          await result.current.runAnalysis.mutateAsync({
+            clarity: 50, authority: 50, conversion: 50, positioning: 50, experience: 50,
+          });
+        } catch {}
+      });
+    },
+  },
+  {
+    name: "useOnboarding.saveAnswers",
+    expectedTitle: "Não foi possível salvar suas respostas",
+    terminator: "insert",
+    run: async () => {
+      const { result } = renderHook(() => useOnboarding(), { wrapper: wrapper() });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        try {
+          await result.current.saveAnswers.mutateAsync({
+            question_1: "a", question_2: "b", question_3: "c",
+          });
+        } catch {}
+      });
+    },
+  },
+];
 
-    const { result } = renderHook(() => useAuditReports(), { wrapper: wrapper() });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+describe("Mutations × matriz Supabase → toast padronizado", () => {
+  for (const c of CASES) {
+    describe(c.name, () => {
+      it.each(SUPABASE_ERROR_SCENARIOS)(
+        "[$id] $label dispara toast destrutivo",
+        async (scenario) => {
+          fromMock.mockReturnValue(makeFailingChain(c.terminator, scenario.error));
+          await c.run();
 
-    await act(async () => {
-      try { await result.current.remove.mutateAsync("abc"); } catch {}
+          await waitFor(() => expect(toastMock).toHaveBeenCalled());
+          const call = toastMock.mock.calls.find((x) => x[0]?.variant === "destructive");
+          expect(call?.[0].title).toBe(c.expectedTitle);
+          expect(String(call?.[0].description)).toContain(scenario.expectedFragment);
+        },
+      );
     });
-
-    await waitFor(() => expect(toastMock).toHaveBeenCalled());
-    const call = toastMock.mock.calls.find((c) => c[0]?.variant === "destructive");
-    expect(call?.[0].title).toBe("Não foi possível remover o relatório");
-    expect(call?.[0].description).toContain("permission denied");
-  });
-});
-
-describe("useAnalysisHistory.runAnalysis — Supabase failure → toast", () => {
-  it("dispara toast destrutivo quando insert falha (unique constraint)", async () => {
-    const chain: any = {
-      select: () => chain,
-      eq: () => chain,
-      order: () => Promise.resolve({ data: [], error: null }),
-      insert: () => Promise.resolve({ error: { message: "duplicate key value violates unique constraint" } }),
-    };
-    fromMock.mockReturnValue(chain);
-
-    const { result } = renderHook(() => useAnalysisHistory(), { wrapper: wrapper() });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    await act(async () => {
-      try {
-        await result.current.runAnalysis.mutateAsync({
-          clarity: 50, authority: 50, conversion: 50, positioning: 50, experience: 50,
-        });
-      } catch {}
-    });
-
-    await waitFor(() => expect(toastMock).toHaveBeenCalled());
-    const call = toastMock.mock.calls.find((c) => c[0]?.variant === "destructive");
-    expect(call?.[0].title).toBe("Não foi possível salvar a análise");
-    expect(call?.[0].description).toContain("duplicate key");
-  });
-});
-
-describe("useOnboarding.saveAnswers — Supabase failure → toast", () => {
-  it("dispara toast destrutivo quando insert falha (network)", async () => {
-    const chain: any = {
-      select: () => chain,
-      eq: () => chain,
-      maybeSingle: () => Promise.resolve({ data: null, error: null }),
-      insert: () => Promise.resolve({ error: { message: "network unreachable" } }),
-      update: () => chain,
-    };
-    fromMock.mockReturnValue(chain);
-
-    const { result } = renderHook(() => useOnboarding(), { wrapper: wrapper() });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    await act(async () => {
-      try {
-        await result.current.saveAnswers.mutateAsync({
-          question_1: "a", question_2: "b", question_3: "c",
-        });
-      } catch {}
-    });
-
-    await waitFor(() => expect(toastMock).toHaveBeenCalled());
-    const call = toastMock.mock.calls.find((c) => c[0]?.variant === "destructive");
-    expect(call?.[0].title).toBe("Não foi possível salvar suas respostas");
-    expect(call?.[0].description).toContain("network unreachable");
-  });
+  }
 });
