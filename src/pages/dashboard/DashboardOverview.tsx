@@ -88,8 +88,8 @@ export default function DashboardOverview() {
 
       {/* BLOCO 1: Como sua marca está sendo percebida? */}
       <motion.section {...fade} transition={{ delay: 0.1 }}>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-primary/15" />
           Como sua marca está sendo percebida?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
