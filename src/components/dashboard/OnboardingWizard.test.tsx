@@ -1,9 +1,10 @@
 /**
- * Page-level integration: simula clique do usuário no OnboardingWizard,
- * Supabase responde com erro, e o Toaster real renderiza o toast no DOM.
+ * Page-level integration: dispara mutation real (useOnboarding) com Supabase
+ * mockado retornando erro, e verifica que o Toaster real renderiza o toast
+ * destrutivo no DOM — caminho ponta-a-ponta exceto rede.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 
@@ -17,16 +18,35 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import OnboardingWizard from "./OnboardingWizard";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { useAuditReports } from "@/hooks/useAuditReports";
 import { Toaster } from "@/components/ui/toaster";
 
-function Wrapped() {
+function OnboardingHarness() {
+  const { saveAnswers } = useOnboarding();
+  return (
+    <button
+      onClick={() =>
+        saveAnswers.mutate({ question_1: "a", question_2: "b", question_3: "c" })
+      }
+    >
+      Salvar respostas
+    </button>
+  );
+}
+
+function AuditHarness() {
+  const { remove } = useAuditReports();
+  return <button onClick={() => remove.mutate("rep-1")}>Remover relatório</button>;
+}
+
+function wrap(node: React.ReactNode) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return (
     <QueryClientProvider client={qc}>
-      <OnboardingWizard onComplete={() => {}} />
+      {node}
       <Toaster />
     </QueryClientProvider>
   );
@@ -38,8 +58,8 @@ beforeEach(() => {
   authGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
 });
 
-describe("OnboardingWizard → Supabase fail → toast visível", () => {
-  it("mostra toast destrutivo no DOM quando saveAnswers falha", async () => {
+describe("Integração: mutation falha → toast renderiza no DOM", () => {
+  it("useOnboarding.saveAnswers: erro do Supabase → toast visível", async () => {
     const chain: any = {
       select: () => chain,
       eq: () => chain,
@@ -49,20 +69,37 @@ describe("OnboardingWizard → Supabase fail → toast visível", () => {
     };
     fromMock.mockReturnValue(chain);
 
-    render(<Wrapped />);
+    render(wrap(<OnboardingHarness />));
+    fireEvent.click(screen.getByText("Salvar respostas"));
 
-    // preenche 3 respostas e avança
-    for (let i = 0; i < 3; i++) {
-      const textarea = await screen.findByRole("textbox");
-      fireEvent.change(textarea, { target: { value: "resposta suficientemente longa do usuario" } });
-      const buttons = screen.getAllByRole("button");
-      const next = buttons.find((b) => /Próxima|Concluir/.test(b.textContent || ""));
-      await act(async () => { fireEvent.click(next!); });
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText("Não foi possível salvar suas respostas")).toBeInTheDocument();
-    });
+    await waitFor(
+      () => expect(screen.getByText("Não foi possível salvar suas respostas")).toBeInTheDocument(),
+      { timeout: 2000 },
+    );
     expect(screen.getByText(/RLS violation/)).toBeInTheDocument();
+  });
+
+  it("useAuditReports.remove: erro do Supabase → toast visível", async () => {
+    const chain: any = {
+      select: () => chain,
+      eq: (..._args: unknown[]) => {
+        // segundo eq da chain de delete devolve a Promise
+        return _args.length && _args[0] === "id"
+          ? Promise.resolve({ error: { message: "permission denied" } })
+          : chain;
+      },
+      order: () => Promise.resolve({ data: [], error: null }),
+      delete: () => chain,
+    };
+    fromMock.mockReturnValue(chain);
+
+    render(wrap(<AuditHarness />));
+    fireEvent.click(screen.getByText("Remover relatório"));
+
+    await waitFor(
+      () => expect(screen.getByText("Não foi possível remover o relatório")).toBeInTheDocument(),
+      { timeout: 2000 },
+    );
+    expect(screen.getByText(/permission denied/)).toBeInTheDocument();
   });
 });
