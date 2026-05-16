@@ -13,6 +13,7 @@ import {
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { OnboardingChecklistCard } from "@/components/dashboard/OnboardingChecklistCard";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
@@ -88,10 +89,7 @@ export default function DashboardOverview() {
 
       {/* BLOCO 1: Como sua marca está sendo percebida? */}
       <motion.section {...fade} transition={{ delay: 0.1 }}>
-        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
-          <span className="h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-primary/15" />
-          Como sua marca está sendo percebida?
-        </h2>
+        <SectionHeader tone="primary">Como sua marca está sendo percebida?</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Score GEO */}
           {hasScoreData ? (
@@ -173,10 +171,7 @@ export default function DashboardOverview() {
 
       {/* BLOCO 2: Onde você está ganhando ou perdendo? */}
       <motion.section {...fade} transition={{ delay: 0.2 }}>
-        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
-          <span className="h-2.5 w-2.5 rounded-full bg-accent ring-4 ring-accent/15" />
-          Onde você está ganhando ou perdendo?
-        </h2>
+        <SectionHeader tone="accent">Onde você está ganhando ou perdendo?</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Menções por modelo */}
           {hasMonitoringData ? (
@@ -241,10 +236,7 @@ export default function DashboardOverview() {
 
       {/* BLOCO 3: O que fazer agora? */}
       <motion.section {...fade} transition={{ delay: 0.3 }}>
-        <h2 className="text-base sm:text-lg font-bold font-display text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/15" />
-          O que fazer agora?
-        </h2>
+        <SectionHeader tone="emerald">O que fazer agora?</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Ações */}
           {hasActions ? (
