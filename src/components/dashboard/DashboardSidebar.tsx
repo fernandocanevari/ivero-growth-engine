@@ -175,90 +175,33 @@ export function DashboardSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/admin"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <Crown className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Painel Admin</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/admin/clientes"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <Users className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Clientes</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/admin/leads"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <Mail className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Leads</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/admin/propostas"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <FileSignature className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Propostas</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/admin/convites"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <Send className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Convites</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/admin/respostas"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <MessageSquare className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Respostas</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/dashboard/prompt-tester"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <TestTube className="h-4 w-4 shrink-0" />
-                      <span className="truncate">Prompt Tester</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {[
+                  { title: "Painel Admin", url: "/dashboard/admin", icon: Crown },
+                  { title: "Clientes", url: "/dashboard/admin/clientes", icon: Users },
+                  { title: "Leads", url: "/dashboard/admin/leads", icon: Mail },
+                  { title: "Propostas", url: "/dashboard/admin/propostas", icon: FileSignature },
+                  { title: "Convites", url: "/dashboard/admin/convites", icon: Send },
+                  { title: "Respostas", url: "/dashboard/admin/respostas", icon: MessageSquare },
+                  { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: TestTube },
+                ].map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/dashboard/admin"}
+                        className="relative flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm text-muted-foreground transition-all hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        activeClassName="bg-primary/12 text-primary font-semibold shadow-sm ring-1 ring-primary/20 hover:bg-primary/15 hover:text-primary"
+                      >
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary opacity-0 shadow-[0_0_12px_2px_hsl(var(--primary)/0.55)] transition-opacity [[aria-current=page]_&]:opacity-100"
+                        />
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
