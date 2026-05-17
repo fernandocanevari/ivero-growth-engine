@@ -96,7 +96,7 @@ export function DashboardSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border bg-gradient-to-b from-white via-muted/50 to-primary/5">
       <SidebarHeader className="p-4 border-b border-border">
         <NavLink to="/dashboard" className="flex items-center gap-2">
           <span className="text-xl font-bold font-display text-gradient">Ivero</span>
