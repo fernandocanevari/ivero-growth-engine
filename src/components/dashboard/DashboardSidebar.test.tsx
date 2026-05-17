@@ -33,6 +33,8 @@ function Harness({ initialPath = "/dashboard/diagnostico" }: { initialPath?: str
       <SidebarProvider>
         <DashboardSidebar />
         <Routes>
+          <Route path="/dashboard" element={<div data-testid="page-content">Conteúdo Dashboard</div>} />
+          <Route path="/dashboard/diagnostico" element={<div data-testid="page-content">Conteúdo Diagnóstico</div>} />
           <Route path="*" element={<CurrentPath />} />
         </Routes>
       </SidebarProvider>
@@ -52,26 +54,48 @@ describe("DashboardSidebar — persistência após navegação", () => {
     expect(link).toHaveAttribute("href", "/dashboard");
   });
 
-  it("permanece renderizada após clicar em 'Dashboard' e navegar", () => {
+  it("permanece renderizada após clicar em 'Dashboard' e carregar a página", () => {
     render(<Harness initialPath="/dashboard/diagnostico" />);
 
-    // Antes do clique: sidebar visível, rota = /dashboard/diagnostico
     expect(screen.getByText("Ivero")).toBeInTheDocument();
-    expect(screen.getByTestId("current-path").textContent).toBe("/dashboard/diagnostico");
+    expect(screen.getByText("Conteúdo Diagnóstico")).toBeInTheDocument();
 
-    // Clica em Dashboard
     fireEvent.click(screen.getByRole("link", { name: /^Dashboard$/i }));
 
-    // Depois do clique: sidebar continua montada e rota mudou para /dashboard
+    // Sidebar continua montada E página de destino renderizou
     expect(screen.getByText("Ivero")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^Dashboard$/i })).toBeInTheDocument();
-    expect(screen.getByTestId("current-path").textContent).toBe("/dashboard");
+    expect(screen.getByText("Conteúdo Dashboard")).toBeInTheDocument();
   });
 
-  it("marca o item Dashboard como ativo (aria-current=page) na rota /dashboard", () => {
+  it("mantém a sidebar ao navegar entre sub-rotas e migra o aria-current", () => {
+    render(<Harness initialPath="/dashboard" />);
+
+    expect(screen.getByRole("link", { name: /^Dashboard$/i })).toHaveAttribute("aria-current", "page");
+
+    fireEvent.click(screen.getByRole("link", { name: /Diagnóstico/i }));
+
+    expect(screen.getByText("Ivero")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Dashboard$/i })).not.toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /Diagnóstico/i })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("após remount (simulando reload) a sidebar volta com Dashboard ativo", () => {
+    const { unmount } = render(<Harness initialPath="/dashboard" />);
+    expect(screen.getByText("Ivero")).toBeInTheDocument();
+    unmount();
+
+    render(<Harness initialPath="/dashboard" />);
+    expect(screen.getByText("Ivero")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Dashboard$/i })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("aplica as classes de contraste do estado ativo no item selecionado", () => {
     render(<Harness initialPath="/dashboard" />);
     const link = screen.getByRole("link", { name: /^Dashboard$/i });
-    expect(link).toHaveAttribute("aria-current", "page");
+    expect(link.className).toMatch(/bg-primary\/15/);
+    expect(link.className).toMatch(/text-primary/);
+    expect(link.className).toMatch(/ring-primary\/25/);
   });
 
   it("NÃO marca o item Dashboard como ativo quando em uma sub-rota (end: true)", () => {
