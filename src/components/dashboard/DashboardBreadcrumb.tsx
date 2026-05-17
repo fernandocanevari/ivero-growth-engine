@@ -1,6 +1,13 @@
 import { useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
+  LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
+  FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
+  Download, Settings, Crown, Users, Mail, Send, FileSignature, Gauge,
+  HelpCircle, Brain, CreditCard, Tags, History, MessageSquare, TestTube,
+  type LucideIcon,
+} from "lucide-react";
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -10,57 +17,62 @@ import {
 } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 
-const menuGroups = [
+type Item = { title: string; url: string; icon: LucideIcon };
+type Group = { label: string; items: Item[] };
+
+// Espelha a estrutura/ícones de DashboardSidebar.tsx para manter o
+// breadcrumb sincronizado com o item ativo do menu.
+const menuGroups: Group[] = [
   {
     label: "Visão Geral",
     items: [
-      { title: "Dashboard", url: "/dashboard" },
-      { title: "Diagnóstico IA", url: "/dashboard/diagnostico" },
-      { title: "Relatórios", url: "/dashboard/auditorias" },
-      { title: "Evolução Estratégica", url: "/dashboard/pilares" },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain },
+      { title: "Relatórios", url: "/dashboard/auditorias", icon: History },
+      { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
     ],
   },
   {
     label: "Inteligência",
     items: [
-      { title: "Monitoramento Multi-IA", url: "/dashboard/monitoramento" },
-      { title: "Análise Comparativa", url: "/dashboard/comparativo" },
-      { title: "Dominância por Modelo", url: "/dashboard/dominancia" },
-      { title: "Score GEO", url: "/dashboard/score" },
-      { title: "Tags de Percepção", url: "/dashboard/tags-percepcao" },
-      { title: "Análise de Sentimento", url: "/dashboard/sentimento" },
-      { title: "Simulador de Influência", url: "/dashboard/simulador" },
+      { title: "Monitoramento Multi-IA", url: "/dashboard/monitoramento", icon: Radar },
+      { title: "Análise Comparativa", url: "/dashboard/comparativo", icon: GitCompare },
+      { title: "Dominância por Modelo", url: "/dashboard/dominancia", icon: BarChart3 },
+      { title: "Score GEO", url: "/dashboard/score", icon: Gauge },
+      { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
+      { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
+      { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
     ],
   },
   {
     label: "Ações",
     items: [
-      { title: "Planos de Ação", url: "/dashboard/acoes" },
-      { title: "Gerador de Conteúdo", url: "/dashboard/conteudo" },
-      { title: "Mapa de Prompts", url: "/dashboard/prompts" },
-      { title: "Alertas", url: "/dashboard/alertas" },
-      { title: "Campanhas", url: "/dashboard/campanhas" },
+      { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
+      { title: "Gerador de Conteúdo", url: "/dashboard/conteudo", icon: PenLine },
+      { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
+      { title: "Alertas", url: "/dashboard/alertas", icon: Bell },
+      { title: "Campanhas", url: "/dashboard/campanhas", icon: Megaphone },
     ],
   },
   {
     label: "Extras",
     items: [
-      { title: "Exportar Dados", url: "/dashboard/relatorios" },
-      { title: "Assinatura", url: "/dashboard/assinatura" },
-      { title: "Configurações", url: "/dashboard/configuracoes" },
-      { title: "Central de Ajuda", url: "/dashboard/ajuda" },
+      { title: "Exportar Dados", url: "/dashboard/relatorios", icon: Download },
+      { title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard },
+      { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
+      { title: "Central de Ajuda", url: "/dashboard/ajuda", icon: HelpCircle },
     ],
   },
   {
     label: "Administração",
     items: [
-      { title: "Painel Admin", url: "/dashboard/admin" },
-      { title: "Clientes", url: "/dashboard/admin/clientes" },
-      { title: "Leads", url: "/dashboard/admin/leads" },
-      { title: "Propostas", url: "/dashboard/admin/propostas" },
-      { title: "Convites", url: "/dashboard/admin/convites" },
-      { title: "Respostas", url: "/dashboard/admin/respostas" },
-      { title: "Prompt Tester", url: "/dashboard/prompt-tester" },
+      { title: "Painel Admin", url: "/dashboard/admin", icon: Crown },
+      { title: "Clientes", url: "/dashboard/admin/clientes", icon: Users },
+      { title: "Leads", url: "/dashboard/admin/leads", icon: Mail },
+      { title: "Propostas", url: "/dashboard/admin/propostas", icon: FileSignature },
+      { title: "Convites", url: "/dashboard/admin/convites", icon: Send },
+      { title: "Respostas", url: "/dashboard/admin/respostas", icon: MessageSquare },
+      { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: TestTube },
     ],
   },
 ];
@@ -70,30 +82,56 @@ export function DashboardBreadcrumb({ className }: { className?: string }) {
 
   const breadcrumb = useMemo(() => {
     const path = location.pathname;
+    const normalizedPath =
+      path.endsWith("/") && path !== "/dashboard" ? path.slice(0, -1) : path;
 
-    // Remove trailing slash for matching (except root /dashboard)
-    const normalizedPath = path.endsWith("/") && path !== "/dashboard" ? path.slice(0, -1) : path;
-
+    // Busca o match mais específico (rota exata vence prefixo).
+    let best: { group: string; item: Item; score: number } | null = null;
     for (const group of menuGroups) {
       for (const item of group.items) {
-        // Exact match or startsWith for nested routes (e.g. /dashboard/auditorias/:id)
-        if (normalizedPath === item.url || normalizedPath.startsWith(item.url + "/")) {
-          return { group: group.label, page: item.title, isRoot: item.url === "/dashboard" };
+        if (normalizedPath === item.url) {
+          best = { group: group.label, item, score: item.url.length + 1000 };
+        } else if (normalizedPath.startsWith(item.url + "/")) {
+          const score = item.url.length;
+          if (!best || score > best.score) {
+            best = { group: group.label, item, score };
+          }
         }
       }
     }
 
-    return null;
+    if (!best) return null;
+    return {
+      group: best.group,
+      page: best.item.title,
+      Icon: best.item.icon,
+      isRoot: best.item.url === "/dashboard",
+    };
   }, [location.pathname]);
 
   if (!breadcrumb) return null;
 
+  const { Icon } = breadcrumb;
+
   return (
-    <Breadcrumb className={cn("hidden sm:block", className)}>
-      <BreadcrumbList>
+    <Breadcrumb
+      className={cn("hidden sm:block", className)}
+      aria-label="Localização atual no painel"
+      data-testid="dashboard-breadcrumb"
+    >
+      <BreadcrumbList className="items-center gap-1.5">
+        {/* Indicador glow espelhando o item ativo da sidebar */}
+        <span
+          aria-hidden
+          className="inline-flex h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_2px_hsl(var(--primary)/0.55)] mr-1"
+        />
+
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              to="/dashboard"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
               Dashboard
             </Link>
           </BreadcrumbLink>
@@ -102,7 +140,7 @@ export function DashboardBreadcrumb({ className }: { className?: string }) {
         <BreadcrumbSeparator />
 
         <BreadcrumbItem>
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
             {breadcrumb.group}
           </span>
         </BreadcrumbItem>
@@ -111,7 +149,11 @@ export function DashboardBreadcrumb({ className }: { className?: string }) {
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage className="font-semibold text-foreground">
+              <BreadcrumbPage
+                className="flex items-center gap-1.5 font-semibold text-primary"
+                data-testid="breadcrumb-current"
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
                 {breadcrumb.page}
               </BreadcrumbPage>
             </BreadcrumbItem>
