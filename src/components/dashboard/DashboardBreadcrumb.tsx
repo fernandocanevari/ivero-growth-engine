@@ -85,13 +85,22 @@ export function DashboardBreadcrumb({ className }: { className?: string }) {
     const normalizedPath =
       path.endsWith("/") && path !== "/dashboard" ? path.slice(0, -1) : path;
 
-    // Busca o match mais específico (rota exata vence prefixo).
+    // Busca o match MAIS específico:
+    //  - rota exata sempre vence prefixo
+    //  - entre prefixos, o de URL mais longa vence (rota aninhada com :id, etc.)
+    //  - "/dashboard" (raiz) só conta como match exato, nunca como prefixo,
+    //    para que sub-rotas desconhecidas (ex.: /dashboard/foo) não exibam
+    //    incorretamente o item "Dashboard" como se fosse o atual.
     let best: { group: string; item: Item; score: number } | null = null;
     for (const group of menuGroups) {
       for (const item of group.items) {
+        const isRootItem = item.url === "/dashboard";
         if (normalizedPath === item.url) {
-          best = { group: group.label, item, score: item.url.length + 1000 };
-        } else if (normalizedPath.startsWith(item.url + "/")) {
+          const score = item.url.length + 10_000; // exato sempre vence
+          if (!best || score > best.score) {
+            best = { group: group.label, item, score };
+          }
+        } else if (!isRootItem && normalizedPath.startsWith(item.url + "/")) {
           const score = item.url.length;
           if (!best || score > best.score) {
             best = { group: group.label, item, score };
