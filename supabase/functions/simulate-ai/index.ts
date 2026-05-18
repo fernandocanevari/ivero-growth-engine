@@ -35,25 +35,26 @@ function getModelConfigs(): ModelConfig[] {
   }
 
   if (geminiKey) {
+    // Ambos os Gemini agora usam gemini-2.5-pro com Google Search grounding ativo.
+    const geminiParse = (data: any) => {
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      return parts.map((p: any) => p?.text || "").join("").trim();
+    };
+
     configs.push({
       name: "Gemini",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.0-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-pro",
       getHeaders: () => ({ "Content-Type": "application/json" }),
-      parseResponse: (data) => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
+      parseResponse: geminiParse,
     });
 
-    // Gemini com grounding em tempo real (Google Search Retrieval).
-    // Usa a tool nativa `google_search` da API v1beta — sem scraping.
     configs.push({
       name: "Gemini Search",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.5-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-pro",
       getHeaders: () => ({ "Content-Type": "application/json" }),
-      parseResponse: (data) => {
-        const parts = data.candidates?.[0]?.content?.parts || [];
-        return parts.map((p: any) => p?.text || "").join("").trim();
-      },
+      parseResponse: geminiParse,
     });
   }
 
