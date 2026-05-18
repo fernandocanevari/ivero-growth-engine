@@ -38,8 +38,10 @@ export default function SimuladorPage() {
     return c.title.toLowerCase().includes(b) || c.uri.toLowerCase().includes(b);
   };
   const [query, setQuery] = useState("");
+  const [lastQuery, setLastQuery] = useState("");
   const [results, setResults] = useState<SimResult[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [retryingGemini, setRetryingGemini] = useState(false);
   const { data: brand } = useBrandSettings();
 
   const brandName = brand?.brand_name || "Sua Marca";
@@ -48,6 +50,7 @@ export default function SimuladorPage() {
     if (!query.trim()) return;
     setLoading(true);
     setResults(null);
+    setLastQuery(query);
 
     try {
       const { data, error } = await supabase.functions.invoke("simulate-ai", {
@@ -63,6 +66,44 @@ export default function SimuladorPage() {
       toast({ title: "Erro ao simular", description: e.message || "Tente novamente.", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRetryGemini = async () => {
+    if (!lastQuery.trim() || retryingGemini) return;
+    setRetryingGemini(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("simulate-ai", {
+        body: { prompt: lastQuery, brandName, mode: "simulator" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const fresh: SimResult | undefined = (data.results || []).find(
+        (r: SimResult) => r.model === "Gemini Search",
+      );
+      if (!fresh) throw new Error("Gemini Search ausente na resposta");
+
+      setResults((prev) =>
+        prev ? prev.map((r) => (r.model === "Gemini Search" ? fresh : r)) : prev,
+      );
+
+      if (!fresh.citations || fresh.citations.length === 0) {
+        toast({
+          title: "Sem fontes novamente",
+          description: "O Gemini 2.5 ainda não retornou grounding para esta pergunta.",
+        });
+      } else {
+        toast({
+          title: "Fontes atualizadas",
+          description: `${fresh.citations.length} fonte(s) retornada(s) pelo Gemini 2.5.`,
+        });
+      }
+    } catch (e: any) {
+      console.error("Retry Gemini error:", e);
+      toast({ title: "Erro ao tentar novamente", description: e.message || "Tente em alguns segundos.", variant: "destructive" });
+    } finally {
+      setRetryingGemini(false);
     }
   };
 
