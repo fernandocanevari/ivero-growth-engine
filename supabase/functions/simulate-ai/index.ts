@@ -244,16 +244,8 @@ async function callModel(
   try {
     let body: any;
 
-    if (config.name === "Gemini") {
-      body = {
-        contents: [
-          { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
-        ],
-        generationConfig: { maxOutputTokens: maxTokens },
-      };
-    } else if (config.name === "Gemini Search") {
-      // Gemini com Google Search grounding — respostas ancoradas em resultados
-      // reais da web em tempo real. Tool nativa `google_search` (v1beta, 2.0+).
+    if (config.name === "Gemini" || config.name === "Gemini Search") {
+      // Todos os Gemini com Google Search grounding ativo (tool nativa v1beta).
       body = {
         contents: [
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
