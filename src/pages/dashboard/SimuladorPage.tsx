@@ -25,6 +25,17 @@ interface SimResult {
 }
 
 export default function SimuladorPage() {
+  const getHost = (uri: string) => {
+    try {
+      return new URL(uri).hostname.replace(/^www\./, "");
+    } catch {
+      return uri;
+    }
+  };
+  const mentionsInSource = (c: Citation, brand: string) => {
+    const b = brand.toLowerCase();
+    return c.title.toLowerCase().includes(b) || c.uri.toLowerCase().includes(b);
+  };
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SimResult[] | null>(null);
   const [loading, setLoading] = useState(false);
