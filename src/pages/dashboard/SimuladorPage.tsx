@@ -115,38 +115,104 @@ export default function SimuladorPage() {
                   {r.error ? `Este modelo está temporariamente indisponível (${r.errorMessage}).` : `"${r.response}"`}
                 </p>
 
-                {!r.error && r.citations && r.citations.length > 0 && (
+                {!r.error && r.model === "Gemini Search" && (!r.citations || r.citations.length === 0) && (
                   <div className="mt-4 pt-4 border-t border-border">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Globe className="h-3.5 w-3.5 text-primary" />
-                      <p className="text-xs font-semibold text-foreground">
-                        Fontes citadas ({r.citations.length})
-                      </p>
-                      <Badge variant="outline" className="text-[9px] ml-1 border-primary/30 text-primary bg-primary/5">
-                        Grounding em tempo real
-                      </Badge>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Search className="h-3.5 w-3.5" />
+                      Gemini 2.5 não retornou fontes para esta resposta.
                     </div>
-                    <ul className="space-y-1.5">
-                      {r.citations.map((c, i) => (
-                        <li key={`${c.uri}-${i}`} className="flex items-start gap-1.5">
-                          <span className="text-[10px] font-mono text-muted-foreground mt-0.5 shrink-0">
-                            [{i + 1}]
-                          </span>
-                          <a
-                            href={c.uri}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline inline-flex items-start gap-1 line-clamp-2 leading-snug"
-                            title={c.uri}
-                          >
-                            <span>{c.title}</span>
-                            <ExternalLink className="h-3 w-3 shrink-0 mt-0.5 opacity-60" />
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 )}
+
+                {!r.error && r.citations && r.citations.length > 0 && (() => {
+                  const sorted = [...r.citations].sort((a, b) => {
+                    const am = mentionsInSource(a, brandName) ? 0 : 1;
+                    const bm = mentionsInSource(b, brandName) ? 0 : 1;
+                    return am - bm;
+                  });
+                  const domains = new Set(sorted.map((c) => getHost(c.uri)));
+                  const brandHits = sorted.filter((c) => mentionsInSource(c, brandName)).length;
+                  return (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <Globe className="h-3.5 w-3.5 text-primary" />
+                        <p className="text-xs font-semibold text-foreground">
+                          Fontes citadas ({sorted.length})
+                        </p>
+                        <Badge variant="outline" className="text-[9px] ml-1 border-primary/30 text-primary bg-primary/5">
+                          Grounding em tempo real
+                        </Badge>
+                        <Badge variant="outline" className="text-[9px] border-border text-muted-foreground">
+                          {domains.size} {domains.size === 1 ? "domínio" : "domínios"}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mb-3">
+                        Páginas que o Gemini 2.5 consultou em tempo real para responder.
+                        {brandHits > 0 && (
+                          <span className="ml-1 text-emerald-700 font-medium">
+                            {brandHits} de {sorted.length} mencionam {brandName}.
+                          </span>
+                        )}
+                      </p>
+                      <ul className="space-y-2">
+                        {sorted.map((c, i) => {
+                          const host = getHost(c.uri);
+                          const mentions = mentionsInSource(c, brandName);
+                          return (
+                            <li
+                              key={`${c.uri}-${i}`}
+                              className="group flex items-start gap-2.5 p-2 rounded-md border border-border bg-background hover:bg-secondary/40 hover:border-primary/20 transition-colors"
+                            >
+                              <span className="text-[10px] font-mono text-muted-foreground mt-1 shrink-0 w-5 text-right">
+                                [{i + 1}]
+                              </span>
+                              <img
+                                src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`}
+                                alt=""
+                                width={16}
+                                height={16}
+                                className="mt-0.5 shrink-0 rounded-sm"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <a
+                                    href={c.uri}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-medium text-foreground hover:text-primary line-clamp-2 leading-snug"
+                                    title={c.uri}
+                                  >
+                                    {c.title}
+                                  </a>
+                                  <a
+                                    href={c.uri}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="Abrir fonte"
+                                    className="shrink-0 text-muted-foreground hover:text-primary opacity-60 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <span className="text-[10px] text-muted-foreground truncate">{host}</span>
+                                  {mentions && (
+                                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[9px] px-1.5 py-0">
+                                      <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Menciona {brandName}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           ))}
