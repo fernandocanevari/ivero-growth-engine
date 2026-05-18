@@ -260,7 +260,8 @@ async function callModel(
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       };
-    } else if (config.name === "GPT-5") {
+    } else if (config.name === "GPT-5" || config.name === "ChatGPT") {
+      // Modelos gpt-5* exigem max_completion_tokens (não aceitam max_tokens).
       body = {
         model: config.model,
         messages: [
