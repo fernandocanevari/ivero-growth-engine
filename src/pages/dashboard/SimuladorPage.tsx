@@ -180,13 +180,7 @@ export default function SimuladorPage() {
                   </div>
                 )}
 
-                {!r.error && r.model === "Gemini Search" && retryingGemini && r.citations && r.citations.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border space-y-2">
-                    <Skeleton className="h-3 w-40" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                  </div>
-                )}
+
 
                 {!r.error && r.citations && r.citations.length > 0 && (() => {
                   const sorted = [...r.citations].sort((a, b) => {
