@@ -25,21 +25,25 @@ export function OnboardingChecklistCard() {
   const { data: settings } = useBrandSettings();
   const [userId, setUserId] = useState<string | null>(null);
   const [snoozedUntil, setSnoozedUntil] = useState<number>(0);
+  const [snoozeChecked, setSnoozeChecked] = useState(false);
 
   useEffect(() => {
     let active = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!active || !user) return;
-      setUserId(user.id);
-      const until = Number(localStorage.getItem(SNOOZE_PREFIX + user.id) || 0);
-      setSnoozedUntil(until);
+      if (!active) return;
+      if (user) {
+        setUserId(user.id);
+        const until = Number(localStorage.getItem(SNOOZE_PREFIX + user.id) || 0);
+        setSnoozedUntil(until);
+      }
+      setSnoozeChecked(true);
     });
     return () => {
       active = false;
     };
   }, []);
 
-  if (isLoading || !progress) return null;
+  if (isLoading || !progress || !snoozeChecked) return null;
 
   const hasCompetitor = !!(settings?.main_competitor && settings.main_competitor.trim().length);
 
