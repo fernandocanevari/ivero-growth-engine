@@ -277,6 +277,36 @@ export default function SimuladorPage() {
         </motion.div>
       )}
 
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" aria-busy="true" aria-live="polite">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-11/12" />
+                <Skeleton className="h-3 w-9/12" />
+                {i === 3 && (
+                  <div className="pt-3 mt-3 border-t border-border space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-3 w-3 rounded-full" />
+                      <Skeleton className="h-3 w-32" />
+                      <Skeleton className="h-4 w-24 rounded-full" />
+                    </div>
+                    <Skeleton className="h-10 w-full rounded-md" />
+                    <Skeleton className="h-10 w-full rounded-md" />
+                    <Skeleton className="h-10 w-5/6 rounded-md" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {!results && !loading && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-lg">Digite uma pergunta para ver como as IAs respondem</p>
