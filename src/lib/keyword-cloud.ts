@@ -13,7 +13,7 @@ export type KeywordSentiment = "positive" | "neutral" | "negative";
 export interface KeywordExample {
   /** Trecho curto (≤ 200 chars) onde o termo (ou variação) aparece. */
   quote: string;
-  /** Modelo de IA que produziu o trecho — ex: "ChatGPT", "Gemini", "GPT-5", "Gemini Search". */
+  /** Modelo de IA que produziu o trecho — ex: "ChatGPT", "Gemini", "GPT-5", "Google Modo IA". */
   model: string;
 }
 

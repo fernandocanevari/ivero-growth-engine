@@ -26,7 +26,7 @@ const milestones = [
     year: "2025",
     title: "Multi-modelo",
     description:
-      "Desenvolvemos nossa infraestrutura para consultar simultaneamente OpenAI, Gemini, GPT-5 e Gemini Search. Cada modelo &quot;pensa&quot; diferente — entender todos é a única forma de mapear a verdadeira percepção da marca.",
+      "Desenvolvemos nossa infraestrutura para consultar simultaneamente OpenAI, Gemini, GPT-5 e Google Modo IA. Cada modelo &quot;pensa&quot; diferente — entender todos é a única forma de mapear a verdadeira percepção da marca.",
     icon: Zap,
     highlight: "Tecnologia",
   },

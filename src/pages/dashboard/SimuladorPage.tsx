@@ -80,12 +80,12 @@ export default function SimuladorPage() {
       if (data?.error) throw new Error(data.error);
 
       const fresh: SimResult | undefined = (data.results || []).find(
-        (r: SimResult) => r.model === "Gemini Search",
+        (r: SimResult) => r.model === "Google Modo IA",
       );
-      if (!fresh) throw new Error("Gemini Search ausente na resposta");
+      if (!fresh) throw new Error("Google Modo IA ausente na resposta");
 
       setResults((prev) =>
-        prev ? prev.map((r) => (r.model === "Gemini Search" ? fresh : r)) : prev,
+        prev ? prev.map((r) => (r.model === "Google Modo IA" ? fresh : r)) : prev,
       );
 
       if (!fresh.citations || fresh.citations.length === 0) {
@@ -157,7 +157,7 @@ export default function SimuladorPage() {
                   {r.error ? `Este modelo está temporariamente indisponível (${r.errorMessage}).` : `"${r.response}"`}
                 </p>
 
-                {!r.error && r.model === "Gemini Search" && (!r.citations || r.citations.length === 0) && (
+                {!r.error && r.model === "Google Modo IA" && (!r.citations || r.citations.length === 0) && (
                   <div className="mt-4 pt-4 border-t border-border space-y-3">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Search className="h-3.5 w-3.5" />
