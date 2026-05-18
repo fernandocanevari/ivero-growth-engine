@@ -158,11 +158,33 @@ export default function SimuladorPage() {
                 </p>
 
                 {!r.error && r.model === "Gemini Search" && (!r.citations || r.citations.length === 0) && (
-                  <div className="mt-4 pt-4 border-t border-border">
+                  <div className="mt-4 pt-4 border-t border-border space-y-3">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Search className="h-3.5 w-3.5" />
                       Gemini 2.5 não retornou fontes para esta resposta.
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRetryGemini}
+                      disabled={retryingGemini}
+                      className="h-8 text-xs"
+                    >
+                      {retryingGemini ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      {retryingGemini ? "Tentando novamente..." : "Tentar buscar fontes novamente"}
+                    </Button>
+                  </div>
+                )}
+
+                {!r.error && r.model === "Gemini Search" && retryingGemini && r.citations && r.citations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border space-y-2">
+                    <Skeleton className="h-3 w-40" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
                   </div>
                 )}
 
