@@ -19,7 +19,7 @@ const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: strin
   OpenAI: { icon: Cpu, desc: "GPT-5 Mini via API OpenAI" },
   Gemini: { icon: Globe, desc: "Google Gemini 2.0 Flash" },
   "GPT-5": { icon: Cpu, desc: "GPT-5 Mini via Lovable AI Gateway" },
-  "Gemini Search": { icon: Globe, desc: "Gemini 2.5 Flash com grounding de busca em tempo real", badge: "Novo" },
+  "Google Modo IA": { icon: Globe, desc: "Gemini 2.5 Flash com grounding de busca em tempo real", badge: "Novo" },
 };
 
 export default function ConfiguracoesPage() {

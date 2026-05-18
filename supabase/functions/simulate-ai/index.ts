@@ -50,7 +50,7 @@ function getModelConfigs(): ModelConfig[] {
     });
 
     configs.push({
-      name: "Gemini Search",
+      name: "Google Modo IA",
       url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,
       model: "gemini-2.5-pro",
       getHeaders: () => ({ "Content-Type": "application/json" }),
@@ -244,7 +244,7 @@ async function callModel(
   try {
     let body: any;
 
-    if (config.name === "Gemini" || config.name === "Gemini Search") {
+    if (config.name === "Gemini" || config.name === "Google Modo IA") {
       // Todos os Gemini com Google Search grounding ativo (tool nativa v1beta).
       body = {
         contents: [
@@ -260,7 +260,8 @@ async function callModel(
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       };
-    } else if (config.name === "GPT-5") {
+    } else if (config.name === "GPT-5" || config.name === "ChatGPT") {
+      // Modelos gpt-5* exigem max_completion_tokens (não aceitam max_tokens).
       body = {
         model: config.model,
         messages: [
@@ -309,7 +310,7 @@ async function callModel(
     // Citações de grounding (todos os Gemini, agora que ambos usam google_search).
     // Estrutura: candidates[0].groundingMetadata.groundingChunks[].web
     let citations: Array<{ title: string; uri: string }> = [];
-    if (config.name === "Gemini" || config.name === "Gemini Search") {
+    if (config.name === "Gemini" || config.name === "Google Modo IA") {
       const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       const seen = new Set<string>();
       for (const c of chunks) {
