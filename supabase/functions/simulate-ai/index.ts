@@ -306,10 +306,10 @@ async function callModel(
     const data = await response.json();
     const content = config.parseResponse(data);
 
-    // Citações de grounding (Gemini Search). Só presentes quando o modelo usa
-    // a tool google_search. Estrutura: candidates[0].groundingMetadata.groundingChunks[].web
+    // Citações de grounding (todos os Gemini, agora que ambos usam google_search).
+    // Estrutura: candidates[0].groundingMetadata.groundingChunks[].web
     let citations: Array<{ title: string; uri: string }> = [];
-    if (config.name === "Gemini Search") {
+    if (config.name === "Gemini" || config.name === "Gemini Search") {
       const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       const seen = new Set<string>();
       for (const c of chunks) {
