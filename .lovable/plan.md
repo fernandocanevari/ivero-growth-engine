@@ -1,62 +1,47 @@
 ## Contexto
 
-Os dois itens já têm uma primeira versão no projeto:
+O `SimuladorPage` já renderiza um bloco básico de "Fontes citadas" para os resultados do Gemini Search (Gemini 2.5 com grounding), mostrando título + link. Vamos transformá-lo num bloco **detalhado, executivo e escaneável**, alinhado ao tom B2B do Ivero.
 
-- `src/components/dashboard/DashboardSidebar.tsx` já aplica `bg-primary/12`, `ring-1 ring-primary/20`, `font-semibold` no estado ativo + barra lateral com glow via `[[aria-current=page]_&]`.
-- `src/components/dashboard/DashboardSidebar.test.tsx` já cobre: link existe, sidebar permanece montada após clicar em "Dashboard", e `aria-current=page` só na rota exata.
+## O que muda (somente UI / presentation)
 
-O plano abaixo refina o que já existe para resolver os pontos que ainda confundem o usuário (itens "somem" no fundo claro dos cards do dashboard) e amplia os testes para cobrir o fluxo "clicar → carregar página → sidebar ainda lá".
+Arquivo único: `src/pages/dashboard/SimuladorPage.tsx`
 
----
+### 1. Cabeçalho do bloco
+- Manter ícone `Globe` + título "Fontes citadas (N)" + badge "Grounding em tempo real".
+- Adicionar subtítulo curto: *"Páginas que o Gemini 2.5 consultou em tempo real para responder."*
+- Adicionar badge extra com contagem de **domínios únicos** (ex: "5 domínios").
 
-## 1. Contraste dos itens do menu (hover, ativo, selecionado)
+### 2. Card por fonte (substitui `<li>` simples)
+Cada citação vira um mini-card com:
+- **Índice** `[1]` em mono, destacado à esquerda.
+- **Favicon** do domínio (`https://www.google.com/s2/favicons?domain=<host>&sz=32`) com fallback para ícone `Globe`.
+- **Título** da fonte (line-clamp-2, peso medium).
+- **Domínio** extraído do URI (ex: `g1.globo.com`) em text-xs muted.
+- **Badge "Menciona {brandName}"** verde quando título OU domínio contém a marca (match case-insensitive) — destaca para o executivo qual fonte cita ele.
+- Link `ExternalLink` no canto direito abrindo em nova aba.
+- Hover: leve `bg-secondary/40` e borda primary/20.
 
-Objetivo: tornar cada estado visualmente distinto **e** mais contrastado em relação aos cards brancos do dashboard.
+### 3. Agrupamento / ordenação
+- Ordenar: primeiro as que mencionam a marca, depois o restante.
+- Sem agrupamento por domínio (mantém ordem do Gemini), mas exibir contagem "X de N fontes mencionam {brandName}" acima da lista quando houver matches.
 
-**Estado idle (padrão)**
-- Cor de texto sobe de `text-muted-foreground` para `text-foreground/75` — leitura mais firme sobre branco.
-- Ícone com `text-muted-foreground` separado do label, criando hierarquia.
+### 4. Estado vazio / sem grounding
+- Quando `r.model === "Gemini Search"` e `citations` vazio/undefined: mostrar nota discreta "Gemini 2.5 não retornou fontes para esta resposta." (hoje fica oculto silenciosamente).
 
-**Estado hover**
-- `hover:bg-secondary/70 hover:text-foreground`
-- Ícone passa para `text-foreground` no hover (transição suave).
-- Cursor pointer explícito e `transition-colors duration-150`.
+### 5. Helpers locais (no mesmo arquivo)
+```ts
+const getHost = (uri: string) => { try { return new URL(uri).hostname.replace(/^www\./,''); } catch { return uri; } };
+const mentionsInSource = (c: Citation, brand: string) =>
+  c.title.toLowerCase().includes(brand.toLowerCase()) ||
+  c.uri.toLowerCase().includes(brand.toLowerCase());
+```
 
-**Estado selecionado/ativo (`aria-current=page`)**
-- Fundo mais sólido: `bg-primary/15` (sobe de `/12`).
-- Texto: `text-primary font-semibold`.
-- `ring-1 ring-primary/25` + `shadow-sm` para destacar do card adjacente.
-- Barra lateral esquerda mantida (1×24 px, glow primary) — já implementada.
-- Ícone também em `text-primary`.
-
-**Estado focus-visible (teclado)**
-- `focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background`.
-
-**Aplicação consistente**
-- Garantir que todos os grupos (Visão Geral, Inteligência, Ações, Extras e Administração) compartilhem exatamente o mesmo conjunto de classes para idle/hover/active — sem variações entre grupos.
-- Itens "locked" (trial) mantêm `opacity-55`, mas com `hover:opacity-100` para feedback ao passar.
-
-Arquivo afetado: `src/components/dashboard/DashboardSidebar.tsx` (apenas classes Tailwind, sem mudança de estrutura).
-
----
-
-## 2. Testes de persistência da sidebar
-
-Estender `src/components/dashboard/DashboardSidebar.test.tsx` com cenários novos, mantendo os existentes:
-
-1. **Clicar em "Dashboard" e renderizar a página de destino** — adicionar um `<Route path="/dashboard" element={<div>Conteúdo Dashboard</div>} />` no harness, clicar no link e verificar que **(a)** o conteúdo da página aparece e **(b)** a sidebar (`text=Ivero` + link "Dashboard") continua no DOM.
-2. **Navegar entre sub-rotas mantém a sidebar** — começar em `/dashboard`, clicar em "Diagnóstico IA", verificar que a sidebar permanece e que `aria-current=page` migrou para o novo item.
-3. **Reload simulado** — desmontar e remontar o `<Harness initialPath="/dashboard" />`, garantir que a sidebar volta com o item Dashboard marcado como ativo.
-4. **Estado ativo visual** — após navegar para `/dashboard`, conferir que o link "Dashboard" recebe a classe `bg-primary/15` (via `toHaveClass`) confirmando que o tratamento de contraste é aplicado.
-
-Arquivos afetados:
-- `src/components/dashboard/DashboardSidebar.test.tsx` (adicionar cenários).
-
----
+## Fora de escopo
+- Não muda a Edge Function `simulate-ai` nem o shape de `citations` (já vem `{ title, uri }`).
+- Não muda `PromptTesterPage` nem `PreviewPage`.
+- Sem novas libs.
 
 ## Detalhes técnicos
-
-- Nenhuma mudança em hooks, rotas, dados ou backend.
-- Sem novos pacotes — usa Tailwind tokens semânticos (`primary`, `secondary`, `foreground`, `muted-foreground`) já definidos em `index.css`/`tailwind.config.ts`, respeitando o tema claro do dashboard.
-- Testes continuam em Vitest + Testing Library + `MemoryRouter`, sem dependências novas.
-- Verificação final: rodar a suíte de testes da sidebar e validar visualmente em `/dashboard` no preview.
+- Tokens semânticos do design system (`bg-secondary`, `border-border`, `text-primary`, `text-muted-foreground`) — sem cores hardcoded.
+- Favicon usa `<img>` com `onError` trocando para ícone Lucide.
+- Tudo client-side, zero impacto em dados/RLS.
