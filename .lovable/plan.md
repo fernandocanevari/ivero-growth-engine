@@ -1,28 +1,42 @@
-## Problema
+## Objetivo
 
-No `/dashboard`, o card "Por onde começar" (anexo 1) aparece por ~1s e é substituído pelo botão "Reexibir checklist" (anexo 2).
+Trocar o modelo OpenAI usado no **Simulador** (coluna "ChatGPT") de `gpt-5-mini` para `gpt-4o-mini`, mantendo `gpt-5-mini` no modo Diagnóstico (onde o raciocínio agrega valor real).
 
-## Causa
+## Por que
 
-Em `src/components/dashboard/OnboardingChecklistCard.tsx`:
+- `gpt-4o-mini` não é um modelo de reasoning → não consome tokens com "pensamento interno"
+- ~60% mais barato por token
+- Latência menor (resposta imediata, sem fase de thinking)
+- Qualidade praticamente idêntica para perguntas curtas estilo "qual a melhor ferramenta de X?"
+- Elimina a necessidade dos parâmetros `reasoning_effort` e do budget inflado de tokens
 
-- O estado `snoozedUntil` começa em `0`, então no primeiro render o componente assume "não está snoozed" e mostra o card completo.
-- Só depois o `useEffect` busca o `userId` via `supabase.auth.getUser()` e lê `localStorage` (`ivero_dashboard_checklist_snoozed_until:<userId>`). Se houver um snooze válido (provavelmente o usuário clicou no "X" ou em "Lembrar daqui a 7 dias" em uma sessão anterior), o estado é atualizado e o componente troca para o botão "Reexibir checklist".
+## Mudanças
 
-Resultado: flash do card antes do estado de snooze ser conhecido.
+Arquivo único: `supabase/functions/simulate-ai/index.ts`
 
-## Correção
+1. **Bloco da chamada OpenAI no modo Simulador** (linhas ~263-272):
+   - Trocar `model: "gpt-5-mini"` por `model: "gpt-4o-mini"`
+   - Remover o parâmetro `reasoning_effort: "minimal"` (não se aplica a modelos não-reasoning)
+   - Reduzir `max_completion_tokens` de 1200 de volta para ~400 (suficiente sem o overhead de reasoning)
+   - Trocar `max_completion_tokens` por `max_tokens` (parâmetro correto para gpt-4o family)
 
-Adicionar um flag `snoozeChecked` (boolean) inicializado em `false`. Só renderizar qualquer coisa depois que:
-1. `isLoading` do progresso terminou, e
-2. `snoozeChecked === true` (ou seja, já consultamos `auth.getUser()` + `localStorage`).
+2. **Bloco da chamada OpenAI no modo Diagnóstico**: **não mexer**. Continua com `gpt-5-mini` + `reasoning_effort: "medium"` + 4000 tokens.
 
-Enquanto isso, retornar `null` (não renderizar nada) para evitar o flash. No `useEffect`, marcar `snoozeChecked = true` ao final, inclusive no caminho "sem user" (para não travar o render quando o usuário não está logado, embora aqui o componente sempre seja usado autenticado).
+3. **Label exibida ao usuário**: continua como "ChatGPT" (não precisa mencionar versão).
 
-## Arquivo afetado
+## Validação
 
-- `src/components/dashboard/OnboardingChecklistCard.tsx` — adicionar estado `snoozeChecked`, setá-lo dentro do `useEffect`, e bloquear render (`return null`) até `snoozeChecked && !isLoading && progress`.
+- Rodar uma pergunta no Simulador ("Qual a melhor ferramenta de SEO?") e confirmar que ChatGPT responde rápido e com texto não-vazio
+- Verificar logs do edge function `simulate-ai` — status 200, sem warnings de empty content
+- Confirmar que Gemini, Gemini Search e Lovable AI continuam funcionando em paralelo (não foram tocados)
 
-## Observação extra
+## Memória a atualizar
 
-Se o usuário não lembra de ter ocultado, vale também confirmar via DevTools (`Application → Local Storage`) se existe a chave `ivero_dashboard_checklist_snoozed_until:<userId>` — se sim, basta apagar (ou clicar em "Reexibir checklist") para o card voltar permanentemente até o próximo snooze.
+Atualizar `mem://technical/ai-integration-multi-model` para refletir que o Simulador usa `gpt-4o-mini` (rápido/barato) e o Diagnóstico usa `gpt-5-mini` (reasoning).
+
+## Fora de escopo
+
+- Não alterar o modelo do Diagnóstico
+- Não alterar Gemini, Gemini Search ou Lovable AI Gateway
+- Não mexer no `generate-content` (gerador de conteúdo GEO)
+- Não tratar o erro 402 do GPT-5 via Lovable Gateway (depende de créditos no workspace)
