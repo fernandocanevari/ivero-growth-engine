@@ -261,14 +261,18 @@ async function callModel(
         messages: [{ role: "user", content: userPrompt }],
       };
     } else if (config.name === "GPT-5" || config.name === "ChatGPT") {
-      // Modelos gpt-5* exigem max_completion_tokens (não aceitam max_tokens).
+      // Modelos gpt-5* são reasoning models: parte do orçamento vai para tokens
+      // internos de raciocínio. Se max_completion_tokens for baixo, a resposta
+      // final pode vir vazia. Damos folga + reasoning_effort mínimo no simulador.
+      const completionBudget = isDiagnostico ? 4000 : 1200;
       body = {
         model: config.model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: maxTokens,
+        max_completion_tokens: completionBudget,
+        reasoning_effort: isDiagnostico ? "medium" : "minimal",
       };
     } else {
       body = {
