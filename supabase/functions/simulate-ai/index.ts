@@ -311,9 +311,6 @@ async function callModel(
     const data = await response.json();
     const content = config.parseResponse(data);
 
-    if ((config.name === "ChatGPT" || config.name === "GPT-5") && !content) {
-      console.log(`${config.name} empty content. Raw:`, JSON.stringify(data).slice(0, 1500));
-    }
 
     // Citações de grounding (todos os Gemini, agora que ambos usam google_search).
     // Estrutura: candidates[0].groundingMetadata.groundingChunks[].web
