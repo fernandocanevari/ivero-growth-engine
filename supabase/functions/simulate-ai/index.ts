@@ -35,7 +35,8 @@ function getModelConfigs(): ModelConfig[] {
   }
 
   if (geminiKey) {
-    // Ambos os Gemini agora usam gemini-2.5-pro com Google Search grounding ativo.
+    // "Gemini" = modelo puro (2.5-pro), sem grounding — baseline da memória do modelo.
+    // "Google Modo IA" = 2.0-flash + Google Search grounding em tempo real (rápido/barato).
     const geminiParse = (data: any) => {
       const parts = data.candidates?.[0]?.content?.parts || [];
       return parts.map((p: any) => p?.text || "").join("").trim();
@@ -51,12 +52,13 @@ function getModelConfigs(): ModelConfig[] {
 
     configs.push({
       name: "Google Modo IA",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,
-      model: "gemini-2.5-pro",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.0-flash",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
   }
+
 
   if (claudeKey) {
     configs.push({
@@ -245,14 +247,17 @@ async function callModel(
     let body: any;
 
     if (config.name === "Gemini" || config.name === "Google Modo IA") {
-      // Todos os Gemini com Google Search grounding ativo (tool nativa v1beta).
+      // Só "Google Modo IA" (gemini-2.0-flash) ativa Google Search grounding em tempo real.
+      // "Gemini" (2.5-pro) responde só a partir da memória do modelo, sem busca web.
+      const useGrounding = config.name === "Google Modo IA";
       body = {
         contents: [
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
         ],
-        tools: [{ google_search: {} }],
+        ...(useGrounding ? { tools: [{ google_search: {} }] } : {}),
         generationConfig: { maxOutputTokens: maxTokens },
       };
+
     } else if (config.name === "Claude") {
       body = {
         model: config.model,
@@ -321,10 +326,10 @@ async function callModel(
     const content = config.parseResponse(data);
 
 
-    // Citações de grounding (todos os Gemini, agora que ambos usam google_search).
+    // Citações de grounding (apenas "Google Modo IA" — único slot com google_search ativo).
     // Estrutura: candidates[0].groundingMetadata.groundingChunks[].web
     let citations: Array<{ title: string; uri: string }> = [];
-    if (config.name === "Gemini" || config.name === "Google Modo IA") {
+    if (config.name === "Google Modo IA") {
       const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       const seen = new Set<string>();
       for (const c of chunks) {
@@ -337,6 +342,7 @@ async function callModel(
       }
       citations = citations.slice(0, 8);
     }
+
 
     if (isDiagnostico) {
       const parsed = extractJsonFromContent(content);
