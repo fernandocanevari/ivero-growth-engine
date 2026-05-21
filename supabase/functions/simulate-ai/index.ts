@@ -326,10 +326,10 @@ async function callModel(
     const content = config.parseResponse(data);
 
 
-    // Citações de grounding (todos os Gemini, agora que ambos usam google_search).
+    // Citações de grounding (apenas "Google Modo IA" — único slot com google_search ativo).
     // Estrutura: candidates[0].groundingMetadata.groundingChunks[].web
     let citations: Array<{ title: string; uri: string }> = [];
-    if (config.name === "Gemini" || config.name === "Google Modo IA") {
+    if (config.name === "Google Modo IA") {
       const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       const seen = new Set<string>();
       for (const c of chunks) {
@@ -342,6 +342,7 @@ async function callModel(
       }
       citations = citations.slice(0, 8);
     }
+
 
     if (isDiagnostico) {
       const parsed = extractJsonFromContent(content);
