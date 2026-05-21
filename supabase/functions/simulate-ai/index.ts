@@ -247,14 +247,17 @@ async function callModel(
     let body: any;
 
     if (config.name === "Gemini" || config.name === "Google Modo IA") {
-      // Todos os Gemini com Google Search grounding ativo (tool nativa v1beta).
+      // Só "Google Modo IA" (gemini-2.0-flash) ativa Google Search grounding em tempo real.
+      // "Gemini" (2.5-pro) responde só a partir da memória do modelo, sem busca web.
+      const useGrounding = config.name === "Google Modo IA";
       body = {
         contents: [
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
         ],
-        tools: [{ google_search: {} }],
+        ...(useGrounding ? { tools: [{ google_search: {} }] } : {}),
         generationConfig: { maxOutputTokens: maxTokens },
       };
+
     } else if (config.name === "Claude") {
       body = {
         model: config.model,
