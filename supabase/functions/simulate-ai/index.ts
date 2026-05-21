@@ -35,7 +35,8 @@ function getModelConfigs(): ModelConfig[] {
   }
 
   if (geminiKey) {
-    // Ambos os Gemini agora usam gemini-2.5-pro com Google Search grounding ativo.
+    // "Gemini" = modelo puro (2.5-pro), sem grounding — baseline da memória do modelo.
+    // "Google Modo IA" = 2.0-flash + Google Search grounding em tempo real (rápido/barato).
     const geminiParse = (data: any) => {
       const parts = data.candidates?.[0]?.content?.parts || [];
       return parts.map((p: any) => p?.text || "").join("").trim();
@@ -51,12 +52,13 @@ function getModelConfigs(): ModelConfig[] {
 
     configs.push({
       name: "Google Modo IA",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`,
-      model: "gemini-2.5-pro",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.0-flash",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
   }
+
 
   if (claudeKey) {
     configs.push({
