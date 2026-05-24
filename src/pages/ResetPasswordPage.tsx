@@ -41,7 +41,21 @@ export default function ResetPasswordPage() {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Senha atualizada!", description: "Você será redirecionado ao dashboard." });
-      setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
+      setTimeout(async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("is_first_login")
+              .eq("user_id", user.id)
+              .maybeSingle();
+            navigate(data?.is_first_login ? "/welcome" : "/dashboard", { replace: true });
+            return;
+          }
+        } catch {/* fall through */}
+        navigate("/dashboard", { replace: true });
+      }, 1500);
     }
     setLoading(false);
   };

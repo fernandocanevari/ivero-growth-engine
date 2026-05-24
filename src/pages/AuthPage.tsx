@@ -50,6 +50,20 @@ export default function AuthPage() {
     }
   };
 
+  // Helper: redirect after auth based on first-login flag
+  const redirectAfterAuth = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("is_first_login")
+        .eq("user_id", userId)
+        .maybeSingle();
+      navigate(data?.is_first_login ? "/welcome" : "/dashboard", { replace: true });
+    } catch {
+      navigate("/dashboard", { replace: true });
+    }
+  };
+
   useEffect(() => {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
@@ -72,7 +86,7 @@ export default function AuthPage() {
         pendingSignupForUserId = null;
       }
       if (isMatchingUser(session.user.email)) {
-        navigate("/dashboard", { replace: true });
+        redirectAfterAuth(session.user.id);
       }
       // else: stale session from another user — wait for them to sign up/in
     });
@@ -90,7 +104,7 @@ export default function AuthPage() {
         setStaleSessionCleared(true);
         return;
       }
-      navigate("/dashboard", { replace: true });
+      redirectAfterAuth(session.user.id);
     });
 
     return () => {
