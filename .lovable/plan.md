@@ -1,73 +1,137 @@
+
 ## Objetivo
 
-Ativar o slot **"Google Modo IA"** com **Gemini 2.0 Flash + Google Search Grounding real** — modelo rápido e barato, com busca em tempo real na web para mapear menções, PR e presença digital das marcas com dados atualizados.
+Criar a experiência de primeiro acesso da Ivero em 4 etapas: flag no banco, página `/welcome` com 6 feature cards, redirect pós-login condicional e estado vazio guiado no `/dashboard` para quem ainda não rodou diagnóstico.
 
-## Estado atual (após inspeção do código)
+---
 
-`supabase/functions/simulate-ai/index.ts` hoje:
+## Passo 1 — Banco: `profiles.is_first_login`
 
-| Slot | Modelo atual | Grounding |
-|---|---|---|
-| Gemini | `gemini-2.5-pro` | ✅ já ativo (`tools: [{ google_search: {} }]`) |
-| Google Modo IA | `gemini-2.5-pro` | ✅ já ativo (mesmo modelo, mesma config) |
+Migration única:
+- `ALTER TABLE public.profiles ADD COLUMN is_first_login boolean NOT NULL DEFAULT true;`
+- Atualizar `public.handle_new_user()` para gravar `is_first_login = true` no insert (default já cobre, mas torna explícito).
+- Backfill: `UPDATE public.profiles SET is_first_login = false` para todos os usuários existentes (eles não devem ver `/welcome` de novo).
 
-Ou seja: o grounding **já está ligado nos dois**, mas eles são **idênticos** (mesmo modelo Pro, lento e caro). O que falta é diferenciar: deixar o slot "Google Modo IA" usar **Flash** (rápido/barato) e o "Gemini" continuar como modelo puro de referência.
+RLS já existente em `profiles` cobre leitura e update do próprio registro — sem mudanças.
 
-## Mudanças
+---
 
-Arquivo único: `supabase/functions/simulate-ai/index.ts`
+## Passo 2 — Página `/welcome`
 
-### 1. Diferenciar os dois slots Gemini (linhas 37–59)
+Arquivo novo: `src/pages/WelcomePage.tsx`. Rota nova em `src/App.tsx` envolvida por `ProtectedRoute` (precisa estar logado).
 
-- **"Gemini"** → continua `gemini-2.5-pro`, **remover** o grounding (vira "memória do modelo puro", sem busca web). Serve como baseline do que o modelo já sabe da marca via treinamento.
-- **"Google Modo IA"** → trocar para **`gemini-2.0-flash`**, manter grounding ativo. Será o slot que busca a web em tempo real para PR/menções/presença digital.
+Layout (Light theme do Dashboard, fundo `#FFFFFF`, max-width container ~1040px, padding generoso):
 
-Mudar `url` e `model` de cada config para apontar para os endpoints corretos:
-- Gemini: `v1beta/models/gemini-2.5-pro:generateContent`
-- Google Modo IA: `v1beta/models/gemini-2.0-flash:generateContent`
+1. **Top bar minimalista** — logo Ivero à esquerda, link **"Pular"** à direita (text-muted, hover primary). Clicar em "Pular" = mesma ação do CTA final (seta flag e vai para `/dashboard`).
 
-### 2. Aplicar `google_search` apenas no slot certo (linhas 247–255)
+2. **Hero banner** (layout horizontal em md+, stack no mobile):
+   - Bloco 64x64 rounded-2xl em `bg-primary` (roxo da marca Ivero), ícone `Sparkles` branco 32px.
+   - À direita: H1 "Bem-vindo à Ivero" (28px, weight 500, Space Grotesk).
+   - Parágrafo 1 (16px, muted, max-w 520px): texto do prompt sobre análise das IAs.
+   - Parágrafo 2: texto do prompt sobre próximas etapas.
 
-Hoje o bloco `if (config.name === "Gemini" || config.name === "Google Modo IA")` aplica grounding nos dois. Trocar a condição: só inclui `tools: [{ google_search: {} }]` quando `config.name === "Google Modo IA"`. O slot "Gemini" envia o mesmo body **sem** a chave `tools`.
+3. **Grid 2x3 de feature cards** (`grid-cols-1 md:grid-cols-2 gap-4`):
 
-### 3. Parser de citações (linhas 327–339)
+   | # | Título | Ícone Lucide | Tom do bg do ícone |
+   |---|---|---|---|
+   | 1 | Diagnóstico IA | `Stethoscope` | roxo claro |
+   | 2 | Score GEO | `Gauge` | azul claro |
+   | 3 | Monitoramento Multi-IA | `Radar` | teal claro |
+   | 4 | Planos de Ação | `Zap` | âmbar claro |
+   | 5 | Gerador de Conteúdo | `PencilLine` | verde claro |
+   | 6 | Evolução Estratégica | `TrendingUp` | rosa/coral claro |
 
-Manter a extração de `groundingMetadata.groundingChunks[]` apenas para o slot **"Google Modo IA"** (o único que agora retorna grounding). O slot "Gemini" passa a devolver `citations: []` naturalmente.
+   Estilo do card (componente reaproveitável `FeatureHighlightCard`):
+   - `bg-white border border-border rounded-xl p-5`
+   - Ícone num quadrado 40x40 rounded-lg com bg pastel + ícone 20px (cor sólida do tom).
+   - Título 15px weight 500 mt-3; descrição 13px text-muted-foreground leading-relaxed mt-1.
+   - Hover: `hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:border-foreground/20 transition`.
+   - Animações de entrada com framer-motion (stagger 0.05s).
 
-### 4. Atualizar comentários
+4. **Rodapé de ação**:
+   - Botão primário "Começar agora →" (h-11, rounded-lg, `bg-primary text-primary-foreground`).
+   - Microcopy abaixo, 13px muted: "Você pode explorar cada funcionalidade no menu lateral a qualquer momento."
 
-Linha 38 e linha 248: refletir a nova realidade — "Gemini puro (sem grounding)" vs "Google Modo IA (Flash + Google Search)".
+Handler `handleStart()` (compartilhado entre CTA e "Pular"):
+```ts
+await supabase.from("profiles").update({ is_first_login: false }).eq("user_id", user.id);
+navigate("/dashboard", { replace: true });
+```
+Tratamento de erro: toast discreto e segue para `/dashboard` mesmo assim (não bloqueia).
 
-### 5. Sem mudanças no front
+Os 6 cards e suas descrições serão extraídos para `src/lib/welcome-features.ts` para reuso no Passo 4.
 
-`SimuladorPage.tsx` já trata `citations` corretamente, já tem o card especial para "Google Modo IA" (incluindo retry quando vem vazio) e já mostra o badge "Grounding em tempo real". Nada a mexer.
+---
 
-## Por que Gemini 2.0 Flash (e não 2.5 Flash)
+## Passo 3 — Redirect pós-login
 
-- Pedido explícito do usuário.
-- `gemini-2.0-flash` aceita a tool `google_search` nativa em `v1beta` (mesma API que o slot já usa).
-- ~10x mais barato que 2.5-pro no input (~$0.10 vs $1.25 / 1M tokens) e ~25x mais barato no output (~$0.40 vs $10 / 1M).
-- Latência baixa o suficiente para o Simulador rodar os 4 slots em paralelo sem o Google Modo IA virar gargalo.
+Em `src/pages/AuthPage.tsx`, substituir os dois `navigate("/dashboard", { replace: true })` (linhas ~75 e ~93) por uma função `redirectAfterAuth(userId)`:
 
-## Validação
+```ts
+const { data } = await supabase
+  .from("profiles")
+  .select("is_first_login")
+  .eq("user_id", userId)
+  .maybeSingle();
+navigate(data?.is_first_login ? "/welcome" : "/dashboard", { replace: true });
+```
 
-1. Abrir `/dashboard/simulador`, perguntar "Quais as melhores agências de marketing de SP?".
-2. Confirmar nos 4 cards:
-   - **ChatGPT** e **Gemini**: resposta de treinamento, sem fontes.
-   - **Google Modo IA**: resposta + bloco "Fontes citadas (N)" com domínios reais, favicons e badge "Grounding em tempo real".
-   - **GPT-5**: como hoje.
-3. Verificar logs de `simulate-ai` no Supabase — status 200, sem warning de "Resposta inválida" para o slot Flash.
-4. Rodar um Diagnóstico completo no Preview e confirmar que os 5 pilares continuam vindo dos 4 modelos sem regressão (o Diagnóstico não muda — continua usando o mesmo `callModel` para os dois slots Gemini, agora com modelos diferentes).
+Aplicar a mesma lógica em `src/pages/ResetPasswordPage.tsx` (linha 44) por consistência.
 
-## Memória a atualizar
+Fallback: se a query falhar, vai para `/dashboard` (não trava acesso). A flag só é gravada como `false` dentro de `/welcome`, garantindo "nunca mostrar duas vezes" mesmo se o usuário fechar a aba.
 
-`mem://technical/ai-integration-multi-model`: refletir
-- Slot "Gemini" → `gemini-2.5-pro`, sem grounding (baseline de memória do modelo).
-- Slot "Google Modo IA" → `gemini-2.0-flash` + `google_search` grounding (busca web em tempo real, foco em custo/velocidade).
+---
 
-## Fora de escopo
+## Passo 4 — Estado vazio do `/dashboard`
 
-- Não mexer em ChatGPT, Claude, GPT-5, Perplexity.
-- Não mexer em `generate-content`.
-- Não mudar prompts do Diagnóstico nem UI do Simulador.
-- Não persistir as URLs do grounding no banco (continua só em memória da resposta).
+Hoje `DashboardOverview.tsx` tem flags hard-coded (`hasScoreData = false`...) e renderiza vários `EmptyStateCard`. Vou substituir por um modo "estado zero" único quando não existe diagnóstico.
+
+**Detecção** — hook novo `src/hooks/useHasDiagnostic.ts`:
+- Conta registros do user em `audit_reports` **ou** `analysis_history` (HEAD count, limit 1).
+- Retorna `{ hasDiagnostic, isLoading }`.
+
+**Render condicional** em `DashboardOverview.tsx`:
+
+Quando `hasDiagnostic === false`, **substituir** todo o miolo (blocos atuais) por:
+
+1. **Stepper horizontal no topo** (componente novo `OnboardingStepper`):
+   - 4 etapas: Cadastro ✓ (verde) · **Diagnóstico IA** (roxo pulsante, atual) · Score GEO (muted) · Plano de Ação (muted).
+   - Linha conectora 2px entre eles, gradiente sutil da etapa concluída até a atual.
+
+2. **Hero empty-state card full-width**:
+   - Ícone `Brain` 48px em `text-primary`.
+   - H2 "Seu diagnóstico ainda não foi gerado" (24px weight 600).
+   - Subtexto sobre Score GEO + lacunas + recomendações.
+   - Botão "Iniciar Diagnóstico" → `navigate("/dashboard/diagnostico")` (rota correta no projeto, não `/diagnostico`).
+
+3. **Grid 2-col dos mesmos 6 feature cards** importados de `welcome-features.ts`, mas com variante **locked**:
+   - `opacity-50 grayscale`, `cursor-default`, sem hover lift.
+   - Badge pequeno no canto superior direito: "Disponível após diagnóstico" (text-[10px], bg-muted, rounded-full).
+
+Quando `hasDiagnostic === true` → comportamento atual preservado (cards com métricas e empty states granulares por seção).
+
+`OnboardingChecklistCard` continua sendo renderizado acima de tudo (ele já tem lógica própria).
+
+---
+
+## Detalhes técnicos
+
+- **Schema**: nova coluna `profiles.is_first_login boolean default true`; função `handle_new_user` atualizada.
+- **Arquivos novos**:
+  - `src/pages/WelcomePage.tsx`
+  - `src/components/welcome/FeatureHighlightCard.tsx`
+  - `src/components/dashboard/OnboardingStepper.tsx`
+  - `src/hooks/useHasDiagnostic.ts`
+  - `src/lib/welcome-features.ts` (array compartilhado das 6 features)
+- **Arquivos alterados**:
+  - `src/App.tsx` — registrar rota `/welcome` protegida.
+  - `src/pages/AuthPage.tsx` — `redirectAfterAuth` nos 2 pontos.
+  - `src/pages/ResetPasswordPage.tsx` — mesmo redirect.
+  - `src/pages/dashboard/DashboardOverview.tsx` — bifurcação por `useHasDiagnostic`.
+- **Tipos**: `src/integrations/supabase/types.ts` será regenerado automaticamente após a migration.
+
+## Notas de UX
+
+- Rota usada para diagnóstico é `/dashboard/diagnostico` (existente). O prompt menciona `/diagnostico`, mas vou seguir a rota real do projeto.
+- Cores pastel dos ícones serão hsl com `/10` opacity dos respectivos accents para casar com o design system. Sem cores hard-coded fora dos tokens.
+- O link "Pular" e o CTA chamam o mesmo handler — garante que a flag sempre vira false.
