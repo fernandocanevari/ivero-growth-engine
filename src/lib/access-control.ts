@@ -90,6 +90,11 @@ export const LOCKED_ROUTE_INFO: Record<
     description:
       "Simule o impacto de novas estratégias antes de executá-las e projete o ganho de presença em cada IA.",
   },
+  "/dashboard/llms-txt": {
+    title: "LLMs.txt",
+    description:
+      "Diagnostique, gere e monitore o arquivo llms.txt da sua marca — o guia que diz às IAs como ler e citar seu site corretamente.",
+  },
   "/dashboard/prompt-tester": {
     title: "Prompt Tester",
     description:

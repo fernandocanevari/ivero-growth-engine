@@ -38,6 +38,7 @@ import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
 import AuditoriasPage from "./pages/dashboard/AuditoriasPage";
 import AuditoriaDetalhePage from "./pages/dashboard/AuditoriaDetalhePage";
+import LlmsTxtPage from "./pages/dashboard/LlmsTxtPage";
 import AdminPropostasPage from "./pages/dashboard/AdminPropostasPage";
 import AdminConvitesPage from "./pages/dashboard/AdminConvitesPage";
 import PropostaComercialPage from "./pages/PropostaComercialPage";
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="prompts" element={<PromptsPage />} />
             <Route path="dominancia" element={<DominanciaPage />} />
             <Route path="simulador" element={<SimuladorPage />} />
+            <Route path="llms-txt" element={<LlmsTxtPage />} />
             <Route path="campanhas" element={<CampanhasPage />} />
             <Route path="campanhas/nova" element={<NovaCampanhaPage />} />
             <Route path="prompt-tester" element={<PromptTesterPage />} />

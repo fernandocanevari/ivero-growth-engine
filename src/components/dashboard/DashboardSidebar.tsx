@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck, FileCode,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -64,6 +64,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
       { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical, beta: true },
+      { title: "LLMs.txt", url: "/dashboard/llms-txt", icon: FileCode },
     ],
   },
   {
