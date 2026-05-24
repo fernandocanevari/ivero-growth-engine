@@ -4,6 +4,7 @@ import { Construction } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { DiagnosticoTab } from "@/components/dashboard/llmstxt/DiagnosticoTab";
+import { GeradorTab } from "@/components/dashboard/llmstxt/GeradorTab";
 
 type TabKey = "diagnostico" | "gerador" | "monitoramento";
 
