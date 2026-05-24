@@ -202,10 +202,10 @@ export function DashboardSidebar() {
                 )}
                 {badgeValue ? (
                   <span
-                    className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                    className={`flex items-center justify-center rounded-full text-[10px] font-bold ${
                       isAlerts
-                        ? "bg-destructive text-destructive-foreground"
-                        : "bg-accent text-accent-foreground"
+                        ? "h-[18px] w-[18px] bg-destructive text-destructive-foreground"
+                        : "h-5 min-w-5 px-1.5 bg-accent text-accent-foreground"
                     }`}
                   >
                     {badgeValue}
