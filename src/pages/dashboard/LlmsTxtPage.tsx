@@ -4,6 +4,7 @@ import { Construction } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { DiagnosticoTab } from "@/components/dashboard/llmstxt/DiagnosticoTab";
+import { GeradorTab } from "@/components/dashboard/llmstxt/GeradorTab";
 
 type TabKey = "diagnostico" | "gerador" | "monitoramento";
 
@@ -95,17 +96,25 @@ export default function LlmsTxtPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            {active === "diagnostico" ? (
+            {active === "diagnostico" && (
               <DiagnosticoTab
                 initialUrl={sharedUrl}
                 onUrlChange={setSharedUrl}
                 onGoToGerador={goToGerador}
               />
-            ) : (
+            )}
+            {active === "gerador" && (
+              <GeradorTab
+                initialUrl={sharedUrl}
+                onUrlChange={setSharedUrl}
+                onGoToMonitoramento={() => setActive("monitoramento")}
+              />
+            )}
+            {active === "monitoramento" && (
               <EmptyStateCard
                 icon={<Construction className="h-8 w-8" />}
-                title={PLACEHOLDERS[active].title}
-                description={PLACEHOLDERS[active].description}
+                title={PLACEHOLDERS.monitoramento.title}
+                description={PLACEHOLDERS.monitoramento.description}
               />
             )}
           </motion.div>
