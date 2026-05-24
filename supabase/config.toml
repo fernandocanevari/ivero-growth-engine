@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.diagnose-llms-txt]
 verify_jwt = true
+
+[functions.generate-llms-txt]
+verify_jwt = true
