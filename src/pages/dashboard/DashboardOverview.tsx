@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap, Settings, BarChart3, Bell, Search, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap, Settings, BarChart3, Bell, Search, Target, Brain } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,20 @@ import {
   comparativeData, actionsData, promptsData, brandName, competitorName,
 } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { OnboardingChecklistCard } from "@/components/dashboard/OnboardingChecklistCard";
+import { OnboardingStepper } from "@/components/dashboard/OnboardingStepper";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
+import { WELCOME_FEATURES } from "@/lib/welcome-features";
+import { FeatureHighlightCard } from "@/components/welcome/FeatureHighlightCard";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
 export default function DashboardOverview() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = useBrandSettings();
+  const { hasDiagnostic, isLoading: loadingDiag } = useHasDiagnostic();
 
   // Determine what data the client has configured
   const hasBrand = !!settings?.brand_name;
@@ -47,7 +52,61 @@ export default function DashboardOverview() {
     return <Info className="h-4 w-4 text-blue-500" />;
   };
 
-  if (isLoading) return null;
+  if (isLoading || loadingDiag) return null;
+
+  // Empty-state mode: user hasn't generated any diagnostic yet
+  if (hasDiagnostic === false) {
+    return (
+      <div className="space-y-6 max-w-6xl">
+        <motion.div {...fade}>
+          <h1 className="text-2xl font-bold font-display text-foreground">
+            Olá{hasBrand ? `, ${displayName}` : ""} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Vamos dar o primeiro passo para mapear sua presença nas IAs.
+          </p>
+        </motion.div>
+
+        <OnboardingStepper />
+
+        <motion.div {...fade} transition={{ delay: 0.1 }}>
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Brain className="w-12 h-12 text-primary" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h2 className="text-xl md:text-2xl font-display font-semibold text-foreground">
+                  Seu diagnóstico ainda não foi gerado
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                  Execute seu primeiro Diagnóstico IA para ver seu Score GEO, identificar lacunas
+                  de presença e receber recomendações personalizadas.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                onClick={() => navigate("/dashboard/diagnostico")}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+              >
+                Iniciar Diagnóstico
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <div>
+          <SectionHeader tone="primary">O que você desbloqueia após o diagnóstico</SectionHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {WELCOME_FEATURES.map((f, i) => (
+              <FeatureHighlightCard key={f.id} feature={f} index={i} locked />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-6xl">

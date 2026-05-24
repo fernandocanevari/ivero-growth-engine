@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import PreviewPage from "./pages/PreviewPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import WelcomePage from "./pages/WelcomePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
@@ -73,6 +74,7 @@ const App = () => (
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
