@@ -265,7 +265,7 @@ export function DashboardSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="px-2 py-2 overflow-y-auto [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-[#D0CEFE]">
         {allGroups.map((group, groupIdx) => {
           const isOpen = openSections[group.label] ?? true;
           const isAdminGroup = group.label === "Administração";
@@ -285,11 +285,14 @@ export function DashboardSidebar() {
                   }`}
                 >
                   <ChevronRight
-                    className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-90" : ""
+                    className={`h-3 w-3 shrink-0 transition-transform duration-200 ease-in-out ${
+                      isOpen ? "rotate-90" : "rotate-0"
                     }`}
                   />
                   <span>{group.label}</span>
+                  {isAdminGroup && (
+                    <ShieldCheck className="h-3 w-3 shrink-0 text-primary/70" aria-label="Acesso restrito" />
+                  )}
                   {isAdminGroup && group.info && (
                     <InfoTooltip text={group.info} />
                   )}
@@ -297,15 +300,12 @@ export function DashboardSidebar() {
               ) : null}
 
               <div
-                className={`grid transition-[grid-template-rows] duration-200 ease-out ${
-                  collapsed || isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                }`}
+                className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
+                style={{ maxHeight: collapsed || isOpen ? 500 : 0 }}
               >
-                <div className="overflow-hidden">
-                  <ul className={`flex flex-col gap-0.5 ${collapsed ? "pt-1" : "pt-0.5 pb-1"}`}>
-                    {group.items.map((item) => renderItem(item, isAdminGroup))}
-                  </ul>
-                </div>
+                <ul className={`flex flex-col gap-0.5 ${collapsed ? "pt-1" : "pt-0.5 pb-1"}`}>
+                  {group.items.map((item) => renderItem(item, isAdminGroup))}
+                </ul>
               </div>
             </div>
           );
