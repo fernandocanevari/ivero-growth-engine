@@ -326,6 +326,104 @@ export type Database = {
         }
         Relationships: []
       }
+      llms_monitoring: {
+        Row: {
+          alert_email: string
+          alerts_sent: number
+          created_at: string
+          email_alerts: boolean
+          frequency: string
+          id: string
+          last_check_at: string | null
+          last_llms_hash: string | null
+          last_site_hash: string | null
+          llms_present: boolean | null
+          monitored_url: string
+          next_check_at: string
+          paused: boolean
+          pending_alert: boolean
+          pending_alert_summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_email?: string
+          alerts_sent?: number
+          created_at?: string
+          email_alerts?: boolean
+          frequency?: string
+          id?: string
+          last_check_at?: string | null
+          last_llms_hash?: string | null
+          last_site_hash?: string | null
+          llms_present?: boolean | null
+          monitored_url: string
+          next_check_at?: string
+          paused?: boolean
+          pending_alert?: boolean
+          pending_alert_summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_email?: string
+          alerts_sent?: number
+          created_at?: string
+          email_alerts?: boolean
+          frequency?: string
+          id?: string
+          last_check_at?: string | null
+          last_llms_hash?: string | null
+          last_site_hash?: string | null
+          llms_present?: boolean | null
+          monitored_url?: string
+          next_check_at?: string
+          paused?: boolean
+          pending_alert?: boolean
+          pending_alert_summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      llms_monitoring_checks: {
+        Row: {
+          changes: Json
+          checked_at: string
+          created_at: string
+          id: string
+          monitoring_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          changes?: Json
+          checked_at?: string
+          created_at?: string
+          id?: string
+          monitoring_id: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          changes?: Json
+          checked_at?: string
+          created_at?: string
+          id?: string
+          monitoring_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "llms_monitoring_checks_monitoring_id_fkey"
+            columns: ["monitoring_id"]
+            isOneToOne: false
+            referencedRelation: "llms_monitoring"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
