@@ -146,21 +146,23 @@ export function DashboardSidebar() {
       <NavLink
         to={item.url}
         end={item.url === "/dashboard" || item.url === "/dashboard/admin"}
-        className={`group/navlink relative flex items-center gap-2.5 h-9 rounded-md text-[13px] text-foreground/80 transition-all duration-150 ease-out cursor-pointer hover:bg-primary/8 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          collapsed ? "justify-center px-0 w-10 mx-auto" : "px-3"
-        } ${locked ? "opacity-55 hover:opacity-100" : ""}`}
-        activeClassName="!bg-primary !text-primary-foreground font-medium hover:!bg-primary/95 hover:!text-primary-foreground [&_svg]:!text-primary-foreground"
+        className={`group/navlink relative flex items-center gap-2.5 h-9 rounded-md text-[13px] text-foreground/80 transition-all duration-150 ease-out cursor-pointer hover:bg-primary/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          collapsed ? "justify-center px-0 w-10 mx-auto" : "pl-3 pr-2"
+        } ${locked ? "text-foreground/60" : ""}`}
+        activeClassName="!bg-primary/10 !text-primary font-medium hover:!bg-primary/15 [&_svg]:!text-primary before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-primary"
       >
-        <item.icon className={`shrink-0 ${collapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={1.75} />
+        <item.icon className={`shrink-0 ${collapsed ? "h-5 w-5" : "h-4 w-4"} text-foreground/70`} strokeWidth={1.75} />
         {!collapsed && (
           <>
             <span className="truncate flex-1 min-w-0">{item.title}</span>
             {locked ? (
-              <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider shrink-0">
+                Unlock
+              </span>
             ) : (
               <span className="ml-auto flex items-center gap-1.5">
                 {isBeta && (
-                  <span className="rounded-full bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider [[aria-current=page]_&]:bg-primary-foreground/20 [[aria-current=page]_&]:text-primary-foreground [[aria-current=page]_&]:border-primary-foreground/30">
+                  <span className="rounded-full bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
                     Beta
                   </span>
                 )}
@@ -170,7 +172,7 @@ export function DashboardSidebar() {
                       isAlerts
                         ? "bg-destructive text-destructive-foreground"
                         : "bg-accent text-accent-foreground"
-                    } [[aria-current=page]_&]:bg-primary-foreground [[aria-current=page]_&]:text-primary`}
+                    }`}
                   >
                     {badgeValue}
                   </span>
@@ -244,7 +246,9 @@ export function DashboardSidebar() {
                   type="button"
                   onClick={() => toggleSection(group.label)}
                   aria-expanded={isOpen}
-                  className="w-full flex items-center gap-1.5 px-3 h-7 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 hover:text-foreground transition-colors"
+                  className={`w-full flex items-center gap-1.5 px-3 h-7 text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors ${
+                    isOpen ? "text-primary" : "text-muted-foreground/70 hover:text-foreground"
+                  }`}
                 >
                   <ChevronRight
                     className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
