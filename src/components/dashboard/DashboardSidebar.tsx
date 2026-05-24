@@ -246,7 +246,9 @@ export function DashboardSidebar() {
                   type="button"
                   onClick={() => toggleSection(group.label)}
                   aria-expanded={isOpen}
-                  className="w-full flex items-center gap-1.5 px-3 h-7 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 hover:text-foreground transition-colors"
+                  className={`w-full flex items-center gap-1.5 px-3 h-7 text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors ${
+                    isOpen ? "text-primary" : "text-muted-foreground/70 hover:text-foreground"
+                  }`}
                 >
                   <ChevronRight
                     className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
