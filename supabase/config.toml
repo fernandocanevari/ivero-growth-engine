@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.generate-llms-txt]
 verify_jwt = true
+
+[functions.monitor-llms-txt]
+verify_jwt = false
