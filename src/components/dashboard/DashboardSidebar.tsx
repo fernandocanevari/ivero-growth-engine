@@ -190,8 +190,11 @@ export function DashboardSidebar() {
           <>
             <span className="truncate flex-1 min-w-0">{item.title}</span>
             {locked ? (
-              <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider shrink-0">
-                Unlock
+              <span
+                className="ml-auto inline-flex items-center justify-center rounded-full bg-primary/10 text-primary h-5 w-5 shrink-0"
+                aria-label="Bloqueado — disponível nos planos pagos"
+              >
+                <Lock className="h-3 w-3" strokeWidth={2} />
               </span>
             ) : (
               <span className="ml-auto flex items-center gap-1.5">
