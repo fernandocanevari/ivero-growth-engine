@@ -95,11 +95,19 @@ export default function LlmsTxtPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <EmptyStateCard
-              icon={active === "diagnostico" ? <FileCode className="h-8 w-8" /> : <Construction className="h-8 w-8" />}
-              title={PLACEHOLDERS[active].title}
-              description={PLACEHOLDERS[active].description}
-            />
+            {active === "diagnostico" ? (
+              <DiagnosticoTab
+                initialUrl={sharedUrl}
+                onUrlChange={setSharedUrl}
+                onGoToGerador={goToGerador}
+              />
+            ) : (
+              <EmptyStateCard
+                icon={<Construction className="h-8 w-8" />}
+                title={PLACEHOLDERS[active].title}
+                description={PLACEHOLDERS[active].description}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
