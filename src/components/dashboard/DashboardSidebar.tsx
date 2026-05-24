@@ -32,7 +32,7 @@ const LABEL_TRUNCATE = 18;
 type MenuItem = {
   title: string;
   url: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<any>;
   beta?: boolean;
   dynamicBadge?: "perception";
   badge?: number;
