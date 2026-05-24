@@ -26,6 +26,8 @@ const PLACEHOLDERS: Record<Exclude<TabKey, "diagnostico">, { title: string; desc
 
 export default function LlmsTxtPage() {
   const [active, setActive] = useState<TabKey>("diagnostico");
+  const [sharedUrl, setSharedUrl] = useState("");
+  const [active, setActive] = useState<TabKey>("diagnostico");
 
   useEffect(() => {
     document.title = "LLMs.txt | Ivero";
