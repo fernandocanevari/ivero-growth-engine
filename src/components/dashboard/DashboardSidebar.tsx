@@ -104,9 +104,12 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3">
-        {menuGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 px-3 mb-1">
+        {menuGroups.map((group, groupIdx) => (
+          <SidebarGroup
+            key={group.label}
+            className={groupIdx > 0 ? "mt-2 pt-3 border-t border-border/60" : ""}
+          >
+            <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70 px-3 mb-1">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -119,29 +122,41 @@ export function DashboardSidebar() {
                       : 0;
                   const staticBadge = "badge" in item ? (item as { badge?: number }).badge : 0;
                   const badgeValue = dynamicBadgeValue || staticBadge || 0;
+                  const isBeta = "beta" in item && (item as { beta?: boolean }).beta;
+                  const isAlerts = item.url === "/dashboard/alertas";
                   const linkContent = (
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
-                      className={`group/navlink relative flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm text-foreground/75 transition-colors duration-150 cursor-pointer hover:bg-secondary/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
+                      className={`group/navlink relative flex items-center gap-3 h-10 px-3 rounded-lg text-sm text-foreground/75 transition-colors duration-150 cursor-pointer hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
                         locked ? "opacity-55 hover:opacity-100" : ""
                       }`}
-                      activeClassName="bg-primary/15 text-primary font-semibold shadow-sm ring-1 ring-primary/25 hover:bg-primary/20 hover:text-primary"
+                      activeClassName="!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary/95 hover:!text-primary-foreground"
                     >
-                      {/* Indicador ativo: barra lateral com glow (visível só quando aria-current=page) */}
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary opacity-0 shadow-[0_0_12px_2px_hsl(var(--primary)/0.55)] transition-opacity [[aria-current=page]_&]:opacity-100"
-                      />
                       <item.icon className="h-4 w-4 shrink-0" />
                       <span className="truncate">{item.title}</span>
                       {locked ? (
                         <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
-                      ) : badgeValue ? (
-                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-                          {badgeValue}
+                      ) : (
+                        <span className="ml-auto flex items-center gap-1.5">
+                          {isBeta && (
+                            <span className="rounded-full bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider [[aria-current=page]_&]:bg-primary-foreground/20 [[aria-current=page]_&]:text-primary-foreground [[aria-current=page]_&]:border-primary-foreground/30">
+                              Beta
+                            </span>
+                          )}
+                          {badgeValue ? (
+                            <span
+                              className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                                isAlerts
+                                  ? "bg-destructive text-destructive-foreground"
+                                  : "bg-accent text-accent-foreground"
+                              } [[aria-current=page]_&]:bg-primary-foreground [[aria-current=page]_&]:text-primary`}
+                            >
+                              {badgeValue}
+                            </span>
+                          ) : null}
                         </span>
-                      ) : null}
+                      )}
                     </NavLink>
                   );
 
