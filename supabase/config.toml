@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.responder-proposta]
 verify_jwt = false
+
+[functions.diagnose-llms-txt]
+verify_jwt = true

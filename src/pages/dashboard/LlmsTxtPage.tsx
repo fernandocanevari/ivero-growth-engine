@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileCode, Construction } from "lucide-react";
+import { Construction } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
+import { DiagnosticoTab } from "@/components/dashboard/llmstxt/DiagnosticoTab";
 
 type TabKey = "diagnostico" | "gerador" | "monitoramento";
 
@@ -12,11 +13,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "monitoramento", label: "Monitoramento" },
 ];
 
-const PLACEHOLDERS: Record<TabKey, { title: string; description: string }> = {
-  diagnostico: {
-    title: "Diagnóstico em construção",
-    description: "Em breve você cola a URL do seu site e o Ivero analisa se já existe um llms.txt, avaliando qualidade e problemas.",
-  },
+const PLACEHOLDERS: Record<Exclude<TabKey, "diagnostico">, { title: string; description: string }> = {
   gerador: {
     title: "Gerador em construção",
     description: "Em breve o Ivero gera automaticamente o arquivo em markdown, pronto para você revisar e baixar.",
@@ -29,6 +26,12 @@ const PLACEHOLDERS: Record<TabKey, { title: string; description: string }> = {
 
 export default function LlmsTxtPage() {
   const [active, setActive] = useState<TabKey>("diagnostico");
+  const [sharedUrl, setSharedUrl] = useState("");
+
+  const goToGerador = (url: string) => {
+    setSharedUrl(url);
+    setActive("gerador");
+  };
 
   useEffect(() => {
     document.title = "LLMs.txt | Ivero";
@@ -92,11 +95,19 @@ export default function LlmsTxtPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <EmptyStateCard
-              icon={active === "diagnostico" ? <FileCode className="h-8 w-8" /> : <Construction className="h-8 w-8" />}
-              title={PLACEHOLDERS[active].title}
-              description={PLACEHOLDERS[active].description}
-            />
+            {active === "diagnostico" ? (
+              <DiagnosticoTab
+                initialUrl={sharedUrl}
+                onUrlChange={setSharedUrl}
+                onGoToGerador={goToGerador}
+              />
+            ) : (
+              <EmptyStateCard
+                icon={<Construction className="h-8 w-8" />}
+                title={PLACEHOLDERS[active].title}
+                description={PLACEHOLDERS[active].description}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
