@@ -103,6 +103,7 @@ const adminGroup: MenuGroup = {
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
   const { isPaid, isTrial } = useSubscriptionStatus();
@@ -115,10 +116,43 @@ export function DashboardSidebar() {
 
   const allGroups = isAdmin ? [...menuGroups, adminGroup] : menuGroups;
 
-  // Default: all sections open
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(allGroups.map((g) => [g.label, true])),
-  );
+  const STORAGE_KEY = "ivero_sidebar_sections";
+
+  // Default open + persist in localStorage
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const defaults = Object.fromEntries(allGroups.map((g) => [g.label, true]));
+    if (typeof window === "undefined") return defaults;
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return { ...defaults, ...stored };
+    } catch {
+      return defaults;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(openSections));
+    } catch {
+      /* noop */
+    }
+  }, [openSections]);
+
+  // Auto-expand the section that contains the current route
+  useEffect(() => {
+    const path = location.pathname;
+    const parent = allGroups.find((g) =>
+      g.items.some((it) =>
+        it.url === "/dashboard" || it.url === "/dashboard/admin"
+          ? path === it.url
+          : path === it.url || path.startsWith(it.url + "/"),
+      ),
+    );
+    if (parent && !openSections[parent.label]) {
+      setOpenSections((prev) => ({ ...prev, [parent.label]: true }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const toggleSection = (label: string) =>
     setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
