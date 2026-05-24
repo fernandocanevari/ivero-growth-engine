@@ -1,7 +1,8 @@
+import { useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -21,12 +22,6 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
@@ -34,13 +29,28 @@ import {
 
 const LABEL_TRUNCATE = 18;
 
-const menuGroups = [
+type MenuItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<any>;
+  beta?: boolean;
+  dynamicBadge?: "perception";
+  badge?: number;
+};
+
+type MenuGroup = {
+  label: string;
+  items: MenuItem[];
+  info?: string;
+};
+
+const menuGroups: MenuGroup[] = [
   {
     label: "Visão Geral",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
       { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain, beta: true },
-      { title: "Relatórios", url: "/dashboard/auditorias", icon: History },
+      { title: "Relatórios", url: "/dashboard/auditorias", icon: FileText },
       { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
     ],
   },
@@ -50,7 +60,7 @@ const menuGroups = [
       { title: "Monitoramento Multi-IA", url: "/dashboard/monitoramento", icon: Radar },
       { title: "Análise Comparativa", url: "/dashboard/comparativo", icon: GitCompare },
       { title: "Dominância por Modelo", url: "/dashboard/dominancia", icon: BarChart3 },
-      { title: "Score GEO", url: "/dashboard/score", icon: Gauge },
+      { title: "Pontuação GEO", url: "/dashboard/score", icon: Gauge },
       { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
       { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical, beta: true },
@@ -62,7 +72,7 @@ const menuGroups = [
       { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
       { title: "Gerador de Conteúdo", url: "/dashboard/conteudo", icon: PenLine },
       { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
-      { title: "Alertas", url: "/dashboard/alertas", icon: Bell, dynamicBadge: "perception" as const },
+      { title: "Alertas", url: "/dashboard/alertas", icon: Bell, dynamicBadge: "perception" },
       { title: "Campanhas", url: "/dashboard/campanhas", icon: Megaphone },
     ],
   },
@@ -77,6 +87,20 @@ const menuGroups = [
   },
 ];
 
+const adminGroup: MenuGroup = {
+  label: "Administração",
+  info: "Área exclusiva para gestão do negócio Ivero: métricas financeiras, de produto, estratégicas, risco e gestão de clientes.",
+  items: [
+    { title: "Painel Admin", url: "/dashboard/admin", icon: Crown },
+    { title: "Clientes", url: "/dashboard/admin/clientes", icon: Users },
+    { title: "Pistas", url: "/dashboard/admin/leads", icon: Mail },
+    { title: "Propostas", url: "/dashboard/admin/propostas", icon: FileSignature },
+    { title: "Convites", url: "/dashboard/admin/convites", icon: Send },
+    { title: "Respostas", url: "/dashboard/admin/respostas", icon: MessageSquare },
+    { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: TestTube },
+  ],
+};
+
 export function DashboardSidebar() {
   const navigate = useNavigate();
   const { data: settings } = useBrandSettings();
@@ -85,10 +109,19 @@ export function DashboardSidebar() {
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
-  const displayName = settings?.brand_name || "Minha Marca";
+  const displayName = settings?.brand_name || "Administrador";
   const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
-
   const showLockState = !isPaid && !isAdmin;
+
+  const allGroups = isAdmin ? [...menuGroups, adminGroup] : menuGroups;
+
+  // Default: all sections open
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(allGroups.map((g) => [g.label, true])),
+  );
+
+  const toggleSection = (label: string) =>
+    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -96,184 +129,149 @@ export function DashboardSidebar() {
     navigate("/login", { replace: true });
   };
 
+  const renderItem = (item: MenuItem, isAdminGroup = false) => {
+    const locked = !isAdminGroup && showLockState && !isRouteAllowedInTrial(item.url);
+    const dynamicBadgeValue =
+      item.dynamicBadge === "perception" ? perceptionUnread : 0;
+    const badgeValue = dynamicBadgeValue || item.badge || 0;
+    const isBeta = item.beta;
+    const isAlerts = item.url === "/dashboard/alertas";
+    const isLong = item.title.length > LABEL_TRUNCATE;
+    const needsTooltip = collapsed || isLong || locked;
+    const tooltipText = locked
+      ? `${item.title} — disponível nos planos pagos`
+      : item.title;
+
+    const linkContent = (
+      <NavLink
+        to={item.url}
+        end={item.url === "/dashboard" || item.url === "/dashboard/admin"}
+        className={`group/navlink relative flex items-center gap-2.5 h-9 rounded-md text-[13px] text-foreground/80 transition-all duration-150 ease-out cursor-pointer hover:bg-primary/8 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          collapsed ? "justify-center px-0 w-10 mx-auto" : "px-3"
+        } ${locked ? "opacity-55 hover:opacity-100" : ""}`}
+        activeClassName="!bg-primary !text-primary-foreground font-medium hover:!bg-primary/95 hover:!text-primary-foreground [&_svg]:!text-primary-foreground"
+      >
+        <item.icon className={`shrink-0 ${collapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={1.75} />
+        {!collapsed && (
+          <>
+            <span className="truncate flex-1 min-w-0">{item.title}</span>
+            {locked ? (
+              <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+            ) : (
+              <span className="ml-auto flex items-center gap-1.5">
+                {isBeta && (
+                  <span className="rounded-full bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider [[aria-current=page]_&]:bg-primary-foreground/20 [[aria-current=page]_&]:text-primary-foreground [[aria-current=page]_&]:border-primary-foreground/30">
+                    Beta
+                  </span>
+                )}
+                {badgeValue ? (
+                  <span
+                    className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                      isAlerts
+                        ? "bg-destructive text-destructive-foreground"
+                        : "bg-accent text-accent-foreground"
+                    } [[aria-current=page]_&]:bg-primary-foreground [[aria-current=page]_&]:text-primary`}
+                  >
+                    {badgeValue}
+                  </span>
+                ) : null}
+              </span>
+            )}
+          </>
+        )}
+        {collapsed && badgeValue ? (
+          <span
+            className={`absolute top-1 right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+              isAlerts
+                ? "bg-destructive text-destructive-foreground"
+                : "bg-accent text-accent-foreground"
+            }`}
+          >
+            {badgeValue}
+          </span>
+        ) : null}
+      </NavLink>
+    );
+
+    return (
+      <li key={item.url}>
+        {needsTooltip ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              {tooltipText}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          linkContent
+        )}
+      </li>
+    );
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-card">
-      <SidebarHeader className="p-3 border-b border-border">
+      <SidebarHeader className="px-4 py-5 border-b border-border">
         <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2`}>
           {!collapsed && (
-            <NavLink to="/dashboard" className="flex items-center gap-2 px-1">
-              <span className="text-xl font-bold font-display text-gradient">Ivero</span>
+            <NavLink to="/dashboard" className="flex items-center">
+              <span className="text-lg font-bold font-display text-primary tracking-tight">Ivero</span>
             </NavLink>
           )}
           <button
             type="button"
             onClick={toggleSidebar}
             aria-label={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
-            className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors duration-150"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors duration-150"
           >
             <PanelLeft className="h-4 w-4" />
           </button>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
-        {menuGroups.map((group, groupIdx) => (
-          <SidebarGroup
-            key={group.label}
-            className={groupIdx > 0 ? "mt-2 pt-3 border-t border-border/60" : ""}
-          >
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70 px-3 mb-1">
-                {group.label}
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const locked = showLockState && !isRouteAllowedInTrial(item.url);
-                  const dynamicBadgeValue =
-                    "dynamicBadge" in item && item.dynamicBadge === "perception"
-                      ? perceptionUnread
-                      : 0;
-                  const staticBadge = "badge" in item ? (item as { badge?: number }).badge : 0;
-                  const badgeValue = dynamicBadgeValue || staticBadge || 0;
-                  const isBeta = "beta" in item && (item as { beta?: boolean }).beta;
-                  const isAlerts = item.url === "/dashboard/alertas";
-                  const isLong = item.title.length > LABEL_TRUNCATE;
-                  const needsTooltip = collapsed || isLong || locked;
-                  const tooltipText = locked
-                    ? `${item.title} — disponível nos planos pagos`
-                    : item.title;
+      <SidebarContent className="px-2 py-2">
+        {allGroups.map((group, groupIdx) => {
+          const isOpen = openSections[group.label] ?? true;
+          const isAdminGroup = group.label === "Administração";
 
-                  const linkContent = (
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/dashboard"}
-                      className={`group/navlink relative flex items-center gap-3 h-10 rounded-lg text-sm text-foreground/75 transition-all duration-150 ease-out cursor-pointer hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
-                        collapsed ? "justify-center px-0 w-10 mx-auto" : "px-3"
-                      } ${locked ? "opacity-55 hover:opacity-100" : ""}`}
-                      activeClassName="!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary/95 hover:!text-primary-foreground"
-                    >
-                      <item.icon className={`shrink-0 ${collapsed ? "h-6 w-6" : "h-4 w-4"}`} />
-                      {!collapsed && (
-                        <>
-                          <span className="truncate flex-1 min-w-0">{item.title}</span>
-                          {locked ? (
-                            <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
-                          ) : (
-                            <span className="ml-auto flex items-center gap-1.5">
-                              {isBeta && (
-                                <span className="rounded-full bg-accent/15 text-accent border border-accent/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider [[aria-current=page]_&]:bg-primary-foreground/20 [[aria-current=page]_&]:text-primary-foreground [[aria-current=page]_&]:border-primary-foreground/30">
-                                  Beta
-                                </span>
-                              )}
-                              {badgeValue ? (
-                                <span
-                                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
-                                    isAlerts
-                                      ? "bg-destructive text-destructive-foreground"
-                                      : "bg-accent text-accent-foreground"
-                                  } [[aria-current=page]_&]:bg-primary-foreground [[aria-current=page]_&]:text-primary`}
-                                >
-                                  {badgeValue}
-                                </span>
-                              ) : null}
-                            </span>
-                          )}
-                        </>
-                      )}
-                      {collapsed && badgeValue ? (
-                        <span
-                          className={`absolute top-1 right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-                            isAlerts
-                              ? "bg-destructive text-destructive-foreground"
-                              : "bg-accent text-accent-foreground"
-                          }`}
-                        >
-                          {badgeValue}
-                        </span>
-                      ) : null}
-                    </NavLink>
-                  );
+          return (
+            <div
+              key={group.label}
+              className={groupIdx > 0 ? "mt-1 pt-2 border-t border-border/60" : ""}
+            >
+              {!collapsed ? (
+                <button
+                  type="button"
+                  onClick={() => toggleSection(group.label)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center gap-1.5 px-3 h-7 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 hover:text-foreground transition-colors"
+                >
+                  <ChevronRight
+                    className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
+                      isOpen ? "rotate-90" : ""
+                    }`}
+                  />
+                  <span>{group.label}</span>
+                  {isAdminGroup && group.info && (
+                    <InfoTooltip text={group.info} />
+                  )}
+                </button>
+              ) : null}
 
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        {needsTooltip ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                            <TooltipContent side="right" className="text-xs">
-                              {tooltipText}
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          linkContent
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-
-        {isAdmin && (
-          <SidebarGroup className="mt-2 pt-3 border-t border-border/60">
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70 px-3 mb-1 flex items-center gap-1">
-                Administração
-                <InfoTooltip text="Área exclusiva para gestão do negócio Ivero: métricas financeiras, de produto, estratégicas, risco e gestão de clientes." />
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {[
-                  { title: "Painel Admin", url: "/dashboard/admin", icon: Crown },
-                  { title: "Clientes", url: "/dashboard/admin/clientes", icon: Users },
-                  { title: "Leads", url: "/dashboard/admin/leads", icon: Mail },
-                  { title: "Propostas", url: "/dashboard/admin/propostas", icon: FileSignature },
-                  { title: "Convites", url: "/dashboard/admin/convites", icon: Send },
-                  { title: "Respostas", url: "/dashboard/admin/respostas", icon: MessageSquare },
-                  { title: "Prompt Tester", url: "/dashboard/prompt-tester", icon: TestTube },
-                ].map((item) => {
-                  const isLong = item.title.length > LABEL_TRUNCATE;
-                  const needsTooltip = collapsed || isLong;
-                  const linkContent = (
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/dashboard/admin"}
-                      className={`group/navlink relative flex items-center gap-3 h-10 rounded-lg text-sm text-foreground/75 transition-all duration-150 ease-out cursor-pointer hover:bg-secondary/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
-                        collapsed ? "justify-center px-0 w-10 mx-auto" : "px-3"
-                      }`}
-                      activeClassName="bg-primary/15 text-primary font-semibold shadow-sm ring-1 ring-primary/25 hover:bg-primary/20 hover:text-primary"
-                    >
-                      <item.icon className={`shrink-0 ${collapsed ? "h-6 w-6" : "h-4 w-4"}`} />
-                      {!collapsed && <span className="truncate flex-1 min-w-0">{item.title}</span>}
-                    </NavLink>
-                  );
-                  return (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild>
-                        {needsTooltip ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                            <TooltipContent side="right" className="text-xs">
-                              {item.title}
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          linkContent
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
+              <div
+                className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                  collapsed || isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <ul className={`flex flex-col gap-0.5 ${collapsed ? "pt-1" : "pt-0.5 pb-1"}`}>
+                    {group.items.map((item) => renderItem(item, isAdminGroup))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-border">
@@ -281,7 +279,7 @@ export function DashboardSidebar() {
           {collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary cursor-default">
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground cursor-default">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               </TooltipTrigger>
@@ -290,7 +288,7 @@ export function DashboardSidebar() {
               </TooltipContent>
             </Tooltip>
           ) : (
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0">
               {displayName.charAt(0).toUpperCase()}
             </div>
           )}
