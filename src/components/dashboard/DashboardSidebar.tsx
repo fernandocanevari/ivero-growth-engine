@@ -38,7 +38,7 @@ const menuGroups = [
     label: "Visão Geral",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain },
+      { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain, beta: true },
       { title: "Relatórios", url: "/dashboard/auditorias", icon: History },
       { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
     ],
@@ -52,7 +52,7 @@ const menuGroups = [
       { title: "Score GEO", url: "/dashboard/score", icon: Gauge },
       { title: "Tags de Percepção", url: "/dashboard/tags-percepcao", icon: Tags },
       { title: "Análise de Sentimento", url: "/dashboard/sentimento", icon: Shield },
-      { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical },
+      { title: "Simulador de Influência", url: "/dashboard/simulador", icon: FlaskConical, beta: true },
     ],
   },
   {
