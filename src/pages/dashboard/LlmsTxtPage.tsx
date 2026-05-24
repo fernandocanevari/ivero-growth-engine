@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileCode, Construction } from "lucide-react";
+import { Construction } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
+import { DiagnosticoTab } from "@/components/dashboard/llmstxt/DiagnosticoTab";
 
 type TabKey = "diagnostico" | "gerador" | "monitoramento";
 
@@ -12,11 +13,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "monitoramento", label: "Monitoramento" },
 ];
 
-const PLACEHOLDERS: Record<TabKey, { title: string; description: string }> = {
-  diagnostico: {
-    title: "Diagnóstico em construção",
-    description: "Em breve você cola a URL do seu site e o Ivero analisa se já existe um llms.txt, avaliando qualidade e problemas.",
-  },
+const PLACEHOLDERS: Record<Exclude<TabKey, "diagnostico">, { title: string; description: string }> = {
   gerador: {
     title: "Gerador em construção",
     description: "Em breve o Ivero gera automaticamente o arquivo em markdown, pronto para você revisar e baixar.",
