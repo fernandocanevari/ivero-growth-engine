@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { usePerceptionAlerts } from "@/hooks/usePerceptionAlerts";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
