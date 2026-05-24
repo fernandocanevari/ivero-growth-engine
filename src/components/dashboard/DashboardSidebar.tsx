@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { usePerceptionAlerts } from "@/hooks/usePerceptionAlerts";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
@@ -103,6 +103,7 @@ const adminGroup: MenuGroup = {
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
   const { isPaid, isTrial } = useSubscriptionStatus();
@@ -115,10 +116,43 @@ export function DashboardSidebar() {
 
   const allGroups = isAdmin ? [...menuGroups, adminGroup] : menuGroups;
 
-  // Default: all sections open
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(allGroups.map((g) => [g.label, true])),
-  );
+  const STORAGE_KEY = "ivero_sidebar_sections";
+
+  // Default open + persist in localStorage
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const defaults = Object.fromEntries(allGroups.map((g) => [g.label, true]));
+    if (typeof window === "undefined") return defaults;
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return { ...defaults, ...stored };
+    } catch {
+      return defaults;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(openSections));
+    } catch {
+      /* noop */
+    }
+  }, [openSections]);
+
+  // Auto-expand the section that contains the current route
+  useEffect(() => {
+    const path = location.pathname;
+    const parent = allGroups.find((g) =>
+      g.items.some((it) =>
+        it.url === "/dashboard" || it.url === "/dashboard/admin"
+          ? path === it.url
+          : path === it.url || path.startsWith(it.url + "/"),
+      ),
+    );
+    if (parent && !openSections[parent.label]) {
+      setOpenSections((prev) => ({ ...prev, [parent.label]: true }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const toggleSection = (label: string) =>
     setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -168,10 +202,10 @@ export function DashboardSidebar() {
                 )}
                 {badgeValue ? (
                   <span
-                    className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                    className={`flex items-center justify-center rounded-full text-[10px] font-bold ${
                       isAlerts
-                        ? "bg-destructive text-destructive-foreground"
-                        : "bg-accent text-accent-foreground"
+                        ? "h-[18px] w-[18px] bg-destructive text-destructive-foreground"
+                        : "h-5 min-w-5 px-1.5 bg-accent text-accent-foreground"
                     }`}
                   >
                     {badgeValue}
@@ -231,7 +265,7 @@ export function DashboardSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="px-2 py-2 overflow-y-auto [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-[#D0CEFE]">
         {allGroups.map((group, groupIdx) => {
           const isOpen = openSections[group.label] ?? true;
           const isAdminGroup = group.label === "Administração";
@@ -251,11 +285,14 @@ export function DashboardSidebar() {
                   }`}
                 >
                   <ChevronRight
-                    className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-90" : ""
+                    className={`h-3 w-3 shrink-0 transition-transform duration-200 ease-in-out ${
+                      isOpen ? "rotate-90" : "rotate-0"
                     }`}
                   />
                   <span>{group.label}</span>
+                  {isAdminGroup && (
+                    <ShieldCheck className="h-3 w-3 shrink-0 text-primary/70" aria-label="Acesso restrito" />
+                  )}
                   {isAdminGroup && group.info && (
                     <InfoTooltip text={group.info} />
                   )}
@@ -263,15 +300,12 @@ export function DashboardSidebar() {
               ) : null}
 
               <div
-                className={`grid transition-[grid-template-rows] duration-200 ease-out ${
-                  collapsed || isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                }`}
+                className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
+                style={{ maxHeight: collapsed || isOpen ? 500 : 0 }}
               >
-                <div className="overflow-hidden">
-                  <ul className={`flex flex-col gap-0.5 ${collapsed ? "pt-1" : "pt-0.5 pb-1"}`}>
-                    {group.items.map((item) => renderItem(item, isAdminGroup))}
-                  </ul>
-                </div>
+                <ul className={`flex flex-col gap-0.5 ${collapsed ? "pt-1" : "pt-0.5 pb-1"}`}>
+                  {group.items.map((item) => renderItem(item, isAdminGroup))}
+                </ul>
               </div>
             </div>
           );
