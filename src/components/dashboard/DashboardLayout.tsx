@@ -58,6 +58,15 @@ export default function DashboardLayout() {
     isPaid || isAdmin || isRouteAllowedInTrial(location.pathname);
   const lockedInfo = allowAccess ? null : getLockedRouteInfo(location.pathname);
 
+  // Perfil da Marca: abre automaticamente após o 1º diagnóstico, se ainda não preenchido
+  // e o usuário não pediu para adiar (skippedRecently = últimos 3 dias).
+  const showBrandModal =
+    !brandLoading &&
+    hasDiagnostic === true &&
+    !hasCompletedBrandProfile &&
+    !skippedRecently &&
+    !brandModalDismissed;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -66,6 +75,22 @@ export default function DashboardLayout() {
           <div className="sticky top-0 z-10 bg-background">
             <TrialBanner userId={userId} />
             <ModelsStatusBanner />
+            {shouldRemind && !showBrandModal && (
+              <div className="flex items-center justify-between gap-3 px-4 py-2 bg-[#F5F3FF] border-b border-[#E5E0FF] text-sm text-[#1A1A2E]">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#6C5CE7]" />
+                  <span>
+                    Personalize suas recomendações respondendo 3 perguntas rápidas sobre sua marca.
+                  </span>
+                </div>
+                <button
+                  onClick={() => setBrandModalDismissed(false)}
+                  className="text-[#6C5CE7] font-medium hover:underline"
+                >
+                  Responder agora →
+                </button>
+              </div>
+            )}
             <header className="h-14 flex items-center gap-4 border-b border-border px-4">
               <SidebarTrigger />
               <DashboardBreadcrumb className="flex-1" />
@@ -87,7 +112,9 @@ export default function DashboardLayout() {
           </main>
         </div>
       </div>
-      {/* OnboardingWizard removido — as 3 perguntas serão coletadas após o primeiro diagnóstico. */}
+      {showBrandModal && (
+        <BrandProfileModal onClose={() => setBrandModalDismissed(true)} />
+      )}
       <SupportWidget />
     </SidebarProvider>
   );
