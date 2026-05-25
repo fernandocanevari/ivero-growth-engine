@@ -19,11 +19,8 @@ const LEGACY_KEY = "ivero_onboarding_snoozed_until";
 const SNOOZE_MS = 24 * 60 * 60 * 1000; // 24h
 
 export default function DashboardLayout() {
-  const { needsOnboarding, isLoading } = useOnboarding();
   const { isPaid, isAdmin } = useSubscriptionStatus();
   const location = useLocation();
-  const [dismissed, setDismissed] = useState(false);
-  const [snoozed, setSnoozed] = useState(true); // default true to avoid flash
   const [userId, setUserId] = useState<string | null>(null);
 
   // Adopta snapshot anônimo do sessionStorage (caso o usuário tenha vindo do /preview).
@@ -31,41 +28,22 @@ export default function DashboardLayout() {
   // Marca etapas do onboarding automaticamente conforme o usuário visita rotas.
   useTrackOnboardingVisit();
 
-  // Resolve current user, then check per-user snooze (and clear legacy global key)
+  // Resolve current user (used pelo TrialBanner).
   useEffect(() => {
     let active = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!active) return;
-      // Clear legacy global snooze key from previous version (was shared across users)
-      localStorage.removeItem(LEGACY_KEY);
-      if (!user) {
-        setSnoozed(false);
-        return;
+      // Clear legacy snooze keys do onboarding pop-up antigo
+      localStorage.removeItem("ivero_onboarding_snoozed_until");
+      if (user) {
+        setUserId(user.id);
+        localStorage.removeItem("ivero_onboarding_snoozed_until:" + user.id);
       }
-      setUserId(user.id);
-      const until = Number(localStorage.getItem(SNOOZE_PREFIX + user.id) || 0);
-      setSnoozed(Date.now() < until);
     });
     return () => {
       active = false;
     };
   }, []);
-
-  const handleDismiss = () => {
-    if (userId) {
-      localStorage.setItem(SNOOZE_PREFIX + userId, String(Date.now() + SNOOZE_MS));
-    }
-    setDismissed(true);
-  };
-
-  const handleComplete = () => {
-    if (userId) {
-      localStorage.removeItem(SNOOZE_PREFIX + userId);
-    }
-    setDismissed(true);
-  };
-
-  const showOnboarding = needsOnboarding && !dismissed && !isLoading && !snoozed;
 
   // Trial gating: admins e usuários pagos passam direto.
   // Trial users só veem rotas listadas em TRIAL_ALLOWED_ROUTES.
