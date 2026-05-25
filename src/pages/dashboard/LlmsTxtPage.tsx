@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Construction } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { DiagnosticoTab } from "@/components/dashboard/llmstxt/DiagnosticoTab";
 import { GeradorTab } from "@/components/dashboard/llmstxt/GeradorTab";
+import { MonitoramentoTab } from "@/components/dashboard/llmstxt/MonitoramentoTab";
 
 type TabKey = "diagnostico" | "gerador" | "monitoramento";
 
@@ -13,17 +12,6 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "gerador", label: "Gerador" },
   { key: "monitoramento", label: "Monitoramento" },
 ];
-
-const PLACEHOLDERS: Record<Exclude<TabKey, "diagnostico">, { title: string; description: string }> = {
-  gerador: {
-    title: "Gerador em construção",
-    description: "Em breve o Ivero gera automaticamente o arquivo em markdown, pronto para você revisar e baixar.",
-  },
-  monitoramento: {
-    title: "Monitoramento em construção",
-    description: "Em breve o Ivero verifica semanalmente se o conteúdo do seu site mudou e alerta quando o llms.txt precisa ser atualizado.",
-  },
-};
 
 export default function LlmsTxtPage() {
   const [active, setActive] = useState<TabKey>("diagnostico");
@@ -111,10 +99,10 @@ export default function LlmsTxtPage() {
               />
             )}
             {active === "monitoramento" && (
-              <EmptyStateCard
-                icon={<Construction className="h-8 w-8" />}
-                title={PLACEHOLDERS.monitoramento.title}
-                description={PLACEHOLDERS.monitoramento.description}
+              <MonitoramentoTab
+                initialUrl={sharedUrl}
+                onUrlChange={setSharedUrl}
+                onGoToGerador={goToGerador}
               />
             )}
           </motion.div>
