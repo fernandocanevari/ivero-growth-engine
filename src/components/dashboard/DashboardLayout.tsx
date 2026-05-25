@@ -92,7 +92,14 @@ export default function DashboardLayout() {
                 description={lockedInfo.description}
               />
             ) : (
-              <Outlet />
+              <>
+                {shouldRemind && !showBrandModal && (
+                  <BrandProfileReminderBanner
+                    onOpenModal={() => setBrandModalDismissed(false)}
+                  />
+                )}
+                <Outlet />
+              </>
             )}
           </main>
         </div>
