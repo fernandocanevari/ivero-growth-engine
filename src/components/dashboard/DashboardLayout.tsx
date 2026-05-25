@@ -104,7 +104,7 @@ export default function DashboardLayout() {
           </main>
         </div>
       </div>
-      {showOnboarding && <OnboardingWizard onComplete={handleComplete} onDismiss={handleDismiss} />}
+      {/* OnboardingWizard removido — as 3 perguntas serão coletadas após o primeiro diagnóstico. */}
       <SupportWidget />
     </SidebarProvider>
   );
