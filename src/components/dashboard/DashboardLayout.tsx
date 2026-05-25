@@ -14,6 +14,7 @@ import { useAdoptPendingAudit } from "@/hooks/useAdoptPendingAudit";
 import { useTrackOnboardingVisit } from "@/hooks/useDashboardOnboarding";
 import { LibrarySheet } from "./LibrarySheet";
 import BrandProfileModal from "./BrandProfileModal";
+import BrandProfileReminderBanner from "./BrandProfileReminderBanner";
 import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { Sparkles } from "lucide-react";
