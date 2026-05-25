@@ -24,6 +24,11 @@ export default function DashboardLayout() {
   const { isPaid, isAdmin } = useSubscriptionStatus();
   const location = useLocation();
   const [userId, setUserId] = useState<string | null>(null);
+  const [brandModalDismissed, setBrandModalDismissed] = useState(false);
+  const { hasDiagnostic } = useHasDiagnostic();
+  const { hasCompletedBrandProfile, skippedRecently, shouldRemind, isLoading: brandLoading } =
+    useBrandProfile();
+
 
   // Adopta snapshot anônimo do sessionStorage (caso o usuário tenha vindo do /preview).
   useAdoptPendingAudit();
