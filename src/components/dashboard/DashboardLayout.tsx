@@ -14,9 +14,6 @@ import { useAdoptPendingAudit } from "@/hooks/useAdoptPendingAudit";
 import { useTrackOnboardingVisit } from "@/hooks/useDashboardOnboarding";
 import { LibrarySheet } from "./LibrarySheet";
 
-const SNOOZE_PREFIX = "ivero_onboarding_snoozed_until:";
-const LEGACY_KEY = "ivero_onboarding_snoozed_until";
-const SNOOZE_MS = 24 * 60 * 60 * 1000; // 24h
 
 export default function DashboardLayout() {
   const { isPaid, isAdmin } = useSubscriptionStatus();
