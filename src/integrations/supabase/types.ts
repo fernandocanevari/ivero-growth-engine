@@ -195,30 +195,42 @@ export type Database = {
         Row: {
           completed: boolean
           created_at: string
+          detail_1: string
+          detail_2: string
+          detail_3: string
           id: string
           question_1: string
           question_2: string
           question_3: string
+          skipped_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           completed?: boolean
           created_at?: string
+          detail_1?: string
+          detail_2?: string
+          detail_3?: string
           id?: string
           question_1?: string
           question_2?: string
           question_3?: string
+          skipped_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           completed?: boolean
           created_at?: string
+          detail_1?: string
+          detail_2?: string
+          detail_3?: string
           id?: string
           question_1?: string
           question_2?: string
           question_3?: string
+          skipped_at?: string | null
           updated_at?: string
           user_id?: string
         }
