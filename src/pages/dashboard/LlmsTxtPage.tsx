@@ -99,10 +99,10 @@ export default function LlmsTxtPage() {
               />
             )}
             {active === "monitoramento" && (
-              <EmptyStateCard
-                icon={<Construction className="h-8 w-8" />}
-                title={PLACEHOLDERS.monitoramento.title}
-                description={PLACEHOLDERS.monitoramento.description}
+              <MonitoramentoTab
+                initialUrl={sharedUrl}
+                onUrlChange={setSharedUrl}
+                onGoToGerador={goToGerador}
               />
             )}
           </motion.div>
