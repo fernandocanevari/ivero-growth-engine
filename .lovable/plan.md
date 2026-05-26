@@ -1,50 +1,86 @@
-# Prompt 1 de 4 — Estrutura da página LLMs.txt
+## Contexto
 
-Esta é a fundação visual da feature. Os 3 módulos (Diagnóstico, Gerador, Monitoramento) ficam como abas vazias por enquanto — serão implementados nos prompts 2, 3 e 4.
+A aba **Gerador** (`src/components/dashboard/llmstxt/GeradorTab.tsx`) já implementa a **Opção A** — botão "Baixar llms.txt" que gera o arquivo `.txt` a partir do markdown estruturado. Não vou tocar nessa lógica.
 
-## O que será criado
+A entrega abaixo cobre apenas o que falta (Opção B e Opção D) e respeita a regra de não modificar nada existente: nenhum componente, rota, estilo ou hook atual será alterado. Apenas dois arquivos novos são criados e plugados na aba Gerador através de uma única linha de import + render no final do JSX (sem refatorar nada acima).
 
-### 1. Item no sidebar (`DashboardSidebar.tsx`)
-- Grupo **Inteligência**, logo após **Simulador de Influência**
-- Título: `LLMs.txt`
-- Ícone: `FileCode` (lucide-react)
-- URL: `/dashboard/llms-txt`
-- Como é feature paga, herda automaticamente o cadeado no trial (já tratado por `isRouteAllowedInTrial`) — vou adicionar a rota à lista de rotas pagas em `src/lib/access-control.ts`.
+## Arquivos novos
 
-### 2. Rota (`App.tsx`)
-- `path="llms-txt"` dentro do `DashboardLayout`, apontando para `LlmsTxtPage`.
+1. `src/components/dashboard/llmstxt/DeployGuideSection.tsx` — **Opção B**
+2. `src/components/dashboard/llmstxt/DeployValidator.tsx` — **Opção D**
 
-### 3. Página `src/pages/dashboard/LlmsTxtPage.tsx`
-Layout:
+## Alteração mínima no existente
 
-```text
-┌─────────────────────────────────────────────┐
-│ LLMs.txt                                    │  ← 24px, font-medium
-│ Gere, diagnostique e monitore... [i]        │  ← 14px muted + tooltip
-├─────────────────────────────────────────────┤
-│ Diagnóstico   Gerador   Monitoramento       │  ← underline tabs
-│ ─────────                                   │  ← active underline (primary)
-├─────────────────────────────────────────────┤
-│ [conteúdo da aba ativa]                     │
-└─────────────────────────────────────────────┘
+Em `GeradorTab.tsx`, apenas no estado "form preenchido" (após o usuário extrair/gerar o conteúdo), adicionar ao final do JSX, depois do banner "Como usar":
+
+```tsx
+<DeployGuideSection />
+<DeployValidator defaultUrl={url} expectedMarkdown={markdown} />
 ```
 
-Detalhes:
-- **Header**: `<h1>` 24px (`text-2xl font-medium`), subtítulo `text-sm text-muted-foreground` com `<InfoTooltip>` ao lado contendo o texto especificado.
-- **Tabs**: shadcn `Tabs` com `TabsList` customizado para estilo underline (sem fundo pill). Aba ativa: texto `text-primary`, underline 2px `bg-primary`; inativas: `text-muted-foreground`, sem underline; hover sutil.
-- **Transição**: cada `TabsContent` envolto em `framer-motion` `AnimatePresence` com fade 150ms.
-- **Default**: `defaultValue="diagnostico"`.
-- **Placeholder de cada aba**: `EmptyStateCard` discreto com mensagem tipo "Em construção — disponível em breve" (substituído nos próximos prompts).
-- **SEO**: `useEffect` setando `document.title` e meta description via helper `seo.ts`.
+Nada mais é tocado — sem renomear, sem mover, sem mexer em estilos existentes.
 
-### 4. Memória do projeto
-Atualizar `mem://index.md` adicionando referência à nova feature para os próximos prompts manterem contexto.
+## Opção B — DeployGuideSection
 
-## Fora de escopo deste prompt
-- Lógica de scraping / Firecrawl (Prompt 2)
-- Geração de markdown llms.txt (Prompt 3)
-- Cron semanal + alertas (Prompt 4)
-- Tabelas no banco — só serão criadas quando o módulo correspondente precisar.
+Card com título "Como subir o llms.txt no seu site" + subtítulo curto, seguido de um `Accordion` (shadcn, `type="single"`, `collapsible`) com 5 itens:
 
-## Aprovação
-Confirma para eu implementar a estrutura? Depois você cola o **Prompt 2 de 4 (Diagnóstico)**.
+- **WordPress** — instalar plugin "WPCode" ou "File Manager"; via File Manager, abrir pasta raiz (`public_html`), enviar `llms.txt`; validar acesso em `seudominio.com/llms.txt`. Observação para usuários de hospedagem gerenciada (Hostinger/Kinsta) usarem o File Manager nativo.
+- **Vercel** — colocar `llms.txt` na pasta `public/` do projeto; commit + push; Vercel publica automaticamente em `/llms.txt`. Snippet: `public/llms.txt`.
+- **Netlify** — mesma lógica do Vercel: arquivo em `public/` (Vite/React) ou `static/` (Hugo/Next export); deploy via Git ou drag-and-drop em app.netlify.com/drop.
+- **cPanel** — abrir File Manager → `public_html` → Upload → enviar `llms.txt` → garantir permissão 644.
+- **GitHub Pages** — colocar `llms.txt` na raiz do branch publicado (`main` ou `gh-pages`); commit; aguardar 1–2 min para propagar.
+
+Cada item usa numeração 1/2/3 dentro do conteúdo, code blocks com `font-mono` para caminhos/comandos e ícone `lucide-react` no trigger (ex.: `Server`, `Cloud`, `Github`, `FolderUp`, `Globe`). Visual alinhado ao restante da aba (Card + Accordion já existentes no design system).
+
+## Opção D — DeployValidator
+
+Card com título "Validar instalação". Conteúdo:
+
+- Input (`https://seusite.com/llms.txt`) + botão "Validar agora".
+- Pré-preenche com `defaultUrl` (URL que o usuário já digitou no topo da aba), sugerindo automaticamente o sufixo `/llms.txt` se a URL não terminar com isso.
+- Ao clicar, faz `fetch(url, { method: 'GET' })` no client (sem edge function nova — a maioria dos sites com `llms.txt` permite CORS público; se bloqueado, exibimos mensagem específica abaixo).
+
+Checks executados sobre a resposta:
+
+1. Status HTTP 200.
+2. `content-type` começa com `text/` (preferencialmente `text/plain` ou `text/markdown`).
+3. Corpo não vazio e tamanho ≥ 50 bytes.
+4. Contém uma linha começando com `# ` (H1 — nome da marca).
+5. Similaridade mínima com `expectedMarkdown` gerado: presença do `brandName` (primeira linha `#`) no arquivo remoto. Comparação simples, case-insensitive.
+
+Feedback visual:
+
+- **Sucesso (todos os checks passam)**: bloco verde com `CheckCircle2`, título "llms.txt acessível e válido", lista dos checks com check verde, e link "Abrir arquivo no navegador".
+- **Aviso (200 mas algum check falha)**: bloco âmbar com `AlertTriangle`, lista mostrando ✅/❌ por check e causa textual ("Arquivo acessível, mas não contém o nome da marca esperado").
+- **Erro (fetch falha, 404, CORS)**: bloco vermelho com `XCircle` + causa específica:
+  - `TypeError` no fetch → "Não foi possível acessar (provavelmente CORS bloqueado ou arquivo inexistente). Tente abrir a URL no navegador."
+  - 404 → "Arquivo não encontrado. Confirme que está em `/llms.txt` na raiz do domínio."
+  - 5xx → "Servidor respondeu com erro {status}."
+
+Estado interno: `idle | loading | success | warning | error` + array de checks. Sem persistência em banco (validação roda no client, sem alterar schema).
+
+## Ordem visual na aba Gerador
+
+Após o usuário gerar o conteúdo, a tela passa a exibir (de cima para baixo, sem mudar o que já existe):
+
+```text
+[editor + preview]          ← existente
+[Actions: Baixar / Copiar]  ← existente (Opção A já implementada)
+[Banner "Como usar"]        ← existente
+[DeployGuideSection]        ← novo (Opção B)
+[DeployValidator]           ← novo (Opção D)
+```
+
+## Detalhes técnicos
+
+- Componentes shadcn já presentes no projeto: `Card`, `Accordion`, `Input`, `Button`, `Label`. Nenhuma dependência nova.
+- Ícones: usar `lucide-react` (já em uso).
+- Tokens: usar `text-foreground`, `text-muted-foreground`, `border-border`, `bg-muted/40`, `text-primary`, `text-emerald-600`, `text-amber-600`, `text-red-600` (mesmo padrão de cores semânticas já adotado em `GeradorTab`).
+- Sem mudanças em rotas, sem migration, sem edge function, sem alteração de tipos Supabase.
+- Sem mexer em `DiagnosticoTab` nem `MonitoramentoTab` (a aba Diagnóstico já cobre uma verificação mais profunda; o validador da Opção D é um check rápido contextual ao Gerador).
+
+## Fora de escopo
+
+- Não alterar a aba Diagnóstico nem reaproveitar sua lógica (manter independência conforme regra de "não modificar nada existente").
+- Não criar deploy automatizado por API (Opção C do plano anterior).
+- Não persistir resultados da validação no banco.
