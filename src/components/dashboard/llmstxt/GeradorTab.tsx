@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { DeployGuideSection } from "./DeployGuideSection";
+import { DeployValidator } from "./DeployValidator";
 
 interface PageRow { title: string; url: string; description: string; }
 interface SectionRow { name: string; description: string; }
@@ -421,6 +423,9 @@ export function GeradorTab({ initialUrl, onUrlChange, onGoToMonitoramento }: Pro
           <span className="font-medium">Como usar:</span> faça o upload do arquivo <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded border">llms.txt</code> para a pasta raiz do seu domínio (ex.: <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded border">seusite.com/llms.txt</code>). O arquivo ficará acessível publicamente para que os modelos de IA possam lê-lo ao rastrear seu site.
         </p>
       </div>
+
+      <DeployGuideSection />
+      <DeployValidator defaultUrl={url} expectedMarkdown={markdown} />
     </div>
   );
 }
