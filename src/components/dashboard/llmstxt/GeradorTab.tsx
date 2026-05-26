@@ -423,6 +423,9 @@ export function GeradorTab({ initialUrl, onUrlChange, onGoToMonitoramento }: Pro
           <span className="font-medium">Como usar:</span> faça o upload do arquivo <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded border">llms.txt</code> para a pasta raiz do seu domínio (ex.: <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded border">seusite.com/llms.txt</code>). O arquivo ficará acessível publicamente para que os modelos de IA possam lê-lo ao rastrear seu site.
         </p>
       </div>
+
+      <DeployGuideSection />
+      <DeployValidator defaultUrl={url} expectedMarkdown={markdown} />
     </div>
   );
 }
