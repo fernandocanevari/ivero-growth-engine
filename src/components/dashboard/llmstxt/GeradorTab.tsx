@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { DeployGuideSection } from "./DeployGuideSection";
+import { DeployValidator } from "./DeployValidator";
 
 interface PageRow { title: string; url: string; description: string; }
 interface SectionRow { name: string; description: string; }
