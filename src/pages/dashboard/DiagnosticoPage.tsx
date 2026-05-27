@@ -18,6 +18,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
+import { BrandCoverageInlineCard } from "@/components/dashboard/BrandCoverageInlineCard";
 
 /* ── Sub-criterion type (mirrors PreviewPage payload saved in sessionStorage) ── */
 interface PillarCriterion {
