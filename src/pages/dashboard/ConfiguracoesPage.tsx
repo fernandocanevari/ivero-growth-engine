@@ -57,6 +57,10 @@ export default function ConfiguracoesPage() {
         contact_email: settings.contact_email || "",
         contact_phone: settings.contact_phone || "",
         logo_url: settings.logo_url || "",
+        coverage_type: (settings.coverage_type as "national" | "regional") || "national",
+        coverage_city: settings.coverage_city || "",
+        coverage_state: settings.coverage_state || "",
+        coverage_region: settings.coverage_region || "",
       });
     }
   }, [settings]);
