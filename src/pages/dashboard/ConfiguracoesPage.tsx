@@ -98,6 +98,16 @@ export default function ConfiguracoesPage() {
   };
 
   const handleSave = async () => {
+    const coverageError = validateBrandCoverage({
+      coverage_type: form.coverage_type,
+      coverage_city: form.coverage_city,
+      coverage_state: form.coverage_state,
+      coverage_region: form.coverage_region,
+    });
+    if (coverageError) {
+      toast({ title: coverageError, variant: "destructive" });
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     if (settings) {
