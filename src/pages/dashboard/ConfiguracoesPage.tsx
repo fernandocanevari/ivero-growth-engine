@@ -39,6 +39,10 @@ export default function ConfiguracoesPage() {
     contact_email: "",
     contact_phone: "",
     logo_url: "",
+    coverage_type: "national" as "national" | "regional",
+    coverage_city: "",
+    coverage_state: "",
+    coverage_region: "",
   });
 
   useEffect(() => {
