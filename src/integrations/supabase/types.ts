@@ -104,6 +104,10 @@ export type Database = {
           contact_email: string
           contact_name: string
           contact_phone: string
+          coverage_city: string | null
+          coverage_region: string | null
+          coverage_state: string | null
+          coverage_type: string
           created_at: string
           id: string
           logo_url: string
@@ -119,6 +123,10 @@ export type Database = {
           contact_email?: string
           contact_name?: string
           contact_phone?: string
+          coverage_city?: string | null
+          coverage_region?: string | null
+          coverage_state?: string | null
+          coverage_type?: string
           created_at?: string
           id?: string
           logo_url?: string
@@ -134,6 +142,10 @@ export type Database = {
           contact_email?: string
           contact_name?: string
           contact_phone?: string
+          coverage_city?: string | null
+          coverage_region?: string | null
+          coverage_state?: string | null
+          coverage_type?: string
           created_at?: string
           id?: string
           logo_url?: string

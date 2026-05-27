@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { MODELS_ACTIVE } from "@/lib/ai-models-status";
+import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
 
 const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
   OpenAI: { icon: Cpu, desc: "GPT-5 Mini via API OpenAI" },
@@ -38,6 +39,10 @@ export default function ConfiguracoesPage() {
     contact_email: "",
     contact_phone: "",
     logo_url: "",
+    coverage_type: "national" as "national" | "regional",
+    coverage_city: "",
+    coverage_state: "",
+    coverage_region: "",
   });
 
   useEffect(() => {
@@ -52,6 +57,10 @@ export default function ConfiguracoesPage() {
         contact_email: settings.contact_email || "",
         contact_phone: settings.contact_phone || "",
         logo_url: settings.logo_url || "",
+        coverage_type: (settings.coverage_type as "national" | "regional") || "national",
+        coverage_city: settings.coverage_city || "",
+        coverage_state: settings.coverage_state || "",
+        coverage_region: settings.coverage_region || "",
       });
     }
   }, [settings]);
@@ -89,6 +98,16 @@ export default function ConfiguracoesPage() {
   };
 
   const handleSave = async () => {
+    const coverageError = validateBrandCoverage({
+      coverage_type: form.coverage_type,
+      coverage_city: form.coverage_city,
+      coverage_state: form.coverage_state,
+      coverage_region: form.coverage_region,
+    });
+    if (coverageError) {
+      toast({ title: coverageError, variant: "destructive" });
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     if (settings) {
@@ -161,6 +180,17 @@ export default function ConfiguracoesPage() {
           <div><Label>Setor</Label><Input value={form.sector} onChange={(e) => setForm((p) => ({ ...p, sector: e.target.value }))} className="mt-1" /></div>
         </CardContent>
       </Card>
+
+      {/* Abrangência Geográfica */}
+      <BrandCoverageSection
+        values={{
+          coverage_type: form.coverage_type,
+          coverage_city: form.coverage_city,
+          coverage_state: form.coverage_state,
+          coverage_region: form.coverage_region,
+        }}
+        onChange={(next) => setForm((p) => ({ ...p, ...next }))}
+      />
 
       {/* Contact Info */}
       <Card>
