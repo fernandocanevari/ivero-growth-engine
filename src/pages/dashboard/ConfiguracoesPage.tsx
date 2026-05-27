@@ -181,6 +181,17 @@ export default function ConfiguracoesPage() {
         </CardContent>
       </Card>
 
+      {/* Abrangência Geográfica */}
+      <BrandCoverageSection
+        values={{
+          coverage_type: form.coverage_type,
+          coverage_city: form.coverage_city,
+          coverage_state: form.coverage_state,
+          coverage_region: form.coverage_region,
+        }}
+        onChange={(next) => setForm((p) => ({ ...p, ...next }))}
+      />
+
       {/* Contact Info */}
       <Card>
         <CardContent className="p-5 space-y-4">
