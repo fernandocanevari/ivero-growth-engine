@@ -13,6 +13,10 @@ export interface BrandSettings {
   contact_email: string;
   contact_phone: string;
   logo_url: string;
+  coverage_type: "national" | "regional";
+  coverage_city: string | null;
+  coverage_state: string | null;
+  coverage_region: string | null;
 }
 
 export function useBrandSettings() {
