@@ -360,6 +360,13 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
         {/* Plan status removed — clients accessing dashboard already have a plan */}
       </motion.div>
 
+      {/* Abrangência Geográfica (editável) */}
+      {!readOnly && (
+        <motion.div {...fade} transition={{ delay: 0.02 }}>
+          <BrandCoverageInlineCard />
+        </motion.div>
+      )}
+
       {/* Re-analysis button */}
       {!readOnly && (
         <motion.div {...fade} transition={{ delay: 0.03 }}>
