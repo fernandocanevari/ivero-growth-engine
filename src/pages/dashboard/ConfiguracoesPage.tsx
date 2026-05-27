@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { MODELS_ACTIVE } from "@/lib/ai-models-status";
+import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
 
 const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
   OpenAI: { icon: Cpu, desc: "GPT-5 Mini via API OpenAI" },
