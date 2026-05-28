@@ -25,6 +25,7 @@ export default function PromptTesterPage() {
   const { data: brand } = useBrandSettings();
 
   const brandName = brand?.brand_name || "Sua Marca";
+  const geoContext = brand ? getGeoContext(brand) : undefined;
 
   const handleTest = async () => {
     if (!query.trim()) return;
@@ -32,7 +33,7 @@ export default function PromptTesterPage() {
 
     try {
       const { data, error } = await supabase.functions.invoke("simulate-ai", {
-        body: { prompt: query, brandName, mode: "tester" },
+        body: { prompt: query, brandName, mode: "tester", geoContext },
       });
 
       if (error) throw error;
