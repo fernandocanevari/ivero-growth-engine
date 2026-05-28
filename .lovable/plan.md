@@ -1,93 +1,53 @@
-## Feature: Abrangência Geográfica da Marca
+## Fase 2 — Injeção de contexto geográfico nas 3 edge functions principais
 
-Captura da abrangência (nacional vs regional) em **Configurações** e **Diagnóstico**, sem tocar no onboarding atual. Dados ficam em `brand_settings` e são consumidos por um utilitário `getGeoContext()` para uso futuro no motor de diagnóstico.
+A Fase 1 (campo `coverage_*` em `brand_settings`, UI no Diagnóstico/Configurações, helper `getGeoContext()`) já está pronta. Nenhuma edge function consome esse contexto ainda — esta fase faz só a injeção, sem mexer em score, schema, UI ou pilares.
 
----
+### 1. `simulate-ai` (5 LLMs)
 
-### 1. Migration — `brand_settings`
+- Aceita novo campo opcional `geoContext?: string` (máx. 300 chars) no body, em ambos os modos (`diagnóstico` e `simulador/monitor`).
+- Injeta um bloco no `systemPrompt`:
+  > `Contexto da marca: {geoContext}. Avalie/responda considerando esse recorte de atuação — relevância, exemplos e cobertura semântica devem ser ponderados para esse público.`
+- Sem `geoContext` → comportamento atual inalterado (fallback nacional implícito).
+- Callers a atualizar para passar `getGeoContext()` lendo `brand_settings` do usuário logado:
+  - `src/pages/dashboard/SimuladorPage.tsx`
+  - `src/pages/dashboard/PromptTesterPage.tsx`
+  - `src/components/dashboard/llmstxt/DiagnosticoTab.tsx` (caso chame simulate-ai)
+  - `src/pages/dashboard/AdminConvitesPage.tsx` (lê coverage do invite/cliente alvo se disponível, senão envia `undefined`)
+  - `src/pages/PreviewPage.tsx` → continua mandando `undefined` (lead anônimo, sem brand_settings ainda).
 
-Adicionar colunas:
+### 2. `generate-content` (artigo + FAQ + resumo)
 
-- `coverage_type text not null default 'national'` com CHECK `in ('national','regional')`
-- `coverage_city text` (nullable)
-- `coverage_state text` (nullable, sigla UF 2 chars)
-- `coverage_region text` (nullable — ex: "Grande SP", "Vale do Paraíba")
+- Já valida JWT e lê `brand_settings` server-side. Expandir o `.select(...)` para incluir `coverage_type`, `coverage_city`, `coverage_state`, `coverage_region`.
+- Reimplementar `getGeoContext()` inline (Deno não importa de `src/`).
+- Injetar bloco `CONTEXTO GEOGRÁFICO` no `buildUserPrompt`, antes do tópico, com instrução: calibrar exemplos, referências locais e tom para o público do recorte declarado.
+- Sem mudar formato de saída nem cota.
 
-Trigger `validate_brand_coverage` em BEFORE INSERT/UPDATE:
-- Se `coverage_type = 'regional'`, exigir `coverage_city` e `coverage_state` não-vazios.
-- Se `coverage_type = 'national'`, limpar (set null) os campos regionais para evitar dados órfãos.
+### 3. `diagnose-llms-txt`
 
-Sem alteração em RLS, policies ou GRANTs (já existem).
+- Aceita `geoContext?: string` no body.
+- Adicionar nova checagem `regional_presence` que só roda quando `geoContext` indicar regional (regex case-insensitive de `coverage_city` e `coverage_state` no texto do llms.txt):
+  - ambos presentes → `ok`
+  - só um → `warning`
+  - nenhum → `critical`
+- Quando `geoContext` for nacional/ausente → check não aparece (não polui o relatório).
+- Caller `DiagnosticoTab.tsx` passa `getGeoContext()` lendo `brand_settings`.
 
----
+### Fora de escopo (Fase 3 / não fazer agora)
 
-### 2. Tipo `BrandCoverage`
+- `generate-llms-txt`, `monitor-llms-txt`
+- Re-rodar análises antigas / migração de dados
+- Mudanças de schema, RLS, score, pilares ou UI
+- Mudanças no `PreviewPage` (lead ainda não tem brand_settings)
 
-Novo arquivo `src/lib/brand-coverage.ts`:
+### Detalhes técnicos
 
-```ts
-export type CoverageType = 'national' | 'regional';
-export interface BrandCoverage {
-  coverage_type: CoverageType;
-  coverage_city?: string | null;
-  coverage_state?: string | null;
-  coverage_region?: string | null;
-}
-export function getGeoContext(c: BrandCoverage): string { /* prompt-ready string */ }
-```
-
-`getGeoContext()` retorna uma string pronta para injeção em prompts:
-- nacional → `"Marca com atuação nacional no Brasil."`
-- regional → `"Marca com atuação regional: {cidade}/{UF}{, região X se houver}."`
-
-Exportado via barrel se aplicável; sem refatorar imports existentes.
-
----
-
-### 3. Hook `useBrandSettings`
-
-Acrescentar os 4 campos à interface `BrandSettings` (apenas extensão, sem renomear nada).
-
----
-
-### 4. UI — Configurações (`ConfiguracoesPage.tsx`)
-
-Novo card **"Abrangência Geográfica"** (logo após "Dados da Marca", antes de "Concorrentes"):
-
-- `RadioGroup`: "Nacional" / "Regional"
-- Se "Regional" → mostrar 3 inputs: Cidade (obrigatório), Estado/UF (obrigatório, select com 27 UFs), Região/Sub-região (opcional)
-- Validação client-side antes do `handleSave` quando regional
-- Persistido no mesmo `handleSave` existente (apenas adicionar os 4 campos ao payload)
-
----
-
-### 5. UI — Diagnóstico
-
-Adicionar a **mesma seção editável** em `src/pages/dashboard/DiagnosticoPage.tsx` (ou no componente de edição de marca usado lá), carregando/salvando via `useBrandSettings` / `useUpdateBrandSettings`. Mesmo componente reutilizado entre as duas telas:
-
-- Criar `src/components/dashboard/BrandCoverageSection.tsx` (componente novo, isolado)
-- Importado nas duas páginas, sem mexer em outros componentes
-
----
-
-### 6. Não-objetivos
-
-- Não alterar onboarding (`OnboardingWizard`, `client_onboarding`).
-- Não consumir `getGeoContext()` no motor ainda — só deixar pronto.
-- Não renomear, refatorar ou reorganizar arquivos existentes.
-- Sem mudanças em `simulate-ai` ou outras edge functions nesta entrega.
-
----
+- Helper de leitura no client: criar `src/hooks/useGeoContext.ts` que lê `brand_settings` do `user_id` atual via supabase client e retorna `string | undefined`. Evita duplicar a query nos 4 callers.
+- Validação no edge: `geoContext` é string, `trim().slice(0, 300)`. Se vazio → tratar como ausente.
+- Sem mudanças em `supabase/types.ts` (não há schema novo).
+- Sem mudanças em `config.toml`.
 
 ### Arquivos tocados
 
-**Novos:**
-- `src/lib/brand-coverage.ts`
-- `src/components/dashboard/BrandCoverageSection.tsx`
-
-**Editados (aditivos apenas):**
-- `src/hooks/useBrandSettings.ts` (estende interface)
-- `src/pages/dashboard/ConfiguracoesPage.tsx` (insere card)
-- `src/pages/dashboard/DiagnosticoPage.tsx` (insere seção)
-
-**Migration:** colunas + CHECK + trigger em `brand_settings`.
+Edge functions (3): `simulate-ai/index.ts`, `generate-content/index.ts`, `diagnose-llms-txt/index.ts`
+Client (5): `useGeoContext.ts` (novo), `SimuladorPage.tsx`, `PromptTesterPage.tsx`, `DiagnosticoTab.tsx`, `AdminConvitesPage.tsx`
+Memória: `mem://features/geo-context-injection` + atualizar `mem://index.md`
