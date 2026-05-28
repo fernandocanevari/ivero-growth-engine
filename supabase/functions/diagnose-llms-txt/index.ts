@@ -184,6 +184,7 @@ function runChecks(
         : 'Nenhum marcador de conteúdo provisório foi detectado.',
       status: conflictMarkers ? 'critical' : 'ok',
     },
+    ...(regionalCheck ? [regionalCheck] : []),
   ];
 }
 
