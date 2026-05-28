@@ -131,8 +131,14 @@ export function DiagnosticoTab({ initialUrl, onUrlChange, onGoToGerador }: Props
     }, 600);
 
     try {
+      const isRegional = brand?.coverage_type === "regional";
       const { data, error } = await supabase.functions.invoke<DiagnosticResult>("diagnose-llms-txt", {
-        body: { url: trimmed },
+        body: {
+          url: trimmed,
+          ...(brand ? { geoContext: getGeoContext(brand) } : {}),
+          ...(isRegional && brand?.coverage_city ? { coverageCity: brand.coverage_city } : {}),
+          ...(isRegional && brand?.coverage_state ? { coverageState: brand.coverage_state } : {}),
+        },
       });
       if (error) throw error;
       if (!data) throw new Error("Resposta vazia do servidor.");
