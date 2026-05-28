@@ -91,7 +91,37 @@ function runChecks(
 
   const conflictMarkers = /(lorem ipsum|TODO|FIXME|placeholder)/i.test(trimmed);
 
+  // Checagem regional opcional — só aparece quando a marca declarou recorte regional.
+  // Procura cidade e UF (palavra inteira, case-insensitive) no corpo do llms.txt.
+  let regionalCheck: Check | null = null;
+  if (regional && regional.city && regional.state) {
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const cityRx = new RegExp(`\\b${escape(regional.city)}\\b`, 'i');
+    const stateRx = new RegExp(`\\b${escape(regional.state)}\\b`, 'i');
+    const hasCity = cityRx.test(trimmed);
+    const hasState = stateRx.test(trimmed);
+    let status: CheckStatus;
+    let description: string;
+    if (hasCity && hasState) {
+      status = 'ok';
+      description = `Cidade (${regional.city}) e estado (${regional.state}) mencionados — IA entenderá o recorte regional.`;
+    } else if (hasCity || hasState) {
+      status = 'warning';
+      description = `Apenas ${hasCity ? `a cidade (${regional.city})` : `o estado (${regional.state})`} foi mencionado(a). Inclua também ${hasCity ? `o estado (${regional.state})` : `a cidade (${regional.city})`} para reforçar o recorte.`;
+    } else {
+      status = 'critical';
+      description = `Nem a cidade (${regional.city}) nem o estado (${regional.state}) aparecem no llms.txt — a IA não saberá que a marca atua em recorte regional.`;
+    }
+    regionalCheck = {
+      id: 'regional_presence',
+      label: 'Presença do recorte regional declarado',
+      description,
+      status,
+    };
+  }
+
   return [
+
     {
       id: 'present',
       label: 'Arquivo llms.txt presente na raiz do domínio',
