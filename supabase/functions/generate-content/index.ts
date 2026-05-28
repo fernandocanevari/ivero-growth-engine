@@ -223,7 +223,7 @@ serve(async (req) => {
     const [{ data: brand }, { data: lastAnalysis }] = await Promise.all([
       adminClient
         .from("brand_settings")
-        .select("brand_name, sector, main_competitor")
+        .select("brand_name, sector, main_competitor, coverage_type, coverage_city, coverage_state, coverage_region")
         .eq("user_id", userId)
         .limit(1)
         .maybeSingle(),
@@ -243,6 +243,7 @@ serve(async (req) => {
     if (!enrichedContext.sector && brand?.sector) enrichedContext.sector = brand.sector;
     if (!enrichedContext.mainCompetitor && brand?.main_competitor)
       enrichedContext.mainCompetitor = brand.main_competitor;
+    if (!enrichedContext.geoContext) enrichedContext.geoContext = buildGeoContext(brand as any);
 
     if (!enrichedContext.weakPillars && lastAnalysis) {
       const pillars = [
