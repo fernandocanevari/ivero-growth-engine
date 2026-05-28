@@ -56,7 +56,7 @@ export default function SimuladorPage() {
 
     try {
       const { data, error } = await supabase.functions.invoke("simulate-ai", {
-        body: { prompt: query, brandName, mode: "simulator" },
+        body: { prompt: query, brandName, mode: "simulator", geoContext },
       });
 
       if (error) throw error;
@@ -76,7 +76,7 @@ export default function SimuladorPage() {
     setRetryingGemini(true);
     try {
       const { data, error } = await supabase.functions.invoke("simulate-ai", {
-        body: { prompt: lastQuery, brandName, mode: "simulator" },
+        body: { prompt: lastQuery, brandName, mode: "simulator", geoContext },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
