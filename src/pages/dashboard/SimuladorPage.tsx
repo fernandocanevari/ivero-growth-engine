@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Send, CheckCircle2, XCircle, Loader2, AlertTriangle, ExternalLink, Globe, Search, RefreshCw } from "lucide-react";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { getGeoContext } from "@/lib/brand-coverage";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -45,6 +46,7 @@ export default function SimuladorPage() {
   const { data: brand } = useBrandSettings();
 
   const brandName = brand?.brand_name || "Sua Marca";
+  const geoContext = brand ? getGeoContext(brand) : undefined;
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -54,7 +56,7 @@ export default function SimuladorPage() {
 
     try {
       const { data, error } = await supabase.functions.invoke("simulate-ai", {
-        body: { prompt: query, brandName, mode: "simulator" },
+        body: { prompt: query, brandName, mode: "simulator", geoContext },
       });
 
       if (error) throw error;
@@ -74,7 +76,7 @@ export default function SimuladorPage() {
     setRetryingGemini(true);
     try {
       const { data, error } = await supabase.functions.invoke("simulate-ai", {
-        body: { prompt: lastQuery, brandName, mode: "simulator" },
+        body: { prompt: lastQuery, brandName, mode: "simulator", geoContext },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

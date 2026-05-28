@@ -627,7 +627,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, brandName, mode } = await req.json();
+    const { prompt, brandName, mode, geoContext: rawGeo } = await req.json();
 
     if (!prompt || !brandName) {
       return new Response(JSON.stringify({ error: "prompt and brandName are required" }), {
@@ -644,10 +644,17 @@ serve(async (req) => {
       });
     }
 
+    // Contexto geográfico opcional: injetado para calibrar análise/resposta
+    // ao recorte regional declarado pela marca em brand_settings.
+    const geoContext = typeof rawGeo === "string" ? rawGeo.trim().slice(0, 300) : "";
+    const geoBlock = geoContext
+      ? `\n\nContexto da marca: ${geoContext} Avalie/responda considerando esse recorte de atuação — relevância, exemplos e cobertura semântica devem ser ponderados para esse público.`
+      : "";
+
     const systemPrompt =
       mode === "diagnostico"
-        ? `${DIAGNOSTICO_SYSTEM_PROMPT}\n\nMarca a ser avaliada: "${brandName}".`
-        : `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.`;
+        ? `${DIAGNOSTICO_SYSTEM_PROMPT}\n\nMarca a ser avaliada: "${brandName}".${geoBlock}`
+        : `You are an AI assistant. Answer the user's question naturally in Portuguese (Brazil). If the brand "${brandName}" is relevant to the answer, mention it naturally. If not, don't force it. Keep it to 1-3 sentences.${geoBlock}`;
 
     const results = await Promise.all(
       configs.map((config) => callModel(config, prompt, systemPrompt, brandName, mode))

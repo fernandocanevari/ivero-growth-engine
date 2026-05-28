@@ -30,6 +30,26 @@ interface ContextPayload {
   sector?: string;
   brandName?: string;
   uncoveredPrompts?: string[];
+  geoContext?: string;
+}
+
+// Espelho server-side de src/lib/brand-coverage.ts:getGeoContext.
+// Mantém a mensagem alinhada entre edge functions e client.
+function buildGeoContext(b: {
+  coverage_type?: string | null;
+  coverage_city?: string | null;
+  coverage_state?: string | null;
+  coverage_region?: string | null;
+} | null | undefined): string {
+  if (!b) return "Marca com atuação nacional no Brasil.";
+  if (b.coverage_type === "regional") {
+    const city = (b.coverage_city ?? "").trim();
+    const state = (b.coverage_state ?? "").trim();
+    const region = (b.coverage_region ?? "").trim();
+    const base = `Marca com atuação regional: ${city}/${state}`;
+    return region ? `${base}, região "${region}".` : `${base}.`;
+  }
+  return "Marca com atuação nacional no Brasil.";
 }
 
 function buildUserPrompt(opts: {
@@ -61,8 +81,12 @@ function buildUserPrompt(opts: {
       `- Prompts onde a marca não aparece: ${context.uncoveredPrompts.join("; ")}`,
     );
 
-  return `Gere conteúdo estratégico GEO sobre o tema abaixo.
+  const geoBlock = context.geoContext
+    ? `\nCONTEXTO GEOGRÁFICO (calibrar exemplos, referências locais e tom para esse público):\n${context.geoContext}\n`
+    : "";
 
+  return `Gere conteúdo estratégico GEO sobre o tema abaixo.
+${geoBlock}
 TEMA: ${topic}
 TOM: ${tone}
 FORMATOS SOLICITADOS: ${formats.join(", ")}
@@ -199,7 +223,7 @@ serve(async (req) => {
     const [{ data: brand }, { data: lastAnalysis }] = await Promise.all([
       adminClient
         .from("brand_settings")
-        .select("brand_name, sector, main_competitor")
+        .select("brand_name, sector, main_competitor, coverage_type, coverage_city, coverage_state, coverage_region")
         .eq("user_id", userId)
         .limit(1)
         .maybeSingle(),
@@ -219,6 +243,7 @@ serve(async (req) => {
     if (!enrichedContext.sector && brand?.sector) enrichedContext.sector = brand.sector;
     if (!enrichedContext.mainCompetitor && brand?.main_competitor)
       enrichedContext.mainCompetitor = brand.main_competitor;
+    if (!enrichedContext.geoContext) enrichedContext.geoContext = buildGeoContext(brand as any);
 
     if (!enrichedContext.weakPillars && lastAnalysis) {
       const pillars = [

@@ -3,6 +3,9 @@ import { z } from 'npm:zod@3.23.8';
 
 const BodySchema = z.object({
   url: z.string().trim().min(4).max(500),
+  geoContext: z.string().trim().max(300).optional(),
+  coverageCity: z.string().trim().max(80).optional(),
+  coverageState: z.string().trim().max(8).optional(),
 });
 
 type CheckStatus = 'ok' | 'warning' | 'critical';
@@ -44,7 +47,11 @@ async function fetchLlmsTxt(origin: string) {
   }
 }
 
-function runChecks(text: string, lastModified: string | null): Check[] {
+function runChecks(
+  text: string,
+  lastModified: string | null,
+  regional?: { city: string; state: string },
+): Check[] {
   const trimmed = text.trim();
   const lines = trimmed.split(/\r?\n/);
 
@@ -84,7 +91,37 @@ function runChecks(text: string, lastModified: string | null): Check[] {
 
   const conflictMarkers = /(lorem ipsum|TODO|FIXME|placeholder)/i.test(trimmed);
 
+  // Checagem regional opcional — só aparece quando a marca declarou recorte regional.
+  // Procura cidade e UF (palavra inteira, case-insensitive) no corpo do llms.txt.
+  let regionalCheck: Check | null = null;
+  if (regional && regional.city && regional.state) {
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const cityRx = new RegExp(`\\b${escape(regional.city)}\\b`, 'i');
+    const stateRx = new RegExp(`\\b${escape(regional.state)}\\b`, 'i');
+    const hasCity = cityRx.test(trimmed);
+    const hasState = stateRx.test(trimmed);
+    let status: CheckStatus;
+    let description: string;
+    if (hasCity && hasState) {
+      status = 'ok';
+      description = `Cidade (${regional.city}) e estado (${regional.state}) mencionados — IA entenderá o recorte regional.`;
+    } else if (hasCity || hasState) {
+      status = 'warning';
+      description = `Apenas ${hasCity ? `a cidade (${regional.city})` : `o estado (${regional.state})`} foi mencionado(a). Inclua também ${hasCity ? `o estado (${regional.state})` : `a cidade (${regional.city})`} para reforçar o recorte.`;
+    } else {
+      status = 'critical';
+      description = `Nem a cidade (${regional.city}) nem o estado (${regional.state}) aparecem no llms.txt — a IA não saberá que a marca atua em recorte regional.`;
+    }
+    regionalCheck = {
+      id: 'regional_presence',
+      label: 'Presença do recorte regional declarado',
+      description,
+      status,
+    };
+  }
+
   return [
+
     {
       id: 'present',
       label: 'Arquivo llms.txt presente na raiz do domínio',
@@ -147,6 +184,7 @@ function runChecks(text: string, lastModified: string | null): Check[] {
         : 'Nenhum marcador de conteúdo provisório foi detectado.',
       status: conflictMarkers ? 'critical' : 'ok',
     },
+    ...(regionalCheck ? [regionalCheck] : []),
   ];
 }
 
@@ -184,7 +222,24 @@ Deno.serve(async (req) => {
 
     const result = await fetchLlmsTxt(origin);
 
+    const regional =
+      parsed.data.coverageCity && parsed.data.coverageState
+        ? { city: parsed.data.coverageCity, state: parsed.data.coverageState }
+        : undefined;
+
     if (!result.found) {
+      const baseIds = ['markdown', 'h1', 'description', 'links', 'sections', 'freshness', 'conflicts'];
+      const ids = regional ? [...baseIds, 'regional_presence'] : baseIds;
+      const labels: Record<string, string> = {
+        markdown: 'Estrutura em markdown válida',
+        h1: 'Título H1 da marca presente',
+        description: 'Descrição da empresa incluída',
+        links: 'Links das páginas principais listados',
+        sections: 'Descrições por seção presentes',
+        freshness: 'Conteúdo atualizado (menos de 30 dias)',
+        conflicts: 'Ausência de conteúdo desatualizado ou conflitante',
+        regional_presence: 'Presença do recorte regional declarado',
+      };
       const notFoundChecks: Check[] = [
         {
           id: 'present',
@@ -192,17 +247,9 @@ Deno.serve(async (req) => {
           description: `Nenhum arquivo encontrado em ${result.url} (status ${result.status}).`,
           status: 'critical',
         },
-        ...['markdown', 'h1', 'description', 'links', 'sections', 'freshness', 'conflicts'].map((id) => ({
+        ...ids.map((id) => ({
           id,
-          label: ({
-            markdown: 'Estrutura em markdown válida',
-            h1: 'Título H1 da marca presente',
-            description: 'Descrição da empresa incluída',
-            links: 'Links das páginas principais listados',
-            sections: 'Descrições por seção presentes',
-            freshness: 'Conteúdo atualizado (menos de 30 dias)',
-            conflicts: 'Ausência de conteúdo desatualizado ou conflitante',
-          } as Record<string, string>)[id],
+          label: labels[id],
           description: 'Não avaliável — arquivo ausente.',
           status: 'critical' as CheckStatus,
         })),
@@ -221,9 +268,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const checks = runChecks(result.text, result.lastModified || null);
+    const checks = runChecks(result.text, result.lastModified || null, regional);
     const score = computeScore(checks);
     const state = overallState(score, true);
+
 
     return new Response(
       JSON.stringify({
