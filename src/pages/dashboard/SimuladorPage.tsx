@@ -46,6 +46,7 @@ export default function SimuladorPage() {
   const { data: brand } = useBrandSettings();
 
   const brandName = brand?.brand_name || "Sua Marca";
+  const geoContext = brand ? getGeoContext(brand) : undefined;
 
   const handleSearch = async () => {
     if (!query.trim()) return;
