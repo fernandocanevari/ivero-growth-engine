@@ -30,6 +30,26 @@ interface ContextPayload {
   sector?: string;
   brandName?: string;
   uncoveredPrompts?: string[];
+  geoContext?: string;
+}
+
+// Espelho server-side de src/lib/brand-coverage.ts:getGeoContext.
+// Mantém a mensagem alinhada entre edge functions e client.
+function buildGeoContext(b: {
+  coverage_type?: string | null;
+  coverage_city?: string | null;
+  coverage_state?: string | null;
+  coverage_region?: string | null;
+} | null | undefined): string {
+  if (!b) return "Marca com atuação nacional no Brasil.";
+  if (b.coverage_type === "regional") {
+    const city = (b.coverage_city ?? "").trim();
+    const state = (b.coverage_state ?? "").trim();
+    const region = (b.coverage_region ?? "").trim();
+    const base = `Marca com atuação regional: ${city}/${state}`;
+    return region ? `${base}, região "${region}".` : `${base}.`;
+  }
+  return "Marca com atuação nacional no Brasil.";
 }
 
 function buildUserPrompt(opts: {
