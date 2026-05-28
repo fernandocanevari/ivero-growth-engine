@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { getGeoContext } from "@/lib/brand-coverage";
 import { cn } from "@/lib/utils";
 
 type CheckStatus = "ok" | "warning" | "critical";
