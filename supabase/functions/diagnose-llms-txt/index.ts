@@ -3,6 +3,9 @@ import { z } from 'npm:zod@3.23.8';
 
 const BodySchema = z.object({
   url: z.string().trim().min(4).max(500),
+  geoContext: z.string().trim().max(300).optional(),
+  coverageCity: z.string().trim().max(80).optional(),
+  coverageState: z.string().trim().max(8).optional(),
 });
 
 type CheckStatus = 'ok' | 'warning' | 'critical';
