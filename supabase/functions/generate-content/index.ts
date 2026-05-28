@@ -81,8 +81,12 @@ function buildUserPrompt(opts: {
       `- Prompts onde a marca não aparece: ${context.uncoveredPrompts.join("; ")}`,
     );
 
-  return `Gere conteúdo estratégico GEO sobre o tema abaixo.
+  const geoBlock = context.geoContext
+    ? `\nCONTEXTO GEOGRÁFICO (calibrar exemplos, referências locais e tom para esse público):\n${context.geoContext}\n`
+    : "";
 
+  return `Gere conteúdo estratégico GEO sobre o tema abaixo.
+${geoBlock}
 TEMA: ${topic}
 TOM: ${tone}
 FORMATOS SOLICITADOS: ${formats.join(", ")}
