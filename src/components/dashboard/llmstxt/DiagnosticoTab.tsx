@@ -113,6 +113,7 @@ export function DiagnosticoTab({ initialUrl, onUrlChange, onGoToGerador }: Props
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const { data: brand } = useBrandSettings();
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
