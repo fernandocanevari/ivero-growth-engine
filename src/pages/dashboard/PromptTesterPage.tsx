@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { getGeoContext } from "@/lib/brand-coverage";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
