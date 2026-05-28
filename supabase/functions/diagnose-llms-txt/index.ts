@@ -222,7 +222,24 @@ Deno.serve(async (req) => {
 
     const result = await fetchLlmsTxt(origin);
 
+    const regional =
+      parsed.data.coverageCity && parsed.data.coverageState
+        ? { city: parsed.data.coverageCity, state: parsed.data.coverageState }
+        : undefined;
+
     if (!result.found) {
+      const baseIds = ['markdown', 'h1', 'description', 'links', 'sections', 'freshness', 'conflicts'];
+      const ids = regional ? [...baseIds, 'regional_presence'] : baseIds;
+      const labels: Record<string, string> = {
+        markdown: 'Estrutura em markdown válida',
+        h1: 'Título H1 da marca presente',
+        description: 'Descrição da empresa incluída',
+        links: 'Links das páginas principais listados',
+        sections: 'Descrições por seção presentes',
+        freshness: 'Conteúdo atualizado (menos de 30 dias)',
+        conflicts: 'Ausência de conteúdo desatualizado ou conflitante',
+        regional_presence: 'Presença do recorte regional declarado',
+      };
       const notFoundChecks: Check[] = [
         {
           id: 'present',
@@ -230,17 +247,9 @@ Deno.serve(async (req) => {
           description: `Nenhum arquivo encontrado em ${result.url} (status ${result.status}).`,
           status: 'critical',
         },
-        ...['markdown', 'h1', 'description', 'links', 'sections', 'freshness', 'conflicts'].map((id) => ({
+        ...ids.map((id) => ({
           id,
-          label: ({
-            markdown: 'Estrutura em markdown válida',
-            h1: 'Título H1 da marca presente',
-            description: 'Descrição da empresa incluída',
-            links: 'Links das páginas principais listados',
-            sections: 'Descrições por seção presentes',
-            freshness: 'Conteúdo atualizado (menos de 30 dias)',
-            conflicts: 'Ausência de conteúdo desatualizado ou conflitante',
-          } as Record<string, string>)[id],
+          label: labels[id],
           description: 'Não avaliável — arquivo ausente.',
           status: 'critical' as CheckStatus,
         })),
@@ -259,9 +268,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const checks = runChecks(result.text, result.lastModified || null);
+    const checks = runChecks(result.text, result.lastModified || null, regional);
     const score = computeScore(checks);
     const state = overallState(score, true);
+
 
     return new Response(
       JSON.stringify({
