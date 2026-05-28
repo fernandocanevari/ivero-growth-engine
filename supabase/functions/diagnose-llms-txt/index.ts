@@ -47,7 +47,11 @@ async function fetchLlmsTxt(origin: string) {
   }
 }
 
-function runChecks(text: string, lastModified: string | null): Check[] {
+function runChecks(
+  text: string,
+  lastModified: string | null,
+  regional?: { city: string; state: string },
+): Check[] {
   const trimmed = text.trim();
   const lines = trimmed.split(/\r?\n/);
 
