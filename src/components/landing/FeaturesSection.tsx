@@ -9,7 +9,7 @@ const features = [
   {
     icon: Bot,
     title: "Monitoramento Multi-IA",
-    description: "Rastreie menções da sua marca no ChatGPT, Gemini, Google Modo IA e Claude, os motores generativos com maior alcance.",
+    description: "Rastreie menções da sua marca no ChatGPT, Gemini e Google Modo IA, os motores generativos com maior alcance.",
     mockup: "monitoring",
   },
   {
