@@ -58,25 +58,10 @@ function getModelConfigs(): ModelConfig[] {
     });
   }
 
-  if (claudeKey) {
-    configs.push({
-      name: "Claude",
-      url: "https://api.anthropic.com/v1/messages",
-      model: "claude-3-5-haiku-latest",
-      getHeaders: () => ({
-        "x-api-key": claudeKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => {
-        const blocks = data?.content || [];
-        return blocks.map((b: any) => b?.text || "").join("").trim();
-      },
-    });
-  }
-
-  // MVP: ChatGPT, Gemini, Google Modo IA e Claude.
-  // Perplexity e GPT-5 ficam no roadmap (ativações futuras).
+  // MVP: ChatGPT, Gemini, Google Modo IA.
+  // Claude, Perplexity, GPT-5, Copilot e OpenAI Azure ficam no roadmap.
+  // (Claude desativado temporariamente — chave Key_antropic_claude sem créditos.)
+  void claudeKey;
 
   return configs;
 }
