@@ -98,7 +98,7 @@ export const LOCKED_ROUTE_INFO: Record<
   "/dashboard/prompt-tester": {
     title: "Prompt Tester",
     description:
-      "Teste prompts customizados nos 4 modelos de IA monitorados e veja exatamente como sua marca aparece em cada resposta.",
+      "Teste prompts customizados nos 3 modelos de IA monitorados e veja exatamente como sua marca aparece em cada resposta.",
   },
   "/dashboard/acoes": {
     title: "Planos de Ação",
