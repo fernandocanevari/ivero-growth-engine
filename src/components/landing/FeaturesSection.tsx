@@ -9,7 +9,7 @@ const features = [
   {
     icon: Bot,
     title: "Monitoramento Multi-IA",
-    description: "Rastreie menções da sua marca no ChatGPT, Gemini e GPT-5, os motores generativos com maior alcance.",
+    description: "Rastreie menções da sua marca no ChatGPT, Gemini e Google Modo IA, os motores generativos com maior alcance.",
     mockup: "monitoring",
   },
   {
@@ -69,8 +69,7 @@ const MonitoringMockup = () => (
     {[
       { name: "ChatGPT", mentions: 142 },
       { name: "Gemini", mentions: 89 },
-      { name: "Claude", mentions: 67 },
-      { name: "Perplexity", mentions: 31 },
+      { name: "Google Modo IA", mentions: 67 },
     ].map((ai) => {
       const color = ai.mentions >= 100 ? "text-emerald-500" :
                     ai.mentions >= 70 ? "text-emerald-400" :
@@ -91,8 +90,16 @@ const MonitoringMockup = () => (
         </div>
       );
     })}
+    <div className="p-3 rounded-lg bg-ivero-card-inner border border-dashed border-muted-foreground/30">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium text-muted-foreground">Claude • Perplexity</span>
+        <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
+      </div>
+      <span className="text-xs font-semibold text-muted-foreground">Em breve</span>
+    </div>
   </div>
 );
+
 
 const CompareMockup = () => {
   const barColor = (pct: number) =>

@@ -16,8 +16,6 @@ interface ModelConfig {
 function getModelConfigs(): ModelConfig[] {
   const openaiKey = Deno.env.get("key_Open_IA");
   const geminiKey = Deno.env.get("Key_gemini");
-  const claudeKey = Deno.env.get("Key_antropic_claude");
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
 
   const configs: ModelConfig[] = [];
 
@@ -59,44 +57,10 @@ function getModelConfigs(): ModelConfig[] {
     });
   }
 
+  // MVP: somente ChatGPT, Gemini e Google Modo IA.
+  // Claude, Perplexity e GPT-5 ficam no roadmap (ativações futuras).
 
-  if (claudeKey) {
-    configs.push({
-      name: "Claude",
-      url: "https://api.anthropic.com/v1/messages",
-      model: "claude-3-5-haiku-latest",
-      getHeaders: () => ({
-        "x-api-key": claudeKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => data.content?.[0]?.text || "",
-    });
-  }
 
-  if (lovableKey) {
-    configs.push({
-      name: "Perplexity",
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      model: "google/gemini-3-flash-preview",
-      getHeaders: () => ({
-        Authorization: `Bearer ${lovableKey}`,
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
-    });
-
-    configs.push({
-      name: "GPT-5",
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      model: "openai/gpt-5-mini",
-      getHeaders: () => ({
-        Authorization: `Bearer ${lovableKey}`,
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
-    });
-  }
 
   return configs;
 }
@@ -258,13 +222,6 @@ async function callModel(
         generationConfig: { maxOutputTokens: maxTokens },
       };
 
-    } else if (config.name === "Claude") {
-      body = {
-        model: config.model,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      };
     } else if (config.name === "ChatGPT") {
       // gpt-4o-mini não é reasoning model: resposta direta, sem tokens internos.
       body = {
@@ -275,19 +232,7 @@ async function callModel(
         ],
         max_tokens: isDiagnostico ? 2000 : 400,
       };
-    } else if (config.name === "GPT-5") {
-      // Modelos gpt-5* são reasoning models: parte do orçamento vai para tokens
-      // internos de raciocínio. Damos folga + reasoning_effort calibrado por modo.
-      const completionBudget = isDiagnostico ? 4000 : 1200;
-      body = {
-        model: config.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_completion_tokens: completionBudget,
-        reasoning_effort: isDiagnostico ? "medium" : "minimal",
-      };
+
     } else {
       body = {
         model: config.model,

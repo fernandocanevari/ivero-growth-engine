@@ -6,7 +6,7 @@ const problems = [
   {
     icon: EyeOff,
     title: "Invisibilidade nas IAs",
-    description: "Quando alguém pergunta ao ChatGPT, Gemini ou GPT-5 sobre seu setor, sua marca simplesmente não aparece.",
+    description: "Quando alguém pergunta ao ChatGPT, Gemini ou Google Modo IA sobre seu setor, sua marca simplesmente não aparece.",
   },
   {
     icon: ShieldAlert,

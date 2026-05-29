@@ -119,7 +119,7 @@ interface PillarAnalysis {
 const defaultAiEngines: AIEngineResult[] = [
   { name: "ChatGPT", found: false },
   { name: "Gemini", found: false },
-  { name: "GPT-5", found: false },
+  { name: "Google Modo IA", found: false },
 ];
 
 /* (Per-pillar prompts foram substituídos pelo modo "diagnostico" — a edge function agora usa o prompt do Radar Estratégico IVERO e retorna scores 0-100 + justificativa por pilar em uma única chamada por modelo.) */
@@ -230,7 +230,7 @@ function getScoreLevel(score: number) {
 }
 
 const iveroFeatures = [
-  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Gemini, GPT-5 e Google Modo IA" },
+  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Gemini e Google Modo IA" },
   { icon: Gauge, label: "Score GEO em Tempo Real", desc: "Índice de visibilidade atualizado continuamente" },
   { icon: LineChart, label: "Análise Comparativa", desc: "Benchmark contra concorrentes do seu setor" },
   { icon: Radio, label: "Alertas Inteligentes", desc: "Notificações quando sua marca é mencionada" },
@@ -1435,7 +1435,7 @@ function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: st
           <p className="text-sm text-muted-foreground">
             {submitting
               ? "Conectando aos modelos de IA. A análise vai iniciar automaticamente."
-              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini, GPT-5 e Google Modo IA enxergam você."}
+              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini e Google Modo IA enxergam você."}
           </p>
         </DialogHeader>
 
@@ -1717,7 +1717,7 @@ export default function PreviewPage() {
             return [
               { name: "ChatGPT", found: true },
               { name: "Gemini", found: false },
-              { name: "GPT-5", found: true },
+              { name: "Google Modo IA", found: true },
             ];
           });
           return total;

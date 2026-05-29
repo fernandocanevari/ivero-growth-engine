@@ -6,7 +6,7 @@ const steps = [
     number: "01",
     icon: Scan,
     title: "Monitore as respostas",
-    description: "A Ivero consulta as principais IAs generativas (ChatGPT, Gemini, GPT-5 e Google Modo IA com grounding em tempo real do Google) com perguntas reais do seu setor e registra se sua marca aparece — e como aparece.",
+    description: "A Ivero consulta as principais IAs generativas (ChatGPT, Gemini e Google Modo IA com grounding em tempo real do Google) com perguntas reais do seu setor e registra se sua marca aparece — e como aparece.",
   },
   {
     number: "02",
