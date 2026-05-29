@@ -230,7 +230,7 @@ function getScoreLevel(score: number) {
 }
 
 const iveroFeatures = [
-  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Gemini, GPT-5 e Google Modo IA" },
+  { icon: Activity, label: "Monitoramento Multi-IA", desc: "Presença em ChatGPT, Gemini e Google Modo IA" },
   { icon: Gauge, label: "Score GEO em Tempo Real", desc: "Índice de visibilidade atualizado continuamente" },
   { icon: LineChart, label: "Análise Comparativa", desc: "Benchmark contra concorrentes do seu setor" },
   { icon: Radio, label: "Alertas Inteligentes", desc: "Notificações quando sua marca é mencionada" },
