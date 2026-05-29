@@ -1435,7 +1435,7 @@ function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: st
           <p className="text-sm text-muted-foreground">
             {submitting
               ? "Conectando aos modelos de IA. A análise vai iniciar automaticamente."
-              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini, GPT-5 e Google Modo IA enxergam você."}
+              : "Informe o site da sua marca. Vamos investigar como ChatGPT, Gemini e Google Modo IA enxergam você."}
           </p>
         </DialogHeader>
 
