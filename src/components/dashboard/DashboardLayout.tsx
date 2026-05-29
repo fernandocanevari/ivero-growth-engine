@@ -5,7 +5,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardBreadcrumb } from "./DashboardBreadcrumb";
 import SupportWidget from "./SupportWidget";
 import { TrialBanner } from "./TrialBanner";
-import ModelsStatusBanner from "./ModelsStatusBanner";
+
 import { TrialLockedPage } from "./TrialLockedPage";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
