@@ -69,8 +69,8 @@ const MonitoringMockup = () => (
     {[
       { name: "ChatGPT", mentions: 142 },
       { name: "Gemini", mentions: 89 },
-      { name: "Claude", mentions: 67 },
-      { name: "Perplexity", mentions: 31 },
+      { name: "Google Modo IA", mentions: 67 },
+      { name: "Claude", mentions: 31 },
     ].map((ai) => {
       const color = ai.mentions >= 100 ? "text-emerald-500" :
                     ai.mentions >= 70 ? "text-emerald-400" :
