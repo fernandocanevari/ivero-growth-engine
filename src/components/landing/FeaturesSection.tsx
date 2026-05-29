@@ -51,7 +51,7 @@ const features = [
   {
     icon: BarChart3,
     title: "Dominância por Modelo de IA",
-    description: "Compare sua visibilidade no ChatGPT, Gemini e Claude — lado a lado com seus concorrentes.",
+    description: "Compare sua visibilidade no ChatGPT, Gemini e Google Modo IA — lado a lado com seus concorrentes.",
     mockup: "dominance",
   },
   {
