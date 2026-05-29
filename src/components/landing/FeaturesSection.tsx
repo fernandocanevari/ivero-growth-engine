@@ -9,7 +9,7 @@ const features = [
   {
     icon: Bot,
     title: "Monitoramento Multi-IA",
-    description: "Rastreie menções da sua marca no ChatGPT, Gemini, Google Modo IA e Claude, os motores generativos com maior alcance.",
+    description: "Rastreie menções da sua marca no ChatGPT, Gemini e Google Modo IA, os motores generativos com maior alcance.",
     mockup: "monitoring",
   },
   {
@@ -51,7 +51,7 @@ const features = [
   {
     icon: BarChart3,
     title: "Dominância por Modelo de IA",
-    description: "Compare sua visibilidade no ChatGPT, Gemini e Claude — lado a lado com seus concorrentes.",
+    description: "Compare sua visibilidade no ChatGPT, Gemini e Google Modo IA — lado a lado com seus concorrentes.",
     mockup: "dominance",
   },
   {
@@ -92,7 +92,7 @@ const MonitoringMockup = () => (
     })}
     <div className="p-3 rounded-lg bg-ivero-card-inner border border-dashed border-muted-foreground/30">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-muted-foreground">Claude • Perplexity</span>
+        <span className="text-xs font-medium text-muted-foreground">Claude • Perplexity • GPT-5</span>
         <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
       </div>
       <span className="text-xs font-semibold text-muted-foreground">Em breve</span>
@@ -263,7 +263,7 @@ const DominanceMockup = () => {
   const data = [
     { ai: "ChatGPT", you: 72, competitor: 58 },
     { ai: "Gemini", you: 45, competitor: 61 },
-    { ai: "Claude", you: 88, competitor: 34 },
+    { ai: "Google Modo IA", you: 88, competitor: 34 },
   ];
   const barColor = (pct: number) =>
     pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-emerald-400" : pct >= 40 ? "bg-amber-400" : "bg-destructive";
@@ -301,7 +301,7 @@ const SimulatorMockup = () => (
     {[
       { ai: "ChatGPT", dot: "bg-emerald-500", text: "Sim, recomendamos a marca X como líder..." },
       { ai: "Gemini", dot: "bg-amber-400", text: "Entre as opções disponíveis, a marca X..." },
-      { ai: "Claude", dot: "bg-muted-foreground/50", text: "A marca X é uma alternativa interessante..." },
+      { ai: "Google Modo IA", dot: "bg-muted-foreground/50", text: "A marca X é uma alternativa interessante..." },
     ].map((item) => (
       <div key={item.ai} className="p-2.5 rounded-lg bg-ivero-card-inner text-xs space-y-0.5">
         <div className="flex items-center gap-1.5">

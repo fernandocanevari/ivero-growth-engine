@@ -10,7 +10,7 @@ const milestones = [
     year: "2024",
     title: "A revelação",
     description:
-      "Percebemos que executivos já não perguntavam apenas ao Google sobre fornecedores. ChatGPT, Gemini e Claude haviam se tornado o primeiro contato de decisores — e a maioria das marcas nem sabia que estava sendo julgada por algoritmos, não por humanos.",
+      "Percebemos que executivos já não perguntavam apenas ao Google sobre fornecedores. ChatGPT, Gemini e Google Modo IA haviam se tornado o primeiro contato de decisores — e a maioria das marcas nem sabia que estava sendo julgada por algoritmos, não por humanos.",
     icon: Lightbulb,
     highlight: "O problema",
   },
