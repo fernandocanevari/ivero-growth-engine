@@ -1,53 +1,41 @@
-## Fase 2 — Injeção de contexto geográfico nas 3 edge functions principais
+# Clarificar "Abrangência" vs "Endereço da empresa"
 
-A Fase 1 (campo `coverage_*` em `brand_settings`, UI no Diagnóstico/Configurações, helper `getGeoContext()`) já está pronta. Nenhuma edge function consome esse contexto ainda — esta fase faz só a injeção, sem mexer em score, schema, UI ou pilares.
+## Objetivo
 
-### 1. `simulate-ai` (5 LLMs)
+Evitar que clientes nacionais (ex: SaaS com sede em Campinas/SP, mas que vende para todo o Brasil) marquem por engano "Regional → Campinas/SP", o que faria o diagnóstico tratá-los como uma padaria de bairro.
 
-- Aceita novo campo opcional `geoContext?: string` (máx. 300 chars) no body, em ambos os modos (`diagnóstico` e `simulador/monitor`).
-- Injeta um bloco no `systemPrompt`:
-  > `Contexto da marca: {geoContext}. Avalie/responda considerando esse recorte de atuação — relevância, exemplos e cobertura semântica devem ser ponderados para esse público.`
-- Sem `geoContext` → comportamento atual inalterado (fallback nacional implícito).
-- Callers a atualizar para passar `getGeoContext()` lendo `brand_settings` do usuário logado:
-  - `src/pages/dashboard/SimuladorPage.tsx`
-  - `src/pages/dashboard/PromptTesterPage.tsx`
-  - `src/components/dashboard/llmstxt/DiagnosticoTab.tsx` (caso chame simulate-ai)
-  - `src/pages/dashboard/AdminConvitesPage.tsx` (lê coverage do invite/cliente alvo se disponível, senão envia `undefined`)
-  - `src/pages/PreviewPage.tsx` → continua mandando `undefined` (lead anônimo, sem brand_settings ainda).
+Mudança apenas de **copy + UX**. Sem alterações em schema, score, edge functions ou lógica de `getGeoContext`.
 
-### 2. `generate-content` (artigo + FAQ + resumo)
+## Escopo
 
-- Já valida JWT e lê `brand_settings` server-side. Expandir o `.select(...)` para incluir `coverage_type`, `coverage_city`, `coverage_state`, `coverage_region`.
-- Reimplementar `getGeoContext()` inline (Deno não importa de `src/`).
-- Injetar bloco `CONTEXTO GEOGRÁFICO` no `buildUserPrompt`, antes do tópico, com instrução: calibrar exemplos, referências locais e tom para o público do recorte declarado.
-- Sem mudar formato de saída nem cota.
+Arquivo único: `src/components/dashboard/BrandCoverageSection.tsx`.
 
-### 3. `diagnose-llms-txt`
+## Mudanças
 
-- Aceita `geoContext?: string` no body.
-- Adicionar nova checagem `regional_presence` que só roda quando `geoContext` indicar regional (regex case-insensitive de `coverage_city` e `coverage_state` no texto do llms.txt):
-  - ambos presentes → `ok`
-  - só um → `warning`
-  - nenhum → `critical`
-- Quando `geoContext` for nacional/ausente → check não aparece (não polui o relatório).
-- Caller `DiagnosticoTab.tsx` passa `getGeoContext()` lendo `brand_settings`.
+1. **Título e subtítulo do card**
+   - Título: "Onde sua marca **atua e quer ser encontrada**"
+   - Subtítulo: "Isso define o recorte do diagnóstico de IA — não é o endereço da sua empresa. Marque pela sua **operação comercial**, não pela localização da sede."
 
-### Fora de escopo (Fase 3 / não fazer agora)
+2. **Tooltip (InfoTooltip)** ao lado do título com a regra resumida: "Se sua sede é em SP mas você vende para todo o Brasil, escolha Nacional. Regional é só para quem atende exclusivamente uma área."
 
-- `generate-llms-txt`, `monitor-llms-txt`
-- Re-rodar análises antigas / migração de dados
-- Mudanças de schema, RLS, score, pilares ou UI
-- Mudanças no `PreviewPage` (lead ainda não tem brand_settings)
+3. **Opções do RadioGroup reescritas com exemplos concretos**
+   - **Nacional**: "Atendo/vendo em todo o Brasil (e-commerce, SaaS, franquia/rede com presença ampla, marca nacional)."
+   - **Regional**: "Meu público está concentrado em uma cidade, estado ou região específica (padaria de bairro, clínica local, imobiliária regional, restaurante de uma cidade)."
 
-### Detalhes técnicos
+4. **Alerta inline** (componente `Alert` do shadcn, variante padrão com ícone `AlertTriangle`) que aparece **apenas quando `coverage_type === 'regional'`**, acima dos campos de cidade/estado:
+   > "Confirme: marque Regional apenas se sua **operação comercial** for restrita a essa área. Se você só tem sede aqui mas vende para o Brasil inteiro, volte e escolha **Nacional** — caso contrário, o diagnóstico vai te avaliar como marca de bairro."
 
-- Helper de leitura no client: criar `src/hooks/useGeoContext.ts` que lê `brand_settings` do `user_id` atual via supabase client e retorna `string | undefined`. Evita duplicar a query nos 4 callers.
-- Validação no edge: `geoContext` é string, `trim().slice(0, 300)`. Se vazio → tratar como ausente.
-- Sem mudanças em `supabase/types.ts` (não há schema novo).
-- Sem mudanças em `config.toml`.
+5. **Label dos campos** — trocar "Cidade" / "Estado (UF)" por:
+   - "Cidade onde **a marca atua**"
+   - "Estado (UF) **de atuação**"
+   - Placeholder da região: manter, mas o helper text deixa claro "região de atuação comercial".
 
-### Arquivos tocados
+## Fora de escopo
 
-Edge functions (3): `simulate-ai/index.ts`, `generate-content/index.ts`, `diagnose-llms-txt/index.ts`
-Client (5): `useGeoContext.ts` (novo), `SimuladorPage.tsx`, `PromptTesterPage.tsx`, `DiagnosticoTab.tsx`, `AdminConvitesPage.tsx`
-Memória: `mem://features/geo-context-injection` + atualizar `mem://index.md`
+- Não criar campo separado "Endereço da empresa".
+- Não tocar em `brand_settings`, `getGeoContext`, edge functions ou `BrandCoverageInlineCard`.
+- Não mexer em `ConfiguracoesPage` (continua usando o componente como wrapper).
+
+## Memória
+
+Adicionar uma linha em `mem://features/geo-context-injection`: "Copy de BrandCoverageSection deixa explícito atuação ≠ sede; alerta inline aparece ao marcar Regional."
