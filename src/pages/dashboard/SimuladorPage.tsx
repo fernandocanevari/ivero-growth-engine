@@ -93,12 +93,12 @@ export default function SimuladorPage() {
       if (!fresh.citations || fresh.citations.length === 0) {
         toast({
           title: "Sem fontes novamente",
-          description: "O Gemini 2.5 ainda não retornou grounding para esta pergunta.",
+          description: "O Gemini 2.5 Flash Lite ainda não retornou grounding para esta pergunta.",
         });
       } else {
         toast({
           title: "Fontes atualizadas",
-          description: `${fresh.citations.length} fonte(s) retornada(s) pelo Gemini 2.5.`,
+          description: `${fresh.citations.length} fonte(s) retornada(s) pelo Gemini 2.5 Flash Lite.`,
         });
       }
     } catch (e: any) {
@@ -163,7 +163,7 @@ export default function SimuladorPage() {
                   <div className="mt-4 pt-4 border-t border-border space-y-3">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Search className="h-3.5 w-3.5" />
-                      Gemini 2.5 não retornou fontes para esta resposta.
+                      Gemini 2.5 Flash Lite não retornou fontes para esta resposta.
                     </div>
                     <Button
                       size="sm"
@@ -207,7 +207,7 @@ export default function SimuladorPage() {
                         </Badge>
                       </div>
                       <p className="text-[11px] text-muted-foreground mb-3">
-                        Páginas que o Gemini 2.5 consultou em tempo real para responder.
+                        Páginas que o Gemini 2.5 Flash Lite consultou em tempo real para responder.
                         {brandHits > 0 && (
                           <span className="ml-1 text-emerald-700 font-medium">
                             {brandHits} de {sorted.length} mencionam {brandName}.

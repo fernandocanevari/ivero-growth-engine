@@ -35,8 +35,8 @@ function getModelConfigs(): ModelConfig[] {
   }
 
   if (geminiKey) {
-    // "Gemini" = modelo puro (2.0-flash), sem grounding — baseline da memória do modelo.
-    // "Google Modo IA" = 2.0-flash + Google Search grounding em tempo real (rápido/barato).
+    // "Gemini" = modelo puro (2.5-flash-lite), sem grounding — baseline da memória do modelo.
+    // "Google Modo IA" = 2.5-flash-lite + Google Search grounding em tempo real (rápido/barato).
     const geminiParse = (data: any) => {
       const parts = data.candidates?.[0]?.content?.parts || [];
       return parts.map((p: any) => p?.text || "").join("").trim();
@@ -44,16 +44,16 @@ function getModelConfigs(): ModelConfig[] {
 
     configs.push({
       name: "Gemini",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.5-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash-lite",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
 
     configs.push({
       name: "Google Modo IA",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.5-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash-lite",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
@@ -247,8 +247,8 @@ async function callModel(
     let body: any;
 
     if (config.name === "Gemini" || config.name === "Google Modo IA") {
-      // Só "Google Modo IA" (gemini-2.5-flash) ativa Google Search grounding em tempo real.
-      // "Gemini" (gemini-2.5-flash) responde só a partir da memória do modelo, sem busca web.
+      // Só "Google Modo IA" (gemini-2.5-flash-lite) ativa Google Search grounding em tempo real.
+      // "Gemini" (gemini-2.5-flash-lite) responde só a partir da memória do modelo, sem busca web.
       const useGrounding = config.name === "Google Modo IA";
       body = {
         contents: [
