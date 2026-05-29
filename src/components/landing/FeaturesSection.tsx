@@ -263,7 +263,7 @@ const DominanceMockup = () => {
   const data = [
     { ai: "ChatGPT", you: 72, competitor: 58 },
     { ai: "Gemini", you: 45, competitor: 61 },
-    { ai: "Claude", you: 88, competitor: 34 },
+    { ai: "Google Modo IA", you: 88, competitor: 34 },
   ];
   const barColor = (pct: number) =>
     pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-emerald-400" : pct >= 40 ? "bg-amber-400" : "bg-destructive";
