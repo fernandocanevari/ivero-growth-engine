@@ -222,13 +222,6 @@ async function callModel(
         generationConfig: { maxOutputTokens: maxTokens },
       };
 
-    } else if (config.name === "Claude") {
-      body = {
-        model: config.model,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      };
     } else if (config.name === "ChatGPT") {
       // gpt-4o-mini não é reasoning model: resposta direta, sem tokens internos.
       body = {
@@ -239,19 +232,7 @@ async function callModel(
         ],
         max_tokens: isDiagnostico ? 2000 : 400,
       };
-    } else if (config.name === "GPT-5") {
-      // Modelos gpt-5* são reasoning models: parte do orçamento vai para tokens
-      // internos de raciocínio. Damos folga + reasoning_effort calibrado por modo.
-      const completionBudget = isDiagnostico ? 4000 : 1200;
-      body = {
-        model: config.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_completion_tokens: completionBudget,
-        reasoning_effort: isDiagnostico ? "medium" : "minimal",
-      };
+
     } else {
       body = {
         model: config.model,
