@@ -247,8 +247,8 @@ async function callModel(
     let body: any;
 
     if (config.name === "Gemini" || config.name === "Google Modo IA") {
-      // Só "Google Modo IA" (gemini-2.0-flash) ativa Google Search grounding em tempo real.
-      // "Gemini" (2.5-pro) responde só a partir da memória do modelo, sem busca web.
+      // Só "Google Modo IA" (gemini-2.5-flash) ativa Google Search grounding em tempo real.
+      // "Gemini" (gemini-2.5-flash) responde só a partir da memória do modelo, sem busca web.
       const useGrounding = config.name === "Google Modo IA";
       body = {
         contents: [
