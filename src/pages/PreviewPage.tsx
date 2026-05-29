@@ -119,7 +119,7 @@ interface PillarAnalysis {
 const defaultAiEngines: AIEngineResult[] = [
   { name: "ChatGPT", found: false },
   { name: "Gemini", found: false },
-  { name: "GPT-5", found: false },
+  { name: "Google Modo IA", found: false },
 ];
 
 /* (Per-pillar prompts foram substituídos pelo modo "diagnostico" — a edge function agora usa o prompt do Radar Estratégico IVERO e retorna scores 0-100 + justificativa por pilar em uma única chamada por modelo.) */
