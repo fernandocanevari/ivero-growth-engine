@@ -44,16 +44,16 @@ function getModelConfigs(): ModelConfig[] {
 
     configs.push({
       name: "Gemini",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.0-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
 
     configs.push({
       name: "Google Modo IA",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.0-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
