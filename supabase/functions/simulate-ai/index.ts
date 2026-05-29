@@ -16,8 +16,6 @@ interface ModelConfig {
 function getModelConfigs(): ModelConfig[] {
   const openaiKey = Deno.env.get("key_Open_IA");
   const geminiKey = Deno.env.get("Key_gemini");
-  const claudeKey = Deno.env.get("Key_antropic_claude");
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
 
   const configs: ModelConfig[] = [];
 
@@ -59,44 +57,10 @@ function getModelConfigs(): ModelConfig[] {
     });
   }
 
+  // MVP: somente ChatGPT, Gemini e Google Modo IA.
+  // Claude, Perplexity e GPT-5 ficam no roadmap (ativações futuras).
 
-  if (claudeKey) {
-    configs.push({
-      name: "Claude",
-      url: "https://api.anthropic.com/v1/messages",
-      model: "claude-3-5-haiku-latest",
-      getHeaders: () => ({
-        "x-api-key": claudeKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => data.content?.[0]?.text || "",
-    });
-  }
 
-  if (lovableKey) {
-    configs.push({
-      name: "Perplexity",
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      model: "google/gemini-3-flash-preview",
-      getHeaders: () => ({
-        Authorization: `Bearer ${lovableKey}`,
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
-    });
-
-    configs.push({
-      name: "GPT-5",
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      model: "openai/gpt-5-mini",
-      getHeaders: () => ({
-        Authorization: `Bearer ${lovableKey}`,
-        "Content-Type": "application/json",
-      }),
-      parseResponse: (data) => data.choices?.[0]?.message?.content || "",
-    });
-  }
 
   return configs;
 }
