@@ -250,6 +250,15 @@ async function callModel(
         max_tokens: isDiagnostico ? 2000 : 400,
       };
 
+    } else if (config.name === "Claude") {
+      // Anthropic Messages API: system separado, messages só user/assistant.
+      body = {
+        model: config.model,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+        max_tokens: isDiagnostico ? 2000 : 400,
+      };
+
     } else {
       body = {
         model: config.model,
@@ -260,6 +269,7 @@ async function callModel(
         max_tokens: maxTokens,
       };
     }
+
 
     const response = await fetch(config.url, {
       method: "POST",
