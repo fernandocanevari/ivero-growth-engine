@@ -92,7 +92,7 @@ const MonitoringMockup = () => (
     })}
     <div className="p-3 rounded-lg bg-ivero-card-inner border border-dashed border-muted-foreground/30">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-muted-foreground">Claude • Perplexity</span>
+        <span className="text-xs font-medium text-muted-foreground">Claude • Perplexity • GPT-5</span>
         <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
       </div>
       <span className="text-xs font-semibold text-muted-foreground">Em breve</span>
