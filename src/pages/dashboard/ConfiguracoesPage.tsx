@@ -13,12 +13,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
-import { MODELS_ACTIVE } from "@/lib/ai-models-status";
 import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
+
+const MODELS_ACTIVE: string[] = ["OpenAI", "Gemini", "GPT-5", "Google Modo IA"];
 
 const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
   OpenAI: { icon: Cpu, desc: "GPT-5 Mini via API OpenAI" },
-  Gemini: { icon: Globe, desc: "Google Gemini 2.0 Flash" },
+  Gemini: { icon: Globe, desc: "Google Gemini 2.5 Flash" },
   "GPT-5": { icon: Cpu, desc: "GPT-5 Mini via Lovable AI Gateway" },
   "Google Modo IA": { icon: Globe, desc: "Gemini 2.5 Flash com grounding de busca em tempo real", badge: "Novo" },
 };
