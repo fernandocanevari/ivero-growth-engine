@@ -16,6 +16,7 @@ interface ModelConfig {
 function getModelConfigs(): ModelConfig[] {
   const openaiKey = Deno.env.get("key_Open_IA");
   const geminiKey = Deno.env.get("Key_gemini");
+  const claudeKey = Deno.env.get("Key_antropic_claude");
 
   const configs: ModelConfig[] = [];
 
@@ -57,13 +58,29 @@ function getModelConfigs(): ModelConfig[] {
     });
   }
 
-  // MVP: somente ChatGPT, Gemini e Google Modo IA.
-  // Claude, Perplexity e GPT-5 ficam no roadmap (ativações futuras).
+  if (claudeKey) {
+    configs.push({
+      name: "Claude",
+      url: "https://api.anthropic.com/v1/messages",
+      model: "claude-3-5-haiku-latest",
+      getHeaders: () => ({
+        "x-api-key": claudeKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      }),
+      parseResponse: (data) => {
+        const blocks = data?.content || [];
+        return blocks.map((b: any) => b?.text || "").join("").trim();
+      },
+    });
+  }
 
-
+  // MVP: ChatGPT, Gemini, Google Modo IA e Claude.
+  // Perplexity e GPT-5 ficam no roadmap (ativações futuras).
 
   return configs;
 }
+
 
 function getErrorMessage(status: number): string {
   if (status === 429) return "Limite atingido";
