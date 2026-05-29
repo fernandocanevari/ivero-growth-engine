@@ -5,7 +5,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardBreadcrumb } from "./DashboardBreadcrumb";
 import SupportWidget from "./SupportWidget";
 import { TrialBanner } from "./TrialBanner";
-import ModelsStatusBanner from "./ModelsStatusBanner";
+
 import { TrialLockedPage } from "./TrialLockedPage";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
@@ -75,7 +75,6 @@ export default function DashboardLayout() {
         <div className="flex-1 flex flex-col min-w-0">
           <div className="sticky top-0 z-10 bg-background">
             <TrialBanner userId={userId} />
-            <ModelsStatusBanner />
             {/* Banner inline removido — substituído pelo BrandProfileReminderBanner acima do conteúdo. */}
             <header className="h-14 flex items-center gap-4 border-b border-border px-4">
               <SidebarTrigger />

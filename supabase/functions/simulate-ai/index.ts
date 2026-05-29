@@ -44,16 +44,16 @@ function getModelConfigs(): ModelConfig[] {
 
     configs.push({
       name: "Gemini",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.0-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
 
     configs.push({
       name: "Google Modo IA",
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      model: "gemini-2.0-flash",
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      model: "gemini-2.5-flash",
       getHeaders: () => ({ "Content-Type": "application/json" }),
       parseResponse: geminiParse,
     });
@@ -247,8 +247,8 @@ async function callModel(
     let body: any;
 
     if (config.name === "Gemini" || config.name === "Google Modo IA") {
-      // Só "Google Modo IA" (gemini-2.0-flash) ativa Google Search grounding em tempo real.
-      // "Gemini" (2.5-pro) responde só a partir da memória do modelo, sem busca web.
+      // Só "Google Modo IA" (gemini-2.5-flash) ativa Google Search grounding em tempo real.
+      // "Gemini" (gemini-2.5-flash) responde só a partir da memória do modelo, sem busca web.
       const useGrounding = config.name === "Google Modo IA";
       body = {
         contents: [

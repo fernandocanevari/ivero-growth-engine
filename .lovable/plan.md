@@ -1,41 +1,33 @@
-# Clarificar "Abrangência" vs "Endereço da empresa"
+# Remover banner + atualizar modelo Gemini
 
-## Objetivo
+## 1. Remover o `ModelsStatusBanner` do dashboard
 
-Evitar que clientes nacionais (ex: SaaS com sede em Campinas/SP, mas que vende para todo o Brasil) marquem por engano "Regional → Campinas/SP", o que faria o diagnóstico tratá-los como uma padaria de bairro.
+**Arquivo:** `src/components/dashboard/DashboardLayout.tsx`
+- Remover o import `ModelsStatusBanner` (linha 8).
+- Remover o `<ModelsStatusBanner />` (linha 78).
 
-Mudança apenas de **copy + UX**. Sem alterações em schema, score, edge functions ou lógica de `getGeoContext`.
+**Arquivo:** `src/components/dashboard/ModelsStatusBanner.tsx`
+- Deletar (não há outros usos).
 
-## Escopo
+**Arquivo:** `src/lib/ai-models-status.ts`
+- Deletar (só era consumido pelo banner).
 
-Arquivo único: `src/components/dashboard/BrandCoverageSection.tsx`.
+Nenhum outro componente, rota ou lógica é alterado.
 
-## Mudanças
+## 2. Atualizar Gemini 2.0 Flash → Gemini 2.5 Flash (estável)
 
-1. **Título e subtítulo do card**
-   - Título: "Onde sua marca **atua e quer ser encontrada**"
-   - Subtítulo: "Isso define o recorte do diagnóstico de IA — não é o endereço da sua empresa. Marque pela sua **operação comercial**, não pela localização da sede."
+O Google está depreciando `gemini-2.0-flash` em 01/jun/2026. A versão estável atualmente recomendada que mantém suporte a Google Search Grounding via `tools: [{ google_search: {} }]` é **`gemini-2.5-flash`**.
 
-2. **Tooltip (InfoTooltip)** ao lado do título com a regra resumida: "Se sua sede é em SP mas você vende para todo o Brasil, escolha Nacional. Regional é só para quem atende exclusivamente uma área."
+**Arquivo:** `supabase/functions/simulate-ai/index.ts`
+- Linhas 47–48 (config `Gemini`): trocar `gemini-2.0-flash` → `gemini-2.5-flash` no `url` e no `model`.
+- Linhas 55–56 (config `Google Modo IA`): mesma troca.
+- Linha 250 (comentário): atualizar referência "gemini-2.0-flash" → "gemini-2.5-flash".
 
-3. **Opções do RadioGroup reescritas com exemplos concretos**
-   - **Nacional**: "Atendo/vendo em todo o Brasil (e-commerce, SaaS, franquia/rede com presença ampla, marca nacional)."
-   - **Regional**: "Meu público está concentrado em uma cidade, estado ou região específica (padaria de bairro, clínica local, imobiliária regional, restaurante de uma cidade)."
+A lógica de grounding (linha 252–257) continua igual: só `Google Modo IA` injeta `tools: [{ google_search: {} }]`. Garantido que o Google Search Grounding permanece ativo no novo modelo (2.5-flash suporta a mesma `tools.google_search` na v1beta).
 
-4. **Alerta inline** (componente `Alert` do shadcn, variante padrão com ícone `AlertTriangle`) que aparece **apenas quando `coverage_type === 'regional'`**, acima dos campos de cidade/estado:
-   > "Confirme: marque Regional apenas se sua **operação comercial** for restrita a essa área. Se você só tem sede aqui mas vende para o Brasil inteiro, volte e escolha **Nacional** — caso contrário, o diagnóstico vai te avaliar como marca de bairro."
-
-5. **Label dos campos** — trocar "Cidade" / "Estado (UF)" por:
-   - "Cidade onde **a marca atua**"
-   - "Estado (UF) **de atuação**"
-   - Placeholder da região: manter, mas o helper text deixa claro "região de atuação comercial".
+**Arquivo:** `src/pages/dashboard/ConfiguracoesPage.tsx`
+- Linha 21: atualizar string descritiva `"Google Gemini 2.0 Flash"` → `"Google Gemini 2.5 Flash"` (apenas texto exibido na UI; sem mudança estrutural).
 
 ## Fora de escopo
-
-- Não criar campo separado "Endereço da empresa".
-- Não tocar em `brand_settings`, `getGeoContext`, edge functions ou `BrandCoverageInlineCard`.
-- Não mexer em `ConfiguracoesPage` (continua usando o componente como wrapper).
-
-## Memória
-
-Adicionar uma linha em `mem://features/geo-context-injection`: "Copy de BrandCoverageSection deixa explícito atuação ≠ sede; alerta inline aparece ao marcar Regional."
+- Nenhuma alteração em `generate-content`, `diagnose-llms-txt`, `simulate-ai` além das trocas de modelo, prompts, pillars, score, RLS, schema, rotas ou outros componentes.
+- Nenhuma mudança no fluxo de injeção de contexto regional já implementado.
