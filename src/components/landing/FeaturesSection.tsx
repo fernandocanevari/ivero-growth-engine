@@ -301,7 +301,7 @@ const SimulatorMockup = () => (
     {[
       { ai: "ChatGPT", dot: "bg-emerald-500", text: "Sim, recomendamos a marca X como líder..." },
       { ai: "Gemini", dot: "bg-amber-400", text: "Entre as opções disponíveis, a marca X..." },
-      { ai: "Claude", dot: "bg-muted-foreground/50", text: "A marca X é uma alternativa interessante..." },
+      { ai: "Google Modo IA", dot: "bg-muted-foreground/50", text: "A marca X é uma alternativa interessante..." },
     ].map((item) => (
       <div key={item.ai} className="p-2.5 rounded-lg bg-ivero-card-inner text-xs space-y-0.5">
         <div className="flex items-center gap-1.5">
