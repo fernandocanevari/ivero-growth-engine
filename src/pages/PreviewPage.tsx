@@ -1717,7 +1717,7 @@ export default function PreviewPage() {
             return [
               { name: "ChatGPT", found: true },
               { name: "Gemini", found: false },
-              { name: "GPT-5", found: true },
+              { name: "Google Modo IA", found: true },
             ];
           });
           return total;
