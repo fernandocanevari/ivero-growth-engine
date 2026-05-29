@@ -19,9 +19,9 @@ const MODELS_ACTIVE: string[] = ["OpenAI", "Gemini", "GPT-5", "Google Modo IA"];
 
 const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
   OpenAI: { icon: Cpu, desc: "GPT-5 Mini via API OpenAI" },
-  Gemini: { icon: Globe, desc: "Google Gemini 2.5 Flash" },
+  Gemini: { icon: Globe, desc: "Google Gemini 2.5 Flash Lite" },
   "GPT-5": { icon: Cpu, desc: "GPT-5 Mini via Lovable AI Gateway" },
-  "Google Modo IA": { icon: Globe, desc: "Gemini 2.5 Flash com grounding de busca em tempo real", badge: "Novo" },
+  "Google Modo IA": { icon: Globe, desc: "Gemini 2.5 Flash Lite com grounding de busca em tempo real", badge: "Novo" },
 };
 
 export default function ConfiguracoesPage() {
