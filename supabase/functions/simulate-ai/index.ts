@@ -584,7 +584,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, brandName, mode, geoContext: rawGeo } = await req.json();
+    const { prompt, brandName, mode, geoContext: rawGeo, extractCloud } = await req.json();
 
     if (!prompt || !brandName) {
       return new Response(JSON.stringify({ error: "prompt and brandName are required" }), {
