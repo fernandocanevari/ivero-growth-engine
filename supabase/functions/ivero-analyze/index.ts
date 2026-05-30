@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
-const SONNET_MODEL = "claude-sonnet-4-5-20250929"; // claude-sonnet-4-6 ainda não público; usando 4.5
+const SONNET_MODEL = "claude-sonnet-4-6";
 
 const SYSTEM_BASE = `Você é o motor analítico da Ivero, uma plataforma B2B de auditoria de influência em IAs Generativas (GEO — Generative Engine Optimization).
 
