@@ -628,7 +628,7 @@ serve(async (req) => {
     // Nuvem de percepção: extraída apenas no modo Diagnóstico (PreviewPage)
     // e apenas quando há ao menos um modelo válido (evita chamada inútil ao gateway).
     let keyword_cloud: any[] = [];
-    if (mode === "diagnostico" && !allModelsFailed) {
+    if (mode === "diagnostico" && !allModelsFailed && extractCloud === true) {
       keyword_cloud = await extractKeywordCloud(results, brandName);
     }
 
