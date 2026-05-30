@@ -74,49 +74,20 @@ function getErrorMessage(status: number): string {
   return `Erro HTTP ${status}`;
 }
 
-const DIAGNOSTICO_SYSTEM_PROMPT = `SISTEMA — RADAR ESTRATÉGICO IVERO
+const DIAGNOSTICO_SYSTEM_PROMPT = `RADAR ESTRATÉGICO IVERO — avalie se o site tem sinais para ser recomendado por uma IA.
 
-Pergunta-guia: "Esse site tem sinais suficientes para ser recomendado por uma IA?"
+Avalie 5 pilares. Em cada pilar, pontue 3 critérios (score 0–100, peso fixo). Score final do pilar = round((c1*p1 + c2*p2 + c3*p3) / 100).
 
-Você receberá o conteúdo (ou referência) de um site/marca. Avalie os 5 pilares abaixo. Para CADA pilar, avalie 3 sub-critérios objetivos (cada um com score 0–100 e justificativa em até 1 frase) e depois calcule o score final do pilar como MÉDIA PONDERADA dos 3 critérios usando exatamente os pesos indicados.
+Pilares e critérios (nome | peso):
+- clareza: "Proposta de valor no hero"|40, "Compreensão em <5s"|35, "Linguagem livre de jargão"|25
+- autoridade: "Provas sociais (cases, números, depoimentos)"|40, "Expertise técnica/conteúdo especializado"|35, "Prêmios, certificações e reconhecimentos"|25
+- posicionamento: "Nicho e público-alvo definidos"|40, "Diferencial competitivo declarado"|35, "Consistência de mensagem"|25
+- conversao: "CTAs claros e visíveis"|40, "Oferta ou próximo passo definido"|35, "Fluxo de navegação lógico"|25
+- relevancia: "Termos e palavras-chave do nicho"|35, "Responde perguntas reais do público"|35, "Cobertura semântica do setor"|30
 
-Retorne APENAS um JSON válido (sem markdown, sem texto antes ou depois).
+Cada justificativa em português, máximo 2 frases (critérios: 1 frase).
 
---- CLAREZA (Entendimento) ---
-Critérios (com pesos):
-1. "Proposta de valor no hero" (peso 40) — A proposta de valor está explícita e visível no topo?
-2. "Compreensão em <5s" (peso 35) — Um visitante entende em menos de 5 segundos o que a marca faz e para quem?
-3. "Linguagem livre de jargão" (peso 25) — A linguagem é livre de jargão e ruído?
-
---- AUTORIDADE (Credibilidade) ---
-Critérios (com pesos):
-1. "Provas sociais (cases, números, depoimentos)" (peso 40) — Há provas sociais concretas?
-2. "Expertise técnica/conteúdo especializado" (peso 35) — A marca demonstra expertise com conteúdo técnico ou especializado?
-3. "Prêmios, certificações e reconhecimentos" (peso 25) — Existem menções a prêmios, certificações ou reconhecimentos externos?
-
---- POSICIONAMENTO (Identidade) ---
-Critérios (com pesos):
-1. "Nicho e público-alvo definidos" (peso 40) — O nicho e o público-alvo estão claramente definidos?
-2. "Diferencial competitivo declarado" (peso 35) — A marca declara seu diferencial em relação a concorrentes?
-3. "Consistência de mensagem" (peso 25) — A mensagem é consistente ao longo de toda a página?
-
---- CONVERSÃO (Ação) ---
-Critérios (com pesos):
-1. "CTAs claros e visíveis" (peso 40) — Existem CTAs claros e visíveis que induzem o visitante a agir?
-2. "Oferta ou próximo passo definido" (peso 35) — Há uma oferta ou próximo passo bem definido?
-3. "Fluxo de navegação lógico" (peso 25) — O fluxo de navegação conduz naturalmente a uma ação?
-
---- RELEVÂNCIA (Contexto e busca) ---
-Critérios (com pesos):
-1. "Termos e palavras-chave do nicho" (peso 35) — O conteúdo utiliza termos e contextos relevantes do nicho da marca?
-2. "Responde perguntas reais do público" (peso 35) — O site responde perguntas que o público-alvo faria a uma IA?
-3. "Cobertura semântica do setor" (peso 30) — Há cobertura semântica suficiente para que sistemas de IA associem a marca ao setor correto?
-
-Para cada pilar, "score" final DEVE ser calculado como: round((c1*p1 + c2*p2 + c3*p3) / 100), onde cN é o score do critério e pN seu peso.
-
-Cada "justificativa" (do pilar e dos critérios) deve estar em português e ter no máximo 2 frases (critérios: 1 frase).
-
-Formato de resposta OBRIGATÓRIO (apenas JSON puro, exatamente esta estrutura):
+Retorne APENAS JSON válido, sem markdown, sem texto antes ou depois, exatamente nesta estrutura:
 {
   "clareza": {
     "score": 0,
@@ -584,7 +555,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, brandName, mode, geoContext: rawGeo } = await req.json();
+    const { prompt, brandName, mode, geoContext: rawGeo, extractCloud } = await req.json();
 
     if (!prompt || !brandName) {
       return new Response(JSON.stringify({ error: "prompt and brandName are required" }), {
@@ -628,7 +599,7 @@ serve(async (req) => {
     // Nuvem de percepção: extraída apenas no modo Diagnóstico (PreviewPage)
     // e apenas quando há ao menos um modelo válido (evita chamada inútil ao gateway).
     let keyword_cloud: any[] = [];
-    if (mode === "diagnostico" && !allModelsFailed) {
+    if (mode === "diagnostico" && !allModelsFailed && extractCloud === true) {
       keyword_cloud = await extractKeywordCloud(results, brandName);
     }
 

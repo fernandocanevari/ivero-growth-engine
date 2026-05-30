@@ -178,7 +178,7 @@ Use os scores do Haiku no pillar_analysis. Insights devem citar evidências conc
       apiKey,
       model: SONNET_MODEL,
       maxTokens: 4000,
-      systemBase: SYSTEM_BASE,
+      systemBase: "You are a strategic GEO analyst. Generate the report based on the audit data provided. Output strict JSON only, no markdown, in Brazilian Portuguese.",
       userPrompt: sonnetPrompt,
     });
 
