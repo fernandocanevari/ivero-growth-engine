@@ -50,6 +50,7 @@ import BlogPostPage from "./pages/BlogPostPage";
 import LegalPage from "./pages/LegalPage";
 import TermosDeUsoPage from "./pages/TermosDeUsoPage";
 import SobrePage from "./pages/SobrePage";
+import IveroAnalysisPage from "./pages/IveroAnalysisPage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => (
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/sobre" element={<SobrePage />} />
+          <Route path="/analise-ivero" element={<IveroAnalysisPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
