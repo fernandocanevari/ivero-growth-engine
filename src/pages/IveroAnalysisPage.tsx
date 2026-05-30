@@ -226,6 +226,10 @@ export default function IveroAnalysisPage() {
               </div>
             </section>
 
+            <p className="text-xs text-muted-foreground text-center max-w-3xl mx-auto -mt-4">
+              Auditoria baseada em sinais públicos inferidos. Os scores refletem a probabilidade de presença da marca em respostas de IAs com base em dados públicos disponíveis, sem acesso direto ao site.
+            </p>
+
             {/* Executive summary */}
             <section>
               <h2 className="text-2xl font-display font-semibold mb-3 flex items-center gap-2">

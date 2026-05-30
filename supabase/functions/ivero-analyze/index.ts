@@ -72,6 +72,9 @@ async function callAnthropic(params: {
   });
 
   if (!resp.ok) {
+    if (resp.status === 404) {
+      throw new Error(`Modelo não encontrado: ${params.model}. Verifique se o model ID ainda é válido na API Anthropic.`);
+    }
     const text = await resp.text();
     throw new Error(`Anthropic ${params.model} ${resp.status}: ${text.slice(0, 400)}`);
   }
