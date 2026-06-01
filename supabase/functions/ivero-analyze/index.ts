@@ -96,10 +96,10 @@ function extractJson<T>(raw: string): T {
 }
 
 Deno.serve(async (req) => {
+  console.log("ivero-analyze v2 started");
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    console.log("ivero-analyze started");
     const { brand_url, brand_name, brand_context } = await req.json();
 
     if (!brand_url || typeof brand_url !== "string") {
