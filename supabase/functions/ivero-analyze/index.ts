@@ -269,6 +269,7 @@ Use os scores do Haiku no pillar_analysis. Insights devem citar evidências conc
       JSON.stringify({
         haiku: haikuJson,
         sonnet: sonnetJson,
+        scraped,
         usage: { haiku: haikuResp.usage, sonnet: sonnetResp.usage },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
