@@ -167,10 +167,10 @@ Deno.serve(async (req) => {
         let combined = (results || []).filter(Boolean).join("\n");
 
         if (combined && combined.trim().length > 0) {
-          // Cap em 3000 palavras sem cortar mid-sentence
+          // Cap em 1000 palavras sem cortar mid-sentence
           const words = combined.split(/\s+/);
-          if (words.length > 3000) {
-            const capped = words.slice(0, 3000).join(" ");
+          if (words.length > 1000) {
+            const capped = words.slice(0, 1000).join(" ");
             const lastStop = Math.max(
               capped.lastIndexOf("."),
               capped.lastIndexOf("!"),
