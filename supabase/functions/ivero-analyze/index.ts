@@ -119,9 +119,9 @@ Deno.serve(async (req) => {
     // ===== ETAPA 0: FIRECRAWL — scrape do site real (silent fallback) =====
     let scrapedMarkdown = "";
     let scraped = false;
-    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-    if (firecrawlKey) {
-      try {
+    try {
+      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+      if (firecrawlKey) {
         let origin = "";
         try { origin = new URL(brand_url).origin; } catch { /* ignore */ }
 
@@ -148,12 +148,14 @@ Deno.serve(async (req) => {
               signal: controller.signal,
             });
             clearTimeout(timeoutId);
-            if (!resp.ok) return "";
-            const data = await resp.json();
+            if (!resp || !resp.ok) return "";
+            let data: any = null;
+            try { data = await resp.json(); } catch { return ""; }
+            if (!data) return "";
             const md: string = data?.data?.markdown ?? data?.markdown ?? "";
             const status: number | undefined = data?.data?.metadata?.statusCode ?? data?.metadata?.statusCode;
             if (status && status !== 200) return "";
-            if (!md || md.trim().length < 100) return "";
+            if (!md || typeof md !== "string" || md.trim().length < 100) return "";
             return `\n\n## Página: ${target}\n\n${md.trim()}`;
           } catch {
             return "";
@@ -161,9 +163,9 @@ Deno.serve(async (req) => {
         };
 
         const results = await Promise.all(routesToTry.map(scrapeOne));
-        let combined = results.filter(Boolean).join("\n");
+        let combined = (results || []).filter(Boolean).join("\n");
 
-        if (combined.trim().length > 0) {
+        if (combined && combined.trim().length > 0) {
           // Cap em 3000 palavras sem cortar mid-sentence
           const words = combined.split(/\s+/);
           if (words.length > 3000) {
@@ -179,12 +181,14 @@ Deno.serve(async (req) => {
           scrapedMarkdown = combined;
           scraped = true;
         }
-      } catch {
-        // Fallback silencioso
-        scrapedMarkdown = "";
-        scraped = false;
       }
+    } catch (firecrawlErr) {
+      // Fallback silencioso — qualquer erro aqui não pode derrubar a função
+      scrapedMarkdown = "";
+      scraped = false;
+      console.log("ivero-analyze firecrawl threw, falling back:", firecrawlErr instanceof Error ? firecrawlErr.message : String(firecrawlErr));
     }
+    console.log(`ivero-analyze firecrawl result: scraped=${scraped}, length=${scrapedMarkdown.length}`);
 
     // ===== ETAPA 1: HAIKU — extração + scoring =====
     const haikuPrompt = `Analise a presença em IAs da marca abaixo e retorne APENAS um JSON estrito (sem markdown).
