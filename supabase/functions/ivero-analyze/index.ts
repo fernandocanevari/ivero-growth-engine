@@ -190,6 +190,7 @@ Deno.serve(async (req) => {
       console.log("ivero-analyze firecrawl threw, falling back:", firecrawlErr instanceof Error ? firecrawlErr.message : String(firecrawlErr));
     }
     console.log(`ivero-analyze firecrawl result: scraped=${scraped}, length=${scrapedMarkdown.length}`);
+    console.log("ivero-analyze haiku input length:", scrapedMarkdown.split(/\s+/).length, "words");
 
     // ===== ETAPA 1: HAIKU — extração + scoring =====
     const haikuPrompt = `Analise a presença em IAs da marca abaixo e retorne APENAS um JSON estrito (sem markdown).
@@ -221,15 +222,22 @@ Retorne EXATAMENTE este schema:
   "raw_brand_data": { "sector": string, "likely_audience": string, "likely_competitors": string[] }
 }`;
 
-    const haikuResp = await callAnthropic({
-      apiKey,
-      model: HAIKU_MODEL,
-      maxTokens: 1500,
-      systemBase: SYSTEM_BASE,
-      userPrompt: haikuPrompt,
-    });
+    let haikuResp: Awaited<ReturnType<typeof callAnthropic>> = { content: "", usage: null };
+    let haikuJson: HaikuOutput;
+    try {
+      haikuResp = await callAnthropic({
+        apiKey,
+        model: HAIKU_MODEL,
+        maxTokens: 1500,
+        systemBase: SYSTEM_BASE,
+        userPrompt: haikuPrompt,
+      });
 
-    const haikuJson = extractJson<HaikuOutput>(haikuResp.content);
+      haikuJson = extractJson<HaikuOutput>(haikuResp.content);
+    } catch {
+      console.log("ivero-analyze haiku raw response:", haikuResp.content.slice(0, 500));
+      throw new Error("Haiku parse failed — see logs for raw response.");
+    }
 
     // ===== ETAPA 2: SONNET — relatório estratégico =====
     const sonnetPrompt = `Com base na análise estruturada abaixo, gere o RELATÓRIO ESTRATÉGICO completo da marca.
@@ -260,15 +268,22 @@ Retorne APENAS este JSON estrito (sem markdown, sem texto fora):
 
 Use os scores do Haiku no pillar_analysis. Insights devem citar evidências concretas. Recomendações devem ser acionáveis (não genéricas).`;
 
-    const sonnetResp = await callAnthropic({
-      apiKey,
-      model: SONNET_MODEL,
-      maxTokens: 4000,
-      systemBase: "You are a strategic GEO analyst. Generate the report based on the audit data provided. Output strict JSON only, no markdown, in Brazilian Portuguese.",
-      userPrompt: sonnetPrompt,
-    });
+    let sonnetResp: Awaited<ReturnType<typeof callAnthropic>> = { content: "", usage: null };
+    let sonnetJson: Record<string, unknown>;
+    try {
+      sonnetResp = await callAnthropic({
+        apiKey,
+        model: SONNET_MODEL,
+        maxTokens: 4000,
+        systemBase: "You are a strategic GEO analyst. Generate the report based on the audit data provided. Output strict JSON only, no markdown, in Brazilian Portuguese.",
+        userPrompt: sonnetPrompt,
+      });
 
-    const sonnetJson = extractJson<Record<string, unknown>>(sonnetResp.content);
+      sonnetJson = extractJson<Record<string, unknown>>(sonnetResp.content);
+    } catch {
+      console.log("ivero-analyze sonnet raw response:", sonnetResp.content.slice(0, 500));
+      throw new Error("Sonnet parse failed — see logs for raw response.");
+    }
 
     return new Response(
       JSON.stringify({
