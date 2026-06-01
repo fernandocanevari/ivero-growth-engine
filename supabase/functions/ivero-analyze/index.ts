@@ -189,11 +189,19 @@ Deno.serve(async (req) => {
     // ===== ETAPA 1: HAIKU — extração + scoring =====
     const haikuPrompt = `Analise a presença em IAs da marca abaixo e retorne APENAS um JSON estrito (sem markdown).
 
-URL: ${brand_url}
+${scraped ? `<scraped_content>
+A seguir está o CONTEÚDO REAL extraído do site da marca via scraping (Firecrawl). Use este conteúdo como FONTE PRIMÁRIA da análise — copy real, headings, FAQs existentes, CTAs, estrutura semântica. Não infira a partir do nome/URL quando houver evidência aqui.
+${scrapedMarkdown}
+</scraped_content>
+
+` : ""}URL: ${brand_url}
 ${brand_name ? `Nome: ${brand_name}` : ""}
 ${brand_context ? `Contexto adicional: ${brand_context}` : ""}
 
-Avalie os 5 pilares (0–100) com base em sinais públicos prováveis (densidade de menções em fontes que LLMs treinam, clareza do posicionamento aparente pela URL/nome, presença esperada em comparativos, etc.). Seja realista e calibrado: a maioria das marcas brasileiras de médio porte fica entre 25 e 55.
+${scraped
+  ? "Avalie os 5 pilares (0–100) com base PRINCIPALMENTE no conteúdo real scraped acima (clareza do copy, presença de FAQs/schema implícito, CTAs AI-friendly, diferenciação semântica, coerência narrativa entre páginas). Complemente com sinais públicos prováveis. Seja realista e calibrado."
+  : "Avalie os 5 pilares (0–100) com base em sinais públicos prováveis (densidade de menções em fontes que LLMs treinam, clareza do posicionamento aparente pela URL/nome, presença esperada em comparativos, etc.). Seja realista e calibrado: a maioria das marcas brasileiras de médio porte fica entre 25 e 55."
+}
 
 Retorne EXATAMENTE este schema:
 {
