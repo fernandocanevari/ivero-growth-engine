@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    console.log("ivero-analyze started");
     const { brand_url, brand_name, brand_context } = await req.json();
 
     if (!brand_url || typeof brand_url !== "string") {
