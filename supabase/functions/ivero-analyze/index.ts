@@ -120,74 +120,77 @@ Deno.serve(async (req) => {
     // ===== ETAPA 0: FIRECRAWL — scrape do site real (silent fallback) =====
     let scrapedMarkdown = "";
     let scraped = false;
-    try {
-      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-      if (firecrawlKey) {
-        let origin = "";
-        try { origin = new URL(brand_url).origin; } catch { /* ignore */ }
+    const firecrawlDisabled = true; // DIAGNÓSTICO: desativado temporariamente
+    if (!firecrawlDisabled) {
+      try {
+        const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+        if (firecrawlKey) {
+          let origin = "";
+          try { origin = new URL(brand_url).origin; } catch { /* ignore */ }
 
-        const routesToTry: string[] = [brand_url];
-        if (origin) {
-          routesToTry.push(`${origin}/about`, `${origin}/services`, `${origin}/blog`);
-        }
-
-        const scrapeOne = async (target: string): Promise<string> => {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000);
-            const resp = await fetch("https://api.firecrawl.dev/v2/scrape", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${firecrawlKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                url: target,
-                formats: ["markdown"],
-                onlyMainContent: true,
-              }),
-              signal: controller.signal,
-            });
-            clearTimeout(timeoutId);
-            if (!resp || !resp.ok) return "";
-            let data: any = null;
-            try { data = await resp.json(); } catch { return ""; }
-            if (!data) return "";
-            const md: string = data?.data?.markdown ?? data?.markdown ?? "";
-            const status: number | undefined = data?.data?.metadata?.statusCode ?? data?.metadata?.statusCode;
-            if (status && status !== 200) return "";
-            if (!md || typeof md !== "string" || md.trim().length < 100) return "";
-            return `\n\n## Página: ${target}\n\n${md.trim()}`;
-          } catch {
-            return "";
+          const routesToTry: string[] = [brand_url];
+          if (origin) {
+            routesToTry.push(`${origin}/about`, `${origin}/services`, `${origin}/blog`);
           }
-        };
 
-        const results = await Promise.all(routesToTry.map(scrapeOne));
-        let combined = (results || []).filter(Boolean).join("\n");
+          const scrapeOne = async (target: string): Promise<string> => {
+            try {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 20000);
+              const resp = await fetch("https://api.firecrawl.dev/v2/scrape", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${firecrawlKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  url: target,
+                  formats: ["markdown"],
+                  onlyMainContent: true,
+                }),
+                signal: controller.signal,
+              });
+              clearTimeout(timeoutId);
+              if (!resp || !resp.ok) return "";
+              let data: any = null;
+              try { data = await resp.json(); } catch { return ""; }
+              if (!data) return "";
+              const md: string = data?.data?.markdown ?? data?.markdown ?? "";
+              const status: number | undefined = data?.data?.metadata?.statusCode ?? data?.metadata?.statusCode;
+              if (status && status !== 200) return "";
+              if (!md || typeof md !== "string" || md.trim().length < 100) return "";
+              return `\n\n## Página: ${target}\n\n${md.trim()}`;
+            } catch {
+              return "";
+            }
+          };
 
-        if (combined && combined.trim().length > 0) {
-          // Cap em 1000 palavras sem cortar mid-sentence
-          const words = combined.split(/\s+/);
-          if (words.length > 1000) {
-            const capped = words.slice(0, 1000).join(" ");
-            const lastStop = Math.max(
-              capped.lastIndexOf("."),
-              capped.lastIndexOf("!"),
-              capped.lastIndexOf("?"),
-              capped.lastIndexOf("\n"),
-            );
-            combined = lastStop > 0 ? capped.slice(0, lastStop + 1) : capped;
+          const results = await Promise.all(routesToTry.map(scrapeOne));
+          let combined = (results || []).filter(Boolean).join("\n");
+
+          if (combined && combined.trim().length > 0) {
+            // Cap em 1000 palavras sem cortar mid-sentence
+            const words = combined.split(/\s+/);
+            if (words.length > 1000) {
+              const capped = words.slice(0, 1000).join(" ");
+              const lastStop = Math.max(
+                capped.lastIndexOf("."),
+                capped.lastIndexOf("!"),
+                capped.lastIndexOf("?"),
+                capped.lastIndexOf("\n"),
+              );
+              combined = lastStop > 0 ? capped.slice(0, lastStop + 1) : capped;
+            }
+            scrapedMarkdown = combined;
+            scraped = true;
           }
-          scrapedMarkdown = combined;
-          scraped = true;
         }
+      } catch (firecrawlErr) {
+        // Fallback silencioso — qualquer erro aqui não pode derrubar a função
+        scrapedMarkdown = "";
+        scraped = false;
+        console.log("ivero-analyze firecrawl threw, falling back:", firecrawlErr instanceof Error ? firecrawlErr.message : String(firecrawlErr));
       }
-    } catch (firecrawlErr) {
-      // Fallback silencioso — qualquer erro aqui não pode derrubar a função
-      scrapedMarkdown = "";
-      scraped = false;
-      console.log("ivero-analyze firecrawl threw, falling back:", firecrawlErr instanceof Error ? firecrawlErr.message : String(firecrawlErr));
     }
     console.log(`ivero-analyze firecrawl result: scraped=${scraped}, length=${scrapedMarkdown.length}`);
     console.log("ivero-analyze haiku input length:", scrapedMarkdown.split(/\s+/).length, "words");
