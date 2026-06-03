@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     // ===== ETAPA 0: FIRECRAWL — scrape do site real (silent fallback) =====
     let scrapedMarkdown = "";
     let scraped = false;
-    const firecrawlDisabled = true; // DIAGNÓSTICO: desativado temporariamente
+    const firecrawlDisabled = false; // DIAGNÓSTICO: reativado
     if (!firecrawlDisabled) {
       try {
         const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
@@ -193,7 +193,6 @@ Deno.serve(async (req) => {
       }
     }
     console.log(`ivero-analyze firecrawl result: scraped=${scraped}, length=${scrapedMarkdown.length}`);
-    console.log("ivero-analyze haiku input length:", scrapedMarkdown.split(/\s+/).length, "words");
 
     // ===== ETAPA 1: HAIKU — extração + scoring =====
     const haikuPrompt = `Analise a presença em IAs da marca abaixo e retorne APENAS um JSON estrito (sem markdown).
