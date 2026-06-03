@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     // ===== ETAPA 0: FIRECRAWL — scrape do site real (silent fallback) =====
     let scrapedMarkdown = "";
     let scraped = false;
-    const firecrawlDisabled = true; // DIAGNÓSTICO: desativado temporariamente
+    const firecrawlDisabled = false; // DIAGNÓSTICO: reativado
     if (!firecrawlDisabled) {
       try {
         const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
@@ -193,7 +193,6 @@ Deno.serve(async (req) => {
       }
     }
     console.log(`ivero-analyze firecrawl result: scraped=${scraped}, length=${scrapedMarkdown.length}`);
-    console.log("ivero-analyze haiku input length:", scrapedMarkdown.split(/\s+/).length, "words");
 
     // ===== ETAPA 1: HAIKU — extração + scoring =====
     const haikuPrompt = `Analise a presença em IAs da marca abaixo e retorne APENAS um JSON estrito (sem markdown).
@@ -224,9 +223,11 @@ Retorne EXATAMENTE este schema:
   "content_gaps": string[] (3-6 lacunas concretas de conteúdo que prejudicam menções em IAs),
   "raw_brand_data": { "sector": string, "likely_audience": string, "likely_competitors": string[] }
 }`;
+    console.log("ivero-analyze haiku prompt length:", haikuPrompt.split(/\s+/).length, "words");
 
     let haikuResp: Awaited<ReturnType<typeof callAnthropic>> = { content: "", usage: null };
     let haikuJson: HaikuOutput;
+    console.log("ivero-analyze brand:", brand_url, brand_name);
     try {
       haikuResp = await callAnthropic({
         apiKey,
