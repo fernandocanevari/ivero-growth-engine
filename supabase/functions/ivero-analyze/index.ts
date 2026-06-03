@@ -237,6 +237,7 @@ Retorne EXATAMENTE este schema:
         userPrompt: haikuPrompt,
       });
 
+      console.log("ivero-analyze haiku response:", haikuResp.content.slice(0, 200));
       haikuJson = extractJson<HaikuOutput>(haikuResp.content);
     } catch {
       console.log("ivero-analyze haiku raw response:", haikuResp.content.slice(0, 500));
