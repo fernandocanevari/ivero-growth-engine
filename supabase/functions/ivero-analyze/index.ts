@@ -223,9 +223,11 @@ Retorne EXATAMENTE este schema:
   "content_gaps": string[] (3-6 lacunas concretas de conteúdo que prejudicam menções em IAs),
   "raw_brand_data": { "sector": string, "likely_audience": string, "likely_competitors": string[] }
 }`;
+    console.log("ivero-analyze haiku prompt length:", haikuPrompt.split(/\s+/).length, "words");
 
     let haikuResp: Awaited<ReturnType<typeof callAnthropic>> = { content: "", usage: null };
     let haikuJson: HaikuOutput;
+    console.log("ivero-analyze brand:", brand_url, brand_name);
     try {
       haikuResp = await callAnthropic({
         apiKey,
