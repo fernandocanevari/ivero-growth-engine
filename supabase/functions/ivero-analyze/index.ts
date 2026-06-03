@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const HAIKU_MODEL = "claude-haiku-4-5-20251001";
+const HAIKU_MODEL = "claude-haiku-4-5";
 const SONNET_MODEL = "claude-sonnet-4-6";
 
 const SYSTEM_BASE = `Você é o motor analítico da Ivero, uma plataforma B2B de auditoria de influência em IAs Generativas (GEO — Generative Engine Optimization).
@@ -237,6 +237,7 @@ Retorne EXATAMENTE este schema:
         userPrompt: haikuPrompt,
       });
 
+      console.log("ivero-analyze haiku response:", haikuResp.content.slice(0, 200));
       haikuJson = extractJson<HaikuOutput>(haikuResp.content);
     } catch {
       console.log("ivero-analyze haiku raw response:", haikuResp.content.slice(0, 500));
