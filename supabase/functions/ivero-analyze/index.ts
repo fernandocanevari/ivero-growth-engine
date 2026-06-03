@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     // ===== ETAPA 0: FIRECRAWL — scrape do site real (silent fallback) =====
     let scrapedMarkdown = "";
     let scraped = false;
-    const firecrawlDisabled = false; // DIAGNÓSTICO: reativado
+    const firecrawlDisabled = true; // DIAGNÓSTICO: desativado temporariamente
     if (!firecrawlDisabled) {
       try {
         const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
