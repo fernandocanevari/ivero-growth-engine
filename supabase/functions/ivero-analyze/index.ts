@@ -242,9 +242,11 @@ Retorne EXATAMENTE este schema:
 
       console.log("ivero-analyze haiku response:", haikuResp.content.slice(0, 200));
       haikuJson = extractJson<HaikuOutput>(haikuResp.content);
+      console.log("ivero-analyze haiku json keys:", Object.keys(haikuJson).join(", "));
     } catch {
       console.log("ivero-analyze haiku raw response:", haikuResp.content.slice(0, 500));
       throw new Error("Haiku parse failed — see logs for raw response.");
+    }
     }
 
     // ===== ETAPA 2: SONNET — relatório estratégico =====
