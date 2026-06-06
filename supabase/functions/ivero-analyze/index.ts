@@ -247,7 +247,8 @@ Retorne EXATAMENTE este schema:
       console.log("ivero-analyze haiku raw response:", haikuResp.content.slice(0, 500));
       throw new Error("Haiku parse failed — see logs for raw response.");
     }
-    }
+
+
 
     // ===== ETAPA 2: SONNET — relatório estratégico =====
     const sonnetPrompt = `Com base na análise estruturada abaixo, gere o RELATÓRIO ESTRATÉGICO completo da marca.
