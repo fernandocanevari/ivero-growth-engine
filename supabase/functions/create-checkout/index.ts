@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     }
     const asaasHeaders = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${asaasKey}`,
+      "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
     };
 
     // 4. Create customer
