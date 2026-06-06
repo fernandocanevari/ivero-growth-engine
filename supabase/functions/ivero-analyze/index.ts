@@ -84,10 +84,13 @@ async function callAnthropic(params: {
 }
 
 function extractJson<T>(raw: string): T {
-  const cleaned = raw
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```\s*$/i, "")
+  let cleaned = raw.trim();
+  // Strip leading markdown fences (```json or ```) repeatedly, plus whitespace
+  cleaned = cleaned
+    .replace(/^\s*```(?:json)?\s*\n?/i, "")
+    .replace(/^\s*```(?:json)?\s*/i, "")
+    .replace(/\n?\s*```\s*$/i, "")
+    .replace(/\s*```\s*$/i, "")
     .trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
