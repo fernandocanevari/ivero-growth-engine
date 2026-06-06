@@ -381,11 +381,6 @@ const InvestSection = () => {
             <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative px-5 sm:px-8 py-5 sm:py-6">
-              {/* Frase de inheritance */}
-              <p className="text-center text-xs sm:text-sm font-medium text-foreground/85 mb-5 pb-4 border-b border-ivero-purple/10">
-                <span className="text-accent font-bold">✦</span>{" "}
-                Cada plano inclui todos os recursos do anterior, mais os seus exclusivos.
-              </p>
 
               <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
                 {/* Header compacto */}
