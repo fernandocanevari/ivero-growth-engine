@@ -84,10 +84,13 @@ async function callAnthropic(params: {
 }
 
 function extractJson<T>(raw: string): T {
-  const cleaned = raw
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```\s*$/i, "")
+  let cleaned = raw.trim();
+  // Strip leading markdown fences (```json or ```) repeatedly, plus whitespace
+  cleaned = cleaned
+    .replace(/^\s*```(?:json)?\s*\n?/i, "")
+    .replace(/^\s*```(?:json)?\s*/i, "")
+    .replace(/\n?\s*```\s*$/i, "")
+    .replace(/\s*```\s*$/i, "")
     .trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
@@ -239,10 +242,13 @@ Retorne EXATAMENTE este schema:
 
       console.log("ivero-analyze haiku response:", haikuResp.content.slice(0, 200));
       haikuJson = extractJson<HaikuOutput>(haikuResp.content);
+      console.log("ivero-analyze haiku json keys:", Object.keys(haikuJson).join(", "));
     } catch {
       console.log("ivero-analyze haiku raw response:", haikuResp.content.slice(0, 500));
       throw new Error("Haiku parse failed — see logs for raw response.");
     }
+
+
 
     // ===== ETAPA 2: SONNET — relatório estratégico =====
     const sonnetPrompt = `Com base na análise estruturada abaixo, gere o RELATÓRIO ESTRATÉGICO completo da marca.
