@@ -1,7 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+type PlanoSlug = "presenca" | "influencia" | "autoridade";
+
+const PLAN_SLUG_MAP: Record<string, PlanoSlug> = {
+  "Presença": "presenca",
+  "Influência": "influencia",
+  "Autoridade": "autoridade",
+};
+
+
 
 const plans = [
   {
@@ -73,6 +89,69 @@ const plans = [
 
 const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
+  const navigate = useNavigate();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handlePlanClick = async (planName: string) => {
+    const plano = PLAN_SLUG_MAP[planName];
+    if (!plano) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    setSelectedPlano(plano);
+    setEmail(session.user.email ?? "");
+    setNome((session.user.user_metadata?.display_name as string) ?? "");
+    setCpfCnpj("");
+    setCheckoutOpen(true);
+  };
+
+  const handleConfirmCheckout = async () => {
+    if (!selectedPlano) return;
+    if (!nome.trim() || !email.trim() || !cpfCnpj.trim()) {
+      toast.error("Preencha todos os campos para continuar.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        navigate("/auth");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { plano: selectedPlano, nome, email, cpfCnpj },
+      });
+
+      if (error) {
+        toast.error(error.message || "Erro ao criar assinatura.");
+        return;
+      }
+      if (!data?.success || !data?.checkoutUrl) {
+        toast.error(data?.error || "Não foi possível gerar o link de pagamento.");
+        return;
+      }
+
+      window.open(data.checkoutUrl, "_blank");
+      setCheckoutOpen(false);
+    } catch (err) {
+      toast.error((err as Error).message || "Erro inesperado.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
   return (
     <section id="planos" className="pt-14 sm:pt-20 pb-8 sm:pb-12 bg-surface-1 relative overflow-hidden">
@@ -273,9 +352,11 @@ const InvestSection = () => {
                       variant="hero"
                       size="sm"
                       className="w-full mt-auto text-xs py-3"
+                      onClick={() => handlePlanClick(plan.name)}
                     >
                       {plan.cta}
                     </Button>
+
                   </div>
                 </div>
               </motion.div>
@@ -352,8 +433,65 @@ const InvestSection = () => {
         </motion.div>
 
       </div>
+
+      <Dialog open={checkoutOpen} onOpenChange={(open) => !submitting && setCheckoutOpen(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar assinatura</DialogTitle>
+            <DialogDescription>
+              Preencha seus dados para gerar o link de pagamento do plano selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="checkout-nome">Nome completo</Label>
+              <Input
+                id="checkout-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Seu nome completo"
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-email">E-mail</Label>
+              <Input
+                id="checkout-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-cpfcnpj">CPF ou CNPJ</Label>
+              <Input
+                id="checkout-cpfcnpj"
+                value={cpfCnpj}
+                onChange={(e) => setCpfCnpj(e.target.value)}
+                placeholder="Somente números"
+                disabled={submitting}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleConfirmCheckout} disabled={submitting} className="w-full">
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Gerando link...
+                </>
+              ) : (
+                "Assinar agora"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
+
 
 export default InvestSection;
