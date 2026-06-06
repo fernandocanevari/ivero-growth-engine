@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
       }),
     });
     const subJson = await subRes.json();
+    console.log("create-checkout asaas subscription response:", JSON.stringify(subJson));
     if (!subRes.ok || !subJson?.id) {
       console.error("create-checkout asaas subscription error:", subJson);
       const msg =
