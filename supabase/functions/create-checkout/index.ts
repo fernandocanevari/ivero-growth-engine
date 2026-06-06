@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("create-checkout started");
     // 1. Validate JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -52,6 +53,7 @@ Deno.serve(async (req) => {
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
     const { plano, nome, email, cpfCnpj } = body || ({} as CheckoutBody);
+    console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
 
     if (!plano || !PLAN_VALUES[plano]) {
       return new Response(
@@ -86,6 +88,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ name: nome, email, cpfCnpj }),
     });
     const customerJson = await customerRes.json();
+    console.log("create-checkout asaas customer response:", JSON.stringify(customerJson));
     if (!customerRes.ok || !customerJson?.id) {
       console.error("create-checkout asaas customer error:", customerJson);
       const msg =
@@ -117,6 +120,7 @@ Deno.serve(async (req) => {
       }),
     });
     const subJson = await subRes.json();
+    console.log("create-checkout asaas subscription response:", JSON.stringify(subJson));
     if (!subRes.ok || !subJson?.id) {
       console.error("create-checkout asaas subscription error:", subJson);
       const msg =
@@ -161,7 +165,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("create-checkout unexpected error:", err);
+    console.error("create-checkout error:", err instanceof Error ? err.message : String(err));
     return new Response(
       JSON.stringify({ error: (err as Error).message || "Erro inesperado." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
