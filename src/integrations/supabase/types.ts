@@ -56,6 +56,48 @@ export type Database = {
         }
         Relationships: []
       }
+      assinaturas: {
+        Row: {
+          asaas_customer_id: string
+          asaas_subscription_id: string
+          carencia_ate: string | null
+          created_at: string
+          data_inicio: string
+          data_vencimento: string | null
+          id: string
+          plano: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asaas_customer_id: string
+          asaas_subscription_id: string
+          carencia_ate?: string | null
+          created_at?: string
+          data_inicio?: string
+          data_vencimento?: string | null
+          id?: string
+          plano: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asaas_customer_id?: string
+          asaas_subscription_id?: string
+          carencia_ate?: string | null
+          created_at?: string
+          data_inicio?: string
+          data_vencimento?: string | null
+          id?: string
+          plano?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_reports: {
         Row: {
           ai_engines: Json
