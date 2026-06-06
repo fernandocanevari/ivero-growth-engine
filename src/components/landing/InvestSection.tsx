@@ -89,6 +89,69 @@ const plans = [
 
 const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
+  const navigate = useNavigate();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handlePlanClick = async (planName: string) => {
+    const plano = PLAN_SLUG_MAP[planName];
+    if (!plano) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    setSelectedPlano(plano);
+    setEmail(session.user.email ?? "");
+    setNome((session.user.user_metadata?.display_name as string) ?? "");
+    setCpfCnpj("");
+    setCheckoutOpen(true);
+  };
+
+  const handleConfirmCheckout = async () => {
+    if (!selectedPlano) return;
+    if (!nome.trim() || !email.trim() || !cpfCnpj.trim()) {
+      toast.error("Preencha todos os campos para continuar.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        navigate("/auth");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { plano: selectedPlano, nome, email, cpfCnpj },
+      });
+
+      if (error) {
+        toast.error(error.message || "Erro ao criar assinatura.");
+        return;
+      }
+      if (!data?.success || !data?.checkoutUrl) {
+        toast.error(data?.error || "Não foi possível gerar o link de pagamento.");
+        return;
+      }
+
+      window.open(data.checkoutUrl, "_blank");
+      setCheckoutOpen(false);
+    } catch (err) {
+      toast.error((err as Error).message || "Erro inesperado.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
   return (
     <section id="planos" className="pt-14 sm:pt-20 pb-8 sm:pb-12 bg-surface-1 relative overflow-hidden">
