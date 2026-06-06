@@ -352,9 +352,11 @@ const InvestSection = () => {
                       variant="hero"
                       size="sm"
                       className="w-full mt-auto text-xs py-3"
+                      onClick={() => handlePlanClick(plan.name)}
                     >
                       {plan.cta}
                     </Button>
+
                   </div>
                 </div>
               </motion.div>
