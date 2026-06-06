@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("create-checkout started");
     // 1. Validate JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
