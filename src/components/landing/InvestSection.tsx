@@ -433,8 +433,65 @@ const InvestSection = () => {
         </motion.div>
 
       </div>
+
+      <Dialog open={checkoutOpen} onOpenChange={(open) => !submitting && setCheckoutOpen(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar assinatura</DialogTitle>
+            <DialogDescription>
+              Preencha seus dados para gerar o link de pagamento do plano selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="checkout-nome">Nome completo</Label>
+              <Input
+                id="checkout-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Seu nome completo"
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-email">E-mail</Label>
+              <Input
+                id="checkout-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-cpfcnpj">CPF ou CNPJ</Label>
+              <Input
+                id="checkout-cpfcnpj"
+                value={cpfCnpj}
+                onChange={(e) => setCpfCnpj(e.target.value)}
+                placeholder="Somente números"
+                disabled={submitting}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleConfirmCheckout} disabled={submitting} className="w-full">
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Gerando link...
+                </>
+              ) : (
+                "Assinar agora"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
+
 
 export default InvestSection;
