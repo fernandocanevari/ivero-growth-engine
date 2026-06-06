@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ name: nome, email, cpfCnpj }),
     });
     const customerJson = await customerRes.json();
+    console.log("create-checkout asaas customer response:", JSON.stringify(customerJson));
     if (!customerRes.ok || !customerJson?.id) {
       console.error("create-checkout asaas customer error:", customerJson);
       const msg =
