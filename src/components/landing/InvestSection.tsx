@@ -1,7 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+type PlanoSlug = "presenca" | "influencia" | "autoridade";
+
+const PLAN_SLUG_MAP: Record<string, PlanoSlug> = {
+  "Presença": "presenca",
+  "Influência": "influencia",
+  "Autoridade": "autoridade",
+};
+
+
 
 const plans = [
   {
