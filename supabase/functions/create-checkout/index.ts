@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
     const { plano, nome, email, cpfCnpj } = body || ({} as CheckoutBody);
+    console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
 
     if (!plano || !PLAN_VALUES[plano]) {
       return new Response(
