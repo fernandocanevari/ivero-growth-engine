@@ -133,8 +133,27 @@ Deno.serve(async (req) => {
       });
     }
     const asaas_subscription_id: string = subJson.id;
-    const checkoutUrl: string =
+
+    // 5b. Fetch first payment (cobrança) generated for this subscription
+    let checkoutUrl: string =
       subJson.invoiceUrl || subJson.bankSlipUrl || subJson.paymentLink || "";
+    try {
+      const paymentsRes = await fetch(
+        `${ASAAS_BASE_URL}/payments?subscription=${asaas_subscription_id}`,
+        { method: "GET", headers: asaasHeaders },
+      );
+      const paymentsData = await paymentsRes.json();
+      console.log("create-checkout payments response:", JSON.stringify(paymentsData));
+      const firstPayment = paymentsData?.data?.[0];
+      if (firstPayment?.invoiceUrl) {
+        checkoutUrl = firstPayment.invoiceUrl;
+      }
+    } catch (paymentsErr) {
+      console.error("create-checkout payments fetch error:", paymentsErr);
+    }
+    if (!checkoutUrl) {
+      checkoutUrl = `https://sandbox.asaas.com/i/${asaas_subscription_id}`;
+    }
 
     // 6. Persist in assinaturas (service role to bypass RLS for insert)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
