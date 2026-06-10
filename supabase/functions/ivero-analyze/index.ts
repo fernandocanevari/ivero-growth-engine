@@ -285,7 +285,7 @@ Use os scores do Haiku no pillar_analysis. Insights devem citar evidências conc
       sonnetResp = await callAnthropic({
         apiKey,
         model: SONNET_MODEL,
-        maxTokens: 3000,
+        maxTokens: 4000,
         systemBase: "You are a strategic GEO analyst. Generate the report based on the audit data provided. Output strict JSON only, no markdown, in Brazilian Portuguese.",
         userPrompt: sonnetPrompt,
       });
