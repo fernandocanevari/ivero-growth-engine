@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 type Status = "loading" | "active" | "pending";
 
@@ -61,7 +61,7 @@ const BemVindoPage = () => {
 
       {/* Logo top left */}
       <div className="absolute top-0 left-0 right-0 z-20">
-        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center">
+        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
           <a href="/" className="font-display text-2xl font-bold text-gradient">
             Ivero
           </a>
@@ -112,7 +112,7 @@ const BemVindoPage = () => {
 
               {/* Subheadline */}
               <p className="text-base sm:text-lg md:text-xl text-ivero-purple font-medium max-w-xl mx-auto mb-10 leading-relaxed">
-                Juntos vamos trazer um retorno real de marketing para o seu negócio e aumentaremos a visibilidade da sua marca nas IAs.
+                E juntos vamos trazer um retorno real de marketing para o seu negócio e aumentaremos a visibilidade da sua marca nas IAs.
               </p>
 
               {/* CTA */}
@@ -122,8 +122,7 @@ const BemVindoPage = () => {
                 className="text-base sm:text-lg px-8 sm:px-10 py-5 sm:py-6 h-auto rounded-full"
                 onClick={() => navigate("/dashboard")}
               >
-                Acessar meu dashboard
-                <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6" />
+                Acessar meu dashboard →
               </Button>
             </motion.div>
           )}
