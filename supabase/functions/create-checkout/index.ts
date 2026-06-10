@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
         value,
         nextDueDate,
         description: `Ivero — Plano ${plano}`,
+        redirectUrl: "https://ivero.com.br/bem-vindo",
       }),
     });
     const subJson = await subRes.json();
