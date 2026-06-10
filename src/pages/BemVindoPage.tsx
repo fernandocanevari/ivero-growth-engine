@@ -111,7 +111,7 @@ const BemVindoPage = () => {
               <Button
                 variant="hero"
                 size="lg"
-                className="text-base sm:text-lg px-8 sm:px-10 py-5 sm:py-6 h-auto rounded-full"
+                className="text-lg sm:text-xl px-8 sm:px-10 py-5 sm:py-6 h-auto rounded-full"
                 onClick={() => navigate("/dashboard")}
               >
                 Acessar meu dashboard →
