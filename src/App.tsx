@@ -79,6 +79,7 @@ const App = () => (
           <Route path="/analise-ivero" element={<IveroAnalysisPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
+          <Route path="/bem-vindo" element={<ProtectedRoute><BemVindoPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
