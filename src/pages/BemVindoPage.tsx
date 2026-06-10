@@ -59,14 +59,6 @@ const BemVindoPage = () => {
       <div className="absolute bottom-0 right-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] rounded-full bg-ivero-purple opacity-[0.06] blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-100px] right-[-50px] w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-accent opacity-[0.05] blur-[100px] pointer-events-none" />
 
-      {/* Logo top left */}
-      <div className="absolute top-0 left-0 right-0 z-20">
-        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
-          <a href="/" className="font-display text-2xl font-bold text-gradient">
-            Ivero
-          </a>
-        </div>
-      </div>
 
       {/* Content */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 relative z-10">
