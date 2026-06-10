@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
       asaas_customer_id,
       asaas_subscription_id,
       plano,
-      status: "ativo",
+      status: "pendente",
       data_inicio: dataInicio.toISOString(),
       data_vencimento: dataVencimento.toISOString(),
     });
