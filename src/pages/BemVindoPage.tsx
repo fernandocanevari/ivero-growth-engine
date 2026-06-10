@@ -104,7 +104,7 @@ const BemVindoPage = () => {
 
               {/* Subheadline */}
               <p className="text-base sm:text-lg md:text-xl text-ivero-purple font-medium max-w-xl mx-auto mb-10 leading-relaxed">
-                E juntos vamos trazer um retorno real de marketing para o seu negócio e aumentaremos a visibilidade da sua marca nas IAs.
+                E Juntos vamos trazer um retorno real de marketing para o seu negócio e aumentaremos a visibilidade da sua marca
               </p>
 
               {/* CTA */}
