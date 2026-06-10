@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trophy, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 
 type Status = "loading" | "active" | "pending";
 
@@ -53,68 +54,104 @@ const BemVindoPage = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ivero-dark via-ivero-dark to-black flex items-center justify-center px-4">
-      <div className="w-full max-w-2xl text-center">
-        <div className="mb-10">
-          <span className="font-display text-3xl font-bold text-white tracking-tight">Ivero</span>
+    <div className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-2 to-surface-0 relative overflow-hidden flex flex-col">
+      {/* Subtle background glows matching hero */}
+      <div className="absolute bottom-0 right-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] rounded-full bg-ivero-purple opacity-[0.06] blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-100px] right-[-50px] w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-accent opacity-[0.05] blur-[100px] pointer-events-none" />
+
+      {/* Logo top left */}
+      <div className="absolute top-0 left-0 right-0 z-20">
+        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center">
+          <a href="/" className="font-display text-2xl font-bold text-gradient">
+            Ivero
+          </a>
         </div>
+      </div>
 
-        {status === "loading" && (
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-12">
-            <Loader2 className="h-16 w-16 text-ivero-magenta animate-spin mx-auto mb-6" />
-            <p className="text-xl text-white font-medium">Confirmando seu pagamento...</p>
-            <p className="text-sm text-white/60 mt-2">Isso pode levar alguns segundos.</p>
-          </div>
-        )}
+      {/* Content */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 relative z-10">
+        <div className="w-full max-w-2xl text-center">
 
-        {status === "active" && (
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-10 md:p-12">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-ivero-magenta/30 blur-3xl rounded-full" />
-                <Trophy className="h-24 w-24 text-ivero-magenta relative" strokeWidth={1.5} />
-              </div>
-            </div>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-4">
-              Parabéns pela decisão!
-            </h1>
-            <p className="text-lg text-white/80 mb-6 leading-relaxed">
-              Juntos vamos fazer sua marca ser mencionada pelas IAs e trazer um retorno real de marketing para o seu negócio.
-            </p>
-            <p className="text-base text-white/60 mb-8">
-              Seu acesso ao plano está liberado. Estamos prontos para aumentar a visibilidade da sua marca.
-            </p>
-            <Button
-              size="lg"
-              onClick={() => navigate("/dashboard")}
-              className="bg-ivero-magenta hover:bg-ivero-magenta/90 text-white px-8 py-6 text-lg font-semibold rounded-full"
+          {status === "loading" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col items-center"
             >
-              Acessar meu dashboard
-            </Button>
-          </div>
-        )}
+              <Loader2 className="h-12 w-12 text-accent animate-spin mb-5" />
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2">
+                Confirmando seu pagamento...
+              </h2>
+              <p className="text-muted-foreground">Isso pode levar alguns segundos.</p>
+            </motion.div>
+          )}
 
-        {status === "pending" && (
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-10 md:p-12">
-            <div className="flex justify-center mb-6">
-              <CheckCircle2 className="h-20 w-20 text-white/70" strokeWidth={1.5} />
-            </div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-              Pagamento em processamento
-            </h1>
-            <p className="text-base text-white/70 mb-8 leading-relaxed">
-              Seu pagamento está sendo confirmado. Assim que confirmado, seu acesso será liberado automaticamente. Você receberá um e-mail de confirmação.
-            </p>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate("/dashboard")}
-              className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg font-semibold rounded-full"
+          {status === "active" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              Ir para o dashboard
-            </Button>
-          </div>
-        )}
+              {/* Celebration emoji */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+                className="text-6xl sm:text-7xl mb-6"
+              >
+                🎉
+              </motion.div>
+
+              {/* Headline */}
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-3 leading-tight">
+                <span className="text-foreground">Parabéns, bem-vindo </span>
+                <br className="hidden sm:block" />
+                <span className="text-accent">à Ivero!</span>
+              </h1>
+
+              {/* Subheadline */}
+              <p className="text-base sm:text-lg md:text-xl text-ivero-purple font-medium max-w-xl mx-auto mb-10 leading-relaxed">
+                Juntos vamos trazer um retorno real de marketing para o seu negócio e aumentaremos a visibilidade da sua marca nas IAs.
+              </p>
+
+              {/* CTA */}
+              <Button
+                variant="hero"
+                size="lg"
+                className="text-base sm:text-lg px-8 sm:px-10 py-5 sm:py-6 h-auto rounded-full"
+                onClick={() => navigate("/dashboard")}
+              >
+                Acessar meu dashboard
+                <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6" />
+              </Button>
+            </motion.div>
+          )}
+
+          {status === "pending" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="text-5xl sm:text-6xl mb-6">⏳</div>
+              <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Pagamento em processamento
+              </h1>
+              <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed">
+                Seu pagamento está sendo confirmado. Assim que confirmado, seu acesso será liberado automaticamente. Você receberá um e-mail de confirmação.
+              </p>
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
+                onClick={() => navigate("/dashboard")}
+              >
+                Ir para o dashboard
+              </Button>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );
