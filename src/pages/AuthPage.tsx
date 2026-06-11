@@ -17,7 +17,7 @@ export default function AuthPage() {
   const prefName = searchParams.get("name") || "";
   const prefSite = searchParams.get("site") || "";
   const prefPhone = searchParams.get("phone") || "";
-  const initialMode = (searchParams.get("mode") || "login").toLowerCase();
+  const initialMode = (searchParams.get("mode") || (typeof window !== "undefined" && window.location.pathname === "/signup" ? "signup" : "login")).toLowerCase();
 
   const [isLogin, setIsLogin] = useState(initialMode !== "signup");
   const [isForgotPassword, setIsForgotPassword] = useState(false);
