@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
+
 
 type PlanoSlug = "presenca" | "influencia" | "autoridade";
 
@@ -96,6 +99,16 @@ const InvestSection = () => {
   const [email, setEmail] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [pendingPlanName, setPendingPlanName] = useState<string | null>(null);
+
+  const openCheckoutForSession = (plano: PlanoSlug, session: { user: { email?: string | null; user_metadata?: Record<string, unknown> } }) => {
+    setSelectedPlano(plano);
+    setEmail(session.user.email ?? "");
+    setNome((session.user.user_metadata?.display_name as string) ?? "");
+    setCpfCnpj("");
+    setCheckoutOpen(true);
+  };
 
   const handlePlanClick = async (planName: string) => {
     const plano = PLAN_SLUG_MAP[planName];
@@ -103,16 +116,52 @@ const InvestSection = () => {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      navigate("/auth");
+      setPendingPlanName(planName);
+      setAuthPromptOpen(true);
       return;
     }
 
-    setSelectedPlano(plano);
-    setEmail(session.user.email ?? "");
-    setNome((session.user.user_metadata?.display_name as string) ?? "");
-    setCpfCnpj("");
-    setCheckoutOpen(true);
+    openCheckoutForSession(plano, session);
   };
+
+  const persistPendingPlan = (planName: string) => {
+    try {
+      localStorage.setItem(SELECTED_PLAN_STORAGE_KEY, planName);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const handleAuthChoice = (mode: "login" | "signup") => {
+    if (pendingPlanName) persistPendingPlan(pendingPlanName);
+    setAuthPromptOpen(false);
+    navigate(mode === "signup" ? "/auth?mode=signup" : "/auth");
+  };
+
+  // Auto-resume checkout after login/signup if a plan was stored
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let stored: string | null = null;
+      try {
+        stored = localStorage.getItem(SELECTED_PLAN_STORAGE_KEY);
+      } catch {
+        return;
+      }
+      if (!stored) return;
+      const plano = PLAN_SLUG_MAP[stored];
+      if (!plano) {
+        try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || !session) return;
+      try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+      openCheckoutForSession(plano, session);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
 
   const handleConfirmCheckout = async () => {
     if (!selectedPlano) return;
@@ -484,9 +533,37 @@ const InvestSection = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={authPromptOpen} onOpenChange={setAuthPromptOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Para assinar, escolha uma opção</DialogTitle>
+            <DialogDescription>
+              Você precisa estar autenticado para continuar com a assinatura.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => handleAuthChoice("login")}
+              className="w-full"
+            >
+              Já tenho conta
+            </Button>
+            <Button
+              variant="hero"
+              onClick={() => handleAuthChoice("signup")}
+              className="w-full"
+            >
+              Criar conta
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
+
 
 
 export default InvestSection;
