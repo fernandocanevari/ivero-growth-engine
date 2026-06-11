@@ -533,9 +533,37 @@ const InvestSection = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={authPromptOpen} onOpenChange={setAuthPromptOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Para assinar, escolha uma opção</DialogTitle>
+            <DialogDescription>
+              Você precisa estar autenticado para continuar com a assinatura.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => handleAuthChoice("login")}
+              className="w-full"
+            >
+              Já tenho conta
+            </Button>
+            <Button
+              variant="hero"
+              onClick={() => handleAuthChoice("signup")}
+              className="w-full"
+            >
+              Criar conta
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
+
 
 
 export default InvestSection;
