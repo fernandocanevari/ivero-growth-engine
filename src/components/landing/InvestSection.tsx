@@ -99,6 +99,16 @@ const InvestSection = () => {
   const [email, setEmail] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [pendingPlanName, setPendingPlanName] = useState<string | null>(null);
+
+  const openCheckoutForSession = (plano: PlanoSlug, session: { user: { email?: string | null; user_metadata?: Record<string, unknown> } }) => {
+    setSelectedPlano(plano);
+    setEmail(session.user.email ?? "");
+    setNome((session.user.user_metadata?.display_name as string) ?? "");
+    setCpfCnpj("");
+    setCheckoutOpen(true);
+  };
 
   const handlePlanClick = async (planName: string) => {
     const plano = PLAN_SLUG_MAP[planName];
@@ -106,16 +116,52 @@ const InvestSection = () => {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      navigate("/auth");
+      setPendingPlanName(planName);
+      setAuthPromptOpen(true);
       return;
     }
 
-    setSelectedPlano(plano);
-    setEmail(session.user.email ?? "");
-    setNome((session.user.user_metadata?.display_name as string) ?? "");
-    setCpfCnpj("");
-    setCheckoutOpen(true);
+    openCheckoutForSession(plano, session);
   };
+
+  const persistPendingPlan = (planName: string) => {
+    try {
+      localStorage.setItem(SELECTED_PLAN_STORAGE_KEY, planName);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const handleAuthChoice = (mode: "login" | "signup") => {
+    if (pendingPlanName) persistPendingPlan(pendingPlanName);
+    setAuthPromptOpen(false);
+    navigate(mode === "signup" ? "/auth?mode=signup" : "/auth");
+  };
+
+  // Auto-resume checkout after login/signup if a plan was stored
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let stored: string | null = null;
+      try {
+        stored = localStorage.getItem(SELECTED_PLAN_STORAGE_KEY);
+      } catch {
+        return;
+      }
+      if (!stored) return;
+      const plano = PLAN_SLUG_MAP[stored];
+      if (!plano) {
+        try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || !session) return;
+      try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+      openCheckoutForSession(plano, session);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
 
   const handleConfirmCheckout = async () => {
     if (!selectedPlano) return;
