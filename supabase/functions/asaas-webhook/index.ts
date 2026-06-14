@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
           status: "ativo",
           carencia_ate: null,
           data_vencimento: nextDue.toISOString(),
+          trial_ends_at: null,
         });
         if (res.error) return json(500, res);
         break;
