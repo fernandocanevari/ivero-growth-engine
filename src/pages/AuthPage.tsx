@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
 import { identifyUser, track } from "@/lib/analytics";
+import { formatPhoneBR } from "@/lib/format-phone";
 
 export default function AuthPage() {
   const navigate = useNavigate();
