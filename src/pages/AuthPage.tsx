@@ -54,6 +54,26 @@ export default function AuthPage() {
     }
   };
 
+  // Helper: persist the extra signup fields (nome_completo, nome_empresa, celular) on the profile row
+  const persistProfileExtras = async (
+    userId: string,
+    extras: { nome_completo: string; nome_empresa: string; celular: string }
+  ) => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({
+          nome_completo: extras.nome_completo,
+          nome_empresa: extras.nome_empresa,
+          celular: extras.celular,
+          display_name: extras.nome_completo || undefined,
+        } as any)
+        .eq("user_id", userId);
+    } catch (err) {
+      console.warn("[AuthPage] Failed to persist profile extras:", err);
+    }
+  };
+
   // Helper: redirect after auth based on first-login flag
   const redirectAfterAuth = async (userId: string) => {
     try {
