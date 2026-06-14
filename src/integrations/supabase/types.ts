@@ -613,6 +613,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          function_name: string
+          id: string
+          ip: string
+          request_count: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          function_name: string
+          id?: string
+          ip: string
+          request_count?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          function_name?: string
+          id?: string
+          ip?: string
+          request_count?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       simulation_results: {
         Row: {
           autoridade: number | null
@@ -678,6 +705,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_increment_rate_limit: {
+        Args: {
+          p_function: string
+          p_ip: string
+          p_max: number
+          p_window: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
