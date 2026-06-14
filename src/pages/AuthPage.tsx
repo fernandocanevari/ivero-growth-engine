@@ -91,6 +91,8 @@ export default function AuthPage() {
   useEffect(() => {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
+    // Extras collected at signup time, persisted to profiles once the session arrives
+    let pendingSignupExtras: { nome_completo: string; nome_empresa: string; celular: string } | null = null;
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
@@ -101,13 +103,26 @@ export default function AuthPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) return;
+      const isPendingSignup = event === "SIGNED_IN" && pendingSignupForUserId === session.user.id;
       // If we just signed up with prefilled lead data, run the upsert before navigating
-      if (event === "SIGNED_IN" && pendingSignupForUserId === session.user.id && hasPrefilledLead) {
+      if (isPendingSignup && hasPrefilledLead) {
         // Defer to avoid awaiting inside the auth callback (prevents deadlocks)
         setTimeout(() => {
           persistBrandFromLead(session.user.id, session.user.email || email);
         }, 0);
+      }
+      if (isPendingSignup && pendingSignupExtras) {
+        const extras = pendingSignupExtras;
+        setTimeout(() => {
+          persistProfileExtras(session.user.id, extras);
+        }, 0);
+      }
+      if (isPendingSignup) {
         pendingSignupForUserId = null;
+        pendingSignupExtras = null;
+        // After signup the user always goes to plan selection
+        navigate("/escolher-plano", { replace: true });
+        return;
       }
       if (isMatchingUser(session.user.email)) {
         redirectAfterAuth(session.user.id);
@@ -115,8 +130,11 @@ export default function AuthPage() {
       // else: stale session from another user — wait for them to sign up/in
     });
 
-    // Expose setter so handleSubmit can mark a pending signup
+    // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string; celular: string }) => {
+      pendingSignupExtras = extras;
+    };
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return;
@@ -134,6 +152,7 @@ export default function AuthPage() {
     return () => {
       subscription.unsubscribe();
       delete (window as any).__iveroPendingSignup;
+      delete (window as any).__iveroPendingSignupExtras;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
@@ -148,13 +167,21 @@ export default function AuthPage() {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       }
     } else {
+      const extras = {
+        nome_completo: nomeCompleto.trim(),
+        nome_empresa: nomeEmpresa.trim(),
+        celular: celular.trim(),
+      };
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin + "/dashboard",
+          emailRedirectTo: window.location.origin + "/escolher-plano",
           data: {
-            display_name: prefName || email.split("@")[0],
+            display_name: extras.nome_completo || prefName || email.split("@")[0],
+            nome_completo: extras.nome_completo,
+            nome_empresa: extras.nome_empresa,
+            celular: extras.celular,
           },
         },
       });
@@ -162,12 +189,16 @@ export default function AuthPage() {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
         const userId = data.user?.id;
-        // If the session was returned synchronously, persist immediately.
-        if (userId && data.session && hasPrefilledLead) {
-          await persistBrandFromLead(userId, email);
-        } else if (userId && hasPrefilledLead) {
-          // Otherwise mark this user as pending so the auth state listener runs the upsert
+        // If the session was returned synchronously, persist immediately and redirect.
+        if (userId && data.session) {
+          if (hasPrefilledLead) {
+            await persistBrandFromLead(userId, email);
+          }
+          await persistProfileExtras(userId, extras);
+        } else if (userId) {
+          // Otherwise mark this user as pending so the auth state listener runs the upserts
           (window as any).__iveroPendingSignup?.(userId);
+          (window as any).__iveroPendingSignupExtras?.(extras);
         }
         // Funnel step 4: signup completed. Alias the lead's email-identity
         // to the new auth.users.id so the full pre-signup journey stays attached.
@@ -182,13 +213,17 @@ export default function AuthPage() {
         toast({
           title: data.session ? "Conta criada!" : "Cadastro realizado!",
           description: data.session
-            ? "Bem-vindo ao seu dashboard executivo."
-            : "Verifique seu email para confirmar e acessar o dashboard.",
+            ? "Escolha seu plano para começar."
+            : "Verifique seu email para confirmar e escolher seu plano.",
         });
+        if (userId && data.session) {
+          navigate("/escolher-plano", { replace: true });
+        }
       }
     }
     setLoading(false);
   };
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
