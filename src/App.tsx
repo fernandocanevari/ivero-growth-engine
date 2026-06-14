@@ -81,9 +81,9 @@ const App = () => (
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/analise-ivero" element={<IveroAnalysisPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
-          <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
-          <Route path="/bem-vindo" element={<ProtectedRoute><BemVindoPage /></ProtectedRoute>} />
-          <Route path="/escolher-plano" element={<ProtectedRoute><EscolherPlanoPage /></ProtectedRoute>} />
+          <Route path="/welcome" element={<ProtectedRoute requireSubscription={false}><WelcomePage /></ProtectedRoute>} />
+          <Route path="/bem-vindo" element={<ProtectedRoute requireSubscription={false}><BemVindoPage /></ProtectedRoute>} />
+          <Route path="/escolher-plano" element={<ProtectedRoute requireSubscription={false}><EscolherPlanoPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
