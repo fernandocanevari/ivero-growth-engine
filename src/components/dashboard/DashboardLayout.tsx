@@ -73,8 +73,36 @@ export default function DashboardLayout() {
     !skippedRecently &&
     !brandModalDismissed;
 
+  const gracePeriodDate = carenciaAte
+    ? new Date(carenciaAte).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "";
+
   return (
     <SidebarProvider>
+      {isInGracePeriod && (
+        <div className="w-full bg-amber-50 border-b border-amber-200 px-4 py-3">
+          <div className="flex items-center justify-between gap-4 max-w-full">
+            <div className="flex items-center gap-3 min-w-0">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+              <p className="text-sm text-amber-800">
+                Seu pagamento está pendente. Você tem acesso até{" "}
+                <strong>{gracePeriodDate}</strong>. Regularize agora para não
+                perder o acesso.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("/escolher-plano")}
+              className="text-sm font-medium text-amber-900 hover:text-amber-950 underline underline-offset-2 shrink-0 whitespace-nowrap"
+            >
+              Regularizar agora →
+            </button>
+          </div>
+        </div>
+      )}
       <div className="min-h-screen flex w-full bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col min-w-0">
