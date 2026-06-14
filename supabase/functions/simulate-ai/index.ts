@@ -601,6 +601,20 @@ Regras:
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Per-IP rate limit (5/hour). Kept outside the try/catch so a 429 always
+  // returns clean JSON the frontend can surface to anonymous lead users.
+  const { allowed } = await checkRateLimit(req);
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({
+        error: "rate_limit_exceeded",
+        message: "Too many requests. Please try again later.",
+      }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+
   try {
     const { prompt, brandName, mode, geoContext: rawGeo, extractCloud } = await req.json();
 
