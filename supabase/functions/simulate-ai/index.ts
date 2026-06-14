@@ -1,9 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// Per-IP rate limit for simulate-ai: 5 requests / hour.
+// Uses the public.check_and_increment_rate_limit DB helper as the source of truth.
+async function checkRateLimit(req: Request): Promise<{ allowed: boolean; ip: string }> {
+  const fwd = req.headers.get("x-forwarded-for") || "";
+  const ip =
+    fwd.split(",")[0].trim() ||
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      console.warn("simulate-ai rate limit: missing service credentials, skipping");
+      return { allowed: true, ip };
+    }
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data, error } = await admin.rpc("check_and_increment_rate_limit", {
+      p_ip: ip,
+      p_function: "simulate_ai",
+      p_max: 5,
+      p_window: "01:00:00",
+    });
+    if (error) {
+      console.warn("simulate-ai rate limit RPC error, failing open:", error.message);
+      return { allowed: true, ip };
+    }
+    return { allowed: data === true, ip };
+  } catch (e) {
+    console.warn("simulate-ai rate limit threw, failing open:", e instanceof Error ? e.message : String(e));
+    return { allowed: true, ip };
+  }
+}
+
 
 interface ModelConfig {
   name: string;
