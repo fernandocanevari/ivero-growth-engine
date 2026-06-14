@@ -102,9 +102,10 @@ Deno.serve(async (req) => {
     }
     const asaas_customer_id: string = customerJson.id;
 
-    // 5. Create subscription
+    // 5. Create subscription — first charge after 7-day trial
     const today = new Date();
-    const nextDueDate = today.toISOString().slice(0, 10);
+    const trialEndsAt = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextDueDate = trialEndsAt.toISOString().slice(0, 10);
     const value = PLAN_VALUES[plano];
 
     const subRes = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
