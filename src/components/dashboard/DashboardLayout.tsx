@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardBreadcrumb } from "./DashboardBreadcrumb";
@@ -17,6 +18,7 @@ import BrandProfileModal from "./BrandProfileModal";
 import BrandProfileReminderBanner from "./BrandProfileReminderBanner";
 import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
+import { useSubscriptionGate } from "@/components/ProtectedRoute";
 
 
 
