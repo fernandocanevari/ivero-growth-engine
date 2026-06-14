@@ -167,9 +167,10 @@ Deno.serve(async (req) => {
       asaas_customer_id,
       asaas_subscription_id,
       plano,
-      status: "pendente",
+      status: "trial",
       data_inicio: dataInicio.toISOString(),
       data_vencimento: dataVencimento.toISOString(),
+      trial_ends_at: trialEndsAt.toISOString(),
     });
 
     if (insertError) {
