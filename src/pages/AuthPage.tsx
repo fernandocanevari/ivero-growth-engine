@@ -24,6 +24,9 @@ export default function AuthPage() {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState(prefEmail);
   const [password, setPassword] = useState("");
+  const [nomeCompleto, setNomeCompleto] = useState(prefName);
+  const [nomeEmpresa, setNomeEmpresa] = useState("");
+  const [celular, setCelular] = useState(prefPhone ? formatPhoneBR(prefPhone) : "");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [staleSessionCleared, setStaleSessionCleared] = useState(false);
