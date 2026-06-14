@@ -344,6 +344,46 @@ export default function AuthPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {!isLogin && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Nome completo</Label>
+                      <Input
+                        type="text"
+                        required
+                        maxLength={100}
+                        value={nomeCompleto}
+                        onChange={(e) => setNomeCompleto(e.target.value)}
+                        placeholder="Seu nome completo"
+                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Nome da empresa</Label>
+                      <Input
+                        type="text"
+                        required
+                        maxLength={100}
+                        value={nomeEmpresa}
+                        onChange={(e) => setNomeEmpresa(e.target.value)}
+                        placeholder="Nome da sua empresa"
+                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Celular</Label>
+                      <Input
+                        type="tel"
+                        required
+                        maxLength={16}
+                        value={celular}
+                        onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
+                        placeholder="(11) 99999-9999"
+                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
                   <Label className="text-foreground">Email</Label>
                   <Input
