@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
 import { identifyUser, track } from "@/lib/analytics";
+import { formatPhoneBR } from "@/lib/format-phone";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ export default function AuthPage() {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState(prefEmail);
   const [password, setPassword] = useState("");
+  const [nomeCompleto, setNomeCompleto] = useState(prefName);
+  const [nomeEmpresa, setNomeEmpresa] = useState("");
+  const [celular, setCelular] = useState(prefPhone ? formatPhoneBR(prefPhone) : "");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [staleSessionCleared, setStaleSessionCleared] = useState(false);
@@ -50,6 +54,26 @@ export default function AuthPage() {
     }
   };
 
+  // Helper: persist the extra signup fields (nome_completo, nome_empresa, celular) on the profile row
+  const persistProfileExtras = async (
+    userId: string,
+    extras: { nome_completo: string; nome_empresa: string; celular: string }
+  ) => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({
+          nome_completo: extras.nome_completo,
+          nome_empresa: extras.nome_empresa,
+          celular: extras.celular,
+          display_name: extras.nome_completo || undefined,
+        } as any)
+        .eq("user_id", userId);
+    } catch (err) {
+      console.warn("[AuthPage] Failed to persist profile extras:", err);
+    }
+  };
+
   // Helper: redirect after auth based on first-login flag
   const redirectAfterAuth = async (userId: string) => {
     try {
@@ -67,6 +91,8 @@ export default function AuthPage() {
   useEffect(() => {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
+    // Extras collected at signup time, persisted to profiles once the session arrives
+    let pendingSignupExtras: { nome_completo: string; nome_empresa: string; celular: string } | null = null;
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
@@ -77,13 +103,26 @@ export default function AuthPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) return;
+      const isPendingSignup = event === "SIGNED_IN" && pendingSignupForUserId === session.user.id;
       // If we just signed up with prefilled lead data, run the upsert before navigating
-      if (event === "SIGNED_IN" && pendingSignupForUserId === session.user.id && hasPrefilledLead) {
+      if (isPendingSignup && hasPrefilledLead) {
         // Defer to avoid awaiting inside the auth callback (prevents deadlocks)
         setTimeout(() => {
           persistBrandFromLead(session.user.id, session.user.email || email);
         }, 0);
+      }
+      if (isPendingSignup && pendingSignupExtras) {
+        const extras = pendingSignupExtras;
+        setTimeout(() => {
+          persistProfileExtras(session.user.id, extras);
+        }, 0);
+      }
+      if (isPendingSignup) {
         pendingSignupForUserId = null;
+        pendingSignupExtras = null;
+        // After signup the user always goes to plan selection
+        navigate("/escolher-plano", { replace: true });
+        return;
       }
       if (isMatchingUser(session.user.email)) {
         redirectAfterAuth(session.user.id);
@@ -91,8 +130,11 @@ export default function AuthPage() {
       // else: stale session from another user — wait for them to sign up/in
     });
 
-    // Expose setter so handleSubmit can mark a pending signup
+    // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string; celular: string }) => {
+      pendingSignupExtras = extras;
+    };
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return;
@@ -110,6 +152,7 @@ export default function AuthPage() {
     return () => {
       subscription.unsubscribe();
       delete (window as any).__iveroPendingSignup;
+      delete (window as any).__iveroPendingSignupExtras;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
@@ -124,13 +167,21 @@ export default function AuthPage() {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       }
     } else {
+      const extras = {
+        nome_completo: nomeCompleto.trim(),
+        nome_empresa: nomeEmpresa.trim(),
+        celular: celular.trim(),
+      };
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin + "/dashboard",
+          emailRedirectTo: window.location.origin + "/escolher-plano",
           data: {
-            display_name: prefName || email.split("@")[0],
+            display_name: extras.nome_completo || prefName || email.split("@")[0],
+            nome_completo: extras.nome_completo,
+            nome_empresa: extras.nome_empresa,
+            celular: extras.celular,
           },
         },
       });
@@ -138,12 +189,16 @@ export default function AuthPage() {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
         const userId = data.user?.id;
-        // If the session was returned synchronously, persist immediately.
-        if (userId && data.session && hasPrefilledLead) {
-          await persistBrandFromLead(userId, email);
-        } else if (userId && hasPrefilledLead) {
-          // Otherwise mark this user as pending so the auth state listener runs the upsert
+        // If the session was returned synchronously, persist immediately and redirect.
+        if (userId && data.session) {
+          if (hasPrefilledLead) {
+            await persistBrandFromLead(userId, email);
+          }
+          await persistProfileExtras(userId, extras);
+        } else if (userId) {
+          // Otherwise mark this user as pending so the auth state listener runs the upserts
           (window as any).__iveroPendingSignup?.(userId);
+          (window as any).__iveroPendingSignupExtras?.(extras);
         }
         // Funnel step 4: signup completed. Alias the lead's email-identity
         // to the new auth.users.id so the full pre-signup journey stays attached.
@@ -158,13 +213,17 @@ export default function AuthPage() {
         toast({
           title: data.session ? "Conta criada!" : "Cadastro realizado!",
           description: data.session
-            ? "Bem-vindo ao seu dashboard executivo."
-            : "Verifique seu email para confirmar e acessar o dashboard.",
+            ? "Escolha seu plano para começar."
+            : "Verifique seu email para confirmar e escolher seu plano.",
         });
+        if (userId && data.session) {
+          navigate("/escolher-plano", { replace: true });
+        }
       }
     }
     setLoading(false);
   };
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -285,6 +344,46 @@ export default function AuthPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {!isLogin && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Nome completo</Label>
+                      <Input
+                        type="text"
+                        required
+                        maxLength={100}
+                        value={nomeCompleto}
+                        onChange={(e) => setNomeCompleto(e.target.value)}
+                        placeholder="Seu nome completo"
+                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Nome da empresa</Label>
+                      <Input
+                        type="text"
+                        required
+                        maxLength={100}
+                        value={nomeEmpresa}
+                        onChange={(e) => setNomeEmpresa(e.target.value)}
+                        placeholder="Nome da sua empresa"
+                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Celular</Label>
+                      <Input
+                        type="tel"
+                        required
+                        maxLength={16}
+                        value={celular}
+                        onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
+                        placeholder="(11) 99999-9999"
+                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
                   <Label className="text-foreground">Email</Label>
                   <Input

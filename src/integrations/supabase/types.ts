@@ -495,26 +495,35 @@ export type Database = {
       }
       profiles: {
         Row: {
+          celular: string | null
           created_at: string
           display_name: string | null
           id: string
           is_first_login: boolean
+          nome_completo: string | null
+          nome_empresa: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          celular?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           is_first_login?: boolean
+          nome_completo?: string | null
+          nome_empresa?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          celular?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           is_first_login?: boolean
+          nome_completo?: string | null
+          nome_empresa?: string | null
           updated_at?: string
           user_id?: string
         }
