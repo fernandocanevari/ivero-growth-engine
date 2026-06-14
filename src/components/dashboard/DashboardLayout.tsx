@@ -24,8 +24,11 @@ import { useSubscriptionGate } from "@/components/ProtectedRoute";
 
 
 export default function DashboardLayout() {
+  const {Project memory: Do not store file paths or code structure. When unsure, save it.
   const { isPaid, isAdmin } = useSubscriptionStatus();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
   const [userId, setUserId] = useState<string | null>(null);
   const [brandModalDismissed, setBrandModalDismissed] = useState(false);
   const { hasDiagnostic } = useHasDiagnostic();
