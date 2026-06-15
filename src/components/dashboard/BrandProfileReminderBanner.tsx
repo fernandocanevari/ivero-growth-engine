@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_PREFIX = "ivero_brand_profile_reminder:";
@@ -70,7 +70,7 @@ export default function BrandProfileReminderBanner({ onOpenModal }: Props) {
       className="flex items-start gap-3 rounded-lg bg-[#F0EFFE] border-l-[3px] border-[#6C5CE7] px-4 py-3 mb-4"
       role="status"
     >
-      <Sparkles size={20} className="text-[#6C5CE7] mt-0.5 flex-shrink-0" />
+      
       <div className="flex-1 min-w-0">
         <p className="text-sm text-[#1A1A2E] leading-relaxed">
           Suas recomendações ainda não estão personalizadas. Complete o{" "}

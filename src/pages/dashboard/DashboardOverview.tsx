@@ -134,18 +134,13 @@ export default function DashboardOverview() {
       <motion.div {...fade} transition={{ delay: 0.07 }}>
         <Card className="border-[#6C5CE7]/30 bg-gradient-to-br from-[#F0EFFE] to-transparent">
           <CardContent className="p-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-[#6C5CE7]/10 flex items-center justify-center shrink-0">
-                <Sparkles className="h-5 w-5 text-[#6C5CE7]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">Perfil da Marca</p>
-                <p className="text-xs text-muted-foreground">
-                  {hasCompletedBrandProfile
-                    ? "Suas respostas estratégicas estão salvas. Revise quando quiser."
-                    : "Responda 3 perguntas rápidas para personalizar suas recomendações."}
-                </p>
-              </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">Perfil da Marca</p>
+              <p className="text-xs text-muted-foreground">
+                {hasCompletedBrandProfile
+                  ? "Suas respostas estratégicas estão salvas. Revise quando quiser."
+                  : "Responda 3 perguntas rápidas para personalizar suas recomendações."}
+              </p>
             </div>
             <Button
               size="sm"
