@@ -15,12 +15,13 @@ import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
 
-const MODELS_ACTIVE: string[] = ["OpenAI", "Gemini", "Google Modo IA"];
+const MODELS_ACTIVE: string[] = ["OpenAI", "Gemini", "Google Modo IA", "Claude"];
 
 const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
-  OpenAI: { icon: Cpu, desc: "ChatGPT (GPT-4o Mini) via API OpenAI" },
-  Gemini: { icon: Globe, desc: "Google Gemini 2.5 Flash Lite" },
-  "Google Modo IA": { icon: Globe, desc: "Gemini 2.5 Flash Lite com grounding de busca em tempo real", badge: "Novo" },
+  OpenAI: { icon: Cpu, desc: "" },
+  Gemini: { icon: Globe, desc: "" },
+  "Google Modo IA": { icon: Globe, desc: "", badge: "Novo" },
+  Claude: { icon: Cpu, desc: "" },
 };
 
 
