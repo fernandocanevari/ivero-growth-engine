@@ -273,8 +273,8 @@ export default function AuthPage() {
       </div>
 
       {/* Right panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 flex items-start lg:items-center justify-center px-6 py-8 sm:px-12 sm:py-10 bg-background overflow-y-auto">
+        <div className="w-full max-w-md space-y-6">
           <div className="lg:hidden text-center">
             <h1 className="text-2xl font-display font-bold text-gradient">Ivero</h1>
           </div>
