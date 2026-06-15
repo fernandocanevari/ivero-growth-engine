@@ -28,6 +28,8 @@ export default function DashboardOverview() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = useBrandSettings();
   const { hasDiagnostic, isLoading: loadingDiag } = useHasDiagnostic();
+  const { hasCompletedBrandProfile } = useBrandProfile();
+  const [brandModalOpen, setBrandModalOpen] = useState(false);
 
   // Determine what data the client has configured
   const hasBrand = !!settings?.brand_name;
