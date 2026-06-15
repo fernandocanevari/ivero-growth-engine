@@ -245,7 +245,7 @@ export default function ConfiguracoesPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{meta.desc}</p>
+                    {meta.desc && <p className="text-xs text-muted-foreground mt-0.5">{meta.desc}</p>}
                   </div>
                 </div>
               );
