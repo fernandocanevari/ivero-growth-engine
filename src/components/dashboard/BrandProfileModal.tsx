@@ -130,8 +130,7 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
               >
                 <X size={18} />
               </button>
-              <div className="flex items-center gap-3 mb-2">
-                <Sparkles className="text-[#6C5CE7]" size={28} strokeWidth={1.75} />
+              <div className="mb-2">
                 <h2 className="text-[22px] font-medium text-[#1A1A2E] leading-tight">
                   Vamos personalizar sua experiência
                 </h2>
