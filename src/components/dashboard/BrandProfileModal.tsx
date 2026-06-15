@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, CircleCheck, ArrowRight, ArrowLeft, X } from "lucide-react";
+import { CircleCheck, ArrowRight, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useBrandProfile, BrandProfileAnswers } from "@/hooks/useBrandProfile";
