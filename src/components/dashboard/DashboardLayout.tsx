@@ -68,11 +68,12 @@ export default function DashboardLayout() {
   // Perfil da Marca: abre automaticamente após o 1º diagnóstico, se ainda não preenchido
   // e o usuário não pediu para adiar (skippedRecently = últimos 3 dias).
   const showBrandModal =
-    !brandLoading &&
-    hasDiagnostic === true &&
-    !hasCompletedBrandProfile &&
-    !skippedRecently &&
-    !brandModalDismissed;
+    brandModalForceOpen ||
+    (!brandLoading &&
+      hasDiagnostic === true &&
+      !hasCompletedBrandProfile &&
+      !skippedRecently &&
+      !brandModalDismissed);
 
   const gracePeriodDate = carenciaAte
     ? new Date(carenciaAte).toLocaleDateString("pt-BR", {
