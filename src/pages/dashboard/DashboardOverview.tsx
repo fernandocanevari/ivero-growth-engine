@@ -396,6 +396,8 @@ export default function DashboardOverview() {
           </div>
         </div>
       </motion.section>
+
+      {brandModalOpen && <BrandProfileModal onClose={() => setBrandModalOpen(false)} />}
     </div>
   );
 }
