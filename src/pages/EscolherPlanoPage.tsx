@@ -141,9 +141,16 @@ const EscolherPlanoPage = () => {
       if (entry) planName = entry[0];
     }
 
-    if (PLAN_SLUG_MAP[planName]) {
-      handlePlanClick(planName);
-      localStorage.removeItem("ivero_selected_plan");
+    const slug = PLAN_SLUG_MAP[planName];
+    if (slug) {
+      const el = document.getElementById(`plan-card-${slug}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      setTimeout(() => {
+        handlePlanClick(planName);
+        localStorage.removeItem("ivero_selected_plan");
+      }, 400);
     }
   }, [checking]);
 
