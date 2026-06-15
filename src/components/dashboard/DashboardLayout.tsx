@@ -31,6 +31,7 @@ export default function DashboardLayout() {
   const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
   const [userId, setUserId] = useState<string | null>(null);
   const [brandModalDismissed, setBrandModalDismissed] = useState(false);
+  const [brandModalForceOpen, setBrandModalForceOpen] = useState(false);
   const { hasDiagnostic } = useHasDiagnostic();
   const { hasCompletedBrandProfile, skippedRecently, shouldRemind, isLoading: brandLoading } =
     useBrandProfile();
