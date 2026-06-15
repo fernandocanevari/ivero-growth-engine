@@ -31,6 +31,7 @@ export default function DashboardLayout() {
   const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
   const [userId, setUserId] = useState<string | null>(null);
   const [brandModalDismissed, setBrandModalDismissed] = useState(false);
+  const [brandModalForceOpen, setBrandModalForceOpen] = useState(false);
   const { hasDiagnostic } = useHasDiagnostic();
   const { hasCompletedBrandProfile, skippedRecently, shouldRemind, isLoading: brandLoading } =
     useBrandProfile();
@@ -67,11 +68,12 @@ export default function DashboardLayout() {
   // Perfil da Marca: abre automaticamente após o 1º diagnóstico, se ainda não preenchido
   // e o usuário não pediu para adiar (skippedRecently = últimos 3 dias).
   const showBrandModal =
-    !brandLoading &&
-    hasDiagnostic === true &&
-    !hasCompletedBrandProfile &&
-    !skippedRecently &&
-    !brandModalDismissed;
+    brandModalForceOpen ||
+    (!brandLoading &&
+      hasDiagnostic === true &&
+      !hasCompletedBrandProfile &&
+      !skippedRecently &&
+      !brandModalDismissed);
 
   const gracePeriodDate = carenciaAte
     ? new Date(carenciaAte).toLocaleDateString("pt-BR", {
@@ -128,7 +130,10 @@ export default function DashboardLayout() {
               <>
                 {shouldRemind && !showBrandModal && (
                   <BrandProfileReminderBanner
-                    onOpenModal={() => setBrandModalDismissed(false)}
+                    onOpenModal={() => {
+                      setBrandModalDismissed(false);
+                      setBrandModalForceOpen(true);
+                    }}
                   />
                 )}
                 <Outlet />
@@ -138,7 +143,12 @@ export default function DashboardLayout() {
         </div>
       </div>
       {showBrandModal && (
-        <BrandProfileModal onClose={() => setBrandModalDismissed(true)} />
+        <BrandProfileModal
+          onClose={() => {
+            setBrandModalDismissed(true);
+            setBrandModalForceOpen(false);
+          }}
+        />
       )}
       <SupportWidget />
     </SidebarProvider>
