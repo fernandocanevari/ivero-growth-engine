@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap, Settings, BarChart3, Bell, Search, Target, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap, Settings, BarChart3, Bell, Search, Target, Brain, Sparkles } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +13,14 @@ import {
 } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
+import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { OnboardingChecklistCard } from "@/components/dashboard/OnboardingChecklistCard";
 import { OnboardingStepper } from "@/components/dashboard/OnboardingStepper";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { WELCOME_FEATURES } from "@/lib/welcome-features";
 import { FeatureHighlightCard } from "@/components/welcome/FeatureHighlightCard";
+import BrandProfileModal from "@/components/dashboard/BrandProfileModal";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
