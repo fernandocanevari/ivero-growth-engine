@@ -130,6 +130,23 @@ const EscolherPlanoPage = () => {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    if (checking) return;
+    const stored = localStorage.getItem("ivero_selected_plan");
+    if (!stored) return;
+
+    let planName = stored;
+    if (!PLAN_SLUG_MAP[stored]) {
+      const entry = Object.entries(PLAN_SLUG_MAP).find(([, slug]) => slug === stored);
+      if (entry) planName = entry[0];
+    }
+
+    if (PLAN_SLUG_MAP[planName]) {
+      handlePlanClick(planName);
+      localStorage.removeItem("ivero_selected_plan");
+    }
+  }, [checking]);
+
   const handlePlanClick = (planName: string) => {
     const plano = PLAN_SLUG_MAP[planName];
     if (!plano) return;
