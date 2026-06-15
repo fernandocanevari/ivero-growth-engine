@@ -14,14 +14,33 @@ export function useSubscriptionStatus() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [assinaturaLoading, setAssinaturaLoading] = useState(true);
   const [assinatura, setAssinatura] = useState<AssinaturaRow | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Track auth user (server-validated) and react to login/logout
+  useEffect(() => {
+    let cancelled = false;
+
+    const sync = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!cancelled) setUserId(data.user?.id ?? null);
+    };
+    sync();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const fetchAssinatura = async () => {
       setAssinaturaLoading(true);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
 
       if (!userId) {
         if (!cancelled) {
@@ -50,7 +69,7 @@ export function useSubscriptionStatus() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   const isLoading = roleLoading || assinaturaLoading;
 
