@@ -1,17 +1,44 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useUserRole() {
-  const query = useQuery({
-    queryKey: ["user_roles"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+  const queryClient = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
 
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setUserId(data.session?.user?.id ?? null);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const newId = session?.user?.id ?? null;
+      setUserId((prev) => {
+        if (prev !== newId) {
+          queryClient.invalidateQueries({ queryKey: ["user_roles"] });
+          queryClient.invalidateQueries({ queryKey: ["assinaturas"] });
+        }
+        return newId;
+      });
+    });
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [queryClient]);
+
+  const query = useQuery({
+    queryKey: ["user_roles", userId],
+    enabled: userId !== null,
+    queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (error) throw error;
       return (data ?? []).map((r) => r.role);
@@ -21,6 +48,6 @@ export function useUserRole() {
   return {
     roles: query.data ?? [],
     isAdmin: (query.data ?? []).includes("admin"),
-    isLoading: query.isLoading,
+    isLoading: userId !== null && query.isLoading,
   };
 }
