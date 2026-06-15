@@ -81,7 +81,8 @@ export function useBrandProfile() {
   const hasCompletedBrandProfile = !!data?.completed;
   const skippedAt = data?.skipped_at ? new Date(data.skipped_at).getTime() : 0;
   const skippedRecently = skippedAt > 0 && Date.now() - skippedAt < THREE_DAYS_MS;
-  const shouldRemind = !hasCompletedBrandProfile && skippedAt > 0 && !skippedRecently;
+  // Lembra sempre que o perfil não está completo e o usuário não pediu para adiar nos últimos 3 dias.
+  const shouldRemind = !hasCompletedBrandProfile && !skippedRecently;
 
   return {
     data,
