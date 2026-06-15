@@ -273,8 +273,8 @@ export default function AuthPage() {
       </div>
 
       {/* Right panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 flex items-start lg:items-center justify-center px-6 py-8 sm:px-12 sm:py-10 bg-background overflow-y-auto">
+        <div className="w-full max-w-md space-y-6">
           <div className="lg:hidden text-center">
             <h1 className="text-2xl font-display font-bold text-gradient">Ivero</h1>
           </div>
@@ -293,7 +293,7 @@ export default function AuthPage() {
                 <p className="text-muted-foreground">Informe seu email para receber o link de redefinição.</p>
               </div>
 
-              <form onSubmit={handleForgotPassword} className="space-y-5">
+              <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-foreground">Email</Label>
                   <Input
@@ -302,10 +302,10 @@ export default function AuthPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com"
-                    className="h-12 bg-secondary/50 border-border focus:border-primary"
+                    className="h-11 bg-secondary/50 border-border focus:border-primary"
                   />
                 </div>
-                <Button type="submit" variant="hero" className="w-full h-12 text-base" disabled={loading}>
+                <Button type="submit" variant="hero" className="w-full h-11 text-base" disabled={loading}>
                   {loading ? "Enviando..." : "Enviar link de recuperação"}
                 </Button>
               </form>
@@ -343,7 +343,7 @@ export default function AuthPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
                   <>
                     <div className="space-y-2">
@@ -355,7 +355,7 @@ export default function AuthPage() {
                         value={nomeCompleto}
                         onChange={(e) => setNomeCompleto(e.target.value)}
                         placeholder="Seu nome completo"
-                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                        className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -367,7 +367,7 @@ export default function AuthPage() {
                         value={nomeEmpresa}
                         onChange={(e) => setNomeEmpresa(e.target.value)}
                         placeholder="Nome da sua empresa"
-                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                        className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -379,7 +379,7 @@ export default function AuthPage() {
                         value={celular}
                         onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
                         placeholder="(11) 99999-9999"
-                        className="h-12 bg-secondary/50 border-border focus:border-primary"
+                        className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
                   </>
@@ -392,7 +392,7 @@ export default function AuthPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com"
-                    className="h-12 bg-secondary/50 border-border focus:border-primary"
+                    className="h-11 bg-secondary/50 border-border focus:border-primary"
                   />
                 </div>
                 <div className="space-y-2">
@@ -416,7 +416,7 @@ export default function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="h-12 bg-secondary/50 border-border focus:border-primary pr-12"
+                      className="h-11 bg-secondary/50 border-border focus:border-primary pr-12"
                     />
                     <button
                       type="button"
@@ -428,7 +428,7 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full h-12 text-base" disabled={loading}>
+                <Button type="submit" variant="hero" className="w-full h-11 text-base" disabled={loading}>
                   {loading ? "Aguarde..." : (
                     <>
                       {isLogin ? "Entrar" : "Criar conta"}
