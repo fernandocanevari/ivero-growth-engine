@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_PREFIX = "ivero_brand_profile_reminder:";
