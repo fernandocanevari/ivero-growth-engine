@@ -54,8 +54,17 @@ import TermosDeUsoPage from "./pages/TermosDeUsoPage";
 import SobrePage from "./pages/SobrePage";
 import IveroAnalysisPage from "./pages/IveroAnalysisPage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
+
+// Clear cached per-user queries (roles, subscription, etc.) whenever auth state
+// changes so admin data does not leak across login sessions in the same tab.
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT" || event === "SIGNED_IN" || event === "USER_UPDATED") {
+    queryClient.clear();
+  }
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
