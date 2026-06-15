@@ -502,6 +502,7 @@ export type Database = {
           is_first_login: boolean
           nome_completo: string | null
           nome_empresa: string | null
+          site_url: string | null
           updated_at: string
           user_id: string
         }
@@ -513,6 +514,7 @@ export type Database = {
           is_first_login?: boolean
           nome_completo?: string | null
           nome_empresa?: string | null
+          site_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -524,6 +526,7 @@ export type Database = {
           is_first_login?: boolean
           nome_completo?: string | null
           nome_empresa?: string | null
+          site_url?: string | null
           updated_at?: string
           user_id?: string
         }
