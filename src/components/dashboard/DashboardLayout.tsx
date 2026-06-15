@@ -130,7 +130,10 @@ export default function DashboardLayout() {
               <>
                 {shouldRemind && !showBrandModal && (
                   <BrandProfileReminderBanner
-                    onOpenModal={() => setBrandModalDismissed(false)}
+                    onOpenModal={() => {
+                      setBrandModalDismissed(false);
+                      setBrandModalForceOpen(true);
+                    }}
                   />
                 )}
                 <Outlet />
@@ -140,7 +143,12 @@ export default function DashboardLayout() {
         </div>
       </div>
       {showBrandModal && (
-        <BrandProfileModal onClose={() => setBrandModalDismissed(true)} />
+        <BrandProfileModal
+          onClose={() => {
+            setBrandModalDismissed(true);
+            setBrandModalForceOpen(false);
+          }}
+        />
       )}
       <SupportWidget />
     </SidebarProvider>
