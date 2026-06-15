@@ -138,7 +138,7 @@ const BemVindoPage = () => {
                 className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
                 onClick={() => navigate("/dashboard")}
               >
-                Ir para o dashboard
+                Ir Para o Dashboard
               </Button>
             </motion.div>
           )}
