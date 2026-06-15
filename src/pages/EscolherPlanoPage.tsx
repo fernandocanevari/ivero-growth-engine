@@ -261,6 +261,7 @@ const EscolherPlanoPage = () => {
             const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
             return (
               <motion.div
+                id={`plan-card-${PLAN_SLUG_MAP[plan.name]}`}
                 key={plan.name}
                 initial={{ opacity: 0, y: 24, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
