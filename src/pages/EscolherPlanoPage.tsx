@@ -292,11 +292,7 @@ const EscolherPlanoPage = () => {
                   </div>
 
                   <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-4 sm:pb-5 flex flex-col flex-1">
-                    {/* Trial badge */}
-                    <div className="mb-3 inline-flex items-center justify-center gap-1.5 self-start px-2.5 py-1 rounded-md bg-accent/10 border border-accent/30 text-accent text-[11px] font-bold">
-                      <Sparkles className="w-3 h-3" />
-                      7 dias grátis — sem cobrança imediata
-                    </div>
+
 
                     <div className="mb-3 min-h-[48px] sm:min-h-[52px] flex flex-col justify-start gap-1">
                       <div className="flex items-baseline gap-1">
