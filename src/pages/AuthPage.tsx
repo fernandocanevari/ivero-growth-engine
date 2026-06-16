@@ -18,6 +18,8 @@ export default function AuthPage() {
   const prefName = searchParams.get("name") || "";
   const prefSite = searchParams.get("site") || "";
   const prefPhone = searchParams.get("phone") || "";
+  const redirectParam = searchParams.get("redirect") || "";
+  const safeRedirect = redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "";
   const initialMode = (searchParams.get("mode") || (typeof window !== "undefined" && window.location.pathname === "/signup" ? "signup" : "login")).toLowerCase();
 
   const [isLogin, setIsLogin] = useState(initialMode !== "signup");
@@ -76,6 +78,11 @@ export default function AuthPage() {
 
   // Helper: redirect after auth based on first-login flag
   const redirectAfterAuth = async (userId: string) => {
+    if (safeRedirect) {
+      navigate(safeRedirect, { replace: true });
+      return;
+    }
+
     try {
       const { data } = await supabase
         .from("profiles")

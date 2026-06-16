@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 type SubscriptionGateContextValue = {
@@ -33,6 +33,7 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
     carenciaAte: null,
   });
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +43,8 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
         if (!cancelled) {
           setAuthorized(false);
           setLoading(false);
-          navigate("/auth", { replace: true });
+          const redirectTo = `${location.pathname}${location.search}`;
+          navigate(`/auth?redirect=${encodeURIComponent(redirectTo)}`, { replace: true });
         }
         return;
       }
@@ -139,7 +141,7 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [navigate, requireSubscription]);
+  }, [location.pathname, location.search, navigate, requireSubscription]);
 
   if (loading) {
     return (
