@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
               .select("is_first_login")
               .eq("user_id", user.id)
               .maybeSingle();
-            navigate(data?.is_first_login ? "/welcome" : "/dashboard", { replace: true });
+            navigate(data?.is_first_login ? "/bem-vindo" : "/dashboard", { replace: true });
             return;
           }
         } catch {/* fall through */}
