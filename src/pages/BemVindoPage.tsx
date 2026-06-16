@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useBrandProfile, BrandProfileAnswers } from "@/hooks/useBrandProfile";
+import { useUserRole } from "@/hooks/useUserRole";
 
 type Status = "loading" | "active" | "pending";
 
@@ -257,6 +258,7 @@ function BrandProfileInline({
 
 const BemVindoPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
   const [status, setStatus] = useState<Status>("loading");
   const [userId, setUserId] = useState<string | null>(null);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
@@ -376,9 +378,9 @@ const BemVindoPage = () => {
                 variant="outline"
                 size="lg"
                 className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate(isAdmin ? "/admin" : "/dashboard")}
               >
-                Ir Para o Dashboard
+                {isAdmin ? "Ir para o Painel Administrativo" : "Ir Para o Dashboard"}
               </Button>
             </motion.div>
           </div>
