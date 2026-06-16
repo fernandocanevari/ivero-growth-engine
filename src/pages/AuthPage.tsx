@@ -138,15 +138,12 @@ export default function AuthPage() {
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return;
-      if (cameFromLeadGate && !isMatchingUser(session.user.email)) {
-        // Stale session belongs to a different user — sign out so the lead
-        // sees the actual signup form instead of being thrown into someone
-        // else's dashboard.
-        await supabase.auth.signOut();
-        setStaleSessionCleared(true);
-        return;
-      }
-      redirectAfterAuth(session.user.id);
+      // Always force a clean login when the user explicitly opens /auth.
+      // This prevents stale sessions (e.g. a previous admin or another
+      // account) from silently bouncing the user into someone else's
+      // dashboard without ever showing the login form.
+      await supabase.auth.signOut();
+      setStaleSessionCleared(true);
     });
 
     return () => {
