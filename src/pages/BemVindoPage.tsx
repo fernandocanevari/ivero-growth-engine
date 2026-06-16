@@ -306,7 +306,7 @@ const BemVindoPage = () => {
           .limit(1)
           .maybeSingle();
 
-        if (data?.status === "ativo") {
+        if (data?.status === "ativo" || data?.status === "trial") {
           if (!cancelled) setStatus("active");
           return;
         }
