@@ -89,7 +89,7 @@ export default function AuthPage() {
         .select("is_first_login")
         .eq("user_id", userId)
         .maybeSingle();
-      navigate(data?.is_first_login ? "/welcome" : "/dashboard", { replace: true });
+      navigate(data?.is_first_login ? "/bem-vindo" : "/dashboard", { replace: true });
     } catch {
       navigate("/dashboard", { replace: true });
     }
