@@ -378,9 +378,9 @@ const BemVindoPage = () => {
                 variant="outline"
                 size="lg"
                 className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate(isAdmin ? "/admin" : "/dashboard")}
               >
-                Ir Para o Dashboard
+                {isAdmin ? "Ir para o Painel Administrativo" : "Ir Para o Dashboard"}
               </Button>
             </motion.div>
           </div>
