@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useBrandProfile, BrandProfileAnswers } from "@/hooks/useBrandProfile";
+import { useUserRole } from "@/hooks/useUserRole";
 
 type Status = "loading" | "active" | "pending";
 
