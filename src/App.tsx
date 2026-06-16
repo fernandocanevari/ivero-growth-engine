@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import PreviewPage from "./pages/PreviewPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import WelcomePage from "./pages/WelcomePage";
 import BemVindoPage from "./pages/BemVindoPage";
 import EscolherPlanoPage from "./pages/EscolherPlanoPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -90,7 +89,7 @@ const App = () => (
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/analise-ivero" element={<IveroAnalysisPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
-          <Route path="/welcome" element={<ProtectedRoute requireSubscription={false}><WelcomePage /></ProtectedRoute>} />
+          <Route path="/welcome" element={<ProtectedRoute requireSubscription={false}><BemVindoPage /></ProtectedRoute>} />
           <Route path="/bem-vindo" element={<ProtectedRoute requireSubscription={false}><BemVindoPage /></ProtectedRoute>} />
           <Route path="/escolher-plano" element={<ProtectedRoute requireSubscription={false}><EscolherPlanoPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
