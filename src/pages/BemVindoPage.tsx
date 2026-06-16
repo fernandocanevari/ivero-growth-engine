@@ -258,6 +258,7 @@ function BrandProfileInline({
 
 const BemVindoPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
   const [status, setStatus] = useState<Status>("loading");
   const [userId, setUserId] = useState<string | null>(null);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
