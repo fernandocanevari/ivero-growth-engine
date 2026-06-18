@@ -516,16 +516,6 @@ const InvestSection = () => {
                 disabled={submitting}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="checkout-cpfcnpj">CPF ou CNPJ</Label>
-              <Input
-                id="checkout-cpfcnpj"
-                value={cpfCnpj}
-                onChange={(e) => setCpfCnpj(e.target.value)}
-                placeholder="Somente números"
-                disabled={submitting}
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button onClick={handleConfirmCheckout} disabled={submitting} className="w-full">
