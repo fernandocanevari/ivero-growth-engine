@@ -1,29 +1,101 @@
-### Objective
-Restore Claude as an active model in the `simulate-ai` edge function.
 
-### Changes
+# Feature gating por plano (Presença / Influência / Autoridade)
 
-1. **Reactivate Claude config** (`supabase/functions/simulate-ai/index.ts`, lines 61–64)
-   - Replace the disabled comment block + `void claudeKey;` with an active `if (claudeKey)` block that pushes a ModelConfig into the `configs` array.
-   - Configuration:
-     - `name`: `"Claude"`
-     - `url`: `"https://api.anthropic.com/v1/messages"`
-     - `model`: `"claude-haiku-4-5-20251001"`
-     - `getHeaders`: returns `{"x-api-key": claudeKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}`
-     - `parseResponse`: `(data) => data.content?.[0]?.text ?? ""`
-   - The existing Anthropic payload logic (lines 209–216) already handles `config.name === "Claude"`, so no changes needed there.
+Implementação respeitando as regras de preservação: nada é renomeado, movido ou refatorado. Apenas estendemos os arquivos existentes e adicionamos um novo componente `FeatureGate`.
 
-2. **Standardize model ID** (`supabase/functions/simulate-ai/index.ts`)
-   - Replace any occurrence of `"claude-3-5-haiku-latest"` with `"claude-haiku-4-5-20251001"`.
-   - *(Audit note: this string was not found in the current file, but the check ensures consistency.)*
+## 1. `src/lib/access-control.ts` — estender (não reescrever)
 
-3. **Update project memory / comments**
-   - Replace the old disabled-Claude comment (`// (Claude desativado temporariamente — chave Key_antropic_claude sem créditos.)`) with:
-     - `// Claude reativado em Maio/2026 — mesmo modelo usado em ivero-analyze`
-   - Remove the `void claudeKey;` suppression (it becomes the `if (claudeKey)` guard).
+Adicionar, mantendo tudo que já existe (`ALWAYS_ALLOWED`, `isRouteAllowedInTrial`, etc.):
 
-### Files touched
-- `supabase/functions/simulate-ai/index.ts` only.
+- `export type PlanoTier = "presenca" | "influencia" | "autoridade"`
+- `export const TIER_ORDER: PlanoTier[] = ["presenca", "influencia", "autoridade"]`
+- `export const ROUTE_MIN_TIER: Record<string, PlanoTier>` com o mapeamento abaixo
+- `export function isFeatureAvailable(pathname, plano, isPaid, isAdmin, isTrial)` — retorna boolean
+- `export function getRequiredTier(pathname): PlanoTier | null`
+- `export function tierLabel(tier: PlanoTier): string` ("Presença" | "Influência" | "Autoridade")
 
-### Post-change
-- Re-deploy the edge function so the change takes effect.
+Mapeamento de rotas → tier mínimo:
+
+```text
+presenca:
+  /dashboard/score
+  /dashboard/auditorias
+  /dashboard/conteudo          (com cota reduzida — cota já tratada em useGenerationQuota)
+  /dashboard/tags-percepcao
+  /dashboard/monitoramento
+  /dashboard/llms-txt
+
+influencia:
+  /dashboard/dominancia
+  /dashboard/sentimento
+  /dashboard/comparativo
+  /dashboard/pilares
+  /dashboard/campanhas
+
+autoridade:
+  /dashboard/simulador
+  /dashboard/prompts
+  /dashboard/acoes
+  /dashboard/relatorios
+  /dashboard/prompt-tester
+```
+
+`ALWAYS_ALLOWED` (mantém comportamento atual + trial): `/dashboard`, `/dashboard/diagnostico`, `/dashboard/configuracoes`, `/dashboard/assinatura`, `/dashboard/ajuda`, `/dashboard/alertas`.
+
+Regras de `isFeatureAvailable`:
+- `isAdmin` → sempre true
+- rota em `ALWAYS_ALLOWED` → true
+- rota sem entrada em `ROUTE_MIN_TIER` → true (não regredir nada não mapeado)
+- `isTrial` → libera se `plano` do trial atende ao tier (trial espelha o plano escolhido)
+- `isPaid` → compara `TIER_ORDER.indexOf(plano) >= TIER_ORDER.indexOf(required)`
+- caso contrário → false
+
+## 2. `src/hooks/useSubscriptionStatus.ts`
+
+Sem mudanças. Apenas garantir que o `plano` já exposto é usado pelos consumidores (já é).
+
+## 3. Novo: `src/components/dashboard/FeatureGate.tsx`
+
+```text
+- Lê useLocation + useSubscriptionStatus + useUserRole
+- Se isFeatureAvailable(...) → renderiza children
+- Senão → renderiza <TrialLockedPage requiredTier={getRequiredTier(pathname)} />
+- Enquanto loading do hook → null (ou skeleton existente do dashboard)
+```
+
+Nenhum gate é aplicado a rotas admin nem às `ALWAYS_ALLOWED`.
+
+## 4. `src/components/dashboard/TrialLockedPage.tsx` — estender
+
+- Adicionar prop opcional `requiredTier?: PlanoTier`
+- Quando presente: ajustar título/CTA ("Disponível no plano Influência ou superior", botão "Fazer upgrade para Influência") e a lista de features mostrada
+- Sem prop → comportamento atual intacto (usado pelo trial bloqueio geral)
+
+## 5. `src/components/dashboard/DashboardSidebar.tsx` — ajuste mínimo
+
+- Substituir a checagem atual de "locked" (`!isRouteAllowedInTrial`) por:
+  `locked = !isFeatureAvailable(item.path, plano, isPaid, isAdmin, isTrial)`
+- Tooltip do cadeado passa a mostrar o tier exigido via `tierLabel(getRequiredTier(item.path))`
+- Continua usando o mesmo ícone/estilo de cadeado já existente
+
+## 6. `src/App.tsx` — envolver apenas as 15 rotas gated
+
+Para cada uma das rotas listadas em `ROUTE_MIN_TIER`, envolver o elemento da rota com `<FeatureGate>...</FeatureGate>`. Rotas `ALWAYS_ALLOWED`, admin e aninhadas ficam exatamente como estão. `ProtectedRoute` continua envolvendo tudo por fora — sem mudanças nele.
+
+## 7. Tests
+
+- Estender `src/lib/access-control.test.ts` com casos para `isFeatureAvailable` cobrindo:
+  - admin sempre passa
+  - always-allowed sempre passa (inclui `/dashboard/alertas`)
+  - paid plano `presenca` bloqueia `/dashboard/simulador`
+  - paid plano `autoridade` libera `/dashboard/relatorios`
+  - trial com plano `influencia` libera `/dashboard/dominancia` e bloqueia `/dashboard/simulador`
+
+## Componente reutilizado para estado "locked"
+
+Reutilizo `TrialLockedPage` (já existe e segue o design do dashboard). Apenas adiciono a prop opcional `requiredTier` — nenhum componente novo de UI é criado além do `FeatureGate` (que é puramente lógico/roteador).
+
+## Confirmações finais incorporadas
+- `/dashboard/alertas` → `ALWAYS_ALLOWED` (sem gating)
+- `/dashboard/relatorios` → tier `autoridade`
+- Slugs reais usados: `score`, `dominancia`, `comparativo`, `simulador`, `prompts`, `acoes`, `relatorios`

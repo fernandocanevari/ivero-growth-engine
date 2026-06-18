@@ -4,10 +4,16 @@ import { motion } from "framer-motion";
 import { Lock, ArrowRight, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./UpgradeModal";
+import { type PlanoTier, tierLabel } from "@/lib/access-control";
 
 interface TrialLockedPageProps {
   title: string;
   description: string;
+  /**
+   * Quando definido, a tela passa a comunicar "feature exige plano X ou superior"
+   * em vez do bloqueio genérico do trial.
+   */
+  requiredTier?: PlanoTier;
 }
 
 const TRIAL_AVAILABLE = [
@@ -25,9 +31,13 @@ const TRIAL_AVAILABLE = [
  *  - Lista o que JÁ está liberado no trial (reforço positivo)
  *  - CTA primário abre UpgradeModal mantendo o usuário no contexto
  */
-export function TrialLockedPage({ title, description }: TrialLockedPageProps) {
+export function TrialLockedPage({ title, description, requiredTier }: TrialLockedPageProps) {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const tierName = requiredTier ? tierLabel(requiredTier) : null;
+  const badgeLabel = tierName ? `Disponível no plano ${tierName}` : "Recurso premium";
+  const ctaLabel = tierName ? `Fazer upgrade para ${tierName}` : "Ver planos";
+
 
   return (
     <>
@@ -51,8 +61,9 @@ export function TrialLockedPage({ title, description }: TrialLockedPageProps) {
 
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full mb-3">
               <Sparkles className="w-3 h-3" />
-              Recurso premium
+              {badgeLabel}
             </span>
+
 
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
               {title}
@@ -96,7 +107,7 @@ export function TrialLockedPage({ title, description }: TrialLockedPageProps) {
                 className="w-full sm:flex-1"
                 onClick={() => setModalOpen(true)}
               >
-                Ver planos
+                {ctaLabel}
                 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
               <Button
