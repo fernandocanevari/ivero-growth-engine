@@ -107,7 +107,7 @@ export function TrialLockedPage({ title, description, requiredTier }: TrialLocke
                 className="w-full sm:flex-1"
                 onClick={() => setModalOpen(true)}
               >
-                Ver planos
+                {ctaLabel}
                 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
               <Button
