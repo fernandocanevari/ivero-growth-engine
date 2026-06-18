@@ -107,13 +107,13 @@ export function DashboardSidebar() {
   const location = useLocation();
   const { data: settings } = useBrandSettings();
   const { isAdmin } = useUserRole();
-  const { isPaid, isTrial } = useSubscriptionStatus();
+  const { isPaid, isTrial, plano } = useSubscriptionStatus();
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const displayName = settings?.brand_name || "Administrador";
   const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
-  const showLockState = !isPaid && !isAdmin;
+  const showLockState = !isAdmin;
 
   const allGroups = isAdmin ? [...menuGroups, adminGroup] : menuGroups;
 
