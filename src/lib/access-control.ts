@@ -147,3 +147,108 @@ export function getLockedRouteInfo(pathname: string) {
       "Este recurso faz parte dos planos pagos. Faça upgrade para liberar acesso completo.",
   };
 }
+
+// =====================================================================
+// Feature gating por plano (Presença / Influência / Autoridade)
+// =====================================================================
+// Mapeamento explícito de rota -> tier mínimo necessário. Rotas que NÃO
+// aparecem aqui ficam liberadas para qualquer usuário pago (não regredimos
+// nada que já estava acessível). Trial espelha o plano escolhido.
+//
+// ALWAYS_ALLOWED = rotas que ignoram o gating de plano por completo
+// (núcleo do produto + administração da conta + alertas).
+
+export type PlanoTier = "presenca" | "influencia" | "autoridade";
+
+export const TIER_ORDER: readonly PlanoTier[] = [
+  "presenca",
+  "influencia",
+  "autoridade",
+];
+
+const TIER_INDEX: Record<PlanoTier, number> = {
+  presenca: 0,
+  influencia: 1,
+  autoridade: 2,
+};
+
+export const ALWAYS_ALLOWED: readonly string[] = [
+  "/dashboard",
+  "/dashboard/diagnostico",
+  "/dashboard/configuracoes",
+  "/dashboard/assinatura",
+  "/dashboard/ajuda",
+  "/dashboard/alertas",
+];
+
+export const ROUTE_MIN_TIER: Record<string, PlanoTier> = {
+  // Presença
+  "/dashboard/score": "presenca",
+  "/dashboard/auditorias": "presenca",
+  "/dashboard/conteudo": "presenca",
+  "/dashboard/tags-percepcao": "presenca",
+  "/dashboard/monitoramento": "presenca",
+  "/dashboard/llms-txt": "presenca",
+  // Influência
+  "/dashboard/dominancia": "influencia",
+  "/dashboard/sentimento": "influencia",
+  "/dashboard/comparativo": "influencia",
+  "/dashboard/pilares": "influencia",
+  "/dashboard/campanhas": "influencia",
+  // Autoridade
+  "/dashboard/simulador": "autoridade",
+  "/dashboard/prompts": "autoridade",
+  "/dashboard/acoes": "autoridade",
+  "/dashboard/relatorios": "autoridade",
+  "/dashboard/prompt-tester": "autoridade",
+};
+
+function normalizePath(pathname: string): string {
+  return pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
+}
+
+export function getRequiredTier(pathname: string): PlanoTier | null {
+  const path = normalizePath(pathname);
+  if (ROUTE_MIN_TIER[path]) return ROUTE_MIN_TIER[path];
+  // sub-rotas herdam o tier do pai (ex: /dashboard/campanhas/nova)
+  const parent = Object.keys(ROUTE_MIN_TIER).find((k) =>
+    path.startsWith(k + "/"),
+  );
+  return parent ? ROUTE_MIN_TIER[parent] : null;
+}
+
+export function tierLabel(tier: PlanoTier): string {
+  switch (tier) {
+    case "presenca":
+      return "Presença";
+    case "influencia":
+      return "Influência";
+    case "autoridade":
+      return "Autoridade";
+  }
+}
+
+/**
+ * Verifica se o usuário tem acesso à feature/rota informada considerando
+ * seu plano atual. Admin sempre passa. Rotas em ALWAYS_ALLOWED sempre passam.
+ * Rotas não mapeadas em ROUTE_MIN_TIER liberam para qualquer usuário pago/trial.
+ */
+export function isFeatureAvailable(
+  pathname: string,
+  plano: PlanoTier | null,
+  isPaid: boolean,
+  isAdmin: boolean,
+  isTrial: boolean,
+): boolean {
+  if (isAdmin) return true;
+  const path = normalizePath(pathname);
+  if (ALWAYS_ALLOWED.includes(path)) return true;
+  if (path.startsWith("/dashboard/admin")) return false;
+
+  const required = getRequiredTier(path);
+  if (!required) return isPaid || isTrial;
+
+  if (!plano) return false;
+  if (!isPaid && !isTrial) return false;
+  return TIER_INDEX[plano] >= TIER_INDEX[required];
+}
