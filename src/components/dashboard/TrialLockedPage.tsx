@@ -4,10 +4,16 @@ import { motion } from "framer-motion";
 import { Lock, ArrowRight, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./UpgradeModal";
+import { type PlanoTier, tierLabel } from "@/lib/access-control";
 
 interface TrialLockedPageProps {
   title: string;
   description: string;
+  /**
+   * Quando definido, a tela passa a comunicar "feature exige plano X ou superior"
+   * em vez do bloqueio genérico do trial.
+   */
+  requiredTier?: PlanoTier;
 }
 
 const TRIAL_AVAILABLE = [
@@ -25,9 +31,13 @@ const TRIAL_AVAILABLE = [
  *  - Lista o que JÁ está liberado no trial (reforço positivo)
  *  - CTA primário abre UpgradeModal mantendo o usuário no contexto
  */
-export function TrialLockedPage({ title, description }: TrialLockedPageProps) {
+export function TrialLockedPage({ title, description, requiredTier }: TrialLockedPageProps) {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const tierName = requiredTier ? tierLabel(requiredTier) : null;
+  const badgeLabel = tierName ? `Disponível no plano ${tierName}` : "Recurso premium";
+  const ctaLabel = tierName ? `Fazer upgrade para ${tierName}` : "Ver planos";
+
 
   return (
     <>
