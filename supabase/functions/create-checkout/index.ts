@@ -13,7 +13,6 @@ interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
   email: string;
-  cpfCnpj: string;
 }
 
 Deno.serve(async (req) => {
