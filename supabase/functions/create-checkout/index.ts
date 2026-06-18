@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
-    const { plano, nome, email, cpfCnpj } = body || ({} as CheckoutBody);
+    const { plano, nome, email } = body || ({} as CheckoutBody);
     console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
 
     if (!plano || !PLAN_VALUES[plano]) {
@@ -60,9 +60,9 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    if (!nome || !email || !cpfCnpj) {
+    if (!nome || !email) {
       return new Response(
-        JSON.stringify({ error: "nome, email e cpfCnpj são obrigatórios." }),
+        JSON.stringify({ error: "nome e email são obrigatórios." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
