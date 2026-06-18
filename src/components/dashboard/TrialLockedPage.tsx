@@ -61,8 +61,9 @@ export function TrialLockedPage({ title, description, requiredTier }: TrialLocke
 
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full mb-3">
               <Sparkles className="w-3 h-3" />
-              Recurso premium
+              {badgeLabel}
             </span>
+
 
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
               {title}
