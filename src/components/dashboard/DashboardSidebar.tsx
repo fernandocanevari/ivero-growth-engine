@@ -165,7 +165,11 @@ export function DashboardSidebar() {
   };
 
   const renderItem = (item: MenuItem, isAdminGroup = false) => {
-    const locked = !isAdminGroup && showLockState && !isRouteAllowedInTrial(item.url);
+    const locked =
+      !isAdminGroup &&
+      showLockState &&
+      !isFeatureAvailable(item.url, plano, isPaid, isAdmin, isTrial);
+    const requiredTier = locked ? getRequiredTier(item.url) : null;
     const dynamicBadgeValue =
       item.dynamicBadge === "perception" ? perceptionUnread : 0;
     const badgeValue = dynamicBadgeValue || item.badge || 0;
@@ -174,7 +178,9 @@ export function DashboardSidebar() {
     const isLong = item.title.length > LABEL_TRUNCATE;
     const needsTooltip = collapsed || isLong || locked;
     const tooltipText = locked
-      ? `${item.title} — disponível nos planos pagos`
+      ? requiredTier
+        ? `${item.title} — disponível no plano ${tierLabel(requiredTier)} ou superior`
+        : `${item.title} — disponível nos planos pagos`
       : item.title;
 
     const linkContent = (
