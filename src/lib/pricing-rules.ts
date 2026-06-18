@@ -20,7 +20,16 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     tagline: "Descubra se as IAs reconhecem sua marca",
     monthlyPrice: 497,
     annualPrice: 397,
-    highlights: ["Score GEO de Visibilidade", "Relatório semanal por e-mail"],
+    highlights: [
+      "Score GEO de Visibilidade",
+      "Tags de Percepção da IA",
+      "Monitoramento Multi-IA (ChatGPT, Gemini, Google Modo IA)",
+      "Diagnóstico e gerador de LLMs.txt",
+      "Gerador de Conteúdo Estratégico (cota inicial)",
+      "Histórico de Auditorias",
+      "Alertas de mudança de recomendação",
+      "Relatório semanal por e-mail",
+    ],
     metrics: [
       { label: "IAs monitoradas", value: "2" },
       { label: "Avisos/mês", value: "50" },
@@ -34,7 +43,13 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     tagline: "Monitore, reaja e não perca espaço para concorrentes",
     monthlyPrice: 897,
     annualPrice: 717,
-    highlights: ["Análise de Sentimento", "Análise Comparativa com concorrentes"],
+    highlights: [
+      "Dominância por Modelo de IA",
+      "Análise de Sentimento",
+      "Análise Comparativa com concorrentes",
+      "Evolução Estratégica dos 5 pilares",
+      "Campanhas direcionadas de presença",
+    ],
     metrics: [
       { label: "IAs monitoradas", value: "3" },
       { label: "Avisos/mês", value: "200" },
@@ -48,7 +63,13 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     tagline: "Sua marca citada quando o cliente está decidindo",
     monthlyPrice: 1497,
     annualPrice: 1197,
-    highlights: ["Mapa de Prompts Estratégicos", "Plano de Ação Estratégico"],
+    highlights: [
+      "Simulador de Influência em IA",
+      "Mapa de Prompts Estratégicos",
+      "Plano de Ação Estratégico",
+      "Prompt Tester (testes customizados nos 3 modelos)",
+      "Relatórios executivos em PDF e XLSX",
+    ],
     metrics: [
       { label: "IAs monitoradas", value: "4" },
       { label: "Avisos/mês", value: "Ilimitados" },

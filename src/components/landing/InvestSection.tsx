@@ -41,6 +41,12 @@ const plans = [
     inheritsFrom: null as string | null,
     highlights: [
       "Score GEO de Visibilidade",
+      "Tags de Percepção da IA",
+      "Monitoramento Multi-IA (ChatGPT, Gemini, Google Modo IA)",
+      "Diagnóstico e gerador de LLMs.txt",
+      "Gerador de Conteúdo Estratégico (cota inicial)",
+      "Histórico de Auditorias",
+      "Alertas de mudança de recomendação",
       "Relatório semanal por e-mail",
     ],
   },
@@ -64,6 +70,8 @@ const plans = [
       "Dominância por Modelo de IA",
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
+      "Evolução Estratégica dos 5 pilares",
+      "Campanhas direcionadas de presença",
     ],
   },
   {
@@ -86,6 +94,8 @@ const plans = [
       "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
+      "Prompt Tester (testes customizados nos 3 modelos)",
+      "Relatórios executivos em PDF e XLSX",
     ],
   },
 ];
