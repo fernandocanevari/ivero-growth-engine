@@ -84,6 +84,18 @@ export default function AuthPage() {
     }
 
     try {
+      // Admins skip the welcome/payment flow and go straight to the admin panel
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (roleRow) {
+        navigate("/dashboard/admin", { replace: true });
+        return;
+      }
+
       const { data } = await supabase
         .from("profiles")
         .select("is_first_login")
