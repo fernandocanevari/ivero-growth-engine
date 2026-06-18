@@ -353,7 +353,6 @@ const InvestSection = () => {
                       </motion.div>
                       {isAnnual && !isCustom && plan.annualSaving && (
                         <span className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[11px] sm:text-xs font-semibold">
-                          <span className="text-[10px]">✦</span>
                           Economia de {plan.annualSaving}/ano
                         </span>
                       )}
@@ -392,14 +391,13 @@ const InvestSection = () => {
 
                       {plan.inheritsFrom && (
                         <p className="text-[10px] sm:text-[11px] font-medium text-muted-foreground mb-2 leading-none">
-                          Tudo do {plan.inheritsFrom} e mais:
+                          Tudo do <span className="font-bold text-accent">{plan.inheritsFrom}</span> e mais:
                         </p>
                       )}
 
                       <ul className="space-y-1">
                         {plan.highlights.map((highlight) => (
                           <li key={highlight} className="flex items-start gap-2 text-[13px] leading-snug text-foreground font-semibold">
-                            <span className={`shrink-0 mt-0.5 text-sm font-bold ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`}>✦</span>
                             <span>{highlight}</span>
                           </li>
                         ))}
