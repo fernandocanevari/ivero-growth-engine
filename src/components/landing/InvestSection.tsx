@@ -188,7 +188,7 @@ const InvestSection = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plano: selectedPlano, nome, email, cpfCnpj },
+        body: { plano: selectedPlano, nome, email },
       });
 
       if (error) {
