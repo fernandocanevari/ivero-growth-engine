@@ -304,8 +304,8 @@ export default function AssinaturaPage() {
               financeiros). Enquanto a integração não está 100%, ativamos os planos{" "}
               <span className="font-medium text-foreground">manualmente em até 1
               dia útil</span> — você fala com nosso time, escolhe o plano e
-              começamos a cobrar pelo método combinado (Pix, boleto ou cartão). É
-              o mesmo plano, mesmo preço, com atendimento direto.
+              começamos a cobrar no cartão de crédito. É o mesmo plano, mesmo
+              preço, com atendimento direto.
             </AccordionContent>
           </AccordionItem>
 

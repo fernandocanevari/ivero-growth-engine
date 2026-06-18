@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       headers: asaasHeaders,
       body: JSON.stringify({
         customer: asaas_customer_id,
-        billingType: "UNDEFINED",
+        billingType: "CREDIT_CARD",
         cycle: "MONTHLY",
         value,
         nextDueDate,
