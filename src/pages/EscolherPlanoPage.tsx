@@ -97,7 +97,7 @@ const EscolherPlanoPage = () => {
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
+  
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
