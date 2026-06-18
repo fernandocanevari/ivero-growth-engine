@@ -53,6 +53,7 @@ import TermosDeUsoPage from "./pages/TermosDeUsoPage";
 import SobrePage from "./pages/SobrePage";
 import IveroAnalysisPage from "./pages/IveroAnalysisPage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
+import { FeatureGate } from "./components/dashboard/FeatureGate";
 import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
