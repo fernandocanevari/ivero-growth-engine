@@ -12,7 +12,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { isRouteAllowedInTrial } from "@/lib/access-control";
+import { isRouteAllowedInTrial, isFeatureAvailable, getRequiredTier, tierLabel } from "@/lib/access-control";
 import { resetIdentity } from "@/lib/analytics";
 import {
   Tooltip,
