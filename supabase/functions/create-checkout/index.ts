@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
       method: "POST",
       headers: asaasHeaders,
-      body: JSON.stringify({ name: nome, email, cpfCnpj }),
+      body: JSON.stringify({ name: nome, email }),
     });
     const customerJson = await customerRes.json();
     console.log("create-checkout asaas customer response:", JSON.stringify(customerJson));
