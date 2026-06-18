@@ -3,6 +3,9 @@ import {
   isRouteAllowedInTrial,
   getLockedRouteInfo,
   TRIAL_ALLOWED_ROUTES,
+  isFeatureAvailable,
+  getRequiredTier,
+  tierLabel,
 } from "./access-control";
 
 describe("isRouteAllowedInTrial", () => {
