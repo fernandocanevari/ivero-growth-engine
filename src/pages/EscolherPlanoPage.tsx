@@ -430,15 +430,6 @@ const EscolherPlanoPage = () => {
                 placeholder="voce@empresa.com"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ep-doc">CPF ou CNPJ</Label>
-              <Input
-                id="ep-doc"
-                value={cpfCnpj}
-                onChange={(e) => setCpfCnpj(e.target.value)}
-                placeholder="Somente números"
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button onClick={handleConfirmCheckout} disabled={submitting} className="w-full">
