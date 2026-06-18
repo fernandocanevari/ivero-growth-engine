@@ -23,12 +23,11 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     highlights: [
       "Score GEO de Visibilidade",
       "Tags de Percepção da IA",
-      "Monitoramento Multi-IA (ChatGPT, Gemini, Google Modo IA)",
+      "Monitoramento Multi-IA",
       "Diagnóstico e gerador de LLMs.txt",
-      "Gerador de Conteúdo Estratégico (cota inicial)",
+      "Gerador de Conteúdo Estratégico",
       "Histórico de Auditorias",
       "Alertas de mudança de recomendação",
-      "Relatório semanal por e-mail",
     ],
     metrics: [
       { label: "IAs monitoradas", value: "2" },
