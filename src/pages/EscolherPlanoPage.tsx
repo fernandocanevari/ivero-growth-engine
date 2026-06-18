@@ -97,7 +97,7 @@ const EscolherPlanoPage = () => {
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
+  
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -158,13 +158,12 @@ const EscolherPlanoPage = () => {
     const plano = PLAN_SLUG_MAP[planName];
     if (!plano) return;
     setSelectedPlano(plano);
-    setCpfCnpj("");
     setCheckoutOpen(true);
   };
 
   const handleConfirmCheckout = async () => {
     if (!selectedPlano) return;
-    if (!nome.trim() || !email.trim() || !cpfCnpj.trim()) {
+    if (!nome.trim() || !email.trim()) {
       toast.error("Preencha todos os campos para continuar.");
       return;
     }
@@ -177,7 +176,7 @@ const EscolherPlanoPage = () => {
         return;
       }
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plano: selectedPlano, nome, email, cpfCnpj },
+        body: { plano: selectedPlano, nome, email },
       });
       if (error) {
         toast.error(error.message || "Erro ao criar assinatura.");
@@ -428,15 +427,6 @@ const EscolherPlanoPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ep-doc">CPF ou CNPJ</Label>
-              <Input
-                id="ep-doc"
-                value={cpfCnpj}
-                onChange={(e) => setCpfCnpj(e.target.value)}
-                placeholder="Somente números"
               />
             </div>
           </div>

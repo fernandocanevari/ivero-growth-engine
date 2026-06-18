@@ -13,7 +13,6 @@ interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
   email: string;
-  cpfCnpj: string;
 }
 
 Deno.serve(async (req) => {
@@ -52,7 +51,7 @@ Deno.serve(async (req) => {
 
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
-    const { plano, nome, email, cpfCnpj } = body || ({} as CheckoutBody);
+    const { plano, nome, email } = body || ({} as CheckoutBody);
     console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
 
     if (!plano || !PLAN_VALUES[plano]) {
@@ -61,9 +60,9 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    if (!nome || !email || !cpfCnpj) {
+    if (!nome || !email) {
       return new Response(
-        JSON.stringify({ error: "nome, email e cpfCnpj são obrigatórios." }),
+        JSON.stringify({ error: "nome e email são obrigatórios." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -85,7 +84,7 @@ Deno.serve(async (req) => {
     const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
       method: "POST",
       headers: asaasHeaders,
-      body: JSON.stringify({ name: nome, email, cpfCnpj }),
+      body: JSON.stringify({ name: nome, email }),
     });
     const customerJson = await customerRes.json();
     console.log("create-checkout asaas customer response:", JSON.stringify(customerJson));

@@ -106,7 +106,7 @@ const InvestSection = () => {
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
+  
   const [submitting, setSubmitting] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [pendingPlanName, setPendingPlanName] = useState<string | null>(null);
@@ -115,7 +115,6 @@ const InvestSection = () => {
     setSelectedPlano(plano);
     setEmail(session.user.email ?? "");
     setNome((session.user.user_metadata?.display_name as string) ?? "");
-    setCpfCnpj("");
     setCheckoutOpen(true);
   };
 
@@ -174,7 +173,7 @@ const InvestSection = () => {
 
   const handleConfirmCheckout = async () => {
     if (!selectedPlano) return;
-    if (!nome.trim() || !email.trim() || !cpfCnpj.trim()) {
+    if (!nome.trim() || !email.trim()) {
       toast.error("Preencha todos os campos para continuar.");
       return;
     }
@@ -189,7 +188,7 @@ const InvestSection = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plano: selectedPlano, nome, email, cpfCnpj },
+        body: { plano: selectedPlano, nome, email },
       });
 
       if (error) {
@@ -513,16 +512,6 @@ const InvestSection = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                disabled={submitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="checkout-cpfcnpj">CPF ou CNPJ</Label>
-              <Input
-                id="checkout-cpfcnpj"
-                value={cpfCnpj}
-                onChange={(e) => setCpfCnpj(e.target.value)}
-                placeholder="Somente números"
                 disabled={submitting}
               />
             </div>
