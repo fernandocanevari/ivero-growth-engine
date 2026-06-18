@@ -163,7 +163,7 @@ const EscolherPlanoPage = () => {
 
   const handleConfirmCheckout = async () => {
     if (!selectedPlano) return;
-    if (!nome.trim() || !email.trim() || !cpfCnpj.trim()) {
+    if (!nome.trim() || !email.trim()) {
       toast.error("Preencha todos os campos para continuar.");
       return;
     }
