@@ -158,7 +158,6 @@ const EscolherPlanoPage = () => {
     const plano = PLAN_SLUG_MAP[planName];
     if (!plano) return;
     setSelectedPlano(plano);
-    setCpfCnpj("");
     setCheckoutOpen(true);
   };
 
