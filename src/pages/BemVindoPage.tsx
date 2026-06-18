@@ -276,6 +276,19 @@ const BemVindoPage = () => {
         navigate("/login");
         return;
       }
+
+      // Admins never go through the payment-confirmation welcome flow
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (roleRow) {
+        navigate("/dashboard/admin", { replace: true });
+        return;
+      }
+
       setUserId(user.id);
 
       // Check brand profile completion + diagnosis history in parallel
