@@ -111,7 +111,7 @@ export function DashboardSidebar() {
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
-  const displayName = settings?.brand_name || "Administrador";
+  const displayName = settings?.brand_name || "Sua Marca";
   const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
   const showLockState = !isAdmin;
 
