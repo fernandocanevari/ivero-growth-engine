@@ -115,7 +115,6 @@ const InvestSection = () => {
     setSelectedPlano(plano);
     setEmail(session.user.email ?? "");
     setNome((session.user.user_metadata?.display_name as string) ?? "");
-    setCpfCnpj("");
     setCheckoutOpen(true);
   };
 
