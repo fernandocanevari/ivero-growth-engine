@@ -96,25 +96,25 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="diagnostico" element={<DiagnosticoPage />} />
-            <Route path="auditorias" element={<AuditoriasPage />} />
-            <Route path="auditorias/:id" element={<AuditoriaDetalhePage />} />
-            <Route path="pilares" element={<PilaresPage />} />
-            <Route path="monitoramento" element={<MonitoramentoPage />} />
-            <Route path="comparativo" element={<ComparativoPage />} />
-            <Route path="score" element={<ScorePage />} />
-            <Route path="tags-percepcao" element={<TagsPercepcaoPage />} />
-            <Route path="sentimento" element={<SentimentoPage />} />
-            <Route path="acoes" element={<AcoesPage />} />
-            <Route path="conteudo" element={<GeradorConteudoPage />} />
+            <Route path="auditorias" element={<FeatureGate><AuditoriasPage /></FeatureGate>} />
+            <Route path="auditorias/:id" element={<FeatureGate><AuditoriaDetalhePage /></FeatureGate>} />
+            <Route path="pilares" element={<FeatureGate><PilaresPage /></FeatureGate>} />
+            <Route path="monitoramento" element={<FeatureGate><MonitoramentoPage /></FeatureGate>} />
+            <Route path="comparativo" element={<FeatureGate><ComparativoPage /></FeatureGate>} />
+            <Route path="score" element={<FeatureGate><ScorePage /></FeatureGate>} />
+            <Route path="tags-percepcao" element={<FeatureGate><TagsPercepcaoPage /></FeatureGate>} />
+            <Route path="sentimento" element={<FeatureGate><SentimentoPage /></FeatureGate>} />
+            <Route path="acoes" element={<FeatureGate><AcoesPage /></FeatureGate>} />
+            <Route path="conteudo" element={<FeatureGate><GeradorConteudoPage /></FeatureGate>} />
             <Route path="alertas" element={<AlertasPage />} />
-            <Route path="prompts" element={<PromptsPage />} />
-            <Route path="dominancia" element={<DominanciaPage />} />
-            <Route path="simulador" element={<SimuladorPage />} />
-            <Route path="llms-txt" element={<LlmsTxtPage />} />
-            <Route path="campanhas" element={<CampanhasPage />} />
-            <Route path="campanhas/nova" element={<NovaCampanhaPage />} />
-            <Route path="prompt-tester" element={<PromptTesterPage />} />
-            <Route path="relatorios" element={<RelatoriosPage />} />
+            <Route path="prompts" element={<FeatureGate><PromptsPage /></FeatureGate>} />
+            <Route path="dominancia" element={<FeatureGate><DominanciaPage /></FeatureGate>} />
+            <Route path="simulador" element={<FeatureGate><SimuladorPage /></FeatureGate>} />
+            <Route path="llms-txt" element={<FeatureGate><LlmsTxtPage /></FeatureGate>} />
+            <Route path="campanhas" element={<FeatureGate><CampanhasPage /></FeatureGate>} />
+            <Route path="campanhas/nova" element={<FeatureGate><NovaCampanhaPage /></FeatureGate>} />
+            <Route path="prompt-tester" element={<FeatureGate><PromptTesterPage /></FeatureGate>} />
+            <Route path="relatorios" element={<FeatureGate><RelatoriosPage /></FeatureGate>} />
             <Route path="assinatura" element={<AssinaturaPage />} />
             <Route path="configuracoes" element={<ConfiguracoesPage />} />
             <Route path="ajuda" element={<AjudaPage />} />
