@@ -106,7 +106,7 @@ const InvestSection = () => {
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
+  
   const [submitting, setSubmitting] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [pendingPlanName, setPendingPlanName] = useState<string | null>(null);
