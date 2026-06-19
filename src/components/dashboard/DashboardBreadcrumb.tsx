@@ -28,7 +28,7 @@ const menuGroups: Group[] = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain },
-      { title: "Relatórios", url: "/dashboard/auditorias", icon: History },
+      { title: "Análise de Resultados", url: "/dashboard/auditorias", icon: History },
       { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
     ],
   },
