@@ -210,9 +210,9 @@ export default function AuditoriasPage() {
     return (
       <EmptyStatePage
         icon={<History className="h-12 w-12" />}
-        title="Histórico de Relatórios"
-        subtitle="Acesse todos os relatórios já gerados para sua marca."
-        message="Nenhum relatório salvo ainda. Rode seu primeiro Diagnóstico para começar a montar seu histórico."
+        title="Análise de Resultados"
+        subtitle="Histórico completo das análises da sua marca."
+        message="Nenhuma análise salva ainda. Rode seu primeiro Diagnóstico para começar a montar seu histórico."
         hasBrand={hasBrand}
         cta={{
           label: "Fazer meu diagnóstico",
@@ -269,9 +269,9 @@ export default function AuditoriasPage() {
               <History className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-display text-foreground">Histórico de Relatórios</h1>
+              <h1 className="text-2xl font-bold font-display text-foreground">Análise de Resultados</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {reports.length} {reports.length === 1 ? "relatório salvo" : "relatórios salvos"}
+                {reports.length} {reports.length === 1 ? "análise salva" : "análises salvas"}
                 {filtersActive && ` · ${filtered.length} após filtro`}
               </p>
             </div>

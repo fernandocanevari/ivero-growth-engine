@@ -50,7 +50,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
       { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain, beta: true },
-      { title: "Relatórios", url: "/dashboard/auditorias", icon: FileText },
+      { title: "Análise de Resultados", url: "/dashboard/auditorias", icon: FileText },
       { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
     ],
   },

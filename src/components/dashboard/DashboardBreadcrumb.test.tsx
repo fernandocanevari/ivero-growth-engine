@@ -28,7 +28,7 @@ describe("DashboardBreadcrumb — match de rotas aninhadas", () => {
   it("usa o item mais específico em rota aninhada com id (relatório)", () => {
     renderAt("/dashboard/auditorias/abc-123");
     expect(screen.getByText(/Visão Geral/i)).toBeInTheDocument();
-    expect(screen.getByTestId("breadcrumb-current")).toHaveTextContent(/Relatórios/i);
+    expect(screen.getByTestId("breadcrumb-current")).toHaveTextContent(/Análise de Resultados/i);
   });
 
   it("prefere /dashboard/admin/clientes sobre /dashboard/admin em rota aninhada com :id", () => {
