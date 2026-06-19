@@ -234,13 +234,6 @@ export default function ConfiguracoesPage() {
             <h2 className="text-base font-semibold text-foreground">Modelos de IA Monitorados</h2>
             <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">
               <CheckCircle2 className="h-3 w-3" />
-              {MODELS_ACTIVE.length} ativos
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Estes são os modelos de IA que a Ivero consulta em paralelo durante cada análise e simulação.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {activeCount} ativos
             </div>
           </div>
