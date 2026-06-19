@@ -26,7 +26,7 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       "Monitoramento Multi-IA",
       "Diagnóstico e gerador de LLMs.txt",
       "Gerador de Conteúdo Estratégico",
-      "Histórico de Auditorias",
+      "Análise de Resultados",
       "Alertas de mudança de recomendação",
     ],
     metrics: [
