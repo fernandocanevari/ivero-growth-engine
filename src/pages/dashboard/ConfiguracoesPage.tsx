@@ -15,7 +15,16 @@ import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
 
-const MODELS_ACTIVE: string[] = ["OpenAI", "Gemini", "Google Modo IA", "Claude"];
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+
+// Ordem fixa de liberação: Presença libera 2, Influência libera 3, Autoridade libera 4.
+const MODELS_ORDER: string[] = ["OpenAI", "Gemini", "Google Modo IA", "Claude"];
+
+const MODELS_BY_TIER: Record<"presenca" | "influencia" | "autoridade", number> = {
+  presenca: 2,
+  influencia: 3,
+  autoridade: 4,
+};
 
 const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: string }> = {
   OpenAI: { icon: Cpu, desc: "" },
@@ -28,6 +37,10 @@ const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: strin
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
   const updateMutation = useUpdateBrandSettings();
+  const { plano, isAdmin } = useSubscriptionStatus();
+  const activeCount = isAdmin ? 4 : MODELS_BY_TIER[plano ?? "presenca"];
+  const activeModels = MODELS_ORDER.slice(0, activeCount);
+  const lockedModels = MODELS_ORDER.slice(activeCount);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -221,14 +234,14 @@ export default function ConfiguracoesPage() {
             <h2 className="text-base font-semibold text-foreground">Modelos de IA Monitorados</h2>
             <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">
               <CheckCircle2 className="h-3 w-3" />
-              {MODELS_ACTIVE.length} ativos
+              {activeCount} ativos
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
             Estes são os modelos de IA que a Ivero consulta em paralelo durante cada análise e simulação.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {MODELS_ACTIVE.map((name) => {
+            {activeModels.map((name) => {
               const meta = MODEL_META[name] || { icon: Cpu, desc: "" };
               const Icon = meta.icon;
               return (
@@ -246,6 +259,29 @@ export default function ConfiguracoesPage() {
                       )}
                     </div>
                     {meta.desc && <p className="text-xs text-muted-foreground mt-0.5">{meta.desc}</p>}
+                  </div>
+                </div>
+              );
+            })}
+            {lockedModels.map((name) => {
+              const meta = MODEL_META[name] || { icon: Cpu, desc: "" };
+              const Icon = meta.icon;
+              return (
+                <div
+                  key={name}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-secondary/20 border border-dashed border-border opacity-60"
+                  title="Disponível em planos superiores"
+                >
+                  <div className="mt-0.5 p-1.5 rounded-md bg-muted text-muted-foreground">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-muted-foreground">{name}</p>
+                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        Upgrade
+                      </span>
+                    </div>
                   </div>
                 </div>
               );

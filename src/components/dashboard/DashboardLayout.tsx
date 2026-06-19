@@ -9,7 +9,7 @@ import { TrialBanner } from "./TrialBanner";
 
 import { TrialLockedPage } from "./TrialLockedPage";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { isRouteAllowedInTrial, getLockedRouteInfo } from "@/lib/access-control";
+import { isFeatureAvailable, getLockedRouteInfo, getRequiredTier } from "@/lib/access-control";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdoptPendingAudit } from "@/hooks/useAdoptPendingAudit";
 import { useTrackOnboardingVisit } from "@/hooks/useDashboardOnboarding";
@@ -25,7 +25,7 @@ import { useSubscriptionGate } from "@/components/ProtectedRoute";
 
 export default function DashboardLayout() {
   
-  const { isPaid, isAdmin } = useSubscriptionStatus();
+  const { isPaid, isAdmin, isTrial, plano } = useSubscriptionStatus();
   const location = useLocation();
   const navigate = useNavigate();
   const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
@@ -59,11 +59,19 @@ export default function DashboardLayout() {
     };
   }, []);
 
-  // Trial gating: admins e usuários pagos passam direto.
-  // Trial users só veem rotas listadas em TRIAL_ALLOWED_ROUTES.
-  const allowAccess =
-    isPaid || isAdmin || isRouteAllowedInTrial(location.pathname);
+  // Gating por tier de plano. Trial herda os recursos do plano escolhido
+  // (ex.: trial de Presença libera Monitoramento, Tags de Percepção e LLMs.txt).
+  const allowAccess = isFeatureAvailable(
+    location.pathname,
+    plano,
+    isPaid,
+    isAdmin,
+    isTrial,
+  );
   const lockedInfo = allowAccess ? null : getLockedRouteInfo(location.pathname);
+  const lockedRequiredTier = allowAccess
+    ? undefined
+    : getRequiredTier(location.pathname) ?? undefined;
 
   // Perfil da Marca: abre automaticamente após o 1º diagnóstico, se ainda não preenchido
   // e o usuário não pediu para adiar (skippedRecently = últimos 3 dias).
@@ -125,6 +133,7 @@ export default function DashboardLayout() {
               <TrialLockedPage
                 title={lockedInfo.title}
                 description={lockedInfo.description}
+                requiredTier={lockedRequiredTier}
               />
             ) : (
               <>
