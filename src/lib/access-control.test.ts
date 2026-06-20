@@ -112,9 +112,10 @@ describe("isFeatureAvailable", () => {
   });
 
   it("sub-rotas herdam tier do pai", () => {
-    expect(getRequiredTier("/dashboard/campanhas/nova")).toBe("influencia");
+    expect(getRequiredTier("/dashboard/campanhas/nova")).toBe("autoridade");
     expect(isFeatureAvailable("/dashboard/campanhas/nova", "presenca", true, false, false)).toBe(false);
-    expect(isFeatureAvailable("/dashboard/campanhas/nova", "influencia", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/campanhas/nova", "influencia", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/campanhas/nova", "autoridade", true, false, false)).toBe(true);
   });
 });
 
