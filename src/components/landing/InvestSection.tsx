@@ -56,7 +56,7 @@ const plans = [
     cta: "Quero superar meus concorrentes →",
     highlighted: true,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "3" },
+      { icon: Bot, label: "IAs monitoradas", value: "3" },
       { icon: Bell, label: "Avisos/mês", value: "200" },
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
