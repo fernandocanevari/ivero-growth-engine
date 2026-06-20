@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, Loader2, Sparkles } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Loader2, Sparkles, Bot } from "lucide-react";
 import {
   Dialog,
   DialogContent,
