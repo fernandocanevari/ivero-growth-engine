@@ -88,6 +88,9 @@ const plans = [
       "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
+      "LLMs.txt",
+      "Campanhas direcionadas",
+      "Relatórios executivos em PDF e XLSX",
     ],
   },
 ];
