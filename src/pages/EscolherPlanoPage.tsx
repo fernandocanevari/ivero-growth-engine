@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, Loader2, Sparkles } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Loader2, Sparkles, Bot } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ const plans = [
       { icon: BarChart2, label: "Consultas/mês", value: "500" },
     ],
     inheritsFrom: null as string | null,
-    highlights: ["Score GEO de Visibilidade", "Relatório semanal por e-mail"],
+    highlights: ["Score GEO de Visibilidade", "Relatório semanal por e-mail", "Monitoramento Multi-IA", "Prompt Tester"],
   },
   {
     name: "Influência",
@@ -53,7 +53,7 @@ const plans = [
     cta: "Começar com 7 dias grátis →",
     highlighted: true,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "3" },
+      { icon: Bot, label: "IAs monitoradas", value: "3" },
       { icon: Bell, label: "Avisos/mês", value: "200" },
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
@@ -63,6 +63,9 @@ const plans = [
       "Dominância por Modelo de IA",
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
+      "Tags de Percepção da IA",
+      "Evolução Estratégica dos 5 pilares",
+      "Gerador de Conteúdo Estratégico",
     ],
   },
   {
@@ -85,6 +88,9 @@ const plans = [
       "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
+      "LLMs.txt",
+      "Campanhas direcionadas",
+      "Relatórios executivos em PDF e XLSX",
     ],
   },
 ];

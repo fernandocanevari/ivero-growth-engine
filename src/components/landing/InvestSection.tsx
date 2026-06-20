@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass, Loader2 } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, ShieldCheck, Gauge, Radar, BellRing, Mail, Headphones, Compass, Loader2, Bot } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,12 +41,9 @@ const plans = [
     inheritsFrom: null as string | null,
     highlights: [
       "Score GEO de Visibilidade",
-      "Tags de Percepção da IA",
+      "Relatório semanal por e-mail",
       "Monitoramento Multi-IA",
-      "Diagnóstico e gerador de LLMs.txt",
-      "Gerador de Conteúdo Estratégico",
-      "Análise de Resultados",
-      "Alertas de mudança de recomendação",
+      "Prompt Tester",
     ],
   },
   {
@@ -59,7 +56,7 @@ const plans = [
     cta: "Quero superar meus concorrentes →",
     highlighted: true,
     metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "3" },
+      { icon: Bot, label: "IAs monitoradas", value: "3" },
       { icon: Bell, label: "Avisos/mês", value: "200" },
       { icon: Search, label: "Prompts monitorados", value: "30" },
       { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
@@ -69,8 +66,9 @@ const plans = [
       "Dominância por Modelo de IA",
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
+      "Tags de Percepção da IA",
       "Evolução Estratégica dos 5 pilares",
-      "Campanhas direcionadas de presença",
+      "Gerador de Conteúdo Estratégico",
     ],
   },
   {
@@ -93,7 +91,8 @@ const plans = [
       "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
-      "Prompt Tester (testes customizados nos 3 modelos)",
+      "LLMs.txt",
+      "Campanhas direcionadas",
       "Relatórios executivos em PDF e XLSX",
     ],
   },

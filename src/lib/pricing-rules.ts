@@ -22,12 +22,9 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     annualPrice: 397,
     highlights: [
       "Score GEO de Visibilidade",
-      "Tags de Percepção da IA",
+      "Relatório semanal por e-mail",
       "Monitoramento Multi-IA",
-      "Diagnóstico e gerador de LLMs.txt",
-      "Gerador de Conteúdo Estratégico",
-      "Análise de Resultados",
-      "Alertas de mudança de recomendação",
+      "Prompt Tester",
     ],
     metrics: [
       { label: "IAs monitoradas", value: "2" },
@@ -46,8 +43,9 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       "Dominância por Modelo de IA",
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
+      "Tags de Percepção da IA",
       "Evolução Estratégica dos 5 pilares",
-      "Campanhas direcionadas de presença",
+      "Gerador de Conteúdo Estratégico",
     ],
     metrics: [
       { label: "IAs monitoradas", value: "3" },
@@ -66,7 +64,8 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
-      "Prompt Tester (testes customizados nos 3 modelos)",
+      "LLMs.txt",
+      "Campanhas direcionadas",
       "Relatórios executivos em PDF e XLSX",
     ],
     metrics: [
