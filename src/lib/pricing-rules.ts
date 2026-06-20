@@ -64,7 +64,8 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       "Simulador de Influência em IA",
       "Mapa de Prompts Estratégicos",
       "Plano de Ação Estratégico",
-      "Prompt Tester (testes customizados nos 3 modelos)",
+      "LLMs.txt",
+      "Campanhas direcionadas",
       "Relatórios executivos em PDF e XLSX",
     ],
     metrics: [
