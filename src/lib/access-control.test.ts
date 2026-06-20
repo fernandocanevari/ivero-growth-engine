@@ -99,6 +99,9 @@ describe("isFeatureAvailable", () => {
     expect(isFeatureAvailable("/dashboard/relatorios", "autoridade", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/simulador", "autoridade", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/prompts", "autoridade", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/llms-txt", "autoridade", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/campanhas", "autoridade", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/prompt-tester", "autoridade", true, false, false)).toBe(true);
   });
 
   it("trial espelha o plano escolhido", () => {
