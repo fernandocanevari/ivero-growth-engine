@@ -74,23 +74,34 @@ describe("isFeatureAvailable", () => {
     expect(isFeatureAvailable("/dashboard/dominancia", "presenca", true, false, false)).toBe(false);
     expect(isFeatureAvailable("/dashboard/simulador", "presenca", true, false, false)).toBe(false);
     expect(isFeatureAvailable("/dashboard/relatorios", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/campanhas", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/llms-txt", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/tags-percepcao", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/conteudo", "presenca", true, false, false)).toBe(false);
   });
 
   it("plano presenca libera features de presenca", () => {
     expect(isFeatureAvailable("/dashboard/score", "presenca", true, false, false)).toBe(true);
-    expect(isFeatureAvailable("/dashboard/conteudo", "presenca", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/prompt-tester", "presenca", true, false, false)).toBe(true);
   });
 
   it("plano influencia libera presenca e influencia, bloqueia autoridade", () => {
     expect(isFeatureAvailable("/dashboard/score", "influencia", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/dominancia", "influencia", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/tags-percepcao", "influencia", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/conteudo", "influencia", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/simulador", "influencia", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/llms-txt", "influencia", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/campanhas", "influencia", true, false, false)).toBe(false);
   });
 
   it("plano autoridade libera tudo", () => {
     expect(isFeatureAvailable("/dashboard/relatorios", "autoridade", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/simulador", "autoridade", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/prompts", "autoridade", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/llms-txt", "autoridade", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/campanhas", "autoridade", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/prompt-tester", "autoridade", true, false, false)).toBe(true);
   });
 
   it("trial espelha o plano escolhido", () => {
@@ -112,9 +123,10 @@ describe("isFeatureAvailable", () => {
   });
 
   it("sub-rotas herdam tier do pai", () => {
-    expect(getRequiredTier("/dashboard/campanhas/nova")).toBe("influencia");
+    expect(getRequiredTier("/dashboard/campanhas/nova")).toBe("autoridade");
     expect(isFeatureAvailable("/dashboard/campanhas/nova", "presenca", true, false, false)).toBe(false);
-    expect(isFeatureAvailable("/dashboard/campanhas/nova", "influencia", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/campanhas/nova", "influencia", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/campanhas/nova", "autoridade", true, false, false)).toBe(true);
   });
 });
 
