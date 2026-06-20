@@ -63,6 +63,9 @@ const plans = [
       "Dominância por Modelo de IA",
       "Análise de Sentimento",
       "Análise Comparativa com concorrentes",
+      "Tags de Percepção da IA",
+      "Evolução Estratégica dos 5 pilares",
+      "Gerador de Conteúdo Estratégico",
     ],
   },
   {
