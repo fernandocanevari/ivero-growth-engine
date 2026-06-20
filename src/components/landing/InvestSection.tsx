@@ -41,12 +41,9 @@ const plans = [
     inheritsFrom: null as string | null,
     highlights: [
       "Score GEO de Visibilidade",
-      "Tags de Percepção da IA",
+      "Relatório semanal por e-mail",
       "Monitoramento Multi-IA",
-      "Diagnóstico e gerador de LLMs.txt",
-      "Gerador de Conteúdo Estratégico",
-      "Análise de Resultados",
-      "Alertas de mudança de recomendação",
+      "Prompt Tester",
     ],
   },
   {
