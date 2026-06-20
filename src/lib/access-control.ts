@@ -185,22 +185,22 @@ export const ROUTE_MIN_TIER: Record<string, PlanoTier> = {
   // Presença
   "/dashboard/score": "presenca",
   "/dashboard/auditorias": "presenca",
-  "/dashboard/conteudo": "presenca",
-  "/dashboard/tags-percepcao": "presenca",
   "/dashboard/monitoramento": "presenca",
-  "/dashboard/llms-txt": "presenca",
+  "/dashboard/prompt-tester": "presenca",
   // Influência
   "/dashboard/dominancia": "influencia",
   "/dashboard/sentimento": "influencia",
   "/dashboard/comparativo": "influencia",
   "/dashboard/pilares": "influencia",
-  "/dashboard/campanhas": "influencia",
+  "/dashboard/tags-percepcao": "influencia",
+  "/dashboard/conteudo": "influencia",
   // Autoridade
   "/dashboard/simulador": "autoridade",
   "/dashboard/prompts": "autoridade",
   "/dashboard/acoes": "autoridade",
   "/dashboard/relatorios": "autoridade",
-  "/dashboard/prompt-tester": "autoridade",
+  "/dashboard/llms-txt": "autoridade",
+  "/dashboard/campanhas": "autoridade",
 };
 
 function normalizePath(pathname: string): string {
