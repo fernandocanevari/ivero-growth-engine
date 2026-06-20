@@ -71,6 +71,13 @@ export default function AuthPage() {
           display_name: extras.nome_completo || undefined,
         } as any)
         .eq("user_id", userId);
+      await supabase.from("brand_settings").upsert(
+        {
+          user_id: userId,
+          brand_name: extras.nome_empresa,
+        } as any,
+        { onConflict: "user_id" }
+      );
     } catch (err) {
       console.warn("[AuthPage] Failed to persist profile extras:", err);
     }
