@@ -74,6 +74,10 @@ describe("isFeatureAvailable", () => {
     expect(isFeatureAvailable("/dashboard/dominancia", "presenca", true, false, false)).toBe(false);
     expect(isFeatureAvailable("/dashboard/simulador", "presenca", true, false, false)).toBe(false);
     expect(isFeatureAvailable("/dashboard/relatorios", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/campanhas", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/llms-txt", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/tags-percepcao", "presenca", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/conteudo", "presenca", true, false, false)).toBe(false);
   });
 
   it("plano presenca libera features de presenca", () => {
