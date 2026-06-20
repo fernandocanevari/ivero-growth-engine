@@ -78,7 +78,7 @@ describe("isFeatureAvailable", () => {
 
   it("plano presenca libera features de presenca", () => {
     expect(isFeatureAvailable("/dashboard/score", "presenca", true, false, false)).toBe(true);
-    expect(isFeatureAvailable("/dashboard/conteudo", "presenca", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/prompt-tester", "presenca", true, false, false)).toBe(true);
   });
 
   it("plano influencia libera presenca e influencia, bloqueia autoridade", () => {
