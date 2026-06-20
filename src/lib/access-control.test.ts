@@ -88,7 +88,11 @@ describe("isFeatureAvailable", () => {
   it("plano influencia libera presenca e influencia, bloqueia autoridade", () => {
     expect(isFeatureAvailable("/dashboard/score", "influencia", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/dominancia", "influencia", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/tags-percepcao", "influencia", true, false, false)).toBe(true);
+    expect(isFeatureAvailable("/dashboard/conteudo", "influencia", true, false, false)).toBe(true);
     expect(isFeatureAvailable("/dashboard/simulador", "influencia", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/llms-txt", "influencia", true, false, false)).toBe(false);
+    expect(isFeatureAvailable("/dashboard/campanhas", "influencia", true, false, false)).toBe(false);
   });
 
   it("plano autoridade libera tudo", () => {
