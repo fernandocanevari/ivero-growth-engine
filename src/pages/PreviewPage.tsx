@@ -1496,7 +1496,7 @@ export default function PreviewPage() {
     { subject: "Autoridade", value: 0, fullMark: 100 },
     { subject: "Conversão", value: 0, fullMark: 100 },
     { subject: "Posicionamento", value: 0, fullMark: 100 },
-    { subject: "Experiência", value: 0, fullMark: 100 },
+    { subject: "Relevância", value: 0, fullMark: 100 },
   ]);
   const [dynamicPillarDetails, setDynamicPillarDetails] = useState<any[]>([]);
   const [allModelsFailed, setAllModelsFailed] = useState(false);
