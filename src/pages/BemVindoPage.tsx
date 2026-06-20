@@ -109,6 +109,13 @@ function BrandProfileInline({
         .from("profiles")
         .update({ site_url: siteUrl.trim() } as never)
         .eq("user_id", userId);
+      await supabase.from("brand_settings").upsert(
+        {
+          user_id: userId,
+          website: siteUrl.trim(),
+        } as never,
+        { onConflict: "user_id" }
+      );
       onCompleted();
     } finally {
       setSavingSite(false);
