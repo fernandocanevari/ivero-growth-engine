@@ -25,9 +25,10 @@ const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 
 interface TrialBannerProps {
   userId: string | null;
+  plano?: "presenca" | "influencia" | "autoridade" | null;
 }
 
-export function TrialBanner({ userId }: TrialBannerProps) {
+export function TrialBanner({ userId, plano }: TrialBannerProps) {
   const [visible, setVisible] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
@@ -100,7 +101,16 @@ export function TrialBanner({ userId }: TrialBannerProps) {
                     </span>
                   )}
                   <span className="text-muted-foreground hidden md:inline">
-                    {" "}— acesso ao Diagnóstico, Score e Dashboard. <span className="text-foreground font-medium">Recursos avançados liberam após upgrade.</span>
+                    {" "}— acesso completo aos recursos do plano{" "}
+                    <span className="text-foreground font-medium">
+                      {plano === "presenca"
+                        ? "Presença"
+                        : plano === "influencia"
+                        ? "Influência"
+                        : plano === "autoridade"
+                        ? "Autoridade"
+                        : "escolhido"}
+                    </span>.
                   </span>
                 </p>
               </div>
