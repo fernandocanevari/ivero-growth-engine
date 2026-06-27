@@ -119,7 +119,7 @@ export default function AuthPage() {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
     // Extras collected at signup time, persisted to profiles once the session arrives
-    let pendingSignupExtras: { nome_completo: string; nome_empresa: string; celular: string } | null = null;
+    let pendingSignupExtras: { nome_completo: string; nome_empresa: string } | null = null;
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
