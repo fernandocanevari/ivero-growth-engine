@@ -392,18 +392,6 @@ export default function AuthPage() {
                         className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Celular</Label>
-                      <Input
-                        type="tel"
-                        required
-                        maxLength={16}
-                        value={celular}
-                        onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
-                        placeholder="(11) 99999-9999"
-                        className="h-11 bg-secondary/50 border-border focus:border-primary"
-                      />
-                    </div>
                   </>
                 )}
                 <div className="space-y-2">
