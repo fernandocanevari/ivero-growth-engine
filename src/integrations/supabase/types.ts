@@ -293,6 +293,44 @@ export type Database = {
         }
         Relationships: []
       }
+      competitors: {
+        Row: {
+          aprovado_pelo_usuario: boolean
+          brand_id: string
+          created_at: string
+          id: string
+          nome: string
+          sugerido_por_ia: boolean
+          url: string | null
+        }
+        Insert: {
+          aprovado_pelo_usuario?: boolean
+          brand_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          sugerido_por_ia?: boolean
+          url?: string | null
+        }
+        Update: {
+          aprovado_pelo_usuario?: boolean
+          brand_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          sugerido_por_ia?: boolean
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitors_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_onboarding_progress: {
         Row: {
           created_at: string
@@ -489,6 +527,44 @@ export type Database = {
             columns: ["monitoring_id"]
             isOneToOne: false
             referencedRelation: "llms_monitoring"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_responses: {
+        Row: {
+          brand_id: string
+          created_at: string
+          dashboard_hint_dismissed_at: string | null
+          id: string
+          p1_maturidade_ia: string
+          p2_criterio_mercado: string
+          p3_maior_risco: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          dashboard_hint_dismissed_at?: string | null
+          id?: string
+          p1_maturidade_ia: string
+          p2_criterio_mercado: string
+          p3_maior_risco: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          dashboard_hint_dismissed_at?: string | null
+          id?: string
+          p1_maturidade_ia?: string
+          p2_criterio_mercado?: string
+          p3_maior_risco?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_responses_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
             referencedColumns: ["id"]
           },
         ]
