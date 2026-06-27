@@ -56,18 +56,19 @@ export default function AuthPage() {
     }
   };
 
-  // Helper: persist the extra signup fields (nome_completo, nome_empresa, celular) on the profile row
+  // Helper: persist signup fields with STRICT separation of concerns.
+  // profiles = person identity only (nome_completo, display_name)
+  // brand_settings = brand identity only (brand_name)
+  // Never duplicate data across these two tables.
   const persistProfileExtras = async (
     userId: string,
-    extras: { nome_completo: string; nome_empresa: string; celular: string }
+    extras: { nome_completo: string; nome_empresa: string }
   ) => {
     try {
       await supabase
         .from("profiles")
         .update({
           nome_completo: extras.nome_completo,
-          nome_empresa: extras.nome_empresa,
-          celular: extras.celular,
           display_name: extras.nome_completo || undefined,
         } as any)
         .eq("user_id", userId);
@@ -118,7 +119,7 @@ export default function AuthPage() {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
     // Extras collected at signup time, persisted to profiles once the session arrives
-    let pendingSignupExtras: { nome_completo: string; nome_empresa: string; celular: string } | null = null;
+    let pendingSignupExtras: { nome_completo: string; nome_empresa: string } | null = null;
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
@@ -146,8 +147,8 @@ export default function AuthPage() {
       if (isPendingSignup) {
         pendingSignupForUserId = null;
         pendingSignupExtras = null;
-        // After signup the user always goes to plan selection
-        navigate("/escolher-plano", { replace: true });
+        // After signup the user goes to the onboarding questions step
+        navigate("/onboarding/perguntas", { replace: true });
         return;
       }
       if (isMatchingUser(session.user.email)) {
@@ -158,7 +159,7 @@ export default function AuthPage() {
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
-    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string; celular: string }) => {
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string }) => {
       pendingSignupExtras = extras;
     };
 
@@ -193,18 +194,16 @@ export default function AuthPage() {
       const extras = {
         nome_completo: nomeCompleto.trim(),
         nome_empresa: nomeEmpresa.trim(),
-        celular: celular.trim(),
       };
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin + "/escolher-plano",
+          emailRedirectTo: window.location.origin + "/onboarding/perguntas",
           data: {
             display_name: extras.nome_completo || prefName || email.split("@")[0],
             nome_completo: extras.nome_completo,
             nome_empresa: extras.nome_empresa,
-            celular: extras.celular,
           },
         },
       });
@@ -236,11 +235,11 @@ export default function AuthPage() {
         toast({
           title: data.session ? "Conta criada!" : "Cadastro realizado!",
           description: data.session
-            ? "Escolha seu plano para começar."
-            : "Verifique seu email para confirmar e escolher seu plano.",
+            ? "Vamos conhecer melhor sua marca."
+            : "Verifique seu email para confirmar e continuar.",
         });
         if (userId && data.session) {
-          navigate("/escolher-plano", { replace: true });
+          navigate("/onboarding/perguntas", { replace: true });
         }
       }
     }
@@ -390,18 +389,6 @@ export default function AuthPage() {
                         value={nomeEmpresa}
                         onChange={(e) => setNomeEmpresa(e.target.value)}
                         placeholder="Nome da sua empresa"
-                        className="h-11 bg-secondary/50 border-border focus:border-primary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Celular</Label>
-                      <Input
-                        type="tel"
-                        required
-                        maxLength={16}
-                        value={celular}
-                        onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
-                        placeholder="(11) 99999-9999"
                         className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
