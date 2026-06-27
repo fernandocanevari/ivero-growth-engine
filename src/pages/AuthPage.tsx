@@ -56,18 +56,19 @@ export default function AuthPage() {
     }
   };
 
-  // Helper: persist the extra signup fields (nome_completo, nome_empresa, celular) on the profile row
+  // Helper: persist signup fields with STRICT separation of concerns.
+  // profiles = person identity only (nome_completo, display_name)
+  // brand_settings = brand identity only (brand_name)
+  // Never duplicate data across these two tables.
   const persistProfileExtras = async (
     userId: string,
-    extras: { nome_completo: string; nome_empresa: string; celular: string }
+    extras: { nome_completo: string; nome_empresa: string }
   ) => {
     try {
       await supabase
         .from("profiles")
         .update({
           nome_completo: extras.nome_completo,
-          nome_empresa: extras.nome_empresa,
-          celular: extras.celular,
           display_name: extras.nome_completo || undefined,
         } as any)
         .eq("user_id", userId);
