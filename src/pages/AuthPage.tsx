@@ -147,8 +147,8 @@ export default function AuthPage() {
       if (isPendingSignup) {
         pendingSignupForUserId = null;
         pendingSignupExtras = null;
-        // After signup the user always goes to plan selection
-        navigate("/escolher-plano", { replace: true });
+        // After signup the user goes to the onboarding questions step
+        navigate("/onboarding/perguntas", { replace: true });
         return;
       }
       if (isMatchingUser(session.user.email)) {
@@ -159,7 +159,7 @@ export default function AuthPage() {
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
-    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string; celular: string }) => {
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string }) => {
       pendingSignupExtras = extras;
     };
 
