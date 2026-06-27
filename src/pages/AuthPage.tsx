@@ -194,18 +194,16 @@ export default function AuthPage() {
       const extras = {
         nome_completo: nomeCompleto.trim(),
         nome_empresa: nomeEmpresa.trim(),
-        celular: celular.trim(),
       };
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin + "/escolher-plano",
+          emailRedirectTo: window.location.origin + "/onboarding/perguntas",
           data: {
             display_name: extras.nome_completo || prefName || email.split("@")[0],
             nome_completo: extras.nome_completo,
             nome_empresa: extras.nome_empresa,
-            celular: extras.celular,
           },
         },
       });
@@ -237,11 +235,11 @@ export default function AuthPage() {
         toast({
           title: data.session ? "Conta criada!" : "Cadastro realizado!",
           description: data.session
-            ? "Escolha seu plano para começar."
-            : "Verifique seu email para confirmar e escolher seu plano.",
+            ? "Vamos conhecer melhor sua marca."
+            : "Verifique seu email para confirmar e continuar.",
         });
         if (userId && data.session) {
-          navigate("/escolher-plano", { replace: true });
+          navigate("/onboarding/perguntas", { replace: true });
         }
       }
     }
