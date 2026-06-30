@@ -20,11 +20,11 @@ type AnalysisResult = {
 };
 
 const LOADING_MESSAGES = [
-  "Abrindo seu site...",
-  "Lendo o conteúdo das suas páginas...",
-  "Identificando o seu posicionamento...",
-  "Buscando seus principais concorrentes...",
-  "Organizando o que encontramos para você...",
+  "Acessando o site da sua marca...",
+  "Estou dando uma olhada em tudo que você publica...",
+  "Interessante — já estou entendendo como sua marca se posiciona",
+  "Agora estou mapeando quem divide esse mercado com você",
+  "Pronto. Tenho o que precisava para começar.",
 ];
 
 const OBJECTIVES = [
