@@ -154,9 +154,11 @@ export type Database = {
           coverage_state: string | null
           coverage_type: string
           created_at: string
+          description: string | null
           id: string
           logo_url: string
           main_competitor: string
+          objetivos: string[]
           other_competitors: string
           sector: string
           updated_at: string
@@ -173,9 +175,11 @@ export type Database = {
           coverage_state?: string | null
           coverage_type?: string
           created_at?: string
+          description?: string | null
           id?: string
           logo_url?: string
           main_competitor?: string
+          objetivos?: string[]
           other_competitors?: string
           sector?: string
           updated_at?: string
@@ -192,9 +196,11 @@ export type Database = {
           coverage_state?: string | null
           coverage_type?: string
           created_at?: string
+          description?: string | null
           id?: string
           logo_url?: string
           main_competitor?: string
+          objetivos?: string[]
           other_competitors?: string
           sector?: string
           updated_at?: string
