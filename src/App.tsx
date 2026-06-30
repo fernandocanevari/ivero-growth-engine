@@ -10,6 +10,8 @@ import PreviewPage from "./pages/PreviewPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import BemVindoPage from "./pages/BemVindoPage";
 import OnboardingPerguntasPage from "./pages/OnboardingPerguntasPage";
+import OnboardingSitePage from "./pages/OnboardingSitePage";
+import OnboardingDiagnosticoPlaceholderPage from "./pages/OnboardingDiagnosticoPlaceholderPage";
 import EscolherPlanoPage from "./pages/EscolherPlanoPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
@@ -95,6 +97,8 @@ const App = () => (
           <Route path="/bem-vindo" element={<ProtectedRoute requireSubscription={false}><BemVindoPage /></ProtectedRoute>} />
           <Route path="/escolher-plano" element={<ProtectedRoute requireSubscription={false}><EscolherPlanoPage /></ProtectedRoute>} />
           <Route path="/onboarding/perguntas" element={<ProtectedRoute requireSubscription={false}><OnboardingPerguntasPage /></ProtectedRoute>} />
+          <Route path="/onboarding/site" element={<ProtectedRoute requireSubscription={false}><OnboardingSitePage /></ProtectedRoute>} />
+          <Route path="/onboarding/diagnostico" element={<ProtectedRoute requireSubscription={false}><OnboardingDiagnosticoPlaceholderPage /></ProtectedRoute>} />
 
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
