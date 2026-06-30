@@ -152,9 +152,21 @@ export default function OnboardingPerguntasPage() {
               />
             ))}
           </div>
-          <p className="text-xs font-semibold tracking-wider text-[#6C5CE7]">
-            Pergunta {step + 1} de {QUESTIONS.length}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold tracking-wider text-[#6C5CE7]">
+              Pergunta {step + 1} de {QUESTIONS.length}
+            </p>
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                disabled={saving}
+                className="text-xs text-muted-foreground hover:text-[#6C5CE7] transition-colors disabled:opacity-50"
+              >
+                ← Voltar
+              </button>
+            )}
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
