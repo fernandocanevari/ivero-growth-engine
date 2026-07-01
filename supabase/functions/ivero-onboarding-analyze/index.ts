@@ -29,7 +29,12 @@ function extractJson<T>(raw: string): T {
   return JSON.parse(cleaned.slice(start, end + 1)) as T;
 }
 
-async function firecrawlScrape(url: string, apiKey: string): Promise<string> {
+type ScrapeOutcome =
+  | { status: "ok"; markdown: string }
+  | { status: "inaccessible" }
+  | { status: "insufficient" };
+
+async function firecrawlScrape(url: string, apiKey: string): Promise<ScrapeOutcome> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25000);
@@ -43,14 +48,21 @@ async function firecrawlScrape(url: string, apiKey: string): Promise<string> {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    if (!resp.ok) return "";
+    if (!resp.ok) return { status: "inaccessible" };
     const data = await resp.json().catch(() => null);
     const md: string = data?.data?.markdown ?? data?.markdown ?? "";
-    if (!md || md.trim().length < 50) return "";
+    const useful = (md || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+    if (!useful) return { status: "inaccessible" };
+    if (useful.length < 200) return { status: "insufficient" };
     const words = md.split(/\s+/);
-    return words.length > 1200 ? words.slice(0, 1200).join(" ") : md;
+    const clipped = words.length > 1200 ? words.slice(0, 1200).join(" ") : md;
+    return { status: "ok", markdown: clipped };
   } catch {
-    return "";
+    return { status: "inaccessible" };
   }
 }
 
