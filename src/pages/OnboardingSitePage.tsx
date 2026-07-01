@@ -87,12 +87,23 @@ export default function OnboardingSitePage() {
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
+    setErrorState(null);
     setPhase("loading");
     try {
       const { data, error } = await supabase.functions.invoke("ivero-onboarding-analyze", {
         body: { url: url.trim() },
       });
       if (error) throw error;
+      if (data?.error === "site_inaccessible") {
+        setErrorState({ kind: "site_inaccessible", message: data?.message || "Hmm, não consegui acessar esse site. Verifique o endereço e tente novamente." });
+        setPhase("url");
+        return;
+      }
+      if (data?.error === "insufficient_content") {
+        setErrorState({ kind: "insufficient_content", message: data?.message || "Consegui acessar o site, mas ele tem pouco conteúdo pra eu analisar. Tente outro endereço ou continue mesmo assim.", normalizedUrl: data?.normalized_url });
+        setPhase("url");
+        return;
+      }
       if (!data || data.error) throw new Error(data?.error || "Erro ao analisar");
       const result = data as AnalysisResult;
       setAnalysis(result);
@@ -108,6 +119,22 @@ export default function OnboardingSitePage() {
       toast({ title: "Não conseguimos ler seu site", description: msg, variant: "destructive" });
       setPhase("url");
     }
+  };
+
+  const handleContinueAnyway = () => {
+    setAnalysis({ brand_name: "", description: "", sector: "", competitors: [], normalized_url: errorState?.normalizedUrl || url.trim() });
+    setBrandName("");
+    setDescription("");
+    setSector("");
+    setCompetitors([]);
+    setErrorState(null);
+    setPhase("confirm");
+  };
+
+  const handleTryAnother = () => {
+    setUrl("");
+    setErrorState(null);
+    setTimeout(() => urlInputRef.current?.focus(), 0);
   };
 
   const removeCompetitor = (idx: number) => {
