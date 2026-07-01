@@ -123,25 +123,25 @@ export default function OnboardingPerguntasPage() {
   const selected = answers[current.column];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F8F5FF] via-white to-[#FBF7FF] px-4 sm:px-6 py-10 sm:py-16">
+    <div className="min-h-screen bg-gradient-to-b from-[#F8F5FF] via-white to-[#FBF7FF] px-4 sm:px-6 py-4 sm:py-8">
       <div className="max-w-2xl mx-auto">
         {step === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-center mb-8"
+            className="text-center mb-4 sm:mb-6"
           >
-            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1A2E] leading-tight mb-3">
+            <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-[#1A1A2E] leading-tight mb-2">
               Antes de eu te dar qualquer recomendação, preciso te conhecer melhor.
             </h1>
-            <p className="text-base sm:text-lg text-ivero-purple font-medium">
+            <p className="text-sm sm:text-base text-ivero-purple font-medium">
               São só 3 perguntas. Vamos juntos nessa.
             </p>
           </motion.div>
         )}
 
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex gap-2 mb-2" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={3}>
             {QUESTIONS.map((_, i) => (
               <div
@@ -166,16 +166,16 @@ export default function OnboardingPerguntasPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.2 }}
-            className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-6 sm:p-8"
+            className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-4 sm:p-6"
           >
-            <h2 className="text-lg sm:text-xl font-semibold text-[#1A1A2E] leading-snug mb-2">
+            <h2 className="text-base sm:text-lg font-semibold text-[#1A1A2E] leading-snug mb-2">
               {current.text}
             </h2>
             {current.subtitle && (
-              <p className="text-sm text-muted-foreground mb-5">{current.subtitle}</p>
+              <p className="text-sm text-muted-foreground mb-3">{current.subtitle}</p>
             )}
 
-            <div className="space-y-2.5 mt-5">
+            <div className="space-y-2 mt-3">
               {current.options.map((opt) => {
                 const isSelected = selected === opt.value;
                 return (
@@ -184,7 +184,7 @@ export default function OnboardingPerguntasPage() {
                     type="button"
                     onClick={() => handleSelect(opt.value)}
                     disabled={saving}
-                    className={`w-full flex items-start gap-3 text-left rounded-[10px] border px-4 py-3.5 transition-all duration-150 ${
+                    className={`w-full flex items-start gap-3 text-left rounded-[10px] border px-4 py-2.5 transition-all duration-150 ${
                       isSelected
                         ? "border-[#6C5CE7] bg-[#F5F3FF] shadow-sm"
                         : "border-[#E5E5E5] bg-white hover:border-[#6C5CE7]/50 hover:bg-[#FAF8FF]"
@@ -207,7 +207,7 @@ export default function OnboardingPerguntasPage() {
         </AnimatePresence>
 
         {step > 0 && (
-          <div className="mt-6 flex justify-start">
+          <div className="mt-4 flex justify-start">
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
@@ -222,3 +222,4 @@ export default function OnboardingPerguntasPage() {
     </div>
   );
 }
+
