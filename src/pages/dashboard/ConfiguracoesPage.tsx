@@ -69,8 +69,6 @@ export default function ConfiguracoesPage() {
         brand_name: settings.brand_name,
         website: settings.website,
         sector: settings.sector,
-        main_competitor: settings.main_competitor,
-        other_competitors: settings.other_competitors,
         contact_name: settings.contact_name || "",
         contact_email: settings.contact_email || "",
         contact_phone: settings.contact_phone || "",
@@ -82,6 +80,27 @@ export default function ConfiguracoesPage() {
       });
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (competitorRows) {
+      setCompetitorNames(competitorRows.map((c) => c.nome));
+    }
+  }, [competitorRows]);
+
+  const addCompetitor = () => {
+    const n = newCompetitor.trim();
+    if (!n) return;
+    if (competitorNames.some((c) => c.toLowerCase() === n.toLowerCase())) {
+      setNewCompetitor("");
+      return;
+    }
+    setCompetitorNames((prev) => [...prev, n]);
+    setNewCompetitor("");
+  };
+
+  const removeCompetitor = (name: string) => {
+    setCompetitorNames((prev) => prev.filter((c) => c !== name));
+  };
 
   const qc = useQueryClient();
 
@@ -128,15 +147,28 @@ export default function ConfiguracoesPage() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    let brandId = settings?.id;
     if (settings) {
       updateMutation.mutate({ id: settings.id, ...form });
     } else {
-      const { error } = await supabase.from("brand_settings").insert({ ...form, user_id: user.id });
+      const { data: inserted, error } = await supabase
+        .from("brand_settings")
+        .insert({ ...form, user_id: user.id })
+        .select("id")
+        .single();
       if (error) {
         toast({ title: "Erro ao salvar", variant: "destructive" });
-      } else {
-        qc.invalidateQueries({ queryKey: ["brand_settings"] });
-        toast({ title: "Configurações salvas!" });
+        return;
+      }
+      brandId = inserted.id;
+      qc.invalidateQueries({ queryKey: ["brand_settings"] });
+      toast({ title: "Configurações salvas!" });
+    }
+    if (brandId) {
+      try {
+        await replaceCompetitors.mutateAsync({ brandId, names: competitorNames });
+      } catch {
+        /* toast já disparado no hook */
       }
     }
   };
