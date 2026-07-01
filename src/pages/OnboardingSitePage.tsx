@@ -116,9 +116,11 @@ export default function OnboardingSitePage() {
         (result.competitors || []).map((name) => ({ name, suggested: true })),
       );
       setPhase("confirm");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Não conseguimos analisar o site";
-      toast({ title: "Não conseguimos ler seu site", description: msg, variant: "destructive" });
+    } catch {
+      setErrorState({
+        kind: "site_inaccessible",
+        message: "Hmm, não consegui acessar esse site. Verifique o endereço e tente novamente.",
+      });
       setPhase("url");
     }
   };
