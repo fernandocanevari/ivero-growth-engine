@@ -263,9 +263,36 @@ export default function OnboardingSitePage() {
                       className="pl-9"
                       autoFocus
                       required
+                      ref={urlInputRef}
                     />
                   </div>
                 </div>
+                {errorState && (
+                  <div className="rounded-lg border border-[#F5B7B1] bg-[#FDECEA] px-4 py-3 text-sm text-[#8B2B23]">
+                    <p>{errorState.message}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {errorState.kind === "insufficient_content" ? (
+                        <>
+                          <Button type="button" variant="outline" size="sm" onClick={handleTryAnother}>
+                            Tentar outro endereço
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
+                            onClick={handleContinueAnyway}
+                          >
+                            Continuar mesmo assim
+                          </Button>
+                        </>
+                      ) : (
+                        <Button type="button" variant="outline" size="sm" onClick={handleTryAnother}>
+                          Tentar novamente
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <Button
                   type="submit"
                   className="w-full bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
