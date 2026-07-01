@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Upload, Building2, Cpu, Globe, CheckCircle2 } from "lucide-react";
+import { Upload, Building2, Cpu, Globe, CheckCircle2, X, Plus } from "lucide-react";
 import { useBrandSettings, useUpdateBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors, useReplaceCompetitors } from "@/hooks/useCompetitors";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -37,19 +38,21 @@ const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: strin
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
   const updateMutation = useUpdateBrandSettings();
+  const { data: competitorRows } = useCompetitors(settings?.id);
+  const replaceCompetitors = useReplaceCompetitors();
   const { plano, isAdmin } = useSubscriptionStatus();
   const activeCount = isAdmin ? 4 : MODELS_BY_TIER[plano ?? "presenca"];
   const activeModels = MODELS_ORDER.slice(0, activeCount);
   const lockedModels = MODELS_ORDER.slice(activeCount);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [competitorNames, setCompetitorNames] = useState<string[]>([]);
+  const [newCompetitor, setNewCompetitor] = useState("");
 
   const [form, setForm] = useState({
     brand_name: "",
     website: "",
     sector: "",
-    main_competitor: "",
-    other_competitors: "",
     contact_name: "",
     contact_email: "",
     contact_phone: "",
