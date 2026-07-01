@@ -90,12 +90,33 @@ Deno.serve(async (req) => {
     }
 
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-    const scraped = firecrawlKey ? await firecrawlScrape(normalizedUrl, firecrawlKey) : "";
+    if (!firecrawlKey) {
+      return new Response(
+        JSON.stringify({ error: "site_inaccessible", message: "Não foi possível acessar o site informado." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const scrapeResult = await firecrawlScrape(normalizedUrl, firecrawlKey);
+    if (scrapeResult.status === "inaccessible") {
+      return new Response(
+        JSON.stringify({ error: "site_inaccessible", message: "Não foi possível acessar o site informado.", normalized_url: normalizedUrl }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (scrapeResult.status === "insufficient") {
+      return new Response(
+        JSON.stringify({ error: "insufficient_content", message: "O site não retornou conteúdo suficiente para análise.", normalized_url: normalizedUrl }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const scraped = scrapeResult.markdown;
 
     const prompt = `Você é um analista de marca. Com base nas informações abaixo de um site, retorne APENAS um JSON estrito (sem markdown) com os dados da marca.
 
 URL: ${normalizedUrl}
-${scraped ? `\nCONTEÚDO REAL DO SITE (extraído):\n${scraped}\n` : "\n(Não foi possível extrair conteúdo do site — infira a partir da URL e domínio público.)\n"}
+
+CONTEÚDO REAL DO SITE (extraído):
+${scraped}
 
 Retorne EXATAMENTE este schema em Português do Brasil:
 {
