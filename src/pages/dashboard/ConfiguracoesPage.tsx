@@ -256,8 +256,38 @@ export default function ConfiguracoesPage() {
       <Card>
         <CardContent className="p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Concorrentes Monitorados</h2>
-          <div><Label>Concorrente Principal</Label><Input value={form.main_competitor} onChange={(e) => setForm((p) => ({ ...p, main_competitor: e.target.value }))} className="mt-1" /></div>
-          <div><Label>Outros Concorrentes</Label><Input value={form.other_competitors} onChange={(e) => setForm((p) => ({ ...p, other_competitors: e.target.value }))} className="mt-1" placeholder="Separados por vírgula..." /></div>
+          <p className="text-xs text-muted-foreground">Adicione os concorrentes que a Ivero deve monitorar em cada análise.</p>
+          <div className="flex gap-2">
+            <Input
+              value={newCompetitor}
+              onChange={(e) => setNewCompetitor(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCompetitor(); } }}
+              placeholder="Nome do concorrente"
+              className="flex-1"
+            />
+            <Button type="button" variant="outline" size="icon" onClick={addCompetitor} aria-label="Adicionar concorrente">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {competitorNames.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">Nenhum concorrente cadastrado ainda.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {competitorNames.map((name) => (
+                <span key={name} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-3 py-1 text-sm text-foreground">
+                  {name}
+                  <button
+                    type="button"
+                    onClick={() => removeCompetitor(name)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={`Remover ${name}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
