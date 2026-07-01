@@ -29,7 +29,12 @@ function extractJson<T>(raw: string): T {
   return JSON.parse(cleaned.slice(start, end + 1)) as T;
 }
 
-async function firecrawlScrape(url: string, apiKey: string): Promise<string> {
+type ScrapeOutcome =
+  | { status: "ok"; markdown: string }
+  | { status: "inaccessible" }
+  | { status: "insufficient" };
+
+async function firecrawlScrape(url: string, apiKey: string): Promise<ScrapeOutcome> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25000);
@@ -43,14 +48,21 @@ async function firecrawlScrape(url: string, apiKey: string): Promise<string> {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    if (!resp.ok) return "";
+    if (!resp.ok) return { status: "inaccessible" };
     const data = await resp.json().catch(() => null);
     const md: string = data?.data?.markdown ?? data?.markdown ?? "";
-    if (!md || md.trim().length < 50) return "";
+    const useful = (md || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+    if (!useful) return { status: "inaccessible" };
+    if (useful.length < 200) return { status: "insufficient" };
     const words = md.split(/\s+/);
-    return words.length > 1200 ? words.slice(0, 1200).join(" ") : md;
+    const clipped = words.length > 1200 ? words.slice(0, 1200).join(" ") : md;
+    return { status: "ok", markdown: clipped };
   } catch {
-    return "";
+    return { status: "inaccessible" };
   }
 }
 
@@ -78,12 +90,33 @@ Deno.serve(async (req) => {
     }
 
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-    const scraped = firecrawlKey ? await firecrawlScrape(normalizedUrl, firecrawlKey) : "";
+    if (!firecrawlKey) {
+      return new Response(
+        JSON.stringify({ error: "site_inaccessible", message: "Não foi possível acessar o site informado." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const scrapeResult = await firecrawlScrape(normalizedUrl, firecrawlKey);
+    if (scrapeResult.status === "inaccessible") {
+      return new Response(
+        JSON.stringify({ error: "site_inaccessible", message: "Não foi possível acessar o site informado.", normalized_url: normalizedUrl }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (scrapeResult.status === "insufficient") {
+      return new Response(
+        JSON.stringify({ error: "insufficient_content", message: "O site não retornou conteúdo suficiente para análise.", normalized_url: normalizedUrl }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const scraped = scrapeResult.markdown;
 
     const prompt = `Você é um analista de marca. Com base nas informações abaixo de um site, retorne APENAS um JSON estrito (sem markdown) com os dados da marca.
 
 URL: ${normalizedUrl}
-${scraped ? `\nCONTEÚDO REAL DO SITE (extraído):\n${scraped}\n` : "\n(Não foi possível extrair conteúdo do site — infira a partir da URL e domínio público.)\n"}
+
+CONTEÚDO REAL DO SITE (extraído):
+${scraped}
 
 Retorne EXATAMENTE este schema em Português do Brasil:
 {
