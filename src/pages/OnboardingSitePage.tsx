@@ -60,7 +60,9 @@ export default function OnboardingSitePage() {
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [errorState, setErrorState] = useState<{ kind: "site_inaccessible" | "insufficient_content"; message: string; normalizedUrl?: string } | null>(null);
   const loadingTimerRef = useRef<number | null>(null);
+  const urlInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     (async () => {
