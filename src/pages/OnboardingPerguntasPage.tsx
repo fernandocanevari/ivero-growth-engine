@@ -212,7 +212,7 @@ export default function OnboardingPerguntasPage() {
               type="button"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={saving}
-              className="inline-flex items-center gap-2 text-base font-medium text-[#1A1A2E] hover:text-[#6C5CE7] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 text-base font-medium text-[#6C5CE7] hover:opacity-80 transition-opacity disabled:opacity-50"
             >
               <span className="text-2xl leading-none" aria-hidden="true">←</span> Voltar
             </button>
