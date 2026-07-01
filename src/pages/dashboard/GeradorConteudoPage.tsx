@@ -38,6 +38,7 @@ import {
 } from "@/hooks/useContentHistory";
 import { useGenerationQuota } from "@/hooks/useGenerationQuota";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors } from "@/hooks/useCompetitors";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
 import {
@@ -63,6 +64,8 @@ interface PillarInfo {
 
 export default function GeradorConteudoPage() {
   const { data: brand } = useBrandSettings();
+  const { data: competitors } = useCompetitors(brand?.id);
+  const mainCompetitor = competitors?.[0]?.nome ?? "";
   const { lastAnalysis } = useAnalysisHistory();
   const quota = useGenerationQuota();
   const { data: contentHistory, isLoading: historyLoading } = useContentHistory();
@@ -99,10 +102,10 @@ export default function GeradorConteudoPage() {
           defaultOn: true,
         }),
       );
-    if (brand?.main_competitor) {
+    if (mainCompetitor) {
       items.push({
         key: "competitor",
-        label: `Concorrente: ${brand.main_competitor}`,
+        label: `Concorrente: ${mainCompetitor}`,
         defaultOn: true,
       });
     }
@@ -114,7 +117,7 @@ export default function GeradorConteudoPage() {
       });
     }
     return items;
-  }, [pillars, brand]);
+  }, [pillars, brand, mainCompetitor]);
 
   const isContextChecked = (key: string) => {
     if (key in contextSelections) return contextSelections[key];
@@ -131,8 +134,8 @@ export default function GeradorConteudoPage() {
     const ctx: any = {};
     if (brand?.brand_name) ctx.brandName = brand.brand_name;
     if (isContextChecked("sector") && brand?.sector) ctx.sector = brand.sector;
-    if (isContextChecked("competitor") && brand?.main_competitor)
-      ctx.mainCompetitor = brand.main_competitor;
+    if (isContextChecked("competitor") && mainCompetitor)
+      ctx.mainCompetitor = mainCompetitor;
     const weak = pillars
       .filter((p) => p.weak && isContextChecked(`weak:${p.name}`))
       .map((p) => ({ name: p.name, score: p.score }));

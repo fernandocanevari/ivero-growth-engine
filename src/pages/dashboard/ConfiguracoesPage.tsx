@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Upload, Building2, Cpu, Globe, CheckCircle2 } from "lucide-react";
+import { Upload, Building2, Cpu, Globe, CheckCircle2, X, Plus } from "lucide-react";
 import { useBrandSettings, useUpdateBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors, useReplaceCompetitors } from "@/hooks/useCompetitors";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -37,19 +38,21 @@ const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: strin
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
   const updateMutation = useUpdateBrandSettings();
+  const { data: competitorRows } = useCompetitors(settings?.id);
+  const replaceCompetitors = useReplaceCompetitors();
   const { plano, isAdmin } = useSubscriptionStatus();
   const activeCount = isAdmin ? 4 : MODELS_BY_TIER[plano ?? "presenca"];
   const activeModels = MODELS_ORDER.slice(0, activeCount);
   const lockedModels = MODELS_ORDER.slice(activeCount);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [competitorNames, setCompetitorNames] = useState<string[]>([]);
+  const [newCompetitor, setNewCompetitor] = useState("");
 
   const [form, setForm] = useState({
     brand_name: "",
     website: "",
     sector: "",
-    main_competitor: "",
-    other_competitors: "",
     contact_name: "",
     contact_email: "",
     contact_phone: "",
@@ -66,8 +69,6 @@ export default function ConfiguracoesPage() {
         brand_name: settings.brand_name,
         website: settings.website,
         sector: settings.sector,
-        main_competitor: settings.main_competitor,
-        other_competitors: settings.other_competitors,
         contact_name: settings.contact_name || "",
         contact_email: settings.contact_email || "",
         contact_phone: settings.contact_phone || "",
@@ -79,6 +80,27 @@ export default function ConfiguracoesPage() {
       });
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (competitorRows) {
+      setCompetitorNames(competitorRows.map((c) => c.nome));
+    }
+  }, [competitorRows]);
+
+  const addCompetitor = () => {
+    const n = newCompetitor.trim();
+    if (!n) return;
+    if (competitorNames.some((c) => c.toLowerCase() === n.toLowerCase())) {
+      setNewCompetitor("");
+      return;
+    }
+    setCompetitorNames((prev) => [...prev, n]);
+    setNewCompetitor("");
+  };
+
+  const removeCompetitor = (name: string) => {
+    setCompetitorNames((prev) => prev.filter((c) => c !== name));
+  };
 
   const qc = useQueryClient();
 
@@ -125,15 +147,28 @@ export default function ConfiguracoesPage() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    let brandId = settings?.id;
     if (settings) {
       updateMutation.mutate({ id: settings.id, ...form });
     } else {
-      const { error } = await supabase.from("brand_settings").insert({ ...form, user_id: user.id });
+      const { data: inserted, error } = await supabase
+        .from("brand_settings")
+        .insert({ ...form, user_id: user.id })
+        .select("id")
+        .single();
       if (error) {
         toast({ title: "Erro ao salvar", variant: "destructive" });
-      } else {
-        qc.invalidateQueries({ queryKey: ["brand_settings"] });
-        toast({ title: "Configurações salvas!" });
+        return;
+      }
+      brandId = inserted.id;
+      qc.invalidateQueries({ queryKey: ["brand_settings"] });
+      toast({ title: "Configurações salvas!" });
+    }
+    if (brandId) {
+      try {
+        await replaceCompetitors.mutateAsync({ brandId, names: competitorNames });
+      } catch {
+        /* toast já disparado no hook */
       }
     }
   };
@@ -221,8 +256,38 @@ export default function ConfiguracoesPage() {
       <Card>
         <CardContent className="p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Concorrentes Monitorados</h2>
-          <div><Label>Concorrente Principal</Label><Input value={form.main_competitor} onChange={(e) => setForm((p) => ({ ...p, main_competitor: e.target.value }))} className="mt-1" /></div>
-          <div><Label>Outros Concorrentes</Label><Input value={form.other_competitors} onChange={(e) => setForm((p) => ({ ...p, other_competitors: e.target.value }))} className="mt-1" placeholder="Separados por vírgula..." /></div>
+          <p className="text-xs text-muted-foreground">Adicione os concorrentes que a Ivero deve monitorar em cada análise.</p>
+          <div className="flex gap-2">
+            <Input
+              value={newCompetitor}
+              onChange={(e) => setNewCompetitor(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCompetitor(); } }}
+              placeholder="Nome do concorrente"
+              className="flex-1"
+            />
+            <Button type="button" variant="outline" size="icon" onClick={addCompetitor} aria-label="Adicionar concorrente">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {competitorNames.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">Nenhum concorrente cadastrado ainda.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {competitorNames.map((name) => (
+                <span key={name} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-3 py-1 text-sm text-foreground">
+                  {name}
+                  <button
+                    type="button"
+                    onClick={() => removeCompetitor(name)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={`Remover ${name}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

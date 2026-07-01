@@ -223,7 +223,7 @@ serve(async (req) => {
     const [{ data: brand }, { data: lastAnalysis }] = await Promise.all([
       adminClient
         .from("brand_settings")
-        .select("brand_name, sector, main_competitor, coverage_type, coverage_city, coverage_state, coverage_region")
+        .select("id, brand_name, sector, coverage_type, coverage_city, coverage_state, coverage_region")
         .eq("user_id", userId)
         .limit(1)
         .maybeSingle(),
@@ -238,11 +238,25 @@ serve(async (req) => {
         .maybeSingle(),
     ]);
 
+    // Concorrentes vivem em tabela separada (ver PROMPT 3.5)
+    let mainCompetitorName: string | undefined;
+    if (brand?.id) {
+      const { data: comp } = await adminClient
+        .from("competitors")
+        .select("nome")
+        .eq("brand_id", brand.id)
+        .eq("aprovado_pelo_usuario", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      mainCompetitorName = comp?.nome ?? undefined;
+    }
+
     const enrichedContext: ContextPayload = { ...contextSelected };
     if (!enrichedContext.brandName && brand?.brand_name) enrichedContext.brandName = brand.brand_name;
     if (!enrichedContext.sector && brand?.sector) enrichedContext.sector = brand.sector;
-    if (!enrichedContext.mainCompetitor && brand?.main_competitor)
-      enrichedContext.mainCompetitor = brand.main_competitor;
+    if (!enrichedContext.mainCompetitor && mainCompetitorName)
+      enrichedContext.mainCompetitor = mainCompetitorName;
     if (!enrichedContext.geoContext) enrichedContext.geoContext = buildGeoContext(brand as any);
 
     if (!enrichedContext.weakPillars && lastAnalysis) {

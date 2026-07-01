@@ -42,6 +42,7 @@ interface ClientRow {
     created_at: string;
   } | null;
   brand?: {
+    id?: string;
     brand_name: string;
     sector: string;
     website: string;
@@ -85,6 +86,24 @@ export default function AdminClientesPage() {
         supabase.from("user_roles").select("user_id, role"),
       ]);
 
+      // Concorrentes vivem em outra tabela (ver PROMPT 3.5) — buscar por brand_id
+      const brandIds = (brandRes.data ?? []).map((b) => b.id).filter(Boolean) as string[];
+      const competitorsRes = brandIds.length > 0
+        ? await supabase
+            .from("competitors")
+            .select("brand_id, nome, created_at")
+            .in("brand_id", brandIds)
+            .eq("aprovado_pelo_usuario", true)
+            .order("created_at", { ascending: true })
+        : { data: [] as { brand_id: string; nome: string }[] };
+
+      const mainCompetitorByBrandId = new Map<string, string>();
+      (competitorsRes.data ?? []).forEach((c) => {
+        if (!mainCompetitorByBrandId.has(c.brand_id)) {
+          mainCompetitorByBrandId.set(c.brand_id, c.nome);
+        }
+      });
+
       const onboardingMap = new Map(
         (onboardingRes.data ?? []).map((o) => [o.user_id, o])
       );
@@ -103,14 +122,29 @@ export default function AdminClientesPage() {
 
       return profiles
         .filter((p) => !adminIds.has(p.user_id)) // exclude admins from client list
-        .map((p): ClientRow => ({
-          user_id: p.user_id,
-          display_name: p.display_name,
-          created_at: p.created_at,
-          onboarding: onboardingMap.get(p.user_id) ?? null,
-          brand: brandMap.get(p.user_id) ?? null,
-          campaigns_count: campaignCounts.get(p.user_id) ?? 0,
-        }));
+        .map((p): ClientRow => {
+          const b = brandMap.get(p.user_id);
+          return {
+            user_id: p.user_id,
+            display_name: p.display_name,
+            created_at: p.created_at,
+            onboarding: onboardingMap.get(p.user_id) ?? null,
+            brand: b
+              ? {
+                  id: b.id,
+                  brand_name: b.brand_name,
+                  sector: b.sector,
+                  website: b.website,
+                  main_competitor: mainCompetitorByBrandId.get(b.id) ?? "",
+                  contact_name: b.contact_name,
+                  contact_email: b.contact_email,
+                  contact_phone: b.contact_phone,
+                  logo_url: b.logo_url,
+                }
+              : null,
+            campaigns_count: campaignCounts.get(p.user_id) ?? 0,
+          };
+        });
     },
   });
 

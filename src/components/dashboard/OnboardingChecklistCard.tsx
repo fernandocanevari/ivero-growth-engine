@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useDashboardOnboarding } from "@/hooks/useDashboardOnboarding";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors } from "@/hooks/useCompetitors";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -23,6 +24,7 @@ export function OnboardingChecklistCard() {
   const navigate = useNavigate();
   const { data: progress, isLoading } = useDashboardOnboarding();
   const { data: settings } = useBrandSettings();
+  const { data: competitors } = useCompetitors(settings?.id);
   const [userId, setUserId] = useState<string | null>(null);
   const [snoozedUntil, setSnoozedUntil] = useState<number>(0);
   const [snoozeChecked, setSnoozeChecked] = useState(false);
@@ -45,7 +47,7 @@ export function OnboardingChecklistCard() {
 
   if (isLoading || !progress || !snoozeChecked) return null;
 
-  const hasCompetitor = !!(settings?.main_competitor && settings.main_competitor.trim().length);
+  const hasCompetitor = (competitors?.length ?? 0) > 0;
 
   const steps: Step[] = [
     {

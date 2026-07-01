@@ -5,16 +5,19 @@ import { Target, Settings } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { comparativeData } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors } from "@/hooks/useCompetitors";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 
 export default function ComparativoPage() {
   const { data: settings, isLoading } = useBrandSettings();
+  const { data: competitors } = useCompetitors(settings?.id);
   const hasBrand = !!settings?.brand_name;
-  const hasCompetitor = !!settings?.main_competitor;
+  const mainCompetitor = competitors?.[0]?.nome ?? "";
+  const hasCompetitor = !!mainCompetitor;
   const hasData = false;
 
   const displayName = settings?.brand_name || "Sua marca";
-  const displayCompetitor = settings?.main_competitor || "Concorrente";
+  const displayCompetitor = mainCompetitor || "Concorrente";
 
   if (isLoading) return null;
 

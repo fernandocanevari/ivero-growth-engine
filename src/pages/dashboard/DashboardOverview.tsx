@@ -12,6 +12,7 @@ import {
   comparativeData, actionsData, promptsData, brandName, competitorName,
 } from "@/lib/mock-data";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors } from "@/hooks/useCompetitors";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
@@ -27,15 +28,17 @@ const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, tr
 export default function DashboardOverview() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = useBrandSettings();
+  const { data: competitors } = useCompetitors(settings?.id);
   const { hasDiagnostic, isLoading: loadingDiag } = useHasDiagnostic();
   const { hasCompletedBrandProfile } = useBrandProfile();
   const [brandModalOpen, setBrandModalOpen] = useState(false);
 
   // Determine what data the client has configured
   const hasBrand = !!settings?.brand_name;
-  const hasCompetitor = !!settings?.main_competitor;
+  const mainCompetitor = competitors?.[0]?.nome ?? "";
+  const hasCompetitor = !!mainCompetitor;
   const displayName = settings?.brand_name || "sua marca";
-  const displayCompetitor = settings?.main_competitor || "";
+  const displayCompetitor = mainCompetitor;
 
   // For now, real monitoring/score data doesn't exist yet — show empty states
   // In the future, these flags would check actual data tables

@@ -7,8 +7,6 @@ export interface BrandSettings {
   brand_name: string;
   website: string;
   sector: string;
-  main_competitor: string;
-  other_competitors: string;
   contact_name: string;
   contact_email: string;
   contact_phone: string;
