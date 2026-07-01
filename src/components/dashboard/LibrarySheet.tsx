@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardOnboarding } from "@/hooks/useDashboardOnboarding";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useCompetitors } from "@/hooks/useCompetitors";
 
 interface LibraryEntry {
   name: string;
@@ -190,6 +191,7 @@ export function LibrarySheet() {
   const navigate = useNavigate();
   const { data: progress } = useDashboardOnboarding();
   const { data: settings } = useBrandSettings();
+  const { data: competitors } = useCompetitors(settings?.id);
 
   // URLs ligadas a etapas pendentes do onboarding — destacadas na biblioteca.
   const pendingUrls = useMemo(() => {
@@ -198,10 +200,10 @@ export function LibrarySheet() {
     if (!progress.visited_diagnostico) set.add("/dashboard/diagnostico");
     if (!progress.visited_score) set.add("/dashboard/score");
     if (!progress.visited_acoes) set.add("/dashboard/acoes");
-    const hasCompetitor = !!(settings?.main_competitor && settings.main_competitor.trim().length);
+    const hasCompetitor = (competitors?.length ?? 0) > 0;
     if (!hasCompetitor) set.add("/dashboard/configuracoes");
     return set;
-  }, [progress, settings]);
+  }, [progress, competitors]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
