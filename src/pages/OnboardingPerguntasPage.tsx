@@ -203,26 +203,21 @@ export default function OnboardingPerguntasPage() {
               })}
             </div>
 
-            {/* Accessibility / keyboard fallback */}
-            {selected && (
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={() => handleSelect(selected)}
-                  disabled={saving}
-                  className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...
-                    </>
-                  ) : isLast ? (
-                    "Concluir"
-                  ) : (
-                    "Próxima"
-                  )}
-                </Button>
-              </div>
-            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {step > 0 && (
+          <div className="mt-6 flex justify-start">
+            <button
+              type="button"
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={saving}
+              className="text-base font-medium text-[#1A1A2E] hover:text-[#6C5CE7] transition-colors disabled:opacity-50"
+            >
+              ← Voltar
+            </button>
+          </div>
+        )}
           </motion.div>
         </AnimatePresence>
       </div>
