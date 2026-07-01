@@ -218,8 +218,6 @@ export default function OnboardingPerguntasPage() {
             </button>
           </div>
         )}
-          </motion.div>
-        </AnimatePresence>
       </div>
     </div>
   );
