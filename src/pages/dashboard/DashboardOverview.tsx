@@ -22,6 +22,7 @@ import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { WELCOME_FEATURES } from "@/lib/welcome-features";
 import { FeatureHighlightCard } from "@/components/welcome/FeatureHighlightCard";
 import BrandProfileModal from "@/components/dashboard/BrandProfileModal";
+import { RecommendedToolCard } from "@/components/dashboard/RecommendedToolCard";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
