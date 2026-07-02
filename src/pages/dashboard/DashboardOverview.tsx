@@ -131,6 +131,9 @@ export default function DashboardOverview() {
         </p>
       </motion.div>
 
+      {/* Ferramenta prioritária personalizada — some após o 1º uso */}
+      <RecommendedToolCard />
+
       {/* Onboarding checklist — some sozinho quando todas etapas concluídas */}
       <OnboardingChecklistCard />
 
