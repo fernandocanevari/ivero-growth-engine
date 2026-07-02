@@ -1,17 +1,69 @@
-import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useOnboardingResponses } from "@/hooks/useOnboardingResponses";
+import { getOpeningPhrase } from "@/lib/onboarding-recommendation";
 
+/**
+ * Diagnóstico personalizado pós-onboarding.
+ * Exibe a frase de abertura baseada em p3_maior_risco e conduz o
+ * cliente ao dashboard, onde ele encontra o card "Comece por aqui".
+ */
 export default function OnboardingDiagnosticoPlaceholderPage() {
+  const navigate = useNavigate();
+  const { data: responses, isLoading } = useOnboardingResponses();
+
+  // Fallback: se por algum motivo não achamos as respostas (usuário
+  // acessou direto sem passar pelas perguntas), redireciona pro dashboard.
+  useEffect(() => {
+    if (!isLoading && !responses) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isLoading, responses, navigate]);
+
+  if (isLoading || !responses) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#F8F5FF] via-white to-[#FBF7FF] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+      </div>
+    );
+  }
+
+  const phrase =
+    getOpeningPhrase(responses.p3_maior_risco) ??
+    "Vamos mapear como as IAs estão falando sobre você.";
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F8F5FF] via-white to-[#FBF7FF] px-4 py-16 flex items-center justify-center">
-      <div className="max-w-md text-center">
-        <Loader2 className="h-10 w-10 animate-spin text-[#6C5CE7] mx-auto mb-6" />
-        <h1 className="font-display text-2xl font-bold text-[#1A1A2E] mb-2">
-          Preparando seu diagnóstico...
-        </h1>
-        <p className="text-muted-foreground">
-          Esta etapa será implementada em breve.
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-2xl w-full text-center"
+      >
+        <div className="w-14 h-14 rounded-2xl bg-[#6C5CE7]/10 mx-auto mb-6 flex items-center justify-center">
+          <Sparkles className="w-7 h-7 text-[#6C5CE7]" />
+        </div>
+        <p className="text-xs font-medium text-[#6C5CE7] uppercase tracking-wider mb-3">
+          Seu diagnóstico personalizado
         </p>
-      </div>
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-[#1A1A2E] leading-tight mb-6">
+          {phrase}
+        </h1>
+        <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+          Preparamos um painel com a leitura da sua presença nas IAs e uma
+          recomendação personalizada de por onde começar.
+        </p>
+        <Button
+          size="lg"
+          onClick={() => navigate("/dashboard")}
+          className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
+        >
+          Ir para meu dashboard <ArrowRight className="w-4 h-4 ml-1.5" />
+        </Button>
+      </motion.div>
     </div>
   );
 }

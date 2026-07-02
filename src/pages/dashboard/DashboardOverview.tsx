@@ -22,6 +22,7 @@ import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { WELCOME_FEATURES } from "@/lib/welcome-features";
 import { FeatureHighlightCard } from "@/components/welcome/FeatureHighlightCard";
 import BrandProfileModal from "@/components/dashboard/BrandProfileModal";
+import { RecommendedToolCard } from "@/components/dashboard/RecommendedToolCard";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
@@ -129,6 +130,9 @@ export default function DashboardOverview() {
             : "Configure sua marca para começar a monitorar sua presença nas IAs."}
         </p>
       </motion.div>
+
+      {/* Ferramenta prioritária personalizada — some após o 1º uso */}
+      <RecommendedToolCard />
 
       {/* Onboarding checklist — some sozinho quando todas etapas concluídas */}
       <OnboardingChecklistCard />
