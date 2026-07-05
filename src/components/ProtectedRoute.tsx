@@ -76,21 +76,64 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
         // ignore — fall through to subscription check
       }
 
-      // Subscription check
-      const { data: subs } = await supabase
-        .from("assinaturas")
-        .select("status, carencia_ate, updated_at")
-        .eq("user_id", session.user.id)
-        .order("updated_at", { ascending: false })
-        .limit(1);
+      // Subscription check with retry to tolerate read-after-write race
+      // (newly-created trial row may not be visible on the very first query).
+      const RETRY_DELAYS_MS = [400, 800, 1200];
+      let sub: { status: string | null; carencia_ate: string | null; updated_at: string | null } | undefined;
+      let status: string | null = null;
+      let carenciaAte: string | null = null;
+      let attempt = 0;
 
-      const sub = subs?.[0];
-      const status = sub?.status ?? null;
-      const carenciaAte = sub?.carencia_ate ?? null;
+      while (true) {
+        const { data: subs } = await supabase
+          .from("assinaturas")
+          .select("status, carencia_ate, updated_at")
+          .eq("user_id", session.user.id)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        if (cancelled) return;
+
+        sub = subs?.[0];
+        status = sub?.status ?? null;
+        carenciaAte = sub?.carencia_ate ?? null;
+
+        const isValidNow =
+          sub &&
+          (status === "ativo" ||
+            status === "trial" ||
+            (status === "inadimplente" &&
+              carenciaAte &&
+              new Date(carenciaAte).getTime() > Date.now()));
+
+        if (isValidNow) {
+          if (attempt > 0) {
+            console.log(`[ProtectedRoute] Subscription found after ${attempt} retry attempt(s).`);
+          }
+          break;
+        }
+
+        if (attempt >= RETRY_DELAYS_MS.length) {
+          if (attempt > 0) {
+            console.log(
+              `[ProtectedRoute] No valid subscription after ${attempt} retries (status=${status ?? "null"}). Proceeding to redirect logic.`,
+            );
+          }
+          break;
+        }
+
+        console.log(
+          `[ProtectedRoute] Subscription not yet valid (status=${status ?? "null"}). Retrying in ${RETRY_DELAYS_MS[attempt]}ms (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length})...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+        attempt++;
+        if (cancelled) return;
+      }
 
       if (cancelled) return;
 
       if (!sub || status === "pendente") {
+
         setAuthorized(false);
         setLoading(false);
         navigate("/escolher-plano", { replace: true });
