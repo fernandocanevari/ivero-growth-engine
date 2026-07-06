@@ -121,13 +121,46 @@ const InvestSection = () => {
     const plano = PLAN_SLUG_MAP[planName];
     if (!plano) return;
 
+    // Always persist chosen plan so signup metadata can pick it up.
+    persistPendingPlan(planName);
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      setPendingPlanName(planName);
-      setAuthPromptOpen(true);
+      // Logged out → go straight to signup. No modal, no checkout, no Asaas.
+      navigate("/auth?mode=signup");
       return;
     }
 
+    // Logged in — branch on subscription state.
+    const { data: sub } = await supabase
+      .from("assinaturas")
+      .select("status, carencia_ate")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const status = sub?.status ?? null;
+    const carenciaAte = sub?.carencia_ate ?? null;
+    const isValidTrialOrActive =
+      status === "trial" ||
+      status === "ativo" ||
+      (status === "inadimplente" && carenciaAte && new Date(carenciaAte).getTime() > Date.now());
+
+    if (!sub) {
+      // Should not normally happen (trigger creates a row). Fall back to onboarding.
+      navigate("/onboarding/perguntas");
+      return;
+    }
+
+    if (isValidTrialOrActive) {
+      // Active trial or paid → dashboard.
+      try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+      navigate("/dashboard");
+      return;
+    }
+
+    // Trial expired / cancelled / pendente → open checkout to collect payment.
     openCheckoutForSession(plano, session);
   };
 
@@ -145,29 +178,11 @@ const InvestSection = () => {
     navigate(mode === "signup" ? "/auth?mode=signup" : "/auth");
   };
 
-  // Auto-resume checkout after login/signup if a plan was stored
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      let stored: string | null = null;
-      try {
-        stored = localStorage.getItem(SELECTED_PLAN_STORAGE_KEY);
-      } catch {
-        return;
-      }
-      if (!stored) return;
-      const plano = PLAN_SLUG_MAP[stored];
-      if (!plano) {
-        try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
-        return;
-      }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled || !session) return;
-      try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
-      openCheckoutForSession(plano, session);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Removed: previous auto-resume useEffect that reopened the checkout modal after
+  // login/signup. The chosen plan now travels as signup metadata and the DB trigger
+  // creates the trial atomically. Checkout is reserved for post-trial conversion.
+
+
 
 
   const handleConfirmCheckout = async () => {
