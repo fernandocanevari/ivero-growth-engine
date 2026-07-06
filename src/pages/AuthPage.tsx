@@ -257,6 +257,8 @@ export default function AuthPage() {
             ? "Vamos conhecer melhor sua marca."
             : "Verifique seu email para confirmar e continuar.",
         });
+        // Cleanup: chosen plan already traveled with signUp metadata
+        try { localStorage.removeItem("ivero_selected_plan"); } catch {}
         if (userId && data.session) {
           navigate("/onboarding/perguntas", { replace: true });
         }
