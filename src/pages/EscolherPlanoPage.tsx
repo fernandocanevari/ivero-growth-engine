@@ -138,6 +138,9 @@ const EscolherPlanoPage = () => {
 
   useEffect(() => {
     if (checking) return;
+    // Only scroll to the previously chosen plan card (visual highlight).
+    // Never auto-open the checkout modal — the modal is now reserved for
+    // explicit post-trial conversion clicks.
     const stored = localStorage.getItem("ivero_selected_plan");
     if (!stored) return;
 
@@ -153,12 +156,11 @@ const EscolherPlanoPage = () => {
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-      setTimeout(() => {
-        handlePlanClick(planName);
-        localStorage.removeItem("ivero_selected_plan");
-      }, 400);
     }
+    try { localStorage.removeItem("ivero_selected_plan"); } catch {}
   }, [checking]);
+
+
 
   const handlePlanClick = (planName: string) => {
     const plano = PLAN_SLUG_MAP[planName];

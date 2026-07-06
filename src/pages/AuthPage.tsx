@@ -195,6 +195,24 @@ export default function AuthPage() {
         nome_completo: nomeCompleto.trim(),
         nome_empresa: nomeEmpresa.trim(),
       };
+      // Read chosen plan from landing-page CTA (localStorage) and pass it as
+      // signup metadata so the DB trigger creates the trial with the right plan
+      // atomically. Falls back to "presenca" if none was chosen.
+      const PLAN_SLUG_MAP: Record<string, string> = {
+        Presença: "presenca",
+        Influência: "influencia",
+        Autoridade: "autoridade",
+        presenca: "presenca",
+        influencia: "influencia",
+        autoridade: "autoridade",
+      };
+      let planoEscolhido = "presenca";
+      try {
+        const stored = localStorage.getItem("ivero_selected_plan");
+        if (stored && PLAN_SLUG_MAP[stored]) planoEscolhido = PLAN_SLUG_MAP[stored];
+      } catch {
+        // ignore storage errors
+      }
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -204,6 +222,7 @@ export default function AuthPage() {
             display_name: extras.nome_completo || prefName || email.split("@")[0],
             nome_completo: extras.nome_completo,
             nome_empresa: extras.nome_empresa,
+            plano_escolhido: planoEscolhido,
           },
         },
       });
@@ -238,6 +257,8 @@ export default function AuthPage() {
             ? "Vamos conhecer melhor sua marca."
             : "Verifique seu email para confirmar e continuar.",
         });
+        // Cleanup: chosen plan already traveled with signUp metadata
+        try { localStorage.removeItem("ivero_selected_plan"); } catch {}
         if (userId && data.session) {
           navigate("/onboarding/perguntas", { replace: true });
         }
