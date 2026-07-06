@@ -316,6 +316,11 @@ const BemVindoPage = () => {
         setHasDiagnosis(!!(hist && hist.length > 0));
       }
 
+      // Only the real Asaas-conversion return uses the polling screen.
+      // Fresh trial signups already have status='trial' from the DB trigger,
+      // so we skip the "Confirmando pagamento…" UI entirely for them.
+      const fromAsaas = new URLSearchParams(window.location.search).get("from") === "asaas";
+
       const poll = async () => {
         if (cancelled) return;
         const { data } = await supabase
@@ -327,6 +332,12 @@ const BemVindoPage = () => {
           .maybeSingle();
 
         if (data?.status === "ativo" || data?.status === "trial") {
+          if (!cancelled) setStatus("active");
+          return;
+        }
+
+        if (!fromAsaas) {
+          // No payment in flight — don't spin on the polling screen.
           if (!cancelled) setStatus("active");
           return;
         }
