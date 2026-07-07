@@ -58,8 +58,8 @@ export type Database = {
       }
       assinaturas: {
         Row: {
-          asaas_customer_id: string
-          asaas_subscription_id: string
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
           carencia_ate: string | null
           created_at: string
           data_inicio: string
@@ -72,8 +72,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          asaas_customer_id: string
-          asaas_subscription_id: string
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           carencia_ate?: string | null
           created_at?: string
           data_inicio?: string
@@ -86,8 +86,8 @@ export type Database = {
           user_id: string
         }
         Update: {
-          asaas_customer_id?: string
-          asaas_subscription_id?: string
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           carencia_ate?: string | null
           created_at?: string
           data_inicio?: string
