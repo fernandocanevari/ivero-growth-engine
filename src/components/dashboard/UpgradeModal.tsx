@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Bell, Search, BarChart2, Check, Mail } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Check, Mail, Bot } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,102 +11,40 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
+import {
+  PLANOS_ARRAY,
+  formatBRL,
+  annualSavingBRL,
+  nextTier,
+  type PlanoSugerido,
+} from "@/lib/pricing-rules";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 /**
- * UpgradeModal — 4 planos resumidos exibidos sobre o dashboard.
+ * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
+ * o dashboard. Fonte única de preços/nomes/métricas: src/lib/pricing-rules.ts.
  *
- * Por que um modal próprio (e não reusar InvestSection da landing):
- *  - InvestSection é dark-themed e ocupa tela inteira; quebra dentro de modal claro.
- *  - O modal precisa ser denso (decisão rápida, não navegação contemplativa).
- *  - Mantém o usuário no contexto do dashboard (não "sai" para a landing).
- *
- * Dados sincronizados com landing/InvestSection — qualquer mudança de preço
- * deve ser refletida nos dois lugares (futuro: extrair para src/lib/plans.ts).
+ * Destaque dinâmico baseado no plano atual do cliente (useSubscriptionStatus):
+ *  - presenca    → destaca Influência,  badge "Próximo passo"
+ *  - influencia  → destaca Autoridade,  badge "Próximo passo"
+ *  - autoridade  → destaca Autoridade,  badge "Seu plano atual"
+ *  - null        → destaca Influência,  badge "Mais escolhido" (fallback landing)
+ *  - loading     → nenhum destaque (evita flash Influência → Autoridade)
  */
 
-type Plan = {
-  name: string;
-  badge: string | null;
-  tagline: string;
-  monthlyPrice: string;
-  annualPrice: string;
-  annualSaving: string | null;
-  cta: string;
-  highlighted: boolean;
-  metrics: { icon: typeof Cpu; label: string; value: string }[];
-  highlights: string[];
+// Ícone por métrica — decoração local, não é dado de negócio.
+const METRIC_ICON: Record<string, typeof Cpu> = {
+  "IAs monitoradas": Bot,
+  "Avisos/mês": Bell,
+  "Prompts monitorados": Search,
+  "Consultas/mês": BarChart2,
 };
 
-const PLANS: Plan[] = [
-  {
-    name: "Presença",
-    badge: null,
-    tagline: "Descubra se as IAs reconhecem sua marca",
-    monthlyPrice: "R$ 197",
-    annualPrice: "R$ 157",
-    annualSaving: "R$ 480",
-    cta: "Garantir presença",
-    highlighted: false,
-    metrics: [
-      { icon: Cpu, label: "IAs", value: "2" },
-      { icon: Bell, label: "Avisos/mês", value: "50" },
-      { icon: Search, label: "Prompts", value: "10" },
-      { icon: BarChart2, label: "Consultas", value: "500" },
-    ],
-    highlights: ["Score GEO de Visibilidade", "Relatório semanal por e-mail"],
-  },
-  {
-    name: "Influência",
-    badge: null,
-    tagline: "Monitore, reaja e não perca espaço",
-    monthlyPrice: "R$ 397",
-    annualPrice: "R$ 317",
-    annualSaving: "R$ 960",
-    cta: "Ampliar influência",
-    highlighted: false,
-    metrics: [
-      { icon: Cpu, label: "IAs", value: "3" },
-      { icon: Bell, label: "Avisos/mês", value: "200" },
-      { icon: Search, label: "Prompts", value: "30" },
-      { icon: BarChart2, label: "Consultas", value: "2.000" },
-    ],
-    highlights: ["Análise de Sentimento", "Comparativa com concorrentes"],
-  },
-  {
-    name: "Autoridade",
-    badge: "🔥 Recomendado",
-    tagline: "Citada quando o cliente está decidindo",
-    monthlyPrice: "R$ 697",
-    annualPrice: "R$ 557",
-    annualSaving: "R$ 1.680",
-    cta: "Consolidar autoridade",
-    highlighted: true,
-    metrics: [
-      { icon: Cpu, label: "IAs", value: "4" },
-      { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
-      { icon: Search, label: "Prompts", value: "100" },
-      { icon: BarChart2, label: "Consultas", value: "10k" },
-    ],
-    highlights: ["Mapa de Prompts Estratégicos", "Plano de Ação Estratégico"],
-  },
-  {
-    name: "Domínio",
-    badge: "🔴 Estratégico",
-    tagline: "Vantagem competitiva real",
-    monthlyPrice: "Custom",
-    annualPrice: "Custom",
-    annualSaving: null,
-    cta: "Receber proposta",
-    highlighted: false,
-    metrics: [
-      { icon: Cpu, label: "IAs", value: "5" },
-      { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
-      { icon: Search, label: "Prompts", value: "Ilimitados" },
-      { icon: BarChart2, label: "Consultas", value: "Ilimitadas" },
-    ],
-    highlights: ["Dominância por Modelo de IA", "Simulador de Influência"],
-  },
-];
+const CTA_BY_PLAN: Record<PlanoSugerido, string> = {
+  presenca: "Garantir presença",
+  influencia: "Ampliar influência",
+  autoridade: "Consolidar autoridade",
+};
 
 interface UpgradeModalProps {
   open: boolean;
@@ -116,6 +54,18 @@ interface UpgradeModalProps {
 export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
   const [isAnnual, setIsAnnual] = useState(true);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+  const { plano, isLoading } = useSubscriptionStatus();
+
+  // Cálculo do destaque dinâmico. Enquanto carrega → highlightKey = null (sem badge).
+  const highlightKey: PlanoSugerido | null = isLoading ? null : nextTier(plano);
+  const isAtTop = !isLoading && plano === "autoridade";
+
+  const badgeFor = (key: PlanoSugerido): string | null => {
+    if (highlightKey !== key) return null;
+    if (isAtTop) return "Seu plano atual";
+    if (plano === null || plano === undefined) return "Mais escolhido"; // fallback landing
+    return "Próximo passo";
+  };
 
   const handleSelectPlan = (planName: string) => {
     // Funil de conversão: descobrir quais planos são clicados e onde param.
@@ -139,7 +89,7 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto p-0">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 sm:px-8 sm:pt-8 border-b border-border">
           <DialogTitle className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
@@ -183,10 +133,14 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
 
         {/* Cards */}
         <div className="px-6 py-6 sm:px-8 sm:py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
-            {PLANS.map((plan, index) => {
-              const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
-              const isCustom = price === "Custom";
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+            {PLANOS_ARRAY.map((plan, index) => {
+              const price = isAnnual ? formatBRL(plan.annualPrice) : formatBRL(plan.monthlyPrice);
+              const saving = annualSavingBRL(plan.key);
+              const highlighted = highlightKey === plan.key;
+              const badge = badgeFor(plan.key);
+              // Densidade do modal: só os 2 highlights principais por plano.
+              const shortHighlights = plan.highlights.slice(0, 2);
 
               return (
                 <motion.div
@@ -195,20 +149,20 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.06, duration: 0.3 }}
                   className={`relative flex flex-col rounded-xl border p-5 transition-all ${
-                    plan.highlighted
+                    highlighted
                       ? "border-primary/40 bg-primary/[0.03] shadow-lg shadow-primary/5"
                       : "border-border bg-card hover:border-primary/20"
                   }`}
                 >
-                  {plan.badge && (
+                  {badge && (
                     <span
                       className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full whitespace-nowrap ${
-                        plan.highlighted
+                        highlighted
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground"
                       }`}
                     >
-                      {plan.badge}
+                      {badge}
                     </span>
                   )}
 
@@ -231,20 +185,18 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                       <span className="font-display text-2xl font-bold text-foreground">
                         {price}
                       </span>
-                      {!isCustom && (
-                        <span className="text-muted-foreground text-xs ml-1">/mês</span>
-                      )}
+                      <span className="text-muted-foreground text-xs ml-1">/mês</span>
                     </motion.div>
-                    {isAnnual && !isCustom && plan.annualSaving && (
+                    {isAnnual && (
                       <p className="text-primary text-[11px] font-semibold mt-0.5">
-                        ✦ Economia de {plan.annualSaving}/ano
+                        ✦ Economia de {saving}/ano
                       </p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mb-4 p-2.5 rounded-lg bg-muted/40 border border-border/50">
                     {plan.metrics.map((metric) => {
-                      const Icon = metric.icon;
+                      const Icon = METRIC_ICON[metric.label] ?? Cpu;
                       return (
                         <div
                           key={metric.label}
@@ -252,7 +204,7 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                         >
                           <Icon
                             className={`w-3.5 h-3.5 mb-0.5 ${
-                              plan.highlighted ? "text-primary" : "text-muted-foreground"
+                              highlighted ? "text-primary" : "text-muted-foreground"
                             }`}
                           />
                           <span className="text-sm font-bold leading-none text-foreground">
@@ -267,14 +219,14 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                   </div>
 
                   <ul className="space-y-1.5 mb-5 flex-1">
-                    {plan.highlights.map((h) => (
+                    {shortHighlights.map((h) => (
                       <li
                         key={h}
                         className="flex items-start gap-1.5 text-[11px] text-foreground/80 leading-snug"
                       >
                         <Check
                           className={`w-3 h-3 mt-0.5 shrink-0 ${
-                            plan.highlighted ? "text-primary" : "text-muted-foreground"
+                            highlighted ? "text-primary" : "text-muted-foreground"
                           }`}
                         />
                         {h}
@@ -283,12 +235,13 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                   </ul>
 
                   <Button
-                    variant={plan.highlighted ? "default" : "outline"}
+                    variant={highlighted ? "default" : "outline"}
                     size="sm"
                     className="w-full text-xs mt-auto"
                     onClick={() => handleSelectPlan(plan.name)}
+                    disabled={isAtTop && highlighted}
                   >
-                    {plan.cta}
+                    {isAtTop && highlighted ? "Plano atual" : CTA_BY_PLAN[plan.key]}
                   </Button>
                 </motion.div>
               );
