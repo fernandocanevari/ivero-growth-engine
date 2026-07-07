@@ -1,13 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { PLAN_ANNUAL_VALUES } from "../_shared/pricing.ts";
 
 const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
 
-const PLAN_VALUES: Record<string, number> = {
-  presenca: 397,
-  influencia: 717,
-  autoridade: 1197,
-};
+// Valores lidos do módulo compartilhado — fonte canônica: src/lib/pricing-rules.ts
+const PLAN_VALUES: Record<string, number> = PLAN_ANNUAL_VALUES;
 
 interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
