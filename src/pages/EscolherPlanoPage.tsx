@@ -15,8 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  PLANOS_ARRAY,
+  formatBRL,
+  annualSavingBRL,
+  type PlanoSugerido,
+} from "@/lib/pricing-rules";
 
-type PlanoSlug = "presenca" | "influencia" | "autoridade";
+type PlanoSlug = PlanoSugerido;
 
 const PLAN_SLUG_MAP: Record<string, PlanoSlug> = {
   "Presença": "presenca",
@@ -24,76 +30,15 @@ const PLAN_SLUG_MAP: Record<string, PlanoSlug> = {
   "Autoridade": "autoridade",
 };
 
-const plans = [
-  {
-    name: "Presença",
-    badge: null as string | null,
-    tagline: "Descubra se as IAs reconhecem sua marca",
-    monthlyPrice: "R$ 497",
-    annualPrice: "R$ 397",
-    annualSaving: "R$ 1.200",
-    cta: "Começar com 7 dias grátis →",
-    highlighted: false,
-    metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "2" },
-      { icon: Bell, label: "Avisos/mês", value: "50" },
-      { icon: Search, label: "Prompts monitorados", value: "10" },
-      { icon: BarChart2, label: "Consultas/mês", value: "500" },
-    ],
-    inheritsFrom: null as string | null,
-    highlights: ["Score GEO de Visibilidade", "Relatório semanal por e-mail", "Monitoramento Multi-IA", "Prompt Tester"],
-  },
-  {
-    name: "Influência",
-    badge: "Mais escolhido",
-    tagline: "Monitore, reaja e não perca espaço para concorrentes",
-    monthlyPrice: "R$ 897",
-    annualPrice: "R$ 717",
-    annualSaving: "R$ 2.160",
-    cta: "Começar com 7 dias grátis →",
-    highlighted: true,
-    metrics: [
-      { icon: Bot, label: "IAs monitoradas", value: "3" },
-      { icon: Bell, label: "Avisos/mês", value: "200" },
-      { icon: Search, label: "Prompts monitorados", value: "30" },
-      { icon: BarChart2, label: "Consultas/mês", value: "2.000" },
-    ],
-    inheritsFrom: "Presença",
-    highlights: [
-      "Dominância por Modelo de IA",
-      "Análise de Sentimento",
-      "Análise Comparativa com concorrentes",
-      "Tags de Percepção da IA",
-      "Evolução Estratégica dos 5 pilares",
-      "Gerador de Conteúdo Estratégico",
-    ],
-  },
-  {
-    name: "Autoridade",
-    badge: null as string | null,
-    tagline: "Sua marca citada quando o cliente está decidindo",
-    monthlyPrice: "R$ 1.497",
-    annualPrice: "R$ 1.197",
-    annualSaving: "R$ 3.600",
-    cta: "Começar com 7 dias grátis →",
-    highlighted: false,
-    metrics: [
-      { icon: Cpu, label: "IAs monitoradas", value: "4" },
-      { icon: Bell, label: "Avisos/mês", value: "Ilimitados" },
-      { icon: Search, label: "Prompts monitorados", value: "100" },
-      { icon: BarChart2, label: "Consultas/mês", value: "10.000" },
-    ],
-    inheritsFrom: "Influência",
-    highlights: [
-      "Simulador de Influência em IA",
-      "Mapa de Prompts Estratégicos",
-      "Plano de Ação Estratégico",
-      "LLMs.txt",
-      "Campanhas direcionadas",
-      "Relatórios executivos em PDF e XLSX",
-    ],
-  },
-];
+const METRIC_ICON: Record<string, typeof Cpu> = {
+  "IAs monitoradas": Bot,
+  "Avisos/mês": Bell,
+  "Prompts monitorados": Search,
+  "Consultas/mês": BarChart2,
+};
+
+const CTA_TEXT = "Começar com 7 dias grátis →";
+
 
 const EscolherPlanoPage = () => {
   const navigate = useNavigate();
