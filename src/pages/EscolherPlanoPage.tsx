@@ -209,11 +209,12 @@ const EscolherPlanoPage = () => {
         </motion.header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto items-stretch">
-          {plans.map((plan, index) => {
-            const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+          {PLANOS_ARRAY.map((plan, index) => {
+            const price = isAnnual ? formatBRL(plan.annualPrice) : formatBRL(plan.monthlyPrice);
+            const saving = annualSavingBRL(plan.key);
             return (
               <motion.div
-                id={`plan-card-${PLAN_SLUG_MAP[plan.name]}`}
+                id={`plan-card-${plan.key}`}
                 key={plan.name}
                 initial={{ opacity: 0, y: 24, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -278,17 +279,17 @@ const EscolherPlanoPage = () => {
                         </span>
                         <span className="text-muted-foreground text-xs font-medium">/mês</span>
                       </div>
-                      {isAnnual && plan.annualSaving && (
+                      {isAnnual && (
                         <span className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[11px] sm:text-xs font-semibold">
                           <span className="text-[10px]">✦</span>
-                          Economia de {plan.annualSaving}/ano
+                          Economia de {saving}/ano
                         </span>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mb-3 p-2 sm:p-2.5 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
-                        const Icon = metric.icon;
+                        const Icon = METRIC_ICON[metric.label] ?? Cpu;
                         return (
                           <div
                             key={metric.label}
@@ -344,7 +345,7 @@ const EscolherPlanoPage = () => {
                         handlePlanClick(plan.name);
                       }}
                     >
-                      {plan.cta}
+                      {CTA_TEXT}
                     </Button>
                   </div>
                 </div>
@@ -352,6 +353,7 @@ const EscolherPlanoPage = () => {
             );
           })}
         </div>
+
       </div>
 
       <Dialog open={checkoutOpen} onOpenChange={(open) => !submitting && setCheckoutOpen(open)}>
