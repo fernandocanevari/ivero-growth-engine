@@ -216,9 +216,9 @@ const InvestSection = () => {
 
         {/* Cards — 1 col mobile, 2 col tablet, 3 col desktop */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto items-stretch">
-          {plans.map((plan, index) => {
-            const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
-            const isCustom = price === "Custom";
+          {PLANOS_ARRAY.map((plan, index) => {
+            const price = isAnnual ? formatBRL(plan.annualPrice) : formatBRL(plan.monthlyPrice);
+            const saving = annualSavingBRL(plan.key);
 
             return (
               <motion.div
@@ -301,18 +301,11 @@ const InvestSection = () => {
                         <span className="font-display text-2xl sm:text-[1.75rem] font-bold text-foreground leading-none tracking-tight">
                           {price}
                         </span>
-                        {!isCustom && (
-                          <span className="text-muted-foreground text-xs font-medium">/mês</span>
-                        )}
+                        <span className="text-muted-foreground text-xs font-medium">/mês</span>
                       </motion.div>
-                      {isAnnual && !isCustom && plan.annualSaving && (
+                      {isAnnual && (
                         <span className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[11px] sm:text-xs font-semibold">
-                          Economia de {plan.annualSaving}/ano
-                        </span>
-                      )}
-                      {isAnnual && isCustom && (
-                        <span className="inline-flex items-center self-start px-2 py-0.5 rounded-md bg-muted/60 border border-border text-muted-foreground text-[11px] font-medium">
-                          Proposta personalizada
+                          Economia de {saving}/ano
                         </span>
                       )}
                     </div>
@@ -320,7 +313,7 @@ const InvestSection = () => {
                     {/* Métricas-chave — grid 2x2 */}
                     <div className="grid grid-cols-2 gap-2 mb-3 p-2 sm:p-2.5 rounded-xl border border-accent/15 bg-accent/3">
                       {plan.metrics.map((metric) => {
-                        const Icon = metric.icon;
+                        const Icon = METRIC_ICON[metric.label] ?? Cpu;
                         return (
                           <div key={metric.label} className="flex flex-col items-center text-center gap-0.5 py-1 sm:py-1.5">
                             <Icon className={`w-4 h-4 mb-0.5 ${plan.highlighted ? "text-accent" : "text-ivero-purple-light"}`} />
@@ -365,7 +358,7 @@ const InvestSection = () => {
                       className="w-full mt-auto text-xs py-3"
                       onClick={() => handlePlanClick(plan.name)}
                     >
-                      {plan.cta}
+                      {CTA_BY_PLAN[plan.key]}
                     </Button>
 
                   </div>
@@ -374,6 +367,7 @@ const InvestSection = () => {
             );
           })}
         </div>
+
 
         {/* Selo de garantia Ivero */}
         <motion.div
