@@ -213,6 +213,15 @@ export default function AuthPage() {
       } catch {
         // ignore storage errors
       }
+      // Mark this attempt as a signup BEFORE calling signUp, so the
+      // onAuthStateChange listener recognizes the SIGNED_IN event as a signup
+      // (even when Supabase returns a session synchronously) and routes to
+      // /onboarding/perguntas instead of running redirectAfterAuth →
+      // /bem-vindo. Regression fix: previously the pending flag was only set
+      // in the async (email-confirmation) branch, causing the sync branch to
+      // race with the listener and land on /bem-vindo.
+      (window as any).__iveroPendingSignupExtras?.(extras);
+      (window as any).__iveroPendingSignupPre?.();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -227,20 +236,24 @@ export default function AuthPage() {
         },
       });
       if (error) {
+        (window as any).__iveroPendingSignupClear?.();
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
         const userId = data.user?.id;
-        // If the session was returned synchronously, persist immediately and redirect.
+        // Bind the pending-signup flag to the concrete userId now that we have it.
+        if (userId) {
+          (window as any).__iveroPendingSignup?.(userId);
+        }
+        // If the session was returned synchronously, persist immediately.
+        // Navigation is handled by the onAuthStateChange listener via the
+        // pending-signup flag above, avoiding a race with redirectAfterAuth.
         if (userId && data.session) {
           if (hasPrefilledLead) {
             await persistBrandFromLead(userId, email);
           }
           await persistProfileExtras(userId, extras);
-        } else if (userId) {
-          // Otherwise mark this user as pending so the auth state listener runs the upserts
-          (window as any).__iveroPendingSignup?.(userId);
-          (window as any).__iveroPendingSignupExtras?.(extras);
         }
+
         // Funnel step 4: signup completed. Alias the lead's email-identity
         // to the new auth.users.id so the full pre-signup journey stays attached.
         if (userId) {
