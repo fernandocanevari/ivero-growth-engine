@@ -118,6 +118,11 @@ export default function AuthPage() {
   useEffect(() => {
     // Track whether we just signed up so we can run the brand upsert when the session arrives
     let pendingSignupForUserId: string | null = null;
+    // A signup is "in flight" from the moment handleSubmit calls signUp until
+    // either the SIGNED_IN event is handled or an error clears it. This covers
+    // the race where Supabase emits SIGNED_IN synchronously during signUp,
+    // before handleSubmit has the userId to bind to pendingSignupForUserId.
+    let signupInFlight = false;
     // Extras collected at signup time, persisted to profiles once the session arrives
     let pendingSignupExtras: { nome_completo: string; nome_empresa: string } | null = null;
 
@@ -130,7 +135,9 @@ export default function AuthPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) return;
-      const isPendingSignup = event === "SIGNED_IN" && pendingSignupForUserId === session.user.id;
+      const isPendingSignup =
+        event === "SIGNED_IN" &&
+        (signupInFlight || pendingSignupForUserId === session.user.id);
       // If we just signed up with prefilled lead data, run the upsert before navigating
       if (isPendingSignup && hasPrefilledLead) {
         // Defer to avoid awaiting inside the auth callback (prevents deadlocks)
@@ -147,7 +154,9 @@ export default function AuthPage() {
       if (isPendingSignup) {
         pendingSignupForUserId = null;
         pendingSignupExtras = null;
-        // After signup the user goes to the onboarding questions step
+        signupInFlight = false;
+        // After signup the user goes to the onboarding questions step —
+        // never /bem-vindo, which is reserved for real Asaas payment returns.
         navigate("/onboarding/perguntas", { replace: true });
         return;
       }
@@ -161,6 +170,16 @@ export default function AuthPage() {
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
     (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string }) => {
       pendingSignupExtras = extras;
+    };
+    // Called BEFORE supabase.auth.signUp so the listener treats the next
+    // SIGNED_IN as a signup even if the session arrives synchronously.
+    (window as any).__iveroPendingSignupPre = () => { signupInFlight = true; };
+    // Called on signUp error to release the flag so subsequent logins are
+    // routed normally by redirectAfterAuth.
+    (window as any).__iveroPendingSignupClear = () => {
+      signupInFlight = false;
+      pendingSignupForUserId = null;
+      pendingSignupExtras = null;
     };
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -177,7 +196,10 @@ export default function AuthPage() {
       subscription.unsubscribe();
       delete (window as any).__iveroPendingSignup;
       delete (window as any).__iveroPendingSignupExtras;
+      delete (window as any).__iveroPendingSignupPre;
+      delete (window as any).__iveroPendingSignupClear;
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
