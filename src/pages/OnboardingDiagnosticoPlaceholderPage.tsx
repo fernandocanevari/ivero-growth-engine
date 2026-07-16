@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useOnboardingResponses } from "@/hooks/useOnboardingResponses";
@@ -43,10 +43,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
         transition={{ duration: 0.5 }}
         className="max-w-2xl w-full text-center"
       >
-        <div className="w-14 h-14 rounded-2xl bg-[#6C5CE7]/10 mx-auto mb-6 flex items-center justify-center">
-          <Sparkles className="w-7 h-7 text-[#6C5CE7]" />
-        </div>
-        <p className="text-xs font-medium text-[#6C5CE7] uppercase tracking-wider mb-3">
+        <p className="font-display text-3xl md:text-5xl font-bold text-[#6C5CE7] tracking-tight mb-6">
           Seu diagnóstico personalizado
         </p>
         <h1 className="font-display text-2xl md:text-3xl font-bold text-[#1A1A2E] leading-tight mb-6">
