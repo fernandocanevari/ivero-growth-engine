@@ -146,19 +146,23 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                 <motion.div
                   key={plan.name}
                   initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{
+                    opacity: 1,
+                    y: highlighted ? -6 : 0,
+                    scale: highlighted ? 1.02 : 1,
+                  }}
                   transition={{ delay: index * 0.06, duration: 0.3 }}
-                  className={`relative flex flex-col rounded-xl border p-5 transition-all ${
+                  className={`relative flex flex-col rounded-xl p-5 transition-all ${
                     highlighted
-                      ? "border-primary/40 bg-primary/[0.03] shadow-lg shadow-primary/5"
-                      : "border-border bg-card hover:border-primary/20"
+                      ? "border-2 border-primary bg-gradient-to-b from-primary/[0.08] to-primary/[0.02] shadow-2xl shadow-primary/25 ring-1 ring-primary/20 z-10"
+                      : "border border-border bg-card hover:border-primary/20 opacity-95"
                   }`}
                 >
                   {badge && (
                     <span
-                      className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full whitespace-nowrap ${
+                      className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full whitespace-nowrap shadow-md ${
                         highlighted
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-primary text-primary-foreground ring-2 ring-background"
                           : "bg-muted text-foreground"
                       }`}
                     >
