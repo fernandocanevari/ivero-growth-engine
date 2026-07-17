@@ -238,7 +238,7 @@ export default function AcoesPage() {
 
   if (actions.length === 0) {
     return (
-      <>
+      <div className="space-y-4">
         <EmptyStatePage
           icon={<CheckCheck className="h-12 w-12" />}
           title="Planos de Ação"
@@ -250,30 +250,24 @@ export default function AcoesPage() {
               : "Configure sua marca antes de começar a criar ações."
           }
           hasBrand={hasBrand}
-          cta={
-            hasBrand
-              ? {
-                  label: "Criar primeira ação",
-                  to: "#",
-                  icon: <Plus className="h-4 w-4 mr-1.5" />,
-                }
-              : undefined
-          }
         />
         {hasBrand && (
-          <>
-            {/* CTA do EmptyStatePage é um link; sobrepomos um trigger real */}
-            <div className="fixed bottom-8 right-8 z-40">
-              <Button size="lg" onClick={() => setDialogOpen(true)} className="shadow-lg">
-                <Plus className="h-4 w-4 mr-1.5" /> Nova ação
-              </Button>
-            </div>
-            <NewActionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-          </>
+          <div className="flex justify-center">
+            <NewActionDialog
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              trigger={
+                <Button size="lg">
+                  <Plus className="h-4 w-4 mr-1.5" /> Criar primeira ação
+                </Button>
+              }
+            />
+          </div>
         )}
-      </>
+      </div>
     );
   }
+
 
   const completed = actions.filter((a) => a.status === "concluido").length;
   const total = actions.length;
