@@ -55,6 +55,7 @@ import LegalPage from "./pages/LegalPage";
 import TermosDeUsoPage from "./pages/TermosDeUsoPage";
 import SobrePage from "./pages/SobrePage";
 import IveroAnalysisPage from "./pages/IveroAnalysisPage";
+import OAuthConsentPage from "./pages/OAuthConsentPage";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { FeatureGate } from "./components/dashboard/FeatureGate";
 import { supabase } from "./integrations/supabase/client";
@@ -82,6 +83,7 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
 
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
           <Route path="/preview" element={<PreviewPage />} />
           <Route path="/propostacomercial/:slug" element={<PropostaComercialPage />} />
           <Route path="/convite/:slug" element={<ConvitePage />} />

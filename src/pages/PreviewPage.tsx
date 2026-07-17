@@ -535,7 +535,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
       phone: rawPhone,
     });
     if (!parsed.success) {
-      const firstError = parsed.error.errors[0]?.message || "Dados inválidos";
+      const firstError = parsed.error.issues[0]?.message || "Dados inválidos";
       toast({ title: "Verifique seus dados", description: firstError, variant: "destructive" });
       return;
     }
