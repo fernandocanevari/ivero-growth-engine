@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://klscginkmflwanzjxtqy.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "ivero-mcp",
+      "version": "0.1.0",
+      "title": "Ivero — AI Influence Auditor"
+    },
+    "tools": [
+      {
+        "name": "get_brand_profile",
+        "title": "Get brand profile",
+        "description": "Return the signed-in user's brand profile from Ivero: brand name, website, sector, geographic coverage, objectives and contact info.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_audit_reports",
+        "title": "List AI influence audits",
+        "description": "List the signed-in user's Ivero audit reports (AI influence diagnostics), most recent first. Returns id, date, overall score, status label, and audited site URL.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Max reports to return (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_audit_report",
+        "title": "Get audit report detail",
+        "description": "Return the full detail of a single Ivero audit report by id: overall score, per-pillar breakdown, radar data, keyword cloud and per-engine mentions.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Audit report id. Use `list_audit_reports` first, or omit to fetch the most recent."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_competitors",
+        "title": "List tracked competitors",
+        "description": "List the signed-in user's tracked competitors in Ivero.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
