@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_plans: {
+        Row: {
+          audit_report_id: string | null
+          categoria: Database["public"]["Enums"]["action_category"]
+          completed_at: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          impacto_estimado: string | null
+          ordem: number | null
+          origem: Database["public"]["Enums"]["action_origin"]
+          prioridade: Database["public"]["Enums"]["action_priority"]
+          status: Database["public"]["Enums"]["action_status"]
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audit_report_id?: string | null
+          categoria: Database["public"]["Enums"]["action_category"]
+          completed_at?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          impacto_estimado?: string | null
+          ordem?: number | null
+          origem?: Database["public"]["Enums"]["action_origin"]
+          prioridade?: Database["public"]["Enums"]["action_priority"]
+          status?: Database["public"]["Enums"]["action_status"]
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audit_report_id?: string | null
+          categoria?: Database["public"]["Enums"]["action_category"]
+          completed_at?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          impacto_estimado?: string | null
+          ordem?: number | null
+          origem?: Database["public"]["Enums"]["action_origin"]
+          prioridade?: Database["public"]["Enums"]["action_priority"]
+          status?: Database["public"]["Enums"]["action_status"]
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plans_audit_report_id_fkey"
+            columns: ["audit_report_id"]
+            isOneToOne: false
+            referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_history: {
         Row: {
           authority_score: number
@@ -802,6 +861,16 @@ export type Database = {
       }
     }
     Enums: {
+      action_category:
+        | "clareza"
+        | "autoridade"
+        | "conversao"
+        | "posicionamento"
+        | "relevancia"
+        | "autoridade_externa"
+      action_origin: "automatico" | "manual"
+      action_priority: "alta" | "media" | "baixa"
+      action_status: "pendente" | "em_andamento" | "concluido"
       app_role: "admin" | "moderator" | "user"
       proposta_motivo_recusa:
         | "preco"
@@ -946,6 +1015,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      action_category: [
+        "clareza",
+        "autoridade",
+        "conversao",
+        "posicionamento",
+        "relevancia",
+        "autoridade_externa",
+      ],
+      action_origin: ["automatico", "manual"],
+      action_priority: ["alta", "media", "baixa"],
+      action_status: ["pendente", "em_andamento", "concluido"],
       app_role: ["admin", "moderator", "user"],
       proposta_motivo_recusa: [
         "preco",
