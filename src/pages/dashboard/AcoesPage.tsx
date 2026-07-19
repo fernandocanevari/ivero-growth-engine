@@ -233,7 +233,7 @@ function NewActionDialog({
 export default function AcoesPage() {
   const { data: settings, isLoading: loadingBrand } = useBrandSettings();
   const { data: actions = [], isLoading: loadingActions } = useActionPlans();
-  const toggleStatus = useToggleActionStatus();
+  const setStatus = useSetActionStatus();
   const deleteAction = useDeleteActionPlan();
   const [dialogOpen, setDialogOpen] = useState(false);
 
