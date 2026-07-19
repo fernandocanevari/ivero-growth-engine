@@ -115,6 +115,7 @@ const App = () => (
             <Route path="tags-percepcao" element={<FeatureGate><TagsPercepcaoPage /></FeatureGate>} />
             <Route path="sentimento" element={<FeatureGate><SentimentoPage /></FeatureGate>} />
             <Route path="acoes" element={<FeatureGate><AcoesPage /></FeatureGate>} />
+            <Route path="autoridade-externa" element={<FeatureGate><AutoridadeExternaPage /></FeatureGate>} />
             <Route path="conteudo" element={<FeatureGate><GeradorConteudoPage /></FeatureGate>} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="prompts" element={<FeatureGate><PromptsPage /></FeatureGate>} />
