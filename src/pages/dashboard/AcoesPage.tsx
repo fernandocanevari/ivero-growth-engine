@@ -42,13 +42,15 @@ import {
   useActionPlans,
   useCreateActionPlan,
   useDeleteActionPlan,
-  useToggleActionStatus,
+  useSetActionStatus,
 } from "@/hooks/useActionPlans";
 import {
   ACTION_CATEGORY_LABELS,
   ACTION_PRIORITY_LABELS,
+  ACTION_STATUS_LABELS,
   type ActionCategory,
   type ActionPriority,
+  type ActionStatus,
 } from "@/lib/action-plans";
 
 const CATEGORY_OPTIONS = Object.entries(ACTION_CATEGORY_LABELS) as Array<
@@ -56,6 +58,9 @@ const CATEGORY_OPTIONS = Object.entries(ACTION_CATEGORY_LABELS) as Array<
 >;
 const PRIORITY_OPTIONS = Object.entries(ACTION_PRIORITY_LABELS) as Array<
   [ActionPriority, string]
+>;
+const STATUS_OPTIONS = Object.entries(ACTION_STATUS_LABELS) as Array<
+  [ActionStatus, string]
 >;
 
 function priorityBadgeClass(p: ActionPriority) {
