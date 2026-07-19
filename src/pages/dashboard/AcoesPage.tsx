@@ -42,13 +42,15 @@ import {
   useActionPlans,
   useCreateActionPlan,
   useDeleteActionPlan,
-  useToggleActionStatus,
+  useSetActionStatus,
 } from "@/hooks/useActionPlans";
 import {
   ACTION_CATEGORY_LABELS,
   ACTION_PRIORITY_LABELS,
+  ACTION_STATUS_LABELS,
   type ActionCategory,
   type ActionPriority,
+  type ActionStatus,
 } from "@/lib/action-plans";
 
 const CATEGORY_OPTIONS = Object.entries(ACTION_CATEGORY_LABELS) as Array<
@@ -56,6 +58,9 @@ const CATEGORY_OPTIONS = Object.entries(ACTION_CATEGORY_LABELS) as Array<
 >;
 const PRIORITY_OPTIONS = Object.entries(ACTION_PRIORITY_LABELS) as Array<
   [ActionPriority, string]
+>;
+const STATUS_OPTIONS = Object.entries(ACTION_STATUS_LABELS) as Array<
+  [ActionStatus, string]
 >;
 
 function priorityBadgeClass(p: ActionPriority) {
@@ -228,7 +233,7 @@ function NewActionDialog({
 export default function AcoesPage() {
   const { data: settings, isLoading: loadingBrand } = useBrandSettings();
   const { data: actions = [], isLoading: loadingActions } = useActionPlans();
-  const toggleStatus = useToggleActionStatus();
+  const setStatus = useSetActionStatus();
   const deleteAction = useDeleteActionPlan();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -314,14 +319,24 @@ export default function AcoesPage() {
           return (
             <Card key={action.id} className={isDone ? "opacity-60" : ""}>
               <CardContent className="p-4 flex items-start gap-3">
-                <Checkbox
-                  checked={isDone}
-                  onCheckedChange={() =>
-                    toggleStatus.mutate({ id: action.id, status: action.status })
+                <Select
+                  value={action.status}
+                  onValueChange={(v) =>
+                    setStatus.mutate({ id: action.id, status: v as ActionStatus })
                   }
-                  className="mt-0.5"
-                  disabled={toggleStatus.isPending}
-                />
+                  disabled={setStatus.isPending}
+                >
+                  <SelectTrigger className="h-8 w-[150px] text-xs shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(([value, label]) => (
+                      <SelectItem key={value} value={value} className="text-xs">
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <div className="flex-1 min-w-0">
                   <p
                     className={`text-sm font-medium ${
