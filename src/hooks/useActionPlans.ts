@@ -107,16 +107,14 @@ export function useUpdateActionPlan() {
   });
 }
 
-export function useToggleActionStatus() {
+export function useSetActionStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (action: Pick<ActionPlan, "id" | "status">) => {
-      const next: ActionStatus =
-        action.status === "concluido" ? "pendente" : "concluido";
+    mutationFn: async ({ id, status }: { id: string; status: ActionStatus }) => {
       const { data, error } = await supabase
         .from("action_plans")
-        .update({ status: next })
-        .eq("id", action.id)
+        .update({ status })
+        .eq("id", id)
         .select()
         .single();
       if (error) throw error;
