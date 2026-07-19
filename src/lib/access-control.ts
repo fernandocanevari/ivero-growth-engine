@@ -198,6 +198,7 @@ export const ROUTE_MIN_TIER: Record<string, PlanoTier> = {
   "/dashboard/simulador": "autoridade",
   "/dashboard/prompts": "autoridade",
   "/dashboard/acoes": "autoridade",
+  "/dashboard/autoridade-externa": "autoridade",
   "/dashboard/relatorios": "autoridade",
   "/dashboard/llms-txt": "autoridade",
   "/dashboard/campanhas": "autoridade",
