@@ -71,7 +71,6 @@ const menuGroups: MenuGroup[] = [
     label: "Ações",
     items: [
       { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
-      { title: "Autoridade Externa", url: "/dashboard/autoridade-externa", icon: ExternalLink },
       { title: "Gerador de Conteúdo", url: "/dashboard/conteudo", icon: PenLine },
       { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
       { title: "Alertas", url: "/dashboard/alertas", icon: Bell, dynamicBadge: "perception" },
