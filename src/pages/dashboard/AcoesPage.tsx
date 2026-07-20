@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +34,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CheckCheck, Plus, Trash2, Sparkles } from "lucide-react";
+import {
+  CheckCheck,
+  Plus,
+  Trash2,
+  Sparkles,
+  Link2,
+  Newspaper,
+  Mic,
+  Star,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import {
@@ -63,6 +72,51 @@ const STATUS_OPTIONS = Object.entries(ACTION_STATUS_LABELS) as Array<
   [ActionStatus, string]
 >;
 
+type FilterKey = "todas" | "autoridade_externa";
+
+interface AutoridadeExample {
+  icon: React.ComponentType<{ className?: string }>;
+  titulo: string;
+  descricao: string;
+  impacto_estimado: string;
+  prioridade: ActionPriority;
+}
+
+const AUTORIDADE_EXAMPLES: AutoridadeExample[] = [
+  {
+    icon: Newspaper,
+    titulo: "Publicar guest post em veículo do setor",
+    descricao:
+      "Escrever artigo autoral em um portal de referência do seu segmento com link para o site institucional.",
+    impacto_estimado: "Aumenta autoridade de domínio e menções nas IAs em ~10%",
+    prioridade: "alta",
+  },
+  {
+    icon: Link2,
+    titulo: "Conquistar backlink de site com alta autoridade",
+    descricao:
+      "Mapear parceiros, associações ou mídia especializada e negociar link editorial para o site principal.",
+    impacto_estimado: "Ganho direto em citações do Google Modo IA e Gemini",
+    prioridade: "alta",
+  },
+  {
+    icon: Mic,
+    titulo: "Participar como convidado em podcast do setor",
+    descricao:
+      "Aparecer como especialista em episódios relevantes, gerando transcrição indexável e menções em plataformas.",
+    impacto_estimado: "Melhora sentimento e presença em resposta de ChatGPT",
+    prioridade: "media",
+  },
+  {
+    icon: Star,
+    titulo: "Solicitar menção em release de imprensa",
+    descricao:
+      "Coordenar assessoria para incluir a marca em releases distribuídos a portais monitorados pelas IAs.",
+    impacto_estimado: "Reforça confiança e sinais de reputação",
+    prioridade: "media",
+  },
+];
+
 function priorityBadgeClass(p: ActionPriority) {
   if (p === "alta") return "border-red-200 text-red-600";
   if (p === "media") return "border-amber-200 text-amber-600";
@@ -88,14 +142,21 @@ const EMPTY_FORM: ActionFormState = {
 function NewActionDialog({
   open,
   onOpenChange,
+  initial,
   trigger,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  initial?: Partial<ActionFormState>;
   trigger?: React.ReactNode;
 }) {
-  const [form, setForm] = useState<ActionFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<ActionFormState>({ ...EMPTY_FORM, ...initial });
   const create = useCreateActionPlan();
+
+  const handleOpen = (v: boolean) => {
+    if (v) setForm({ ...EMPTY_FORM, ...initial });
+    onOpenChange(v);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +179,7 @@ function NewActionDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
@@ -232,16 +293,29 @@ function NewActionDialog({
 
 export default function AcoesPage() {
   const { data: settings, isLoading: loadingBrand } = useBrandSettings();
-  const { data: actions = [], isLoading: loadingActions } = useActionPlans();
+  const [filter, setFilter] = useState<FilterKey>("todas");
+  const { data: actions = [], isLoading: loadingActions } = useActionPlans(
+    filter === "autoridade_externa" ? { categoria: "autoridade_externa" } : {},
+  );
   const setStatus = useSetActionStatus();
   const deleteAction = useDeleteActionPlan();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [prefill, setPrefill] = useState<Partial<ActionFormState> | undefined>(
+    undefined,
+  );
 
   const hasBrand = !!settings?.brand_name;
 
+  const openDialog = (initial?: Partial<ActionFormState>) => {
+    setPrefill(initial);
+    setDialogOpen(true);
+  };
+
   if (loadingBrand || loadingActions) return null;
 
-  if (actions.length === 0) {
+  // Global empty state — first visit, no brand OR no actions at all across categories.
+  // We only show this when the user is on "Todas" AND there is nothing.
+  if (filter === "todas" && actions.length === 0) {
     return (
       <div className="space-y-4">
         <EmptyStatePage
@@ -261,8 +335,9 @@ export default function AcoesPage() {
             <NewActionDialog
               open={dialogOpen}
               onOpenChange={setDialogOpen}
+              initial={prefill}
               trigger={
-                <Button size="lg">
+                <Button size="lg" onClick={() => openDialog()}>
                   <Plus className="h-4 w-4 mr-1.5" /> Criar primeira ação
                 </Button>
               }
@@ -273,9 +348,9 @@ export default function AcoesPage() {
     );
   }
 
-
   const completed = actions.filter((a) => a.status === "concluido").length;
   const total = actions.length;
+  const isAutoridade = filter === "autoridade_externa";
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -293,122 +368,220 @@ export default function AcoesPage() {
         <NewActionDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
+          initial={prefill}
           trigger={
-            <Button>
+            <Button
+              onClick={() =>
+                openDialog(
+                  isAutoridade ? { categoria: "autoridade_externa" } : undefined,
+                )
+              }
+            >
               <Plus className="h-4 w-4 mr-1.5" /> Nova ação
             </Button>
           }
         />
       </motion.div>
 
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Progresso Geral</p>
-            <span className="text-sm font-medium">
-              {completed}/{total}
-            </span>
-          </div>
-          <Progress value={total > 0 ? (completed / total) * 100 : 0} className="h-2.5" />
-        </CardContent>
-      </Card>
+      {/* Filtro por categoria */}
+      <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
+        {([
+          { key: "todas", label: "Todas" },
+          { key: "autoridade_externa", label: "Autoridade Externa" },
+        ] as const).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setFilter(tab.key)}
+            className={cn(
+              "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors",
+              filter === tab.key
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      <div className="space-y-2">
-        {actions.map((action) => {
-          const isDone = action.status === "concluido";
-          return (
-            <Card key={action.id} className={isDone ? "opacity-60" : ""}>
-              <CardContent className="p-4 flex items-start gap-3">
-                <Select
-                  value={action.status}
-                  onValueChange={(v) =>
-                    setStatus.mutate({ id: action.id, status: v as ActionStatus })
-                  }
-                  disabled={setStatus.isPending}
-                >
-                  <SelectTrigger className="h-8 w-[150px] text-xs shrink-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(([value, label]) => (
-                      <SelectItem key={value} value={value} className="text-xs">
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-medium ${
-                      isDone ? "line-through text-muted-foreground" : "text-foreground"
-                    }`}
+      {isAutoridade && (
+        <Card className="border-primary/20 bg-primary/[0.03]">
+          <CardContent className="p-4">
+            <p className="text-sm text-foreground">
+              <span className="font-semibold">Autoridade Externa: </span>
+              menções, backlinks e citações que sinalizam credibilidade pras IAs.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {total === 0 && isAutoridade ? (
+        <Card>
+          <CardContent className="p-6 space-y-5">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                Comece com exemplos comprovados
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Clique em qualquer exemplo abaixo para pré-preencher e ajustar
+                antes de salvar.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {AUTORIDADE_EXAMPLES.map((ex) => {
+                const Icon = ex.icon;
+                return (
+                  <button
+                    key={ex.titulo}
+                    type="button"
+                    onClick={() =>
+                      openDialog({
+                        titulo: ex.titulo,
+                        descricao: ex.descricao,
+                        impacto_estimado: ex.impacto_estimado,
+                        prioridade: ex.prioridade,
+                        categoria: "autoridade_externa",
+                      })
+                    }
+                    className="text-left rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
                   >
-                    {action.titulo}
-                  </p>
-                  {action.descricao && (
-                    <p className="text-xs text-muted-foreground mt-1">{action.descricao}</p>
-                  )}
-                  {action.impacto_estimado && (
-                    <p className="text-xs text-muted-foreground mt-1 italic">
-                      Impacto: {action.impacto_estimado}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <Badge variant="secondary" className="text-[10px]">
-                      {ACTION_CATEGORY_LABELS[action.categoria]}
-                    </Badge>
-                    {action.origem === "automatico" && (
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-md bg-primary/10 p-2 shrink-0">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {ex.titulo}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {ex.descricao}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-muted-foreground">
+                  {isAutoridade ? "Progresso (Autoridade Externa)" : "Progresso Geral"}
+                </p>
+                <span className="text-sm font-medium">
+                  {completed}/{total}
+                </span>
+              </div>
+              <Progress
+                value={total > 0 ? (completed / total) * 100 : 0}
+                className="h-2.5"
+              />
+            </CardContent>
+          </Card>
+
+          <div className="space-y-2">
+            {actions.map((action) => {
+              const isDone = action.status === "concluido";
+              return (
+                <Card key={action.id} className={isDone ? "opacity-60" : ""}>
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <Select
+                      value={action.status}
+                      onValueChange={(v) =>
+                        setStatus.mutate({ id: action.id, status: v as ActionStatus })
+                      }
+                      disabled={setStatus.isPending}
+                    >
+                      <SelectTrigger className="h-8 w-[150px] text-xs shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(([value, label]) => (
+                          <SelectItem key={value} value={value} className="text-xs">
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`text-sm font-medium ${
+                          isDone ? "line-through text-muted-foreground" : "text-foreground"
+                        }`}
+                      >
+                        {action.titulo}
+                      </p>
+                      {action.descricao && (
+                        <p className="text-xs text-muted-foreground mt-1">{action.descricao}</p>
+                      )}
+                      {action.impacto_estimado && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">
+                          Impacto: {action.impacto_estimado}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {ACTION_CATEGORY_LABELS[action.categoria]}
+                        </Badge>
+                        {action.origem === "automatico" && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] border-primary/40 text-primary gap-1"
+                          >
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Sugerida
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
                       <Badge
                         variant="outline"
-                        className="text-[10px] border-primary/40 text-primary gap-1"
+                        className={`text-[10px] ${priorityBadgeClass(action.prioridade)}`}
                       >
-                        <Sparkles className="h-2.5 w-2.5" />
-                        Sugerida
+                        {ACTION_PRIORITY_LABELS[action.prioridade]}
                       </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] ${priorityBadgeClass(action.prioridade)}`}
-                  >
-                    {ACTION_PRIORITY_LABELS[action.prioridade]}
-                  </Badge>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir esta ação?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta operação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteAction.mutate(action.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir esta ação?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta operação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteAction.mutate(action.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

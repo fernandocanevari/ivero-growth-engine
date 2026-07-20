@@ -21,7 +21,7 @@ import ComparativoPage from "./pages/dashboard/ComparativoPage";
 import ScorePage from "./pages/dashboard/ScorePage";
 import SentimentoPage from "./pages/dashboard/SentimentoPage";
 import AcoesPage from "./pages/dashboard/AcoesPage";
-import AutoridadeExternaPage from "./pages/dashboard/AutoridadeExternaPage";
+
 import AlertasPage from "./pages/dashboard/AlertasPage";
 import PromptsPage from "./pages/dashboard/PromptsPage";
 import DominanciaPage from "./pages/dashboard/DominanciaPage";
@@ -115,7 +115,6 @@ const App = () => (
             <Route path="tags-percepcao" element={<FeatureGate><TagsPercepcaoPage /></FeatureGate>} />
             <Route path="sentimento" element={<FeatureGate><SentimentoPage /></FeatureGate>} />
             <Route path="acoes" element={<FeatureGate><AcoesPage /></FeatureGate>} />
-            <Route path="autoridade-externa" element={<FeatureGate><AutoridadeExternaPage /></FeatureGate>} />
             <Route path="conteudo" element={<FeatureGate><GeradorConteudoPage /></FeatureGate>} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="prompts" element={<FeatureGate><PromptsPage /></FeatureGate>} />

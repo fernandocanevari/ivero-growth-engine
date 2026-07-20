@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck, FileCode, ExternalLink,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck, FileCode,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -71,7 +71,6 @@ const menuGroups: MenuGroup[] = [
     label: "Ações",
     items: [
       { title: "Planos de Ação", url: "/dashboard/acoes", icon: FileText },
-      { title: "Autoridade Externa", url: "/dashboard/autoridade-externa", icon: ExternalLink },
       { title: "Gerador de Conteúdo", url: "/dashboard/conteudo", icon: PenLine },
       { title: "Mapa de Prompts", url: "/dashboard/prompts", icon: Map },
       { title: "Alertas", url: "/dashboard/alertas", icon: Bell, dynamicBadge: "perception" },
