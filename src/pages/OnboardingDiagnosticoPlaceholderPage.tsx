@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useOnboardingResponses } from "@/hooks/useOnboardingResponses";
 import { getOpeningPhrase } from "@/lib/onboarding-recommendation";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Diagnóstico personalizado pós-onboarding.
@@ -22,6 +23,21 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
       navigate("/dashboard", { replace: true });
     }
   }, [isLoading, responses, navigate]);
+
+  // Belt-and-suspenders: zera is_first_login ao chegar aqui, já que o
+  // onboarding real foi concluído. Evita que qualquer código legado
+  // ainda leia essa flag e reencaminhe pro /bem-vindo.
+  useEffect(() => {
+    if (isLoading || !responses) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from("profiles")
+        .update({ is_first_login: false } as never)
+        .eq("user_id", user.id);
+    })();
+  }, [isLoading, responses]);
 
   if (isLoading || !responses) {
     return (
