@@ -64,24 +64,35 @@ export default function OnboardingPerguntasPage() {
         navigate("/login");
         return;
       }
-      let { data: bs } = await supabase
+      // Idempotent single-shot: resolve the brand row in one round-trip,
+      // avoiding the read-after-write race with AuthPage's own upsert.
+      const { data: bs, error } = await supabase
         .from("brand_settings")
+        .upsert({ user_id: user.id } as never, {
+          onConflict: "user_id",
+          ignoreDuplicates: false,
+        })
         .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!bs) {
-        const { data: created, error } = await supabase
+        .single();
+      if (error || !bs) {
+        // Defensive fallback: another writer won the race — just SELECT.
+        const { data: retry } = await supabase
           .from("brand_settings")
-          .upsert({ user_id: user.id } as never, { onConflict: "user_id" })
           .select("id")
-          .single();
-        if (error) {
-          toast({ title: "Erro ao iniciar onboarding", description: error.message, variant: "destructive" });
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!retry) {
+          toast({
+            title: "Erro ao iniciar onboarding",
+            description: error?.message ?? "Marca não encontrada",
+            variant: "destructive",
+          });
           return;
         }
-        bs = created;
+        setBrandId(retry.id);
+      } else {
+        setBrandId(bs.id);
       }
-      setBrandId(bs!.id);
       setLoading(false);
     })();
   }, [navigate]);
