@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/accordion";
 import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
 import { track } from "@/lib/analytics";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { PLANOS, formatBRL } from "@/lib/pricing-rules";
 
 /**
  * AssinaturaPage — área financeira do cliente.
