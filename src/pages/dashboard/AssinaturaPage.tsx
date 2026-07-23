@@ -37,6 +37,7 @@ const mockInvoices = [
 ];
 
 export default function AssinaturaPage() {
+  const { plano, status } = useSubscriptionStatus();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [comingSoonContext, setComingSoonContext] = useState<string>("");
