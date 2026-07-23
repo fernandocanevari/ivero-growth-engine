@@ -99,22 +99,33 @@ export default function AssinaturaPage() {
                 Plano Atual
               </span>
             </div>
-            <Badge className="bg-primary/15 text-primary border-0 hover:bg-primary/20">
-              Teste grátis
-            </Badge>
+            {status === "trial" && (
+              <Badge className="bg-primary/15 text-primary border-0 hover:bg-primary/20">
+                Teste grátis
+              </Badge>
+            )}
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-1">
-            Plano Gratuito
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Acesso completo por 7 dias para conhecer a plataforma.
-          </p>
-
-          <div className="flex items-baseline gap-2 mb-6">
-            <span className="text-3xl font-bold text-foreground">R$ 0</span>
-            <span className="text-sm text-muted-foreground">/ teste</span>
-          </div>
+          {(() => {
+            const planoInfo = plano ? PLANOS[plano] : null;
+            const displayName = planoInfo?.name ?? "Plano —";
+            const displayPrice = planoInfo ? formatBRL(planoInfo.monthlyPrice) : "—";
+            const tagline =
+              planoInfo?.tagline ??
+              "Escolha um plano para desbloquear os recursos avançados.";
+            return (
+              <>
+                <h2 className="text-2xl font-bold text-foreground mb-1">
+                  Plano {displayName}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">{tagline}</p>
+                <div className="flex items-baseline gap-2 mb-6">
+                  <span className="text-3xl font-bold text-foreground">{displayPrice}</span>
+                  <span className="text-sm text-muted-foreground">/ mês</span>
+                </div>
+              </>
+            );
+          })()}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleChangePlan} className="gap-1.5">
