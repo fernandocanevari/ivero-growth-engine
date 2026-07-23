@@ -98,12 +98,12 @@ export default function OnboardingPerguntasPage() {
     }
     if (!brandId) return;
     setSaving(true);
-    const { error } = await supabase.from("onboarding_responses").insert({
+    const { error } = await supabase.from("onboarding_responses").upsert({
       brand_id: brandId,
       p1_maturidade_ia: next.p1_maturidade_ia,
       p2_criterio_mercado: next.p2_criterio_mercado,
       p3_maior_risco: next.p3_maior_risco,
-    } as never);
+    } as never, { onConflict: "brand_id" });
     setSaving(false);
     if (error) {
       toast({ title: "Não foi possível salvar suas respostas", description: error.message, variant: "destructive" });
