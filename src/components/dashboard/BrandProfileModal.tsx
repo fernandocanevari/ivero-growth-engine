@@ -1,71 +1,91 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CircleCheck, ArrowRight, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useBrandProfile, BrandProfileAnswers } from "@/hooks/useBrandProfile";
 import { useNavigate } from "react-router-dom";
+
+/**
+ * BrandProfileModal — "atualizar minhas respostas".
+ *
+ * Lê/escreve em onboarding_responses (mesma tabela do fluxo real de onboarding
+ * em /onboarding/perguntas). Perguntas e valores são idênticos ao onboarding
+ * canônico — nunca mais um terceiro conjunto divergente.
+ *
+ * DEPRECATED: versão anterior escrevia em client_onboarding com detail_1/2/3
+ * opcionais. Ambos foram removidos.
+ */
+
+type Column = "p1_maturidade_ia" | "p2_criterio_mercado" | "p3_maior_risco";
 
 interface StepDef {
   label: string;
   question: string;
-  placeholder: string;
+  column: Column;
   options: { value: string; text: string }[];
 }
 
 const STEPS: StepDef[] = [
   {
     label: "1 de 3 · PERCEPÇÃO",
-    question: "Como sua marca é percebida hoje no mercado digital?",
-    placeholder: "Quer detalhar? (opcional — mas nos ajuda muito)",
+    column: "p1_maturidade_ia",
+    question:
+      "Hoje, quando alguém busca seu tipo de produto/serviço numa IA como o ChatGPT, você acha que sua marca aparece?",
     options: [
-      { value: "A", text: "Somos praticamente invisíveis no digital" },
-      { value: "B", text: "Temos presença, mas sem autoridade reconhecida" },
-      { value: "C", text: "Somos conhecidos, mas as IAs não nos mencionam" },
-      { value: "D", text: "Já temos boa presença e queremos escalar nas IAs" },
+      { value: "nem_aparecemos", text: "Sinceramente, acho que nem aparecemos" },
+      { value: "nao_sei_dizer", text: "Talvez apareça, mas não sei dizer com certeza" },
+      { value: "aparecemos_sem_referencia", text: "Acho que aparecemos, mas não como referência" },
+      { value: "aparecemos_com_destaque", text: "Acredito que sim, e com destaque" },
     ],
   },
   {
-    label: "2 de 3 · AMBIÇÃO",
+    label: "2 de 3 · CRITÉRIO",
+    column: "p2_criterio_mercado",
     question:
-      "Se um cliente pesquisar sobre seu segmento em uma IA, como você gostaria que sua marca fosse mencionada?",
-    placeholder: "Descreva o cenário ideal para sua marca nas IAs... (opcional)",
+      "No seu setor, o que normalmente faz uma marca ser vista como referência pelas pessoas?",
     options: [
-      { value: "A", text: "Como uma das opções do mercado" },
-      { value: "B", text: "Como referência confiável e recomendada" },
-      { value: "C", text: "Como líder e autoridade do segmento" },
-      { value: "D", text: "Como a primeira e principal recomendação" },
+      { value: "preco_custo", text: "Preço e custo-benefício" },
+      { value: "confianca_reputacao", text: "Confiança e reputação construída com o tempo" },
+      { value: "qualidade_tecnica", text: "Qualidade técnica comprovada" },
+      { value: "indicacao_social", text: "Indicação de quem já comprou" },
     ],
   },
   {
     label: "3 de 3 · RISCO",
+    column: "p3_maior_risco",
     question:
-      "Qual é o maior risco que sua marca enfrenta hoje em relação à visibilidade digital?",
-    placeholder: "Algum contexto adicional sobre esse risco? (opcional)",
+      "Se você não souber como a IA está falando da sua marca agora, qual desses cenários te preocupa mais?",
     options: [
-      { value: "A", text: "Dependemos demais de tráfego pago" },
-      { value: "B", text: "Nossos concorrentes dominam as conversas nas IAs" },
-      { value: "C", text: "Não sabemos como as IAs nos percebem" },
-      { value: "D", text: "Nossa autoridade digital está caindo" },
+      { value: "concorrente_ocupa_espaco", text: "Meus concorrentes aparecerem no meu lugar" },
+      { value: "informacao_errada", text: "A IA falar de mim com informação errada ou desatualizada" },
+      { value: "nao_mencionado", text: "Simplesmente não ser mencionado, como se eu não existisse" },
+      { value: "perde_cliente_sem_saber", text: "Perder clientes sem nunca entender por quê" },
     ],
   },
 ];
 
 export default function BrandProfileModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
-  const { save, skip } = useBrandProfile();
+  const { data, save, skip } = useBrandProfile();
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [answers, setAnswers] = useState<string[]>(["", "", ""]);
-  const [details, setDetails] = useState<string[]>(["", "", ""]);
+
+  // Pré-preenche com as respostas atuais da onboarding_responses (se existirem).
+  useEffect(() => {
+    if (!data) return;
+    setAnswers([
+      data.p1_maturidade_ia || "",
+      data.p2_criterio_mercado || "",
+      data.p3_maior_risco || "",
+    ]);
+  }, [data]);
 
   const current = STEPS[step];
   const selected = answers[step];
 
   const setAnswer = (v: string) =>
     setAnswers((prev) => prev.map((a, i) => (i === step ? v : a)));
-  const setDetail = (v: string) =>
-    setDetails((prev) => prev.map((a, i) => (i === step ? v.slice(0, 300) : a)));
 
   const handleNext = async () => {
     if (step < 2) {
@@ -73,12 +93,9 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
       return;
     }
     const payload: BrandProfileAnswers = {
-      question_1: `${answers[0]}`,
-      question_2: `${answers[1]}`,
-      question_3: `${answers[2]}`,
-      detail_1: details[0],
-      detail_2: details[1],
-      detail_3: details[2],
+      p1_maturidade_ia: answers[0],
+      p2_criterio_mercado: answers[1],
+      p3_maior_risco: answers[2],
     };
     await save.mutateAsync(payload);
     setDone(true);
@@ -103,7 +120,7 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
               <CircleCheck className="text-emerald-600" size={48} strokeWidth={1.5} />
             </div>
             <h2 className="text-[22px] font-medium text-[#1A1A2E] mb-2">
-              Perfil da marca salvo!
+              Respostas atualizadas!
             </h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
               Usaremos essas informações para personalizar suas recomendações e tornar
@@ -121,7 +138,6 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
           </div>
         ) : (
           <>
-            {/* Header */}
             <div className="px-7 pt-7 pb-4 border-b border-[#F0F0F4] relative">
               <button
                 onClick={handleSkip}
@@ -132,14 +148,12 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
               </button>
               <div className="mb-2">
                 <h2 className="text-[22px] font-medium text-[#1A1A2E] leading-tight">
-                  Vamos personalizar sua experiência
+                  Atualize as respostas do seu perfil
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                3 perguntas rápidas para adaptar as recomendações da Ivero à realidade
-                da sua marca. Leva menos de 1 minuto.
+                As mesmas 3 perguntas do onboarding — revise sempre que sua marca evoluir.
               </p>
-              {/* Progress segments */}
               <div className="flex gap-2 mt-5">
                 {STEPS.map((_, i) => (
                   <div
@@ -152,7 +166,6 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
               </div>
             </div>
 
-            {/* Body */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -198,31 +211,9 @@ export default function BrandProfileModal({ onClose }: { onClose: () => void }) 
                     );
                   })}
                 </div>
-
-                {selected && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    transition={{ duration: 0.18 }}
-                    className="mt-4"
-                  >
-                    <Textarea
-                      value={details[step]}
-                      onChange={(e) => setDetail(e.target.value)}
-                      placeholder={current.placeholder}
-                      rows={2}
-                      maxLength={300}
-                      className="resize-none text-sm"
-                    />
-                    <div className="text-[11px] text-muted-foreground text-right mt-1">
-                      {details[step].length}/300
-                    </div>
-                  </motion.div>
-                )}
               </motion.div>
             </AnimatePresence>
 
-            {/* Footer */}
             <div className="px-7 pb-6 pt-2 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {step > 0 ? (

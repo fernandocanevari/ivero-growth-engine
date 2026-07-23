@@ -84,7 +84,10 @@ export default function AuthPage() {
     }
   };
 
-  // Helper: redirect after auth based on first-login flag
+  // Helper: redirect after login. Single source of truth = onboarding_responses.
+  // If a row exists for this user's brand, they've completed onboarding → dashboard.
+  // Otherwise, send them to the real onboarding (never /bem-vindo, which is
+  // reserved for Asaas payment returns via ?from=asaas).
   const redirectAfterAuth = async (userId: string) => {
     if (safeRedirect) {
       navigate(safeRedirect, { replace: true });
@@ -92,7 +95,7 @@ export default function AuthPage() {
     }
 
     try {
-      // Admins skip the welcome/payment flow and go straight to the admin panel
+      // Admins skip everything and go straight to the admin panel
       const { data: roleRow } = await supabase
         .from("user_roles")
         .select("role")
@@ -104,12 +107,27 @@ export default function AuthPage() {
         return;
       }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_first_login")
+      const { data: brand } = await supabase
+        .from("brand_settings")
+        .select("id")
         .eq("user_id", userId)
         .maybeSingle();
-      navigate(data?.is_first_login ? "/bem-vindo" : "/dashboard", { replace: true });
+
+      if (brand?.id) {
+        const { data: resp } = await supabase
+          .from("onboarding_responses")
+          .select("id")
+          .eq("brand_id", brand.id)
+          .limit(1)
+          .maybeSingle();
+        if (resp) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+      }
+
+      // Sem respostas ainda — vai para o onboarding real.
+      navigate("/onboarding/perguntas", { replace: true });
     } catch {
       navigate("/dashboard", { replace: true });
     }
