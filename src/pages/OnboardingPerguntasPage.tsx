@@ -72,11 +72,11 @@ export default function OnboardingPerguntasPage() {
       if (!bs) {
         const { data: created, error } = await supabase
           .from("brand_settings")
-          .insert({ user_id: user.id } as never)
+          .upsert({ user_id: user.id } as never, { onConflict: "user_id" })
           .select("id")
           .single();
         if (error) {
-          toast({ title: "Erro ao iniciar onboarding", variant: "destructive" });
+          toast({ title: "Erro ao iniciar onboarding", description: error.message, variant: "destructive" });
           return;
         }
         bs = created;
