@@ -328,10 +328,10 @@ export default function AcoesPage() {
         <div>
           <h1 className="text-2xl font-bold font-display text-foreground">Planos de Ação</h1>
           <p className="text-muted-foreground mt-1">
-            Tarefas priorizadas para melhorar sua presença nas IAs.
+            Recomendações priorizadas para você (ou sua equipe) executar e melhorar sua presença nas IAs.
           </p>
         </div>
-        {hasBrand && (
+        {hasBrand && total > 0 && (
           <NewActionDialog
             open={dialogOpen}
             onOpenChange={setDialogOpen}
@@ -344,7 +344,7 @@ export default function AcoesPage() {
                   )
                 }
               >
-                <Plus className="h-4 w-4 mr-1.5" /> Nova ação
+                <Plus className="h-4 w-4 mr-1.5" /> Nova Ação
               </Button>
             }
           />
