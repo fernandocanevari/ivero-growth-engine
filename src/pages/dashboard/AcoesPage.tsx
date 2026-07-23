@@ -313,44 +313,10 @@ export default function AcoesPage() {
 
   if (loadingBrand || loadingActions) return null;
 
-  // Global empty state — first visit, no brand OR no actions at all across categories.
-  // We only show this when the user is on "Todas" AND there is nothing.
-  if (filter === "todas" && actions.length === 0) {
-    return (
-      <div className="space-y-4">
-        <EmptyStatePage
-          icon={<CheckCheck className="h-12 w-12" />}
-          title="Planos de Ação"
-          subtitle="Tarefas priorizadas para melhorar sua presença nas IAs."
-          message="Nenhuma ação cadastrada ainda"
-          description={
-            hasBrand
-              ? "Crie sua primeira ação manualmente ou rode um diagnóstico para receber sugestões automáticas."
-              : "Configure sua marca antes de começar a criar ações."
-          }
-          hasBrand={hasBrand}
-        />
-        {hasBrand && (
-          <div className="flex justify-center">
-            <NewActionDialog
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              initial={prefill}
-              trigger={
-                <Button size="lg" onClick={() => openDialog()}>
-                  <Plus className="h-4 w-4 mr-1.5" /> Criar primeira ação
-                </Button>
-              }
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
-
   const completed = actions.filter((a) => a.status === "concluido").length;
   const total = actions.length;
   const isAutoridade = filter === "autoridade_externa";
+  const showGlobalEmpty = filter === "todas" && actions.length === 0;
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -365,25 +331,27 @@ export default function AcoesPage() {
             Tarefas priorizadas para melhorar sua presença nas IAs.
           </p>
         </div>
-        <NewActionDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          initial={prefill}
-          trigger={
-            <Button
-              onClick={() =>
-                openDialog(
-                  isAutoridade ? { categoria: "autoridade_externa" } : undefined,
-                )
-              }
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> Nova ação
-            </Button>
-          }
-        />
+        {hasBrand && (
+          <NewActionDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            initial={prefill}
+            trigger={
+              <Button
+                onClick={() =>
+                  openDialog(
+                    isAutoridade ? { categoria: "autoridade_externa" } : undefined,
+                  )
+                }
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Nova ação
+              </Button>
+            }
+          />
+        )}
       </motion.div>
 
-      {/* Filtro por categoria */}
+      {/* Filtro por categoria — sempre visível */}
       <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
         {([
           { key: "todas", label: "Todas" },
@@ -416,7 +384,21 @@ export default function AcoesPage() {
         </Card>
       )}
 
-      {total === 0 && isAutoridade ? (
+      {showGlobalEmpty ? (
+        <EmptyStatePage
+          icon={<CheckCheck className="h-12 w-12" />}
+          title="Nenhuma ação cadastrada ainda"
+          subtitle={
+            hasBrand
+              ? "Crie sua primeira ação manualmente ou rode um diagnóstico para receber sugestões automáticas."
+              : "Configure sua marca antes de começar a criar ações."
+          }
+          message=""
+          description=""
+          hasBrand={hasBrand}
+        />
+      ) : total === 0 && isAutoridade ? (
+
         <Card>
           <CardContent className="p-6 space-y-5">
             <div>
