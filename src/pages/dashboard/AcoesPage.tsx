@@ -352,7 +352,7 @@ export default function AcoesPage() {
       </motion.div>
 
       {/* Filtro por categoria — sempre visível */}
-      <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
+      <div className="inline-flex rounded-lg border border-border bg-muted p-1">
         {([
           { key: "todas", label: "Todas" },
           { key: "autoridade_externa", label: "Autoridade Externa" },
@@ -362,9 +362,9 @@ export default function AcoesPage() {
             type="button"
             onClick={() => setFilter(tab.key)}
             className={cn(
-              "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors",
+              "px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-colors",
               filter === tab.key
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
