@@ -328,10 +328,10 @@ export default function AcoesPage() {
         <div>
           <h1 className="text-2xl font-bold font-display text-foreground">Planos de Ação</h1>
           <p className="text-muted-foreground mt-1">
-            Tarefas priorizadas para melhorar sua presença nas IAs.
+            Recomendações priorizadas para você (ou sua equipe) executar e melhorar sua presença nas IAs.
           </p>
         </div>
-        {hasBrand && (
+        {hasBrand && total > 0 && (
           <NewActionDialog
             open={dialogOpen}
             onOpenChange={setDialogOpen}
@@ -344,7 +344,7 @@ export default function AcoesPage() {
                   )
                 }
               >
-                <Plus className="h-4 w-4 mr-1.5" /> Nova ação
+                <Plus className="h-4 w-4 mr-1.5" /> Nova Ação
               </Button>
             }
           />
@@ -352,7 +352,7 @@ export default function AcoesPage() {
       </motion.div>
 
       {/* Filtro por categoria — sempre visível */}
-      <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
+      <div className="inline-flex rounded-lg border border-border bg-muted p-1">
         {([
           { key: "todas", label: "Todas" },
           { key: "autoridade_externa", label: "Autoridade Externa" },
@@ -362,9 +362,9 @@ export default function AcoesPage() {
             type="button"
             onClick={() => setFilter(tab.key)}
             className={cn(
-              "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors",
+              "px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-colors",
               filter === tab.key
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
