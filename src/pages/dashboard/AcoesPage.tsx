@@ -385,18 +385,27 @@ export default function AcoesPage() {
       )}
 
       {showGlobalEmpty ? (
-        <EmptyStatePage
-          icon={<CheckCheck className="h-12 w-12" />}
-          title="Nenhuma ação cadastrada ainda"
-          subtitle={
-            hasBrand
-              ? "Crie sua primeira ação manualmente ou rode um diagnóstico para receber sugestões automáticas."
-              : "Configure sua marca antes de começar a criar ações."
-          }
-          message=""
-          description=""
-          hasBrand={hasBrand}
-        />
+        <Card className="border-dashed">
+          <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="text-muted-foreground mb-4">
+              <CheckCheck className="h-12 w-12" />
+            </div>
+            <p className="text-base font-medium text-foreground">
+              Nenhuma ação cadastrada ainda
+            </p>
+            <p className="text-sm text-muted-foreground mt-2 max-w-md">
+              {hasBrand
+                ? "Crie sua primeira ação manualmente ou rode um diagnóstico para receber sugestões automáticas."
+                : "Configure sua marca antes de começar a criar ações."}
+            </p>
+            {hasBrand && (
+              <Button className="mt-5" onClick={() => openDialog()}>
+                <Plus className="h-4 w-4 mr-1.5" /> Criar primeira ação
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
       ) : total === 0 && isAutoridade ? (
 
         <Card>
