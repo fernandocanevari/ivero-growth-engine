@@ -332,24 +332,25 @@ export default function AcoesPage() {
           </p>
         </div>
         {hasBrand && total > 0 && (
-          <NewActionDialog
-            open={dialogOpen}
-            onOpenChange={setDialogOpen}
-            initial={prefill}
-            trigger={
-              <Button
-                onClick={() =>
-                  openDialog(
-                    isAutoridade ? { categoria: "autoridade_externa" } : undefined,
-                  )
-                }
-              >
-                <Plus className="h-4 w-4 mr-1.5" /> Nova Ação
-              </Button>
+          <Button
+            onClick={() =>
+              openDialog(
+                isAutoridade ? { categoria: "autoridade_externa" } : undefined,
+              )
             }
-          />
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> Nova Ação
+          </Button>
         )}
       </motion.div>
+
+      {hasBrand && (
+        <NewActionDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          initial={prefill}
+        />
+      )}
 
       {/* Filtro por categoria — sempre visível */}
       <div className="inline-flex rounded-lg border border-border bg-muted p-1">
