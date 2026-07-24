@@ -622,7 +622,7 @@ export type Database = {
           {
             foreignKeyName: "onboarding_responses_brand_id_fkey"
             columns: ["brand_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "brand_settings"
             referencedColumns: ["id"]
           },
