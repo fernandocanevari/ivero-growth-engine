@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -153,8 +153,15 @@ function NewActionDialog({
   const [form, setForm] = useState<ActionFormState>({ ...EMPTY_FORM, ...initial });
   const create = useCreateActionPlan();
 
+  // Re-sincroniza o form sempre que o dialog abrir — independente de a abertura
+  // ter vindo do Radix (trigger/ESC/overlay) ou de um setDialogOpen(true)
+  // programático (cards de exemplo, botão "+ Nova Ação", etc.).
+  useEffect(() => {
+    if (open) setForm({ ...EMPTY_FORM, ...initial });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initial]);
+
   const handleOpen = (v: boolean) => {
-    if (v) setForm({ ...EMPTY_FORM, ...initial });
     onOpenChange(v);
   };
 
