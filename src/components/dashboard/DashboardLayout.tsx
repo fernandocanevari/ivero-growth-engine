@@ -137,7 +137,7 @@ export default function DashboardLayout() {
               />
             ) : (
               <>
-                {shouldRemind && !showBrandModal && (
+                {!brandLoading && shouldRemind && !showBrandModal && (
                   <BrandProfileReminderBanner
                     onOpenModal={() => {
                       setBrandModalDismissed(false);
