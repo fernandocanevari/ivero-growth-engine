@@ -338,7 +338,7 @@ export default function AcoesPage() {
             Recomendações priorizadas para você (ou sua equipe) executar e melhorar sua presença nas IAs.
           </p>
         </div>
-        {hasBrand && total > 0 && (
+        {hasBrand && actions.length > 0 && (
           <Button
             onClick={() =>
               openDialog(
