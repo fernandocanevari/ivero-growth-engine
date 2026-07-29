@@ -182,7 +182,7 @@ export default function AuthPage() {
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
-    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string }) => {
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; celular: string }) => {
       pendingSignupExtras = extras;
     };
     // Called BEFORE supabase.auth.signUp so the listener treats the next
