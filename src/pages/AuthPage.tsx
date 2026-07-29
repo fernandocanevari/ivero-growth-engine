@@ -461,14 +461,15 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-foreground">Nome da empresa</Label>
+                      <Label className="text-foreground">Celular</Label>
                       <Input
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
                         required
-                        maxLength={100}
-                        value={nomeEmpresa}
-                        onChange={(e) => setNomeEmpresa(e.target.value)}
-                        placeholder="Nome da sua empresa"
+                        maxLength={16}
+                        value={celular}
+                        onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
+                        placeholder="(11) 91234-5678"
                         className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
