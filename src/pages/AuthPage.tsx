@@ -227,9 +227,19 @@ export default function AuthPage() {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       }
     } else {
+      const celularDigits = celular.replace(/\D/g, "");
+      if (celularDigits.length < 10 || celularDigits.length > 11) {
+        setLoading(false);
+        toast({
+          title: "Celular inválido",
+          description: "Informe um celular no formato (11) 91234-5678.",
+          variant: "destructive",
+        });
+        return;
+      }
       const extras = {
         nome_completo: nomeCompleto.trim(),
-        nome_empresa: nomeEmpresa.trim(),
+        celular: celular.trim(),
       };
       // Read chosen plan from landing-page CTA (localStorage) and pass it as
       // signup metadata so the DB trigger creates the trial with the right plan
