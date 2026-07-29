@@ -276,7 +276,7 @@ export default function AuthPage() {
           data: {
             display_name: extras.nome_completo || prefName || email.split("@")[0],
             nome_completo: extras.nome_completo,
-            nome_empresa: extras.nome_empresa,
+            celular: extras.celular,
             plano_escolhido: planoEscolhido,
           },
         },
