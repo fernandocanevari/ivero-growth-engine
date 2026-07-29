@@ -27,8 +27,8 @@ export default function AuthPage() {
   const [email, setEmail] = useState(prefEmail);
   const [password, setPassword] = useState("");
   const [nomeCompleto, setNomeCompleto] = useState(prefName);
-  const [nomeEmpresa, setNomeEmpresa] = useState("");
   const [celular, setCelular] = useState(prefPhone ? formatPhoneBR(prefPhone) : "");
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [staleSessionCleared, setStaleSessionCleared] = useState(false);
@@ -36,14 +36,15 @@ export default function AuthPage() {
   // Persist any prefilled lead context so the brand profile can be built right after signup
   const hasPrefilledLead = Boolean(prefName || prefSite || prefPhone);
 
-  // Helper: persist brand_settings for a freshly signed-up user
+  // Helper: persist brand_settings contact context for a freshly signed-up user.
+  // NOTE: brand_name is intentionally NOT written here — ele é preenchido depois
+  // pela análise do site no onboarding (ivero-onboarding-analyze).
   const persistBrandFromLead = async (userId: string, userEmail: string) => {
     if (!hasPrefilledLead) return;
     try {
       await supabase.from("brand_settings").upsert(
         {
           user_id: userId,
-          brand_name: prefName || "",
           website: prefSite || "",
           contact_name: prefName || "",
           contact_email: userEmail,
@@ -57,12 +58,12 @@ export default function AuthPage() {
   };
 
   // Helper: persist signup fields with STRICT separation of concerns.
-  // profiles = person identity only (nome_completo, display_name)
-  // brand_settings = brand identity only (brand_name)
+  // profiles = person identity only (nome_completo, display_name, celular)
+  // brand_settings = brand identity (brand_name vem da análise do site no onboarding)
   // Never duplicate data across these two tables.
   const persistProfileExtras = async (
     userId: string,
-    extras: { nome_completo: string; nome_empresa: string }
+    extras: { nome_completo: string; celular: string }
   ) => {
     try {
       await supabase
@@ -70,19 +71,14 @@ export default function AuthPage() {
         .update({
           nome_completo: extras.nome_completo,
           display_name: extras.nome_completo || undefined,
+          celular: extras.celular,
         } as any)
         .eq("user_id", userId);
-      await supabase.from("brand_settings").upsert(
-        {
-          user_id: userId,
-          brand_name: extras.nome_empresa,
-        } as any,
-        { onConflict: "user_id" }
-      );
     } catch (err) {
       console.warn("[AuthPage] Failed to persist profile extras:", err);
     }
   };
+
 
   // Helper: redirect after login. Single source of truth = onboarding_responses.
   // If a row exists for this user's brand, they've completed onboarding → dashboard.
@@ -142,7 +138,7 @@ export default function AuthPage() {
     // before handleSubmit has the userId to bind to pendingSignupForUserId.
     let signupInFlight = false;
     // Extras collected at signup time, persisted to profiles once the session arrives
-    let pendingSignupExtras: { nome_completo: string; nome_empresa: string } | null = null;
+    let pendingSignupExtras: { nome_completo: string; celular: string } | null = null;
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
@@ -186,7 +182,7 @@ export default function AuthPage() {
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
-    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; nome_empresa: string }) => {
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; celular: string }) => {
       pendingSignupExtras = extras;
     };
     // Called BEFORE supabase.auth.signUp so the listener treats the next
@@ -231,9 +227,19 @@ export default function AuthPage() {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       }
     } else {
+      const celularDigits = celular.replace(/\D/g, "");
+      if (celularDigits.length < 10 || celularDigits.length > 11) {
+        setLoading(false);
+        toast({
+          title: "Celular inválido",
+          description: "Informe um celular no formato (11) 91234-5678.",
+          variant: "destructive",
+        });
+        return;
+      }
       const extras = {
         nome_completo: nomeCompleto.trim(),
-        nome_empresa: nomeEmpresa.trim(),
+        celular: celular.trim(),
       };
       // Read chosen plan from landing-page CTA (localStorage) and pass it as
       // signup metadata so the DB trigger creates the trial with the right plan
@@ -270,7 +276,7 @@ export default function AuthPage() {
           data: {
             display_name: extras.nome_completo || prefName || email.split("@")[0],
             nome_completo: extras.nome_completo,
-            nome_empresa: extras.nome_empresa,
+            celular: extras.celular,
             plano_escolhido: planoEscolhido,
           },
         },
@@ -455,14 +461,15 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-foreground">Nome da empresa</Label>
+                      <Label className="text-foreground">Celular</Label>
                       <Input
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
                         required
-                        maxLength={100}
-                        value={nomeEmpresa}
-                        onChange={(e) => setNomeEmpresa(e.target.value)}
-                        placeholder="Nome da sua empresa"
+                        maxLength={16}
+                        value={celular}
+                        onChange={(e) => setCelular(formatPhoneBR(e.target.value))}
+                        placeholder="(11) 91234-5678"
                         className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
