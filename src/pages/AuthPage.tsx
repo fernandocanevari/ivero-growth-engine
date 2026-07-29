@@ -36,14 +36,15 @@ export default function AuthPage() {
   // Persist any prefilled lead context so the brand profile can be built right after signup
   const hasPrefilledLead = Boolean(prefName || prefSite || prefPhone);
 
-  // Helper: persist brand_settings for a freshly signed-up user
+  // Helper: persist brand_settings contact context for a freshly signed-up user.
+  // NOTE: brand_name is intentionally NOT written here — ele é preenchido depois
+  // pela análise do site no onboarding (ivero-onboarding-analyze).
   const persistBrandFromLead = async (userId: string, userEmail: string) => {
     if (!hasPrefilledLead) return;
     try {
       await supabase.from("brand_settings").upsert(
         {
           user_id: userId,
-          brand_name: prefName || "",
           website: prefSite || "",
           contact_name: prefName || "",
           contact_email: userEmail,
@@ -57,12 +58,12 @@ export default function AuthPage() {
   };
 
   // Helper: persist signup fields with STRICT separation of concerns.
-  // profiles = person identity only (nome_completo, display_name)
-  // brand_settings = brand identity only (brand_name)
+  // profiles = person identity only (nome_completo, display_name, celular)
+  // brand_settings = brand identity (brand_name vem da análise do site no onboarding)
   // Never duplicate data across these two tables.
   const persistProfileExtras = async (
     userId: string,
-    extras: { nome_completo: string; nome_empresa: string }
+    extras: { nome_completo: string; celular: string }
   ) => {
     try {
       await supabase
@@ -70,19 +71,14 @@ export default function AuthPage() {
         .update({
           nome_completo: extras.nome_completo,
           display_name: extras.nome_completo || undefined,
+          celular: extras.celular,
         } as any)
         .eq("user_id", userId);
-      await supabase.from("brand_settings").upsert(
-        {
-          user_id: userId,
-          brand_name: extras.nome_empresa,
-        } as any,
-        { onConflict: "user_id" }
-      );
     } catch (err) {
       console.warn("[AuthPage] Failed to persist profile extras:", err);
     }
   };
+
 
   // Helper: redirect after login. Single source of truth = onboarding_responses.
   // If a row exists for this user's brand, they've completed onboarding → dashboard.
