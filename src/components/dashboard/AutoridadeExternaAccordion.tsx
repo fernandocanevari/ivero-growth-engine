@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { icons, Plus, Clock, Gauge } from "lucide-react";
+import { icons, Plus, Clock, Gauge, Check } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -94,10 +94,17 @@ export function AutoridadeExternaAccordion() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-2 pt-1">
-                    {items.map((item) => (
+                    {items.map((item) => {
+                      const isAdopted = adoptedIds.has(item.id);
+                      return (
                       <div
                         key={item.id}
-                        className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
+                        className={cn(
+                          "flex items-start gap-3 rounded-lg border p-3",
+                          isAdopted
+                            ? "border-emerald-200 bg-emerald-50/60"
+                            : "border-border bg-card",
+                        )}
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground">
@@ -120,13 +127,22 @@ export function AutoridadeExternaAccordion() {
                           size="sm"
                           variant="outline"
                           className="shrink-0"
-                          disabled={adopt.isPending}
+                          disabled={isAdopted || adopt.isPending}
                           onClick={() => adopt.mutate(item)}
                         >
-                          <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                          {isAdopted ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 mr-1" /> Já adicionado
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                            </>
+                          )}
                         </Button>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </AccordionContent>
               </AccordionItem>
