@@ -186,6 +186,7 @@ export default function OnboardingSitePage() {
         sector: sector.trim(),
         website: analysis?.normalized_url || url.trim(),
         objetivos,
+        onboarding_completed_at: new Date().toISOString(),
       } as never;
 
       let brandId: string;

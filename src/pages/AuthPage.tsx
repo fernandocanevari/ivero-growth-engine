@@ -105,24 +105,34 @@ export default function AuthPage() {
 
       const { data: brand } = await supabase
         .from("brand_settings")
-        .select("id")
+        .select("id, brand_name, onboarding_completed_at")
         .eq("user_id", userId)
         .maybeSingle();
 
       if (brand?.id) {
+        const b = brand as { id: string; brand_name: string | null; onboarding_completed_at?: string | null };
+        // Fonte de verdade: onboarding_completed_at. Fallback (opção A):
+        // brand_name preenchido — protege quem terminou antes da coluna existir.
+        const completed = Boolean(b.onboarding_completed_at) || Boolean(b.brand_name?.trim());
+        if (completed) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+
+        // Já respondeu as 3 perguntas mas não terminou a análise do site?
         const { data: resp } = await supabase
           .from("onboarding_responses")
           .select("id")
-          .eq("brand_id", brand.id)
+          .eq("brand_id", b.id)
           .limit(1)
           .maybeSingle();
         if (resp) {
-          navigate("/dashboard", { replace: true });
+          navigate("/onboarding/site", { replace: true });
           return;
         }
       }
 
-      // Sem respostas ainda — vai para o onboarding real.
+      // Onboarding incompleto — retoma da primeira etapa.
       navigate("/onboarding/perguntas", { replace: true });
     } catch {
       navigate("/dashboard", { replace: true });
