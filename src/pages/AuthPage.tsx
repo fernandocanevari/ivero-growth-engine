@@ -147,8 +147,14 @@ export default function AuthPage() {
     // the race where Supabase emits SIGNED_IN synchronously during signUp,
     // before handleSubmit has the userId to bind to pendingSignupForUserId.
     let signupInFlight = false;
+    // Guard: on mount we may need to sign out a stale session. Until that check
+    // has fully settled we must NOT run any redirect based on the old session,
+    // otherwise redirectAfterAuth() races signOut() and pushes the user into a
+    // route computed from an account that is about to be logged out.
+    let staleSessionCheckDone = false;
     // Extras collected at signup time, persisted to profiles once the session arrives
     let pendingSignupExtras: { nome_completo: string; celular: string } | null = null;
+
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
