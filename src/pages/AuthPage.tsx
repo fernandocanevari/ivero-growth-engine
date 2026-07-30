@@ -19,7 +19,14 @@ export default function AuthPage() {
   const prefSite = searchParams.get("site") || "";
   const prefPhone = searchParams.get("phone") || "";
   const redirectParam = searchParams.get("redirect") || "";
-  const safeRedirect = redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "";
+  // Onboarding routes are never honored as an explicit redirect target: the
+  // real step is computed from the DB state by redirectAfterAuth().
+  const isOnboardingPath = /^\/(onboarding|bem-vindo|welcome)\b/.test(redirectParam);
+  const safeRedirect =
+    redirectParam.startsWith("/") && !redirectParam.startsWith("//") && !isOnboardingPath
+      ? redirectParam
+      : "";
+
   const initialMode = (searchParams.get("mode") || (typeof window !== "undefined" && window.location.pathname === "/signup" ? "signup" : "login")).toLowerCase();
 
   const [isLogin, setIsLogin] = useState(initialMode !== "signup");
