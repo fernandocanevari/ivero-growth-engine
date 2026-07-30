@@ -217,14 +217,20 @@ export default function AuthPage() {
     };
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) return;
+      if (!session) {
+        staleSessionCheckDone = true;
+        return;
+      }
       // Always force a clean login when the user explicitly opens /auth.
       // This prevents stale sessions (e.g. a previous admin or another
       // account) from silently bouncing the user into someone else's
-      // dashboard without ever showing the login form.
+      // dashboard without ever showing the login form. Only after the signOut
+      // has fully settled do we allow session-based redirects again.
       await supabase.auth.signOut();
+      staleSessionCheckDone = true;
       setStaleSessionCleared(true);
     });
+
 
     return () => {
       subscription.unsubscribe();
