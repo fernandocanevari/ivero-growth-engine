@@ -34,16 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  CheckCheck,
-  Plus,
-  Trash2,
-  Sparkles,
-  Link2,
-  Newspaper,
-  Mic,
-  Star,
-} from "lucide-react";
+import { CheckCheck, Plus, Trash2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
@@ -75,48 +66,6 @@ const STATUS_OPTIONS = Object.entries(ACTION_STATUS_LABELS) as Array<
 
 type FilterKey = "todas" | "autoridade_externa";
 
-interface AutoridadeExample {
-  icon: React.ComponentType<{ className?: string }>;
-  titulo: string;
-  descricao: string;
-  impacto_estimado: string;
-  prioridade: ActionPriority;
-}
-
-const AUTORIDADE_EXAMPLES: AutoridadeExample[] = [
-  {
-    icon: Newspaper,
-    titulo: "Publicar guest post em veículo do setor",
-    descricao:
-      "Escrever artigo autoral em um portal de referência do seu segmento com link para o site institucional.",
-    impacto_estimado: "Aumenta autoridade de domínio e menções nas IAs em ~10%",
-    prioridade: "alta",
-  },
-  {
-    icon: Link2,
-    titulo: "Conquistar backlink de site com alta autoridade",
-    descricao:
-      "Mapear parceiros, associações ou mídia especializada e negociar link editorial para o site principal.",
-    impacto_estimado: "Ganho direto em citações do Google Modo IA e Gemini",
-    prioridade: "alta",
-  },
-  {
-    icon: Mic,
-    titulo: "Participar como convidado em podcast do setor",
-    descricao:
-      "Aparecer como especialista em episódios relevantes, gerando transcrição indexável e menções em plataformas.",
-    impacto_estimado: "Melhora sentimento e presença em resposta de ChatGPT",
-    prioridade: "media",
-  },
-  {
-    icon: Star,
-    titulo: "Solicitar menção em release de imprensa",
-    descricao:
-      "Coordenar assessoria para incluir a marca em releases distribuídos a portais monitorados pelas IAs.",
-    impacto_estimado: "Reforça confiança e sinais de reputação",
-    prioridade: "media",
-  },
-];
 
 function priorityBadgeClass(p: ActionPriority) {
   if (p === "alta") return "border-red-200 text-red-600";
