@@ -217,6 +217,7 @@ export type Database = {
           id: string
           logo_url: string
           objetivos: string[]
+          onboarding_completed_at: string | null
           sector: string
           updated_at: string
           user_id: string | null
@@ -236,6 +237,7 @@ export type Database = {
           id?: string
           logo_url?: string
           objetivos?: string[]
+          onboarding_completed_at?: string | null
           sector?: string
           updated_at?: string
           user_id?: string | null
@@ -255,6 +257,7 @@ export type Database = {
           id?: string
           logo_url?: string
           objetivos?: string[]
+          onboarding_completed_at?: string | null
           sector?: string
           updated_at?: string
           user_id?: string | null
