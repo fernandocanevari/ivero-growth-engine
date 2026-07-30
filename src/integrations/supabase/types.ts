@@ -17,48 +17,69 @@ export type Database = {
       action_plans: {
         Row: {
           audit_report_id: string | null
+          catalog_id: string | null
           categoria: Database["public"]["Enums"]["action_category"]
           completed_at: string | null
           created_at: string
           descricao: string | null
+          dificuldade: Database["public"]["Enums"]["action_difficulty"] | null
           id: string
           impacto_estimado: string | null
+          objetivo: string | null
           ordem: number | null
           origem: Database["public"]["Enums"]["action_origin"]
           prioridade: Database["public"]["Enums"]["action_priority"]
           status: Database["public"]["Enums"]["action_status"]
+          subcategoria:
+            | Database["public"]["Enums"]["authority_subcategory"]
+            | null
+          tempo_estimado: string | null
           titulo: string
           updated_at: string
           user_id: string
         }
         Insert: {
           audit_report_id?: string | null
+          catalog_id?: string | null
           categoria: Database["public"]["Enums"]["action_category"]
           completed_at?: string | null
           created_at?: string
           descricao?: string | null
+          dificuldade?: Database["public"]["Enums"]["action_difficulty"] | null
           id?: string
           impacto_estimado?: string | null
+          objetivo?: string | null
           ordem?: number | null
           origem?: Database["public"]["Enums"]["action_origin"]
           prioridade?: Database["public"]["Enums"]["action_priority"]
           status?: Database["public"]["Enums"]["action_status"]
+          subcategoria?:
+            | Database["public"]["Enums"]["authority_subcategory"]
+            | null
+          tempo_estimado?: string | null
           titulo: string
           updated_at?: string
           user_id: string
         }
         Update: {
           audit_report_id?: string | null
+          catalog_id?: string | null
           categoria?: Database["public"]["Enums"]["action_category"]
           completed_at?: string | null
           created_at?: string
           descricao?: string | null
+          dificuldade?: Database["public"]["Enums"]["action_difficulty"] | null
           id?: string
           impacto_estimado?: string | null
+          objetivo?: string | null
           ordem?: number | null
           origem?: Database["public"]["Enums"]["action_origin"]
           prioridade?: Database["public"]["Enums"]["action_priority"]
           status?: Database["public"]["Enums"]["action_status"]
+          subcategoria?:
+            | Database["public"]["Enums"]["authority_subcategory"]
+            | null
+          tempo_estimado?: string | null
           titulo?: string
           updated_at?: string
           user_id?: string
@@ -69,6 +90,13 @@ export type Database = {
             columns: ["audit_report_id"]
             isOneToOne: false
             referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_plans_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "autoridade_externa_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -199,6 +227,57 @@ export type Database = {
           source?: string
           status_label?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      autoridade_externa_catalog: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string
+          dificuldade: Database["public"]["Enums"]["action_difficulty"]
+          icon: string | null
+          id: string
+          impacto_estimado: string | null
+          objetivo: string | null
+          ordem: number
+          prioridade: Database["public"]["Enums"]["action_priority"]
+          subcategoria: Database["public"]["Enums"]["authority_subcategory"]
+          tempo_estimado: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao: string
+          dificuldade?: Database["public"]["Enums"]["action_difficulty"]
+          icon?: string | null
+          id?: string
+          impacto_estimado?: string | null
+          objetivo?: string | null
+          ordem?: number
+          prioridade?: Database["public"]["Enums"]["action_priority"]
+          subcategoria: Database["public"]["Enums"]["authority_subcategory"]
+          tempo_estimado?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          dificuldade?: Database["public"]["Enums"]["action_difficulty"]
+          icon?: string | null
+          id?: string
+          impacto_estimado?: string | null
+          objetivo?: string | null
+          ordem?: number
+          prioridade?: Database["public"]["Enums"]["action_priority"]
+          subcategoria?: Database["public"]["Enums"]["authority_subcategory"]
+          tempo_estimado?: string | null
+          titulo?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -871,10 +950,20 @@ export type Database = {
         | "posicionamento"
         | "relevancia"
         | "autoridade_externa"
+      action_difficulty: "baixa" | "media" | "alta"
       action_origin: "automatico" | "manual"
       action_priority: "alta" | "media" | "baixa"
       action_status: "pendente" | "em_andamento" | "concluido"
       app_role: "admin" | "moderator" | "user"
+      authority_subcategory:
+        | "publicacoes_midia"
+        | "conteudo_autoridade"
+        | "citacoes_backlinks"
+        | "comunidades_foruns"
+        | "reputacao_digital"
+        | "autoridade_institucional"
+        | "conteudo_multimidia"
+        | "seo_geo"
       proposta_motivo_recusa:
         | "preco"
         | "momento"
@@ -1026,10 +1115,21 @@ export const Constants = {
         "relevancia",
         "autoridade_externa",
       ],
+      action_difficulty: ["baixa", "media", "alta"],
       action_origin: ["automatico", "manual"],
       action_priority: ["alta", "media", "baixa"],
       action_status: ["pendente", "em_andamento", "concluido"],
       app_role: ["admin", "moderator", "user"],
+      authority_subcategory: [
+        "publicacoes_midia",
+        "conteudo_autoridade",
+        "citacoes_backlinks",
+        "comunidades_foruns",
+        "reputacao_digital",
+        "autoridade_institucional",
+        "conteudo_multimidia",
+        "seo_geo",
+      ],
       proposta_motivo_recusa: [
         "preco",
         "momento",
