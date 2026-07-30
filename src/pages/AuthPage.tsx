@@ -126,17 +126,24 @@ export default function AuthPage() {
           return;
         }
 
-        // Já respondeu as 3 perguntas mas não terminou a análise do site?
+        // Só vai para a análise do site quando as 3 perguntas estiverem
+        // realmente respondidas — respostas parciais voltam para as perguntas,
+        // que hidratam o que já foi salvo.
         const { data: resp } = await supabase
           .from("onboarding_responses")
-          .select("id")
+          .select("p1_maturidade_ia, p2_criterio_mercado, p3_maior_risco")
           .eq("brand_id", b.id)
           .limit(1)
           .maybeSingle();
-        if (resp) {
+        const r = resp as Record<string, string | null> | null;
+        const allAnswered = Boolean(
+          r?.p1_maturidade_ia?.trim() && r?.p2_criterio_mercado?.trim() && r?.p3_maior_risco?.trim()
+        );
+        if (allAnswered) {
           navigate("/onboarding/site", { replace: true });
           return;
         }
+
       }
 
       // Onboarding incompleto — retoma da primeira etapa.

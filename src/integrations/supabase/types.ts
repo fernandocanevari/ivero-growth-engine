@@ -608,9 +608,9 @@ export type Database = {
           created_at?: string
           dashboard_hint_dismissed_at?: string | null
           id?: string
-          p1_maturidade_ia: string
-          p2_criterio_mercado: string
-          p3_maior_risco: string
+          p1_maturidade_ia?: string
+          p2_criterio_mercado?: string
+          p3_maior_risco?: string
         }
         Update: {
           brand_id?: string
