@@ -19,7 +19,14 @@ export default function AuthPage() {
   const prefSite = searchParams.get("site") || "";
   const prefPhone = searchParams.get("phone") || "";
   const redirectParam = searchParams.get("redirect") || "";
-  const safeRedirect = redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "";
+  // Onboarding routes are never honored as an explicit redirect target: the
+  // real step is computed from the DB state by redirectAfterAuth().
+  const isOnboardingPath = /^\/(onboarding|bem-vindo|welcome)\b/.test(redirectParam);
+  const safeRedirect =
+    redirectParam.startsWith("/") && !redirectParam.startsWith("//") && !isOnboardingPath
+      ? redirectParam
+      : "";
+
   const initialMode = (searchParams.get("mode") || (typeof window !== "undefined" && window.location.pathname === "/signup" ? "signup" : "login")).toLowerCase();
 
   const [isLogin, setIsLogin] = useState(initialMode !== "signup");
@@ -147,8 +154,14 @@ export default function AuthPage() {
     // the race where Supabase emits SIGNED_IN synchronously during signUp,
     // before handleSubmit has the userId to bind to pendingSignupForUserId.
     let signupInFlight = false;
+    // Guard: on mount we may need to sign out a stale session. Until that check
+    // has fully settled we must NOT run any redirect based on the old session,
+    // otherwise redirectAfterAuth() races signOut() and pushes the user into a
+    // route computed from an account that is about to be logged out.
+    let staleSessionCheckDone = false;
     // Extras collected at signup time, persisted to profiles once the session arrives
     let pendingSignupExtras: { nome_completo: string; celular: string } | null = null;
+
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
     // has a stale session for a DIFFERENT user (e.g. admin testing), do NOT
@@ -184,10 +197,14 @@ export default function AuthPage() {
         navigate("/onboarding/perguntas", { replace: true });
         return;
       }
+      // Never redirect based on a session that the mount-time stale-session
+      // check has not cleared yet — that is the signOut() × redirect race.
+      if (!staleSessionCheckDone) return;
       if (isMatchingUser(session.user.email)) {
         redirectAfterAuth(session.user.id);
       }
       // else: stale session from another user — wait for them to sign up/in
+
     });
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
@@ -207,14 +224,20 @@ export default function AuthPage() {
     };
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) return;
+      if (!session) {
+        staleSessionCheckDone = true;
+        return;
+      }
       // Always force a clean login when the user explicitly opens /auth.
       // This prevents stale sessions (e.g. a previous admin or another
       // account) from silently bouncing the user into someone else's
-      // dashboard without ever showing the login form.
+      // dashboard without ever showing the login form. Only after the signOut
+      // has fully settled do we allow session-based redirects again.
       await supabase.auth.signOut();
+      staleSessionCheckDone = true;
       setStaleSessionCleared(true);
     });
+
 
     return () => {
       subscription.unsubscribe();

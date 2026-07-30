@@ -66,6 +66,7 @@ export default function OnboardingPerguntasPage() {
       }
       // Idempotent single-shot: resolve the brand row in one round-trip,
       // avoiding the read-after-write race with AuthPage's own upsert.
+      let resolvedBrandId: string | null = null;
       const { data: bs, error } = await supabase
         .from("brand_settings")
         .upsert({ user_id: user.id } as never, {
@@ -89,13 +90,34 @@ export default function OnboardingPerguntasPage() {
           });
           return;
         }
-        setBrandId(retry.id);
+        resolvedBrandId = retry.id;
       } else {
-        setBrandId(bs.id);
+        resolvedBrandId = bs.id;
+      }
+      setBrandId(resolvedBrandId);
+
+      // Hidrata respostas já salvas para que o usuário retome de onde parou
+      // em vez de recomeçar da Pergunta 1 (e sobrescrever o que existia).
+      const { data: saved } = await supabase
+        .from("onboarding_responses")
+        .select("p1_maturidade_ia, p2_criterio_mercado, p3_maior_risco")
+        .eq("brand_id", resolvedBrandId)
+        .maybeSingle();
+      if (saved) {
+        const s = saved as Record<string, string | null>;
+        const restored: Record<string, string> = {};
+        QUESTIONS.forEach((q) => {
+          const v = s[q.column];
+          if (v) restored[q.column] = v;
+        });
+        setAnswers(restored);
+        const firstUnanswered = QUESTIONS.findIndex((q) => !restored[q.column]);
+        setStep(firstUnanswered === -1 ? QUESTIONS.length - 1 : firstUnanswered);
       }
       setLoading(false);
     })();
   }, [navigate]);
+
 
   const current = QUESTIONS[step];
   const isLast = step === QUESTIONS.length - 1;
