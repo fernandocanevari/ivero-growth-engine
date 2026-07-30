@@ -190,10 +190,14 @@ export default function AuthPage() {
         navigate("/onboarding/perguntas", { replace: true });
         return;
       }
+      // Never redirect based on a session that the mount-time stale-session
+      // check has not cleared yet — that is the signOut() × redirect race.
+      if (!staleSessionCheckDone) return;
       if (isMatchingUser(session.user.email)) {
         redirectAfterAuth(session.user.id);
       }
       // else: stale session from another user — wait for them to sign up/in
+
     });
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
