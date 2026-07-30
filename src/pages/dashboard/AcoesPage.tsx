@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
+import { AutoridadeExternaAccordion } from "@/components/dashboard/AutoridadeExternaAccordion";
 import {
   useActionPlans,
   useCreateActionPlan,
