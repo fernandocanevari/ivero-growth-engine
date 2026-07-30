@@ -122,27 +122,37 @@ export default function OnboardingPerguntasPage() {
   const current = QUESTIONS[step];
   const isLast = step === QUESTIONS.length - 1;
 
+  // Persiste o estado parcial (respostas ainda em branco viram '') para que o
+  // usuário retome exatamente na pergunta onde parou se fechar a aba.
+  const persistAnswers = async (values: Record<string, string>) => {
+    if (!brandId) return null;
+    const { error } = await supabase.from("onboarding_responses").upsert({
+      brand_id: brandId,
+      p1_maturidade_ia: values.p1_maturidade_ia ?? "",
+      p2_criterio_mercado: values.p2_criterio_mercado ?? "",
+      p3_maior_risco: values.p3_maior_risco ?? "",
+    } as never, { onConflict: "brand_id" });
+    return error;
+  };
+
   const handleSelect = async (value: string) => {
     const next = { ...answers, [current.column]: value };
     setAnswers(next);
     if (!isLast) {
+      void persistAnswers(next);
       setTimeout(() => setStep((s) => s + 1), 180);
       return;
     }
     if (!brandId) return;
     setSaving(true);
-    const { error } = await supabase.from("onboarding_responses").upsert({
-      brand_id: brandId,
-      p1_maturidade_ia: next.p1_maturidade_ia,
-      p2_criterio_mercado: next.p2_criterio_mercado,
-      p3_maior_risco: next.p3_maior_risco,
-    } as never, { onConflict: "brand_id" });
+    const error = await persistAnswers(next);
     setSaving(false);
     if (error) {
       toast({ title: "Não foi possível salvar suas respostas", description: error.message, variant: "destructive" });
       return;
     }
     navigate("/onboarding/site");
+
   };
 
   if (loading) {
