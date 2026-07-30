@@ -392,6 +392,8 @@ export default function AcoesPage() {
         </Card>
       )}
 
+      {isAutoridade && <AutoridadeExternaAccordion />}
+
       {showGlobalEmpty ? (
         <Card className="border-dashed">
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
@@ -414,57 +416,7 @@ export default function AcoesPage() {
           </CardContent>
         </Card>
 
-      ) : total === 0 && isAutoridade ? (
-
-        <Card>
-          <CardContent className="p-6 space-y-5">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">
-                Comece com exemplos comprovados
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Clique em qualquer exemplo abaixo para pré-preencher e ajustar
-                antes de salvar.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {AUTORIDADE_EXAMPLES.map((ex) => {
-                const Icon = ex.icon;
-                return (
-                  <button
-                    key={ex.titulo}
-                    type="button"
-                    onClick={() =>
-                      openDialog({
-                        titulo: ex.titulo,
-                        descricao: ex.descricao,
-                        impacto_estimado: ex.impacto_estimado,
-                        prioridade: ex.prioridade,
-                        categoria: "autoridade_externa",
-                      })
-                    }
-                    className="text-left rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-md bg-primary/10 p-2 shrink-0">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">
-                          {ex.titulo}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {ex.descricao}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
+      ) : total === 0 && isAutoridade ? null : (
         <>
           <Card>
             <CardContent className="p-5">
