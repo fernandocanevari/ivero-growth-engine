@@ -34,19 +34,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  CheckCheck,
-  Plus,
-  Trash2,
-  Sparkles,
-  Link2,
-  Newspaper,
-  Mic,
-  Star,
-} from "lucide-react";
+import { CheckCheck, Plus, Trash2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
+import { AutoridadeExternaAccordion } from "@/components/dashboard/AutoridadeExternaAccordion";
 import {
   useActionPlans,
   useCreateActionPlan,
@@ -74,48 +66,6 @@ const STATUS_OPTIONS = Object.entries(ACTION_STATUS_LABELS) as Array<
 
 type FilterKey = "todas" | "autoridade_externa";
 
-interface AutoridadeExample {
-  icon: React.ComponentType<{ className?: string }>;
-  titulo: string;
-  descricao: string;
-  impacto_estimado: string;
-  prioridade: ActionPriority;
-}
-
-const AUTORIDADE_EXAMPLES: AutoridadeExample[] = [
-  {
-    icon: Newspaper,
-    titulo: "Publicar guest post em veículo do setor",
-    descricao:
-      "Escrever artigo autoral em um portal de referência do seu segmento com link para o site institucional.",
-    impacto_estimado: "Aumenta autoridade de domínio e menções nas IAs em ~10%",
-    prioridade: "alta",
-  },
-  {
-    icon: Link2,
-    titulo: "Conquistar backlink de site com alta autoridade",
-    descricao:
-      "Mapear parceiros, associações ou mídia especializada e negociar link editorial para o site principal.",
-    impacto_estimado: "Ganho direto em citações do Google Modo IA e Gemini",
-    prioridade: "alta",
-  },
-  {
-    icon: Mic,
-    titulo: "Participar como convidado em podcast do setor",
-    descricao:
-      "Aparecer como especialista em episódios relevantes, gerando transcrição indexável e menções em plataformas.",
-    impacto_estimado: "Melhora sentimento e presença em resposta de ChatGPT",
-    prioridade: "media",
-  },
-  {
-    icon: Star,
-    titulo: "Solicitar menção em release de imprensa",
-    descricao:
-      "Coordenar assessoria para incluir a marca em releases distribuídos a portais monitorados pelas IAs.",
-    impacto_estimado: "Reforça confiança e sinais de reputação",
-    prioridade: "media",
-  },
-];
 
 function priorityBadgeClass(p: ActionPriority) {
   if (p === "alta") return "border-red-200 text-red-600";
@@ -392,6 +342,8 @@ export default function AcoesPage() {
         </Card>
       )}
 
+      {isAutoridade && <AutoridadeExternaAccordion />}
+
       {showGlobalEmpty ? (
         <Card className="border-dashed">
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
@@ -414,57 +366,7 @@ export default function AcoesPage() {
           </CardContent>
         </Card>
 
-      ) : total === 0 && isAutoridade ? (
-
-        <Card>
-          <CardContent className="p-6 space-y-5">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">
-                Comece com exemplos comprovados
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Clique em qualquer exemplo abaixo para pré-preencher e ajustar
-                antes de salvar.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {AUTORIDADE_EXAMPLES.map((ex) => {
-                const Icon = ex.icon;
-                return (
-                  <button
-                    key={ex.titulo}
-                    type="button"
-                    onClick={() =>
-                      openDialog({
-                        titulo: ex.titulo,
-                        descricao: ex.descricao,
-                        impacto_estimado: ex.impacto_estimado,
-                        prioridade: ex.prioridade,
-                        categoria: "autoridade_externa",
-                      })
-                    }
-                    className="text-left rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-md bg-primary/10 p-2 shrink-0">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">
-                          {ex.titulo}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {ex.descricao}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
+      ) : total === 0 && isAutoridade ? null : (
         <>
           <Card>
             <CardContent className="p-5">
