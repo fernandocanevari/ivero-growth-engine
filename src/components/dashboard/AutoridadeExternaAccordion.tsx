@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { icons, ChevronDown, Plus, Clock, Gauge } from "lucide-react";
+import { icons, Plus, Clock, Gauge } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
