@@ -1673,22 +1673,37 @@ export default function PreviewPage() {
             mentions,
             score: avgScore,
             radarValue: avgScore,
+            hasData,
             criterios,
             aiDetails,
           };
         });
 
-        // Overall GEO score = average of the 5 pillar scores
+        // Score geral = média apenas dos pilares que realmente têm dado de modelo.
+        const scoredPillars = results.filter((r) => r.hasData);
+        if (scoredPillars.length === 0) {
+          // Resposta chegou, mas nenhum pilar utilizável: falha honesta, sem número.
+          totalFailure = true;
+          setFailureSummary(
+            modelResults
+              .filter((r: any) => r?.error)
+              .map((r: any) => ({ model: r.model, errorMessage: r.errorMessage || "Resposta incompleta." }))
+          );
+          return;
+        }
         const totalScore = Math.round(
-          results.reduce((sum, r) => sum + r.radarValue, 0) / results.length
+          scoredPillars.reduce((sum, r) => sum + r.radarValue, 0) / scoredPillars.length
         );
+        gotRealScore = true;
         setGeoScore(totalScore);
 
-        const radar = results.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
+        // Radar mostra apenas pilares com leitura real (0 seria uma afirmação falsa).
+        const radar = scoredPillars.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
         setDynamicRadarData(radar);
 
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
+
 
         const keywordCloud = Array.isArray(data.keyword_cloud) ? data.keyword_cloud : [];
         try {
