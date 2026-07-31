@@ -1137,17 +1137,20 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
 
                       {/* Sub-criterio details intentionally reserved for the executive dashboard */}
 
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
-                        <div className="space-y-1.5">
-                          {pillar.strengths.map((s, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span className="text-foreground">{s}</span>
-                            </div>
-                          ))}
+                      {pillar.strengths.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
+                          <div className="space-y-1.5">
+                            {pillar.strengths.map((s, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <span className="text-foreground">{s}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
+
 
                       {pillar.weaknesses && pillar.weaknesses.length > 0 && (
                         <div className="space-y-2">
