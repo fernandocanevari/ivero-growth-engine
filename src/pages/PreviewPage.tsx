@@ -1852,12 +1852,13 @@ export default function PreviewPage() {
   }
   return (
     <>
-      {partialFailures > 0 && (
+      {partialFailures > 0 && totalModels > 0 && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-sm px-4 py-2 text-center">
-          {partialFailures} de 5 modelos indisponíveis no momento — score calculado com os disponíveis.
+          {partialFailures} de {totalModels} modelos indisponíveis no momento — score calculado apenas com os que responderam.
         </div>
       )}
-      <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />
+      <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} scoreIsReal={geoScore > 0} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />
+
     </>
   );
 }
