@@ -111,16 +111,18 @@ interface PillarAnalysis {
   mentions: number; // how many AIs scored the brand >= 50 in this pillar
   score: number; // average score across models (0-100)
   radarValue: number; // same as score (0-100)
+  hasData: boolean; // false quando nenhum modelo retornou avaliação para este pilar
   criterios: PillarCriterion[]; // 3 sub-criteria averaged across models
   aiDetails: { model: string; mentioned: boolean; score: number; justificativa: string }[];
 }
 
-/* ── Default fallback engines (shown if API fails completely) ── */
+/* ── Estado inicial dos motores: nada "encontrado" até um modelo real responder ── */
 const defaultAiEngines: AIEngineResult[] = [
   { name: "ChatGPT", found: false },
   { name: "Gemini", found: false },
   { name: "Google Modo IA", found: false },
 ];
+
 
 /* (Per-pillar prompts foram substituídos pelo modo "diagnostico" — a edge function agora usa o prompt do Radar Estratégico IVERO e retorna scores 0-100 + justificativa por pilar em uma única chamada por modelo.) */
 
