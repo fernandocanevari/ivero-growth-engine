@@ -110,6 +110,16 @@ export function AutoridadeExternaAccordion() {
                           <p className="text-sm font-medium text-foreground">
                             {item.titulo}
                           </p>
+                          {item.descricao && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {item.descricao}
+                            </p>
+                          )}
+                          {item.impacto_estimado && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              Impacto: {item.impacto_estimado}
+                            </p>
+                          )}
                           <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
                               <Gauge className="h-3 w-3" />
