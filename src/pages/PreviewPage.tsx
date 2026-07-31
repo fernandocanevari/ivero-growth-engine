@@ -1573,25 +1573,42 @@ export default function PreviewPage() {
       { key: "relevancia", name: "Relevância" },
     ];
 
+    // Falha total controlada por variável local (o state do closure ficaria stale).
+    let totalFailure = false;
+    let gotRealScore = false;
+
+    const callSimulateAi = async () => {
+      const body = {
+        prompt: `Avalie a marca "${brandName}" com base nas informações públicas disponíveis sobre seu site e presença digital.`,
+        brandName,
+        mode: "diagnostico",
+      };
+      const first = await supabase.functions.invoke("simulate-ai", { body });
+      // Retry automático 1x apenas para falha de transporte/timeout (sem payload utilizável).
+      if (first.error || !first.data?.results) {
+        console.warn("simulate-ai transport failure, retrying once in 2s:", first.error);
+        await new Promise((r) => setTimeout(r, 2000));
+        return await supabase.functions.invoke("simulate-ai", { body });
+      }
+      return first;
+    };
+
     const fetchAllPillars = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("simulate-ai", {
-          body: {
-            prompt: `Avalie a marca "${brandName}" com base nas informações públicas disponíveis sobre seu site e presença digital.`,
-            brandName,
-            mode: "diagnostico",
-          },
-        });
+        const { data, error } = await callSimulateAi();
 
         if (error || !data?.results) {
           console.error("Diagnostico call failed:", error);
+          totalFailure = true;
+          setFailureSummary([
+            { model: "simulate-ai", errorMessage: error?.message || "Sem resposta da análise (timeout ou indisponibilidade)." },
+          ]);
           return;
         }
 
-        // Falha total: todos os 5 modelos retornaram erro (cota/crédito/conexão).
-        // Não popular dados, não persistir, exibir tela de erro.
+        // Falha total declarada pela edge function: todos os modelos retornaram erro.
         if (data.allModelsFailed) {
-          setAllModelsFailed(true);
+          totalFailure = true;
           setFailureSummary(Array.isArray(data.errorSummary) ? data.errorSummary : []);
           return;
         }
@@ -1599,13 +1616,14 @@ export default function PreviewPage() {
         const modelResults: any[] = data.results;
         const partial = modelResults.filter((r: any) => r?.error === true).length;
         setPartialFailures(partial);
+        setTotalModels(modelResults.length);
         setAllModelsFailed(false);
 
         // Build per-pillar aggregation
         const results: PillarAnalysis[] = pillarKeys.map(({ key, name }) => {
           const aiDetails = modelResults.map((r) => {
             const pillar = r.pillars?.[key];
-            const score = !r.error && pillar?.score ? pillar.score : 0;
+            const score = !r.error && typeof pillar?.score === "number" ? pillar.score : 0;
             const justificativa = pillar?.justificativa || (r.errorMessage ?? "");
             return {
               model: r.model,
@@ -1615,10 +1633,14 @@ export default function PreviewPage() {
             };
           });
 
-          // Average score across models that did NOT error
-          const validScores = aiDetails.filter((a) => !modelResults.find((m) => m.model === a.model)?.error);
-          const avgScore = validScores.length
-            ? Math.round(validScores.reduce((s, a) => s + a.score, 0) / validScores.length)
+          // Somente modelos que responderam E trouxeram score numérico para este pilar
+          const validScores = modelResults
+            .filter((m) => !m.error && typeof m.pillars?.[key]?.score === "number")
+            .map((m) => m.pillars[key].score as number);
+          const hasData = validScores.length > 0;
+          const avgScore = hasData
+            ? Math.round(validScores.reduce((s, v) => s + v, 0) / validScores.length)
+
             : 0;
           const mentions = aiDetails.filter((a) => a.mentioned).length;
 
