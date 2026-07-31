@@ -111,16 +111,18 @@ interface PillarAnalysis {
   mentions: number; // how many AIs scored the brand >= 50 in this pillar
   score: number; // average score across models (0-100)
   radarValue: number; // same as score (0-100)
+  hasData: boolean; // false quando nenhum modelo retornou avaliação para este pilar
   criterios: PillarCriterion[]; // 3 sub-criteria averaged across models
   aiDetails: { model: string; mentioned: boolean; score: number; justificativa: string }[];
 }
 
-/* ── Default fallback engines (shown if API fails completely) ── */
+/* ── Estado inicial dos motores: nada "encontrado" até um modelo real responder ── */
 const defaultAiEngines: AIEngineResult[] = [
   { name: "ChatGPT", found: false },
   { name: "Gemini", found: false },
   { name: "Google Modo IA", found: false },
 ];
+
 
 /* (Per-pillar prompts foram substituídos pelo modo "diagnostico" — a edge function agora usa o prompt do Radar Estratégico IVERO e retorna scores 0-100 + justificativa por pilar em uma única chamada por modelo.) */
 
@@ -182,13 +184,32 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
   return pillarResults.map((p) => {
     const config = pillarConfig[p.name];
     if (!config) return null;
+
+    // Sem nenhum modelo válido neste pilar: nada de score, banda ou diagnóstico inventado.
+    if (!p.hasData) {
+      return {
+        name: p.name,
+        score: null as number | null,
+        hasData: false,
+        icon: config.icon,
+        color: "muted",
+        status: "Sem dados" as const,
+        summary: "Nenhum modelo de IA retornou avaliação para este pilar nesta análise.",
+        criterios: [] as PillarCriterion[],
+        strengths: [] as string[],
+        weaknesses: undefined,
+        recommendation: "Repita a análise para obter a leitura deste pilar.",
+      };
+    }
+
     const status = p.radarValue >= 70 ? "Forte" as const : p.radarValue >= 40 ? "Moderado" as const : "Crítico" as const;
     const summary = p.radarValue >= 70 ? config.summaryGood : p.radarValue >= 40 ? config.summaryMid : config.summaryBad;
     const recommendation = p.radarValue >= 60 ? config.recGood : config.recBad;
 
     return {
       name: p.name,
-      score: p.radarValue,
+      score: p.radarValue as number | null,
+      hasData: true,
       icon: config.icon,
       color: p.radarValue >= 70 ? "emerald" : p.radarValue >= 40 ? "amber" : "red",
       status,
@@ -198,6 +219,7 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       weaknesses: p.mentions < 3 ? config.weaknesses : undefined,
       recommendation,
     };
+
   }).filter(Boolean);
 }
 
@@ -506,7 +528,10 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 }
 
 /* ── Diagnostic Report ── */
-function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dynamicPillarDetails }: { siteUrl: string; aiEngines: AIEngineResult[]; geoScore: number; dynamicRadarData: { subject: string; value: number; fullMark: number }[]; dynamicPillarDetails: any[] }) {
+function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dynamicRadarData, dynamicPillarDetails }: { siteUrl: string; aiEngines: AIEngineResult[]; geoScore: number; scoreIsReal?: boolean; dynamicRadarData: { subject: string; value: number; fullMark: number }[]; dynamicPillarDetails: any[] }) {
+  // Score real ou nada: nunca propagar número fabricado para lead/proposta.
+  const scoreForRecords: number | null = scoreIsReal && geoScore > 0 ? geoScore : null;
+
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -556,7 +581,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
     identifyLead(email, { name, source: "preview_unlock" });
     track("preview_gate_unlocked", {
       email,
-      score_inicial: geoScore,
+      score_inicial: scoreForRecords,
       analyzed_url: siteUrl,
     });
 
@@ -586,7 +611,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
     track("signup_started", {
       email: leadData.email,
       cta_origin: ctaOrigin,
-      score_inicial: geoScore,
+      score_inicial: scoreForRecords,
     });
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -959,7 +984,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                       Diagnóstico Detalhado
                     </h2>
                   </div>
-                  {dynamicPillarDetails[0] && (
+                  {dynamicPillarDetails[0] && dynamicPillarDetails[0].hasData !== false && (
                     <PremiumCard>
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
@@ -977,7 +1002,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                   )}
                 </div>
                 <div className="blur-[7px] opacity-25 select-none pointer-events-none -mt-1">
-                  {dynamicPillarDetails[1] && (
+                  {dynamicPillarDetails[1] && dynamicPillarDetails[1].hasData !== false && (
                     <PremiumCard>
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[1].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[1].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
@@ -1069,51 +1094,63 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                          <div className="flex items-baseline gap-2">
-                            {(() => {
-                              const band = getScoreBand(pillar.score);
-                              const bandClass =
-                                band.color === "red"
-                                  ? "bg-red-50 text-red-700 border-red-200/60"
-                                  : band.color === "amber"
-                                  ? "bg-amber-50 text-amber-700 border-amber-200/60"
-                                  : band.color === "blue"
-                                  ? "bg-sky-50 text-sky-700 border-sky-200/60"
-                                  : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
-                              return (
-                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
-                                  {band.label}
-                                </span>
-                              );
-                            })()}
-                            <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
-                            <span className="text-xs text-muted-foreground">/100</span>
-                          </div>
-                          <div className="h-2 w-36 rounded-full bg-muted overflow-hidden">
-                            <motion.div
-                              className={`h-full rounded-full ${barColor}`}
-                              initial={{ width: 0 }}
-                              whileInView={{ width: `${pillar.score}%` }}
-                              viewport={{ once: true }}
-                              transition={{ duration: 1.2, ease: "easeOut" }}
-                            />
-                          </div>
+                          {pillar.hasData === false ? (
+                            <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-semibold border uppercase tracking-wider bg-muted text-muted-foreground border-border">
+                              Sem dados
+                            </span>
+                          ) : (
+                            <>
+                              <div className="flex items-baseline gap-2">
+                                {(() => {
+                                  const band = getScoreBand(pillar.score);
+                                  const bandClass =
+                                    band.color === "red"
+                                      ? "bg-red-50 text-red-700 border-red-200/60"
+                                      : band.color === "amber"
+                                      ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                                      : band.color === "blue"
+                                      ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                                      : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                                  return (
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
+                                      {band.label}
+                                    </span>
+                                  );
+                                })()}
+                                <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
+                                <span className="text-xs text-muted-foreground">/100</span>
+                              </div>
+                              <div className="h-2 w-36 rounded-full bg-muted overflow-hidden">
+                                <motion.div
+                                  className={`h-full rounded-full ${barColor}`}
+                                  initial={{ width: 0 }}
+                                  whileInView={{ width: `${pillar.score}%` }}
+                                  viewport={{ once: true }}
+                                  transition={{ duration: 1.2, ease: "easeOut" }}
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
+
                       </div>
 
                       {/* Sub-criterio details intentionally reserved for the executive dashboard */}
 
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
-                        <div className="space-y-1.5">
-                          {pillar.strengths.map((s, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span className="text-foreground">{s}</span>
-                            </div>
-                          ))}
+                      {pillar.strengths.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Análise detectada</p>
+                          <div className="space-y-1.5">
+                            {pillar.strengths.map((s, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <span className="text-foreground">{s}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
+
 
                       {pillar.weaknesses && pillar.weaknesses.length > 0 && (
                         <div className="space-y-2">
@@ -1321,7 +1358,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dyna
                           contato_email: leadData?.email || null,
                           contato_telefone: leadData?.phone || null,
                           origem: "preview",
-                          score_geral: geoScore,
+                          score_geral: scoreForRecords,
                           diagnostico_snapshot: {
                             radar,
                             pillarDetails: dynamicPillarDetails,
@@ -1502,7 +1539,9 @@ export default function PreviewPage() {
   const [allModelsFailed, setAllModelsFailed] = useState(false);
   const [failureSummary, setFailureSummary] = useState<Array<{ model: string; errorMessage: string }>>([]);
   const [partialFailures, setPartialFailures] = useState(0);
+  const [totalModels, setTotalModels] = useState(0);
   const [retryToken, setRetryToken] = useState(0);
+
 
   // Funnel step 1.5: preview page viewed. Tracks landing on /preview with or
   // without a pre-filled site, so we can compute hero_cta_clicked → preview_view rate.
@@ -1551,25 +1590,42 @@ export default function PreviewPage() {
       { key: "relevancia", name: "Relevância" },
     ];
 
+    // Falha total controlada por variável local (o state do closure ficaria stale).
+    let totalFailure = false;
+    let gotRealScore = false;
+
+    const callSimulateAi = async () => {
+      const body = {
+        prompt: `Avalie a marca "${brandName}" com base nas informações públicas disponíveis sobre seu site e presença digital.`,
+        brandName,
+        mode: "diagnostico",
+      };
+      const first = await supabase.functions.invoke("simulate-ai", { body });
+      // Retry automático 1x apenas para falha de transporte/timeout (sem payload utilizável).
+      if (first.error || !first.data?.results) {
+        console.warn("simulate-ai transport failure, retrying once in 2s:", first.error);
+        await new Promise((r) => setTimeout(r, 2000));
+        return await supabase.functions.invoke("simulate-ai", { body });
+      }
+      return first;
+    };
+
     const fetchAllPillars = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("simulate-ai", {
-          body: {
-            prompt: `Avalie a marca "${brandName}" com base nas informações públicas disponíveis sobre seu site e presença digital.`,
-            brandName,
-            mode: "diagnostico",
-          },
-        });
+        const { data, error } = await callSimulateAi();
 
         if (error || !data?.results) {
           console.error("Diagnostico call failed:", error);
+          totalFailure = true;
+          setFailureSummary([
+            { model: "simulate-ai", errorMessage: error?.message || "Sem resposta da análise (timeout ou indisponibilidade)." },
+          ]);
           return;
         }
 
-        // Falha total: todos os 5 modelos retornaram erro (cota/crédito/conexão).
-        // Não popular dados, não persistir, exibir tela de erro.
+        // Falha total declarada pela edge function: todos os modelos retornaram erro.
         if (data.allModelsFailed) {
-          setAllModelsFailed(true);
+          totalFailure = true;
           setFailureSummary(Array.isArray(data.errorSummary) ? data.errorSummary : []);
           return;
         }
@@ -1577,13 +1633,14 @@ export default function PreviewPage() {
         const modelResults: any[] = data.results;
         const partial = modelResults.filter((r: any) => r?.error === true).length;
         setPartialFailures(partial);
+        setTotalModels(modelResults.length);
         setAllModelsFailed(false);
 
         // Build per-pillar aggregation
         const results: PillarAnalysis[] = pillarKeys.map(({ key, name }) => {
           const aiDetails = modelResults.map((r) => {
             const pillar = r.pillars?.[key];
-            const score = !r.error && pillar?.score ? pillar.score : 0;
+            const score = !r.error && typeof pillar?.score === "number" ? pillar.score : 0;
             const justificativa = pillar?.justificativa || (r.errorMessage ?? "");
             return {
               model: r.model,
@@ -1593,11 +1650,15 @@ export default function PreviewPage() {
             };
           });
 
-          // Average score across models that did NOT error
-          const validScores = aiDetails.filter((a) => !modelResults.find((m) => m.model === a.model)?.error);
-          const avgScore = validScores.length
-            ? Math.round(validScores.reduce((s, a) => s + a.score, 0) / validScores.length)
+          // Somente modelos que responderam E trouxeram score numérico para este pilar
+          const validScores = modelResults
+            .filter((m) => !m.error && typeof m.pillars?.[key]?.score === "number")
+            .map((m) => m.pillars[key].score as number);
+          const hasData = validScores.length > 0;
+          const avgScore = hasData
+            ? Math.round(validScores.reduce((s, v) => s + v, 0) / validScores.length)
             : 0;
+
           const mentions = aiDetails.filter((a) => a.mentioned).length;
 
           // Aggregate criterios across models (average score per criterion index, keep nome+peso from first valid)
@@ -1629,22 +1690,37 @@ export default function PreviewPage() {
             mentions,
             score: avgScore,
             radarValue: avgScore,
+            hasData,
             criterios,
             aiDetails,
           };
         });
 
-        // Overall GEO score = average of the 5 pillar scores
+        // Score geral = média apenas dos pilares que realmente têm dado de modelo.
+        const scoredPillars = results.filter((r) => r.hasData);
+        if (scoredPillars.length === 0) {
+          // Resposta chegou, mas nenhum pilar utilizável: falha honesta, sem número.
+          totalFailure = true;
+          setFailureSummary(
+            modelResults
+              .filter((r: any) => r?.error)
+              .map((r: any) => ({ model: r.model, errorMessage: r.errorMessage || "Resposta incompleta." }))
+          );
+          return;
+        }
         const totalScore = Math.round(
-          results.reduce((sum, r) => sum + r.radarValue, 0) / results.length
+          scoredPillars.reduce((sum, r) => sum + r.radarValue, 0) / scoredPillars.length
         );
+        gotRealScore = true;
         setGeoScore(totalScore);
 
-        const radar = results.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
+        // Radar mostra apenas pilares com leitura real (0 seria uma afirmação falsa).
+        const radar = scoredPillars.map((r) => ({ subject: r.name, value: r.radarValue, fullMark: 100 }));
         setDynamicRadarData(radar);
 
         const details = buildPillarDetails(results);
         setDynamicPillarDetails(details);
+
 
         const keywordCloud = Array.isArray(data.keyword_cloud) ? data.keyword_cloud : [];
         try {
@@ -1695,36 +1771,23 @@ export default function PreviewPage() {
         setAiEngines(engines);
       } catch (e) {
         console.error("Pillar analysis failed:", e);
+        totalFailure = true;
+        setFailureSummary([
+          { model: "simulate-ai", errorMessage: e instanceof Error ? e.message : "Erro inesperado na análise." },
+        ]);
       } finally {
-        // Fallback de exemplo apenas quando NÃO foi falha total declarada.
-        // Em falha total, mantemos score 0 para a tela de erro tomar conta.
-        setGeoScore((prev) => {
-          if (prev > 0) return prev;
-          if (allModelsFailed) return 0;
-          const fallback: PillarAnalysis[] = [
-            { name: "Clareza",        mentions: 3, score: 62, radarValue: 62, criterios: [], aiDetails: [] },
-            { name: "Autoridade",     mentions: 1, score: 38, radarValue: 38, criterios: [], aiDetails: [] },
-            { name: "Conversão",     mentions: 2, score: 45, radarValue: 45, criterios: [], aiDetails: [] },
-            { name: "Posicionamento", mentions: 2, score: 51, radarValue: 51, criterios: [], aiDetails: [] },
-            { name: "Relevância",    mentions: 1, score: 41, radarValue: 41, criterios: [], aiDetails: [] },
-          ];
-          const total = Math.round(fallback.reduce((s, p) => s + p.radarValue, 0) / fallback.length);
-          setDynamicRadarData(fallback.map((p) => ({ subject: p.name, value: p.radarValue, fullMark: 100 })));
-          setDynamicPillarDetails(buildPillarDetails(fallback) as any[]);
-          setAiEngines((cur) => {
-            const allZero = cur.every((e) => !e.found);
-            if (!allZero) return cur;
-            return [
-              { name: "ChatGPT", found: true },
-              { name: "Gemini", found: false },
-              { name: "Google Modo IA", found: true },
-            ];
-          });
-          return total;
-        });
+        // Nenhum score é fabricado. Sem resultado real => tela de erro honesta.
+        if (!gotRealScore || totalFailure) {
+          setGeoScore(0);
+          setDynamicRadarData([]);
+          setDynamicPillarDetails([]);
+          setAiEngines(defaultAiEngines);
+          setAllModelsFailed(true);
+        }
         apiDone = true;
         tryFinish();
       }
+
     };
 
     fetchAllPillars();
@@ -1804,12 +1867,13 @@ export default function PreviewPage() {
   }
   return (
     <>
-      {partialFailures > 0 && (
+      {partialFailures > 0 && totalModels > 0 && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-sm px-4 py-2 text-center">
-          {partialFailures} de 5 modelos indisponíveis no momento — score calculado com os disponíveis.
+          {partialFailures} de {totalModels} modelos indisponíveis no momento — score calculado apenas com os que responderam.
         </div>
       )}
-      <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />
+      <DiagnosticReport siteUrl={siteUrl} aiEngines={aiEngines} geoScore={geoScore} scoreIsReal={geoScore > 0} dynamicRadarData={dynamicRadarData} dynamicPillarDetails={dynamicPillarDetails} />
+
     </>
   );
 }
