@@ -306,7 +306,7 @@ export default function AcoesPage() {
       {/* Filtro por categoria — sempre visível */}
       <div className="inline-flex rounded-lg border border-border bg-muted p-1">
         {([
-          { key: "todas", label: "Todas" },
+          { key: "todas", label: "Todas as Ações" },
           { key: "autoridade_externa", label: "Autoridade Externa" },
         ] as const).map((tab) => (
           <button
