@@ -581,7 +581,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
     identifyLead(email, { name, source: "preview_unlock" });
     track("preview_gate_unlocked", {
       email,
-      score_inicial: geoScore,
+      score_inicial: scoreForRecords,
       analyzed_url: siteUrl,
     });
 
@@ -611,7 +611,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
     track("signup_started", {
       email: leadData.email,
       cta_origin: ctaOrigin,
-      score_inicial: geoScore,
+      score_inicial: scoreForRecords,
     });
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1346,7 +1346,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                           contato_email: leadData?.email || null,
                           contato_telefone: leadData?.phone || null,
                           origem: "preview",
-                          score_geral: geoScore,
+                          score_geral: scoreForRecords,
                           diagnostico_snapshot: {
                             radar,
                             pillarDetails: dynamicPillarDetails,
