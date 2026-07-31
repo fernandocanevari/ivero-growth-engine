@@ -1640,8 +1640,8 @@ export default function PreviewPage() {
           const hasData = validScores.length > 0;
           const avgScore = hasData
             ? Math.round(validScores.reduce((s, v) => s + v, 0) / validScores.length)
-
             : 0;
+
           const mentions = aiDetails.filter((a) => a.mentioned).length;
 
           // Aggregate criterios across models (average score per criterion index, keep nome+peso from first valid)
