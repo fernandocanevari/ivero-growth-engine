@@ -528,7 +528,10 @@ function ScoreCircle({ score, benchmark }: { score: number; benchmark: number })
 }
 
 /* ── Diagnostic Report ── */
-function DiagnosticReport({ siteUrl, aiEngines, geoScore, dynamicRadarData, dynamicPillarDetails }: { siteUrl: string; aiEngines: AIEngineResult[]; geoScore: number; dynamicRadarData: { subject: string; value: number; fullMark: number }[]; dynamicPillarDetails: any[] }) {
+function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dynamicRadarData, dynamicPillarDetails }: { siteUrl: string; aiEngines: AIEngineResult[]; geoScore: number; scoreIsReal?: boolean; dynamicRadarData: { subject: string; value: number; fullMark: number }[]; dynamicPillarDetails: any[] }) {
+  // Score real ou nada: nunca propagar número fabricado para lead/proposta.
+  const scoreForRecords: number | null = scoreIsReal && geoScore > 0 ? geoScore : null;
+
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
