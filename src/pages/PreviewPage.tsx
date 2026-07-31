@@ -984,7 +984,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                       Diagnóstico Detalhado
                     </h2>
                   </div>
-                  {dynamicPillarDetails[0] && (
+                  {dynamicPillarDetails[0] && dynamicPillarDetails[0].hasData !== false && (
                     <PremiumCard>
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
@@ -1002,7 +1002,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                   )}
                 </div>
                 <div className="blur-[7px] opacity-25 select-none pointer-events-none -mt-1">
-                  {dynamicPillarDetails[1] && (
+                  {dynamicPillarDetails[1] && dynamicPillarDetails[1].hasData !== false && (
                     <PremiumCard>
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[1].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[1].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
