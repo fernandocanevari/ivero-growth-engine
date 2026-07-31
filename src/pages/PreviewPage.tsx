@@ -1524,7 +1524,9 @@ export default function PreviewPage() {
   const [allModelsFailed, setAllModelsFailed] = useState(false);
   const [failureSummary, setFailureSummary] = useState<Array<{ model: string; errorMessage: string }>>([]);
   const [partialFailures, setPartialFailures] = useState(0);
+  const [totalModels, setTotalModels] = useState(0);
   const [retryToken, setRetryToken] = useState(0);
+
 
   // Funnel step 1.5: preview page viewed. Tracks landing on /preview with or
   // without a pre-filled site, so we can compute hero_cta_clicked → preview_view rate.
