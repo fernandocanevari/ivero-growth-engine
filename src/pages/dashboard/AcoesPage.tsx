@@ -288,14 +288,8 @@ export default function AcoesPage() {
             Recomendações priorizadas para você (ou sua equipe) executar e melhorar sua presença nas IAs.
           </p>
         </div>
-        {hasBrand && actions.length > 0 && (
-          <Button
-            onClick={() =>
-              openDialog(
-                isAutoridade ? { categoria: "autoridade_externa" } : undefined,
-              )
-            }
-          >
+        {hasBrand && filter === "todas" && (
+          <Button onClick={() => openDialog()}>
             <Plus className="h-4 w-4 mr-1.5" /> Nova Ação
           </Button>
         )}
@@ -312,7 +306,7 @@ export default function AcoesPage() {
       {/* Filtro por categoria — sempre visível */}
       <div className="inline-flex rounded-lg border border-border bg-muted p-1">
         {([
-          { key: "todas", label: "Todas" },
+          { key: "todas", label: "Todas as Ações" },
           { key: "autoridade_externa", label: "Autoridade Externa" },
         ] as const).map((tab) => (
           <button
