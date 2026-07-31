@@ -27,6 +27,14 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   alta: "Avançado",
 };
 
+/** Semáforo de dificuldade — mesmas famílias de cor usadas no resto do dashboard. */
+const DIFFICULTY_ICON_COLORS: Record<string, string> = {
+  baixa: "text-emerald-600",
+  media: "text-amber-600",
+  alta: "text-rose-600",
+};
+
+
 function CatalogIcon({ name, className }: { name: string | null; className?: string }) {
   const Icon = (name && (icons as Record<string, React.ComponentType<{ className?: string }>>)[name]) || null;
   if (!Icon) return null;
@@ -122,16 +130,17 @@ export function AutoridadeExternaAccordion() {
                           )}
                           <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
-                              <Gauge className="h-3 w-3" />
+                              <Gauge className={cn("h-3 w-3", DIFFICULTY_ICON_COLORS[item.dificuldade] ?? "text-muted-foreground")} />
                               {DIFFICULTY_LABELS[item.dificuldade] ?? item.dificuldade}
                             </span>
                             {item.tempo_estimado && (
                               <span className="inline-flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
+                                <Clock className="h-3 w-3 text-sky-600" />
                                 {item.tempo_estimado}
                               </span>
                             )}
                           </div>
+
                         </div>
                         <Button
                           size="sm"
