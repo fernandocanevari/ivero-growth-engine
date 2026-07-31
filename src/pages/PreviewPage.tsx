@@ -1094,36 +1094,45 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                          <div className="flex items-baseline gap-2">
-                            {(() => {
-                              const band = getScoreBand(pillar.score);
-                              const bandClass =
-                                band.color === "red"
-                                  ? "bg-red-50 text-red-700 border-red-200/60"
-                                  : band.color === "amber"
-                                  ? "bg-amber-50 text-amber-700 border-amber-200/60"
-                                  : band.color === "blue"
-                                  ? "bg-sky-50 text-sky-700 border-sky-200/60"
-                                  : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
-                              return (
-                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
-                                  {band.label}
-                                </span>
-                              );
-                            })()}
-                            <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
-                            <span className="text-xs text-muted-foreground">/100</span>
-                          </div>
-                          <div className="h-2 w-36 rounded-full bg-muted overflow-hidden">
-                            <motion.div
-                              className={`h-full rounded-full ${barColor}`}
-                              initial={{ width: 0 }}
-                              whileInView={{ width: `${pillar.score}%` }}
-                              viewport={{ once: true }}
-                              transition={{ duration: 1.2, ease: "easeOut" }}
-                            />
-                          </div>
+                          {pillar.hasData === false ? (
+                            <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-semibold border uppercase tracking-wider bg-muted text-muted-foreground border-border">
+                              Sem dados
+                            </span>
+                          ) : (
+                            <>
+                              <div className="flex items-baseline gap-2">
+                                {(() => {
+                                  const band = getScoreBand(pillar.score);
+                                  const bandClass =
+                                    band.color === "red"
+                                      ? "bg-red-50 text-red-700 border-red-200/60"
+                                      : band.color === "amber"
+                                      ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                                      : band.color === "blue"
+                                      ? "bg-sky-50 text-sky-700 border-sky-200/60"
+                                      : "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                                  return (
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider ${bandClass}`}>
+                                      {band.label}
+                                    </span>
+                                  );
+                                })()}
+                                <span className="text-2xl font-display font-bold text-foreground">{pillar.score}</span>
+                                <span className="text-xs text-muted-foreground">/100</span>
+                              </div>
+                              <div className="h-2 w-36 rounded-full bg-muted overflow-hidden">
+                                <motion.div
+                                  className={`h-full rounded-full ${barColor}`}
+                                  initial={{ width: 0 }}
+                                  whileInView={{ width: `${pillar.score}%` }}
+                                  viewport={{ once: true }}
+                                  transition={{ duration: 1.2, ease: "easeOut" }}
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
+
                       </div>
 
                       {/* Sub-criterio details intentionally reserved for the executive dashboard */}
