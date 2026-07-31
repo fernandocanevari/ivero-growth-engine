@@ -64,7 +64,7 @@ export function useCreateActionPlan() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["action-plans"] });
-      mutationSuccessToast("Ação criada");
+      mutationSuccessToast("Ação adicionada! Veja em 'Todas as Ações'.");
     },
     onError: mutationErrorToast("criar a ação"),
   });

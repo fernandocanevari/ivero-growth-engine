@@ -88,7 +88,7 @@ export function useAdoptCatalogAction() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["action-plans"] });
-      mutationSuccessToast("Ação adicionada ao seu plano");
+      mutationSuccessToast("Ação adicionada! Veja em 'Todas as Ações'.");
     },
     onError: mutationErrorToast("adicionar a ação"),
   });
