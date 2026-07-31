@@ -184,13 +184,32 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
   return pillarResults.map((p) => {
     const config = pillarConfig[p.name];
     if (!config) return null;
+
+    // Sem nenhum modelo válido neste pilar: nada de score, banda ou diagnóstico inventado.
+    if (!p.hasData) {
+      return {
+        name: p.name,
+        score: null as number | null,
+        hasData: false,
+        icon: config.icon,
+        color: "muted",
+        status: "Sem dados" as const,
+        summary: "Nenhum modelo de IA retornou avaliação para este pilar nesta análise.",
+        criterios: [] as PillarCriterion[],
+        strengths: [] as string[],
+        weaknesses: undefined,
+        recommendation: "Repita a análise para obter a leitura deste pilar.",
+      };
+    }
+
     const status = p.radarValue >= 70 ? "Forte" as const : p.radarValue >= 40 ? "Moderado" as const : "Crítico" as const;
     const summary = p.radarValue >= 70 ? config.summaryGood : p.radarValue >= 40 ? config.summaryMid : config.summaryBad;
     const recommendation = p.radarValue >= 60 ? config.recGood : config.recBad;
 
     return {
       name: p.name,
-      score: p.radarValue,
+      score: p.radarValue as number | null,
+      hasData: true,
       icon: config.icon,
       color: p.radarValue >= 70 ? "emerald" : p.radarValue >= 40 ? "amber" : "red",
       status,
@@ -200,6 +219,7 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       weaknesses: p.mentions < 3 ? config.weaknesses : undefined,
       recommendation,
     };
+
   }).filter(Boolean);
 }
 
