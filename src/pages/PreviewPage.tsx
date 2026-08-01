@@ -822,7 +822,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
             <div className="space-y-5">
               <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Os 5 pilares que determinam se a IA recomenda sua marca" />
 
-              <div className="w-full h-72">
+              <div className={`w-full h-72 relative ${!leadSubmitted ? "select-none pointer-events-none blur-[6px] opacity-45" : ""}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
                     <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
