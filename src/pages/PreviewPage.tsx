@@ -816,6 +816,47 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           </PremiumCard>
         </AnimatedSection>
 
+        {/* ── LEAD GATE inline (sticky) — logo abaixo do score ── */}
+        {!leadSubmitted && (
+          <AnimatedSection delay={0.12}>
+            <div className="sticky top-16 z-40 relative rounded-2xl overflow-hidden shadow-[0_18px_56px_-24px_hsl(265,70%,28%/0.55)]">
+              <div className="absolute inset-0 bg-ivero-gradient" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
+              <div className="relative z-10 p-6 sm:p-8 text-center space-y-5">
+                <div className="space-y-2">
+                  <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
+                  <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
+                    Desbloqueie a análise completa
+                  </h2>
+                  <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
+                    Você já viu seu score e sua presença nas IAs. Preencha abaixo para liberar o Radar Estratégico, os 5 pilares detalhados, o diagnóstico final e o plano de ação.
+                  </p>
+                </div>
+                <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
+                  <input name="name" type="text" required placeholder="Nome" maxLength={100} defaultValue={prefillName}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255} defaultValue={prefillEmail}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255} defaultValue={siteUrl}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="phone" type="tel" required inputMode="numeric" placeholder="Celular (11) 99999-9999" maxLength={16} defaultValue={prefillPhone}
+                    onInput={(e) => { const t = e.currentTarget; t.value = formatPhoneBR(t.value); }}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <Button type="submit" size="lg"
+                    className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
+                    Desbloquear diagnóstico completo
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
+                </form>
+              </div>
+            </div>
+          </AnimatedSection>
+        )}
+
+
+
         {/* ── Radar Estratégico ── */}
         <AnimatedSection delay={0.12}>
           <PremiumCard>
