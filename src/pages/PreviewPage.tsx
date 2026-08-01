@@ -828,9 +828,34 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                   ))}
                 </div>
               </div>
+
+              {/* Contador livre: quantidade de pilares fortes/críticos (sem revelar quais) */}
+              {(() => {
+                const scored = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
+                if (scored.length === 0) return null;
+                const strong = scored.filter((p: any) => p.score >= 60).length;
+                const critical = scored.length - strong;
+                return (
+                  <div className="pt-5 border-t border-border/60 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Leitura dos pilares</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-sm">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {strong} {strong === 1 ? "ponto forte" : "pontos fortes"}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200/60 shadow-sm">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {critical} {critical === 1 ? "ponto crítico" : "pontos críticos"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">identificados em {scored.length} pilares</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </PremiumCard>
         </AnimatedSection>
+
 
         {/* ── LEAD GATE inline (sticky) — logo abaixo do score ── */}
         {!leadSubmitted && (
