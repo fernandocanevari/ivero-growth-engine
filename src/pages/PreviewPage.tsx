@@ -34,8 +34,14 @@ const leadSchema = z.object({
     .max(255, "E-mail muito longo")
     .refine((v) => /\.[a-z]{2,}$/i.test(v), "E-mail incompleto (ex: nome@empresa.com)"),
   site: z.string().trim().max(255).optional(),
-  phone: z.string().trim().max(20).optional(),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Informe seu celular")
+    .max(20)
+    .refine((v) => v.replace(/\D/g, "").length >= 10, "Celular incompleto (ex: (11) 99999-9999)"),
 });
+
 
 /* ── Animated section wrapper ── */
 function AnimatedSection({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
