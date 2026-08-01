@@ -931,6 +931,32 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                 </ResponsiveContainer>
               </div>
 
+              {/* Teaser livre: nomes dos 2 pilares mais fracos, sem valores */}
+              {!leadSubmitted && (() => {
+                const scored = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
+                if (scored.length < 2) return null;
+                const weakest = [...scored].sort((a: any, b: any) => a.score - b.score).slice(0, 2);
+                return (
+                  <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 space-y-2">
+                    <p className="text-xs font-semibold text-red-700/80 uppercase tracking-widest">Pilares que mais pesam contra sua marca</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {weakest.map((p: any) => (
+                        <span key={p.name} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white/80 text-red-700 border border-red-200 shadow-sm">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          {p.name}
+                        </span>
+                      ))}
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60">
+                        <Lock className="w-3.5 h-3.5" />
+                        Scores e demais pilares bloqueados
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+
+
               {/* Dynamic phrase + strength/weakness — blur starts here when locked */}
               <div className={`relative ${!leadSubmitted ? "select-none pointer-events-none" : ""}`}>
                 <div className={!leadSubmitted ? "blur-[2.5px] opacity-55" : ""}>
