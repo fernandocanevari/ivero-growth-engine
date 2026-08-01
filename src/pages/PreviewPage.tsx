@@ -34,8 +34,14 @@ const leadSchema = z.object({
     .max(255, "E-mail muito longo")
     .refine((v) => /\.[a-z]{2,}$/i.test(v), "E-mail incompleto (ex: nome@empresa.com)"),
   site: z.string().trim().max(255).optional(),
-  phone: z.string().trim().max(20).optional(),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Informe seu celular")
+    .max(20)
+    .refine((v) => v.replace(/\D/g, "").length >= 10, "Celular incompleto (ex: (11) 99999-9999)"),
 });
+
 
 /* ── Animated section wrapper ── */
 function AnimatedSection({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -535,13 +541,23 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
+
+  // Auto-unlock: quem veio do formulário completo do Hero já se identificou (name + email na URL).
+  const [gateParams] = useSearchParams();
+  const prefillName = (gateParams.get("name") || "").trim();
+  const prefillEmail = (gateParams.get("email") || "").trim();
+  const prefillPhone = formatPhoneBR(gateParams.get("phone") || "");
+  const cameIdentifiedFromHero =
+    prefillName.length >= 2 && leadSchema.shape.email.safeParse(prefillEmail).success;
+
+  const [leadSubmitted, setLeadSubmitted] = useState(cameIdentifiedFromHero);
   const [leadData, setLeadData] = useState<{ name: string; email: string; site: string; phone: string }>({
-    name: "",
-    email: "",
-    site: "",
-    phone: "",
+    name: cameIdentifiedFromHero ? prefillName : "",
+    email: cameIdentifiedFromHero ? prefillEmail : "",
+    site: cameIdentifiedFromHero ? siteUrl : "",
+    phone: cameIdentifiedFromHero ? prefillPhone : "",
   });
+
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -816,13 +832,54 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           </PremiumCard>
         </AnimatedSection>
 
+        {/* ── LEAD GATE inline (sticky) — logo abaixo do score ── */}
+        {!leadSubmitted && (
+          <AnimatedSection delay={0.12}>
+            <div className="sticky top-16 z-40 relative rounded-2xl overflow-hidden shadow-[0_18px_56px_-24px_hsl(265,70%,28%/0.55)]">
+              <div className="absolute inset-0 bg-ivero-gradient" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
+              <div className="relative z-10 p-6 sm:p-8 text-center space-y-5">
+                <div className="space-y-2">
+                  <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
+                  <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
+                    Desbloqueie a análise completa
+                  </h2>
+                  <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
+                    Você já viu seu score e sua presença nas IAs. Preencha abaixo para liberar o Radar Estratégico, os 5 pilares detalhados, o diagnóstico final e o plano de ação.
+                  </p>
+                </div>
+                <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
+                  <input name="name" type="text" required placeholder="Nome" maxLength={100} defaultValue={prefillName}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255} defaultValue={prefillEmail}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255} defaultValue={siteUrl}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="phone" type="tel" required inputMode="numeric" placeholder="Celular (11) 99999-9999" maxLength={16} defaultValue={prefillPhone}
+                    onInput={(e) => { const t = e.currentTarget; t.value = formatPhoneBR(t.value); }}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <Button type="submit" size="lg"
+                    className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
+                    Desbloquear diagnóstico completo
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
+                </form>
+              </div>
+            </div>
+          </AnimatedSection>
+        )}
+
+
+
         {/* ── Radar Estratégico ── */}
         <AnimatedSection delay={0.12}>
           <PremiumCard>
             <div className="space-y-5">
               <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Os 5 pilares que determinam se a IA recomenda sua marca" />
 
-              <div className="w-full h-72">
+              <div className={`w-full h-72 relative ${!leadSubmitted ? "select-none pointer-events-none blur-[6px] opacity-45" : ""}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
                     <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -972,92 +1029,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           </AnimatedSection>
         )}
 
-        {/* ── BLURRED TEASER + LEAD GATE ── */}
-        {!leadSubmitted && (
-          <>
-            <AnimatedSection delay={0.15}>
-              <div className="relative overflow-hidden rounded-2xl max-h-[280px]">
-                <div className="space-y-3 blur-[3px] opacity-50 select-none pointer-events-none">
-                  <div className="space-y-1">
-                    <h2 className="text-base font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      Diagnóstico Detalhado
-                    </h2>
-                  </div>
-                  {dynamicPillarDetails[0] && dynamicPillarDetails[0].hasData !== false && (
-                    <PremiumCard>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
-                          <Eye className={`w-4 h-4 ${dynamicPillarDetails[0].score >= 70 ? "text-emerald-600" : dynamicPillarDetails[0].score >= 40 ? "text-amber-600" : "text-red-600"}`} />
-                        </div>
-                        <div>
-                          <p className="font-display font-bold text-foreground">{dynamicPillarDetails[0].name}</p>
-                          <p className="text-xs text-muted-foreground">Score: {dynamicPillarDetails[0].score}/100 · {dynamicPillarDetails[0].status}</p>
-                        </div>
-                      </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div className={`h-full rounded-full ${dynamicPillarDetails[0].score >= 70 ? "bg-emerald-500" : dynamicPillarDetails[0].score >= 40 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${dynamicPillarDetails[0].score}%` }} />
-                      </div>
-                    </PremiumCard>
-                  )}
-                </div>
-                <div className="blur-[7px] opacity-25 select-none pointer-events-none -mt-1">
-                  {dynamicPillarDetails[1] && dynamicPillarDetails[1].hasData !== false && (
-                    <PremiumCard>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${dynamicPillarDetails[1].score >= 70 ? "bg-emerald-100 border border-emerald-200/60" : dynamicPillarDetails[1].score >= 40 ? "bg-amber-100 border border-amber-200/60" : "bg-red-100 border border-red-200/60"}`}>
-                          <ShieldCheck className={`w-4 h-4 ${dynamicPillarDetails[1].score >= 70 ? "text-emerald-600" : dynamicPillarDetails[1].score >= 40 ? "text-amber-600" : "text-red-600"}`} />
-                        </div>
-                        <div>
-                          <p className="font-display font-bold text-foreground">{dynamicPillarDetails[1].name}</p>
-                          <p className="text-xs text-muted-foreground">Score: {dynamicPillarDetails[1].score}/100 · {dynamicPillarDetails[1].status}</p>
-                        </div>
-                      </div>
-                    </PremiumCard>
-                  )}
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/95 to-transparent" />
-              </div>
-            </AnimatedSection>
+        {/* Gate movido para logo abaixo do score (card sticky inline) */}
 
-            {/* Lead gate form */}
-            <AnimatedSection delay={0.18}>
-              <div className="relative rounded-2xl overflow-hidden -mt-8">
-                <div className="absolute inset-0 bg-ivero-gradient" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
-                <div className="relative z-10 p-8 sm:p-10 text-center space-y-6">
-                  <div className="space-y-2">
-                    <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
-                    <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
-                      Desbloqueie a análise completa
-                    </h2>
-                    <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
-                      Você está vendo apenas o resumo. Preencha abaixo para acessar os 5 pilares detalhados, plano de ação personalizado e previsão de impacto.
-                    </p>
-                  </div>
-                  <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
-                    <input name="name" type="text" required placeholder="Nome" maxLength={100}
-                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                    <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255}
-                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                    <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255}
-                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                    <input name="phone" type="tel" inputMode="numeric" placeholder="(11) 99999-9999" maxLength={16}
-                      onInput={(e) => { const t = e.currentTarget; t.value = formatPhoneBR(t.value); }}
-                      className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                    <Button type="submit" size="lg"
-                      className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
-                      Desbloquear diagnóstico completo
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                    <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
-                  </form>
-                </div>
-              </div>
-            </AnimatedSection>
-          </>
-        )}
 
         {/* ── Everything below only shows after lead submission ── */}
         {leadSubmitted && (
