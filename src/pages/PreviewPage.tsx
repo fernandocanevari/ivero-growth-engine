@@ -535,13 +535,23 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
+
+  // Auto-unlock: quem veio do formulário completo do Hero já se identificou (name + email na URL).
+  const [gateParams] = useSearchParams();
+  const prefillName = (gateParams.get("name") || "").trim();
+  const prefillEmail = (gateParams.get("email") || "").trim();
+  const prefillPhone = formatPhoneBR(gateParams.get("phone") || "");
+  const cameIdentifiedFromHero =
+    prefillName.length >= 2 && leadSchema.shape.email.safeParse(prefillEmail).success;
+
+  const [leadSubmitted, setLeadSubmitted] = useState(cameIdentifiedFromHero);
   const [leadData, setLeadData] = useState<{ name: string; email: string; site: string; phone: string }>({
-    name: "",
-    email: "",
-    site: "",
-    phone: "",
+    name: cameIdentifiedFromHero ? prefillName : "",
+    email: cameIdentifiedFromHero ? prefillEmail : "",
+    site: cameIdentifiedFromHero ? siteUrl : "",
+    phone: cameIdentifiedFromHero ? prefillPhone : "",
   });
+
 
   const handleLeadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
