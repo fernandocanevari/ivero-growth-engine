@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
@@ -266,28 +267,13 @@ const iveroFeatures = [
   { icon: MessageSquare, label: "Otimização de Prompts", desc: "Estratégias para dominar respostas de IA" },
 ];
 
-/* ── Ação prioritária determinística por pilar (nenhum dado fabricado: texto fixo por pilar) ── */
-const PILLAR_ACTION_MAP: Record<string, { title: string; desc: string }> = {
-  Clareza: {
-    title: "Reescrever headline e proposta de valor",
-    desc: "Aplicar a fórmula de clareza GEO no topo do site para que as IAs identifiquem em segundos o que sua empresa faz, para quem e qual o diferencial declarado.",
-  },
-  Autoridade: {
-    title: "Estruturar página de autoridade técnica",
-    desc: "Construir um hub de conteúdo aprofundado com sinais de E-E-A-T, cases com números e referências externas verificáveis que os modelos usam como base de recomendação.",
-  },
-  Conversão: {
-    title: "Criar landing pages para tráfego de IA",
-    desc: "Páginas dedicadas a quem chega por respostas generativas, com contexto da pergunta original, prova social próxima do CTA e próximo passo único e explícito.",
-  },
-  Posicionamento: {
-    title: "Definir e declarar o território de mercado",
-    desc: "Explicitar nicho, público-alvo e diferencial competitivo em linguagem consistente em todas as páginas, para a IA parar de recomendar concorrentes no seu lugar.",
-  },
-  Relevância: {
-    title: "Produzir conteúdo de cobertura semântica do nicho",
-    desc: "Mapear as perguntas reais do seu público e cobrir os termos do setor em conteúdo próprio, ampliando a associação temática entre sua marca e o nicho nas respostas de IA.",
-  },
+/* ── Título da ação prioritária por pilar (o texto vem de recBad/recGood em buildPillarDetails) ── */
+const PILLAR_ACTION_TITLE: Record<string, string> = {
+  Clareza: "Reescrever headline e proposta de valor",
+  Autoridade: "Estruturar página de autoridade técnica",
+  Conversão: "Criar landing pages para tráfego de IA",
+  Posicionamento: "Definir e declarar o território de mercado",
+  Relevância: "Produzir conteúdo de cobertura semântica do nicho",
 };
 
 /* ── Revelação parcial: começo do texto nítido, restante borrado (conteúdo real, não truncado) ── */
@@ -974,7 +960,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           const topCriterio = [...(weakest.criterios || [])].sort((a: any, b: any) => (b?.peso || 0) - (a?.peso || 0))[0];
           const criterioText: string = topCriterio?.justificativa?.trim() || weakest.summary;
           const WeakIcon = weakest.icon;
-          const action = PILLAR_ACTION_MAP[weakest.name] || PILLAR_ACTION_MAP["Autoridade"];
+          const actionTitle = PILLAR_ACTION_TITLE[weakest.name] || PILLAR_ACTION_TITLE["Autoridade"];
+          const actionDesc: string = weakest.recommendation;
           const diagnosticoTeaser =
             geoScore <= 40
               ? "Sua marca está praticamente invisível para as IAs generativas. Isso significa que quando potenciais clientes perguntam sobre soluções do seu mercado, sua empresa não aparece nas respostas."
@@ -985,7 +972,14 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           const scrollToGate = () => document.getElementById("lead-gate")?.scrollIntoView({ behavior: "smooth", block: "center" });
 
           return (
-            <>
+            <div
+              className="space-y-6 select-none"
+              style={{ WebkitUserSelect: "none", userSelect: "none" }}
+              onCopy={(e) => e.preventDefault()}
+              onCut={(e) => e.preventDefault()}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            >
               {/* Amostra: pilares detalhados */}
               <AnimatedSection delay={0.14}>
                 <PremiumCard>
@@ -1045,8 +1039,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                           1
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-semibold text-foreground">{action.title}</p>
-                          <PartialReveal text={action.desc} revealRatio={0.4} className="text-muted-foreground" />
+                          <p className="text-sm font-semibold text-foreground">{actionTitle}</p>
+                          <PartialReveal text={actionDesc} revealRatio={0.4} className="text-muted-foreground" />
                         </div>
                       </div>
                     </div>
@@ -1056,9 +1050,25 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                   </div>
                 </PremiumCard>
               </AnimatedSection>
-            </>
+            </div>
           );
         })()}
+
+        {/* ── Barra fixa mobile: atalho para o formulário (portal p/ escapar de ancestrais com transform) ── */}
+        {!leadSubmitted &&
+          createPortal(
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-card/95 backdrop-blur border-t border-border">
+              <Button
+                className="w-full bg-ivero-gradient text-primary-foreground font-semibold"
+                onClick={() => document.getElementById("lead-gate")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Desbloquear análise completa
+              </Button>
+            </div>,
+            document.body,
+          )}
+
 
         {/* ── LEAD GATE — no final da sequência de amostras ── */}
         {!leadSubmitted && (
