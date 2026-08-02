@@ -853,16 +853,26 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Os 5 pilares que determinam se a IA recomenda sua marca" />
 
               {(() => {
-                // Quando bloqueado: forma/valores borrados, mas os nomes dos 2 pilares
-                // mais fracos permanecem legíveis nos próprios eixos do radar.
+                // Quando bloqueado: o pentágono aparece nítido, mas apenas os nomes dos 2
+                // pilares mais fracos ficam legíveis — os outros 3 aparecem borrados.
                 const scoredPillars = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
                 const weakestNames = [...scoredPillars].sort((a: any, b: any) => a.score - b.score).slice(0, 2).map((p: any) => p.name);
 
                 const TeaserTick = (props: any) => {
                   const { payload, x, y, textAnchor } = props;
-                  if (!weakestNames.includes(payload.value)) return null;
+                  const revealed = weakestNames.includes(payload.value);
                   return (
-                    <text x={x} y={y} dy={4} textAnchor={textAnchor} className="fill-red-700" fontSize={12} fontWeight={700}>
+                    <text
+                      x={x}
+                      y={y}
+                      dy={4}
+                      textAnchor={textAnchor}
+                      className={revealed ? "fill-red-700" : "fill-foreground/70"}
+                      fontSize={12}
+                      fontWeight={revealed ? 700 : 500}
+                      filter={revealed ? undefined : "url(#teaserLabelBlur)"}
+                      aria-hidden={revealed ? undefined : true}
+                    >
                       {payload.value}
                     </text>
                   );
@@ -870,13 +880,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
 
                 const locked = !leadSubmitted;
                 return (
-                  <div
-                    className={`w-full h-72 relative ${
-                      locked
-                        ? "select-none pointer-events-none [&_.recharts-polar-grid]:blur-[6px] [&_.recharts-polar-grid]:opacity-45 [&_.recharts-radar]:blur-[6px] [&_.recharts-radar]:opacity-45"
-                        : ""
-                    }`}
-                  >
+                  <div className={`w-full h-72 relative ${locked ? "select-none" : ""}`}>
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
                         <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -884,6 +888,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                           dataKey="subject"
                           tick={locked && weakestNames.length === 2 ? (TeaserTick as any) : { fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }}
                         />
+
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
                         <Radar
                           name="Sua Marca"
