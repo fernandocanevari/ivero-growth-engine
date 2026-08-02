@@ -904,53 +904,61 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
             <div className="space-y-5">
               <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Os 5 pilares que determinam se a IA recomenda sua marca" />
 
-              <div className={`w-full h-72 relative ${!leadSubmitted ? "select-none pointer-events-none blur-[6px] opacity-45" : ""}`}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
-                    <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
-                    <PolarAngleAxis
-                      dataKey="subject"
-                      tick={{ fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }}
-                    />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar
-                      name="Sua Marca"
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#radarGradient)"
-                      fillOpacity={0.3}
-                      strokeWidth={2.5}
-                    />
-                    <defs>
-                      <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="hsl(265 70% 28%)" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="hsl(330 85% 55%)" stopOpacity={0.4} />
-                      </linearGradient>
-                    </defs>
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+              {(() => {
+                // Quando bloqueado: forma/valores borrados, mas os nomes dos 2 pilares
+                // mais fracos permanecem legíveis nos próprios eixos do radar.
+                const scoredPillars = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
+                const weakestNames = [...scoredPillars].sort((a: any, b: any) => a.score - b.score).slice(0, 2).map((p: any) => p.name);
 
-              {/* Teaser livre: nomes dos 2 pilares mais fracos, sem valores */}
-              {!leadSubmitted && (() => {
-                const scored = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
-                if (scored.length < 2) return null;
-                const weakest = [...scored].sort((a: any, b: any) => a.score - b.score).slice(0, 2);
+                const TeaserTick = (props: any) => {
+                  const { payload, x, y, textAnchor } = props;
+                  if (!weakestNames.includes(payload.value)) return null;
+                  return (
+                    <text x={x} y={y} dy={4} textAnchor={textAnchor} className="fill-red-700" fontSize={12} fontWeight={700}>
+                      {payload.value}
+                    </text>
+                  );
+                };
+
+                const locked = !leadSubmitted;
                 return (
-                  <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 space-y-2">
-                    <p className="text-xs font-semibold text-red-700/80 uppercase tracking-widest">Pilares que mais pesam contra sua marca</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {weakest.map((p: any) => (
-                        <span key={p.name} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white/80 text-red-700 border border-red-200 shadow-sm">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          {p.name}
-                        </span>
-                      ))}
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60">
-                        <Lock className="w-3.5 h-3.5" />
+                  <div
+                    className={`w-full h-72 relative ${
+                      locked
+                        ? "select-none pointer-events-none [&_.recharts-polar-grid]:blur-[6px] [&_.recharts-polar-grid]:opacity-45 [&_.recharts-radar]:blur-[6px] [&_.recharts-radar]:opacity-45"
+                        : ""
+                    }`}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
+                        <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={locked && weakestNames.length === 2 ? (TeaserTick as any) : { fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }}
+                        />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Sua Marca"
+                          dataKey="value"
+                          stroke="hsl(var(--primary))"
+                          fill="url(#radarGradient)"
+                          fillOpacity={0.3}
+                          strokeWidth={2.5}
+                        />
+                        <defs>
+                          <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="hsl(265 70% 28%)" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="hsl(330 85% 55%)" stopOpacity={0.4} />
+                          </linearGradient>
+                        </defs>
+                      </RadarChart>
+                    </ResponsiveContainer>
+                    {locked && weakestNames.length === 2 && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/70 text-muted-foreground border border-border/60">
+                        <Lock className="w-3 h-3" />
                         Scores e demais pilares bloqueados
-                      </span>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
