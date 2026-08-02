@@ -266,6 +266,70 @@ const iveroFeatures = [
   { icon: MessageSquare, label: "Otimização de Prompts", desc: "Estratégias para dominar respostas de IA" },
 ];
 
+/* ── Ação prioritária determinística por pilar (nenhum dado fabricado: texto fixo por pilar) ── */
+const PILLAR_ACTION_MAP: Record<string, { title: string; desc: string }> = {
+  Clareza: {
+    title: "Reescrever headline e proposta de valor",
+    desc: "Aplicar a fórmula de clareza GEO no topo do site para que as IAs identifiquem em segundos o que sua empresa faz, para quem e qual o diferencial declarado.",
+  },
+  Autoridade: {
+    title: "Estruturar página de autoridade técnica",
+    desc: "Construir um hub de conteúdo aprofundado com sinais de E-E-A-T, cases com números e referências externas verificáveis que os modelos usam como base de recomendação.",
+  },
+  Conversão: {
+    title: "Criar landing pages para tráfego de IA",
+    desc: "Páginas dedicadas a quem chega por respostas generativas, com contexto da pergunta original, prova social próxima do CTA e próximo passo único e explícito.",
+  },
+  Posicionamento: {
+    title: "Definir e declarar o território de mercado",
+    desc: "Explicitar nicho, público-alvo e diferencial competitivo em linguagem consistente em todas as páginas, para a IA parar de recomendar concorrentes no seu lugar.",
+  },
+  Relevância: {
+    title: "Produzir conteúdo de cobertura semântica do nicho",
+    desc: "Mapear as perguntas reais do seu público e cobrir os termos do setor em conteúdo próprio, ampliando a associação temática entre sua marca e o nicho nas respostas de IA.",
+  },
+};
+
+/* ── Revelação parcial: começo do texto nítido, restante borrado (conteúdo real, não truncado) ── */
+function PartialReveal({ text, revealRatio = 0.45, className = "" }: { text: string; revealRatio?: number; className?: string }) {
+  const words = (text || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return null;
+  const cut = Math.max(1, Math.round(words.length * revealRatio));
+  const visible = words.slice(0, cut).join(" ");
+  const hidden = words.slice(cut).join(" ");
+  return (
+    <p className={`text-sm text-foreground leading-relaxed ${className}`}>
+      <span>{visible} </span>
+      {hidden && (
+        <span
+          aria-hidden
+          className="blur-[4px] select-none pointer-events-none text-muted-foreground"
+          style={{
+            WebkitUserSelect: "none",
+            userSelect: "none",
+            WebkitMaskImage: "linear-gradient(to right, #000 45%, transparent 100%)",
+            maskImage: "linear-gradient(to right, #000 45%, transparent 100%)",
+          }}
+          onCopy={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {hidden}
+        </span>
+      )}
+    </p>
+  );
+}
+
+/* ── Selo de amostra ── */
+function SampleBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-muted/70 text-muted-foreground border border-border/60">
+      <Lock className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
 /* ── Soft blur overlay with lead form ── */
 function SoftBlur({ children, label, onUnlock, unlocked = false }: { children: React.ReactNode; label?: string; onUnlock?: () => void; unlocked?: boolean }) {
   if (unlocked) return <>{children}</>;
