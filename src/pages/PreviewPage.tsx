@@ -266,6 +266,70 @@ const iveroFeatures = [
   { icon: MessageSquare, label: "Otimização de Prompts", desc: "Estratégias para dominar respostas de IA" },
 ];
 
+/* ── Ação prioritária determinística por pilar (nenhum dado fabricado: texto fixo por pilar) ── */
+const PILLAR_ACTION_MAP: Record<string, { title: string; desc: string }> = {
+  Clareza: {
+    title: "Reescrever headline e proposta de valor",
+    desc: "Aplicar a fórmula de clareza GEO no topo do site para que as IAs identifiquem em segundos o que sua empresa faz, para quem e qual o diferencial declarado.",
+  },
+  Autoridade: {
+    title: "Estruturar página de autoridade técnica",
+    desc: "Construir um hub de conteúdo aprofundado com sinais de E-E-A-T, cases com números e referências externas verificáveis que os modelos usam como base de recomendação.",
+  },
+  Conversão: {
+    title: "Criar landing pages para tráfego de IA",
+    desc: "Páginas dedicadas a quem chega por respostas generativas, com contexto da pergunta original, prova social próxima do CTA e próximo passo único e explícito.",
+  },
+  Posicionamento: {
+    title: "Definir e declarar o território de mercado",
+    desc: "Explicitar nicho, público-alvo e diferencial competitivo em linguagem consistente em todas as páginas, para a IA parar de recomendar concorrentes no seu lugar.",
+  },
+  Relevância: {
+    title: "Produzir conteúdo de cobertura semântica do nicho",
+    desc: "Mapear as perguntas reais do seu público e cobrir os termos do setor em conteúdo próprio, ampliando a associação temática entre sua marca e o nicho nas respostas de IA.",
+  },
+};
+
+/* ── Revelação parcial: começo do texto nítido, restante borrado (conteúdo real, não truncado) ── */
+function PartialReveal({ text, revealRatio = 0.45, className = "" }: { text: string; revealRatio?: number; className?: string }) {
+  const words = (text || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return null;
+  const cut = Math.max(1, Math.round(words.length * revealRatio));
+  const visible = words.slice(0, cut).join(" ");
+  const hidden = words.slice(cut).join(" ");
+  return (
+    <p className={`text-sm text-foreground leading-relaxed ${className}`}>
+      <span>{visible} </span>
+      {hidden && (
+        <span
+          aria-hidden
+          className="blur-[4px] select-none pointer-events-none text-muted-foreground"
+          style={{
+            WebkitUserSelect: "none",
+            userSelect: "none",
+            WebkitMaskImage: "linear-gradient(to right, #000 45%, transparent 100%)",
+            maskImage: "linear-gradient(to right, #000 45%, transparent 100%)",
+          }}
+          onCopy={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {hidden}
+        </span>
+      )}
+    </p>
+  );
+}
+
+/* ── Selo de amostra ── */
+function SampleBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-muted/70 text-muted-foreground border border-border/60">
+      <Lock className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
 /* ── Soft blur overlay with lead form ── */
 function SoftBlur({ children, label, onUnlock, unlocked = false }: { children: React.ReactNode; label?: string; onUnlock?: () => void; unlocked?: boolean }) {
   if (unlocked) return <>{children}</>;
@@ -792,44 +856,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
         </AnimatedSection>
 
 
-        {/* ── LEAD GATE inline (sticky) — logo abaixo do score ── */}
-        {!leadSubmitted && (
-          <AnimatedSection delay={0.12}>
-            <div className="sticky top-16 z-40 relative rounded-2xl overflow-hidden shadow-[0_18px_56px_-24px_hsl(265,70%,28%/0.55)]">
-              <div className="absolute inset-0 bg-ivero-gradient" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
-              <div className="relative z-10 p-6 sm:p-8 text-center space-y-5">
-                <div className="space-y-2">
-                  <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
-                  <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
-                    Desbloqueie a análise completa
-                  </h2>
-                  <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
-                    Você já viu seu score e sua presença nas IAs. Preencha abaixo para liberar o Radar Estratégico, os 5 pilares detalhados, o diagnóstico final e o plano de ação.
-                  </p>
-                </div>
-                <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
-                  <input name="name" type="text" required placeholder="Nome" maxLength={100} defaultValue={prefillName}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255} defaultValue={prefillEmail}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255} defaultValue={siteUrl}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <input name="phone" type="tel" required inputMode="numeric" placeholder="Celular (11) 99999-9999" maxLength={16} defaultValue={prefillPhone}
-                    onInput={(e) => { const t = e.currentTarget; t.value = formatPhoneBR(t.value); }}
-                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
-                  <Button type="submit" size="lg"
-                    className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
-                    Desbloquear diagnóstico completo
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
-                </form>
-              </div>
-            </div>
-          </AnimatedSection>
-        )}
+
 
 
 
@@ -937,6 +964,140 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
             </div>
           </PremiumCard>
         </AnimatedSection>
+
+        {/* ── Amostras progressivas (pilar / diagnóstico / plano) + GATE no final ── */}
+        {!leadSubmitted && (() => {
+          const scored = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
+          if (scored.length === 0) return null;
+
+          const weakest: any = [...scored].sort((a: any, b: any) => a.score - b.score)[0];
+          const topCriterio = [...(weakest.criterios || [])].sort((a: any, b: any) => (b?.peso || 0) - (a?.peso || 0))[0];
+          const criterioText: string = topCriterio?.justificativa?.trim() || weakest.summary;
+          const WeakIcon = weakest.icon;
+          const action = PILLAR_ACTION_MAP[weakest.name] || PILLAR_ACTION_MAP["Autoridade"];
+          const diagnosticoTeaser =
+            geoScore <= 40
+              ? "Sua marca está praticamente invisível para as IAs generativas. Isso significa que quando potenciais clientes perguntam sobre soluções do seu mercado, sua empresa não aparece nas respostas."
+              : geoScore <= 70
+              ? "Sua marca tem presença parcial nas IAs, mas ainda não é referência. Alguns modelos a reconhecem, enquanto outros a ignoram completamente."
+              : "Sua marca já tem forte presença nas IAs generativas. A maioria dos modelos a reconhece e recomenda quando questionados sobre o seu mercado.";
+
+          const scrollToGate = () => document.getElementById("lead-gate")?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          return (
+            <>
+              {/* Amostra: pilares detalhados */}
+              <AnimatedSection delay={0.14}>
+                <PremiumCard>
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <SectionHeader icon={Brain} title="5 Pilares Detalhados" subtitle="Análise pilar por pilar gerada para a sua marca" />
+                      <SampleBadge label="Amostra 1 de 5" />
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-ivero-gradient shadow-sm">
+                          <WeakIcon className="w-4.5 h-4.5 text-primary-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-display font-bold text-foreground">{weakest.name}</p>
+                          <p className="text-xs text-muted-foreground">{weakest.summary}</p>
+                        </div>
+                      </div>
+                      <PartialReveal text={criterioText} revealRatio={0.45} />
+                    </div>
+                    <button onClick={scrollToGate} className="text-xs font-semibold text-primary hover:underline">
+                      Ver os 5 pilares completos
+                    </button>
+                  </div>
+                </PremiumCard>
+              </AnimatedSection>
+
+              {/* Amostra: diagnóstico final */}
+              <AnimatedSection delay={0.16}>
+                <PremiumCard>
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <SectionHeader icon={Brain} title="Diagnóstico Final" subtitle="A leitura executiva sobre o futuro da sua marca em IA" />
+                      <SampleBadge label="Trecho parcial" />
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <PartialReveal text={diagnosticoTeaser} revealRatio={0.5} />
+                    </div>
+                    <button onClick={scrollToGate} className="text-xs font-semibold text-primary hover:underline">
+                      Ler o diagnóstico completo
+                    </button>
+                  </div>
+                </PremiumCard>
+              </AnimatedSection>
+
+              {/* Amostra: plano de ação */}
+              <AnimatedSection delay={0.18}>
+                <PremiumCard>
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <SectionHeader icon={Rocket} title="Plano de Ação Recomendado" subtitle="Roteiro estratégico priorizado para a sua marca" />
+                      <SampleBadge label="Ação 1 de 5" />
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-ivero-gradient text-primary-foreground text-xs font-bold shrink-0">
+                          1
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-foreground">{action.title}</p>
+                          <PartialReveal text={action.desc} revealRatio={0.4} className="text-muted-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={scrollToGate} className="text-xs font-semibold text-primary hover:underline">
+                      Ver as 5 ações recomendadas
+                    </button>
+                  </div>
+                </PremiumCard>
+              </AnimatedSection>
+            </>
+          );
+        })()}
+
+        {/* ── LEAD GATE — no final da sequência de amostras ── */}
+        {!leadSubmitted && (
+          <AnimatedSection delay={0.2}>
+            <div id="lead-gate" className="relative rounded-2xl overflow-hidden shadow-[0_18px_56px_-24px_hsl(265,70%,28%/0.55)] scroll-mt-24">
+              <div className="absolute inset-0 bg-ivero-gradient" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(330,85%,55%/0.3),transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,hsl(265,70%,40%/0.4),transparent_50%)]" />
+              <div className="relative z-10 p-6 sm:p-8 text-center space-y-5">
+                <div className="space-y-2">
+                  <Lock className="w-8 h-8 text-primary-foreground/80 mx-auto" />
+                  <h2 className="font-display text-xl sm:text-2xl font-bold text-primary-foreground leading-snug">
+                    Desbloqueie a análise completa
+                  </h2>
+                  <p className="text-sm text-primary-foreground/70 max-w-md mx-auto">
+                    Você já viu seu score e sua presença nas IAs. Preencha abaixo para liberar o Radar Estratégico, os 5 pilares detalhados, o diagnóstico final e o plano de ação.
+                  </p>
+                </div>
+                <form onSubmit={handleLeadSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
+                  <input name="name" type="text" required placeholder="Nome" maxLength={100} defaultValue={prefillName}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="email" type="email" required placeholder="E-mail corporativo" maxLength={255} defaultValue={prefillEmail}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="site" type="text" placeholder="Site da empresa (ex: www.empresa.com.br)" maxLength={255} defaultValue={siteUrl}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <input name="phone" type="tel" required inputMode="numeric" placeholder="Celular (11) 99999-9999" maxLength={16} defaultValue={prefillPhone}
+                    onInput={(e) => { const t = e.currentTarget; t.value = formatPhoneBR(t.value); }}
+                    className="h-12 rounded-xl border-0 px-4 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-white/95 shadow-sm" />
+                  <Button type="submit" size="lg"
+                    className="bg-white text-foreground hover:bg-white/90 border-0 text-base h-12 px-8 rounded-full font-semibold shadow-[0_4px_20px_-4px_hsl(0,0%,100%/0.4)] hover:shadow-[0_6px_30px_-4px_hsl(0,0%,100%/0.5)] transition-all w-full mt-1">
+                    Desbloquear diagnóstico completo
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <p className="text-xs text-primary-foreground/50">Seus dados estão seguros. Sem spam.</p>
+                </form>
+              </div>
+            </div>
+          </AnimatedSection>
+        )}
 
         {/* ── CTA: Crie sua conta executiva (alto impacto, dark interrupt) ── */}
         {leadSubmitted && (
