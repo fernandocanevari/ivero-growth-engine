@@ -88,10 +88,10 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 
 /* ── Loading steps ── */
 const loadingSteps = [
-  { icon: Search, text: "Investigando como as IAs enxergam sua marca..." },
-  { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini e Google Modo IA..." },
-  { icon: Bot, text: "Detectando onde sua marca está sendo ignorada..." },
-  { icon: BarChart3, text: "Revelando o caminho para virar referência..." },
+  { icon: Search, text: "Acessando o site da sua marca..." },
+  { icon: Globe, text: "Estou dando uma olhada no seu site..." },
+  { icon: Bot, text: "Interessante — já estou entendendo como sua marca se posiciona." },
+  { icon: BarChart3, text: "Quase lá, fechando o seu diagnóstico..." },
 ];
 
 /* ── AI engine result type ── */
