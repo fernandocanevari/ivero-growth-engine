@@ -1,77 +1,58 @@
-# Plano consolidado — fonte única de preços + UpgradeModal com destaque dinâmico
+## 1. Viabilidade dos dados (o que já existe hoje)
 
-## Objetivo
-`src/lib/pricing-rules.ts` passa a ser a única fonte de nomes, preços, métricas e highlights dos planos. `UpgradeModal` é reconstruído sem o plano "Domínio", com preços corretos e destaque dinâmico baseado no plano atual do cliente logado. Valores efetivamente cobrados (397/717/1.197 anual) permanecem intactos.
+Verifiquei `src/pages/PreviewPage.tsx` e `supabase/functions/simulate-ai/index.ts`. A chamada é única por modelo (`mode: "diagnostico"`) e já retorna tudo o que é necessário. **Nenhuma chamada adicional à IA é necessária.**
 
-## Etapa 1 — Estender `src/lib/pricing-rules.ts`
-Adicionar aos objetos `PLANOS` (sem quebrar consumidores atuais):
-- `badge: string | null` — "Mais escolhido" só em Influência (default landing)
-- `highlighted: boolean` — true só em Influência (default landing)
-- `inheritsFrom: string | null`
+| Seção | Origem hoje | Status |
+|---|---|---|
+| Pilares detalhados | `dynamicPillarDetails` (score real por pilar + `criterios[]` com `nome`, `peso` e `justificativa` **reais da IA**). O `summary`/`strengths`/`weaknesses` são textos-template escolhidos pela faixa de score (`buildPillarDetails`) | Dados reais disponíveis. O único texto verdadeiramente "gerado pra essa marca" é `criterios[].justificativa` — é o que deve ir na amostra |
+| Diagnóstico final | Montado no cliente a partir de `geoScore` + os 2 pilares mais fracos (template por faixa) | Disponível, mas hoje é template. Para a amostra ficar "real", proponho usar a `justificativa` do pilar mais fraco como primeira frase e manter o template como fechamento |
+| Plano de ação | **100% hardcoded** — array fixo de 5 itens genéricos, sempre borrado, igual para toda marca | Aqui há lacuna real: não existe ação personalizada. Ver item 3 abaixo |
 
-Adicionar helpers exportados:
-- `formatBRL(n: number): string` → "R$ 1.497"
-- `annualSavingBRL(plano): string` → "R$ 3.600" (calculado como `(monthly − annual) × 12`)
-- `PLANOS_ARRAY: PlanoInfo[]` (ordem Presença → Influência → Autoridade)
-- `nextTier(plano): "influencia" | "autoridade"` — regra dos 4 casos:
-  - `"presenca"` → `"influencia"`
-  - `"influencia"` → `"autoridade"`
-  - `"autoridade"` → `"autoridade"` (mesmo tier, sinaliza "atual")
-  - `null` → `"influencia"` (fallback landing)
+Observação importante: hoje as `criterios[].justificativa` da IA não são exibidas em lugar nenhum da PreviewPage (há um comentário "reserved for the executive dashboard"). Ou seja, existe conteúdo real e inédito disponível de graça para usar nas amostras — sem custo extra de tokens.
 
-Nenhum campo existente muda de tipo. `monthlyPrice`/`annualPrice` seguem `number`.
+## 2. Como aplicar o "borrado parcial"
 
-## Etapa 2 — Refatorar `src/components/landing/InvestSection.tsx`
-- Remover array `plans` hardcoded (linhas 25–99).
-- Importar `PLANOS_ARRAY`, `formatBRL`, `annualSavingBRL`.
-- Manter local: `PLAN_SLUG_MAP`, mapa de ícones por métrica (decoração), CTAs por plano ("Quero ser visto pelas IAs →" etc.).
-- Render pixel-idêntico ao atual.
+Reaproveitando o que já existe, com um componente novo pequeno:
 
-## Etapa 3 — Refatorar `src/pages/EscolherPlanoPage.tsx`
-- Remover array `plans` local (linhas 27–96).
-- Importar de `pricing-rules.ts`.
-- CTA único ("Começar com 7 dias grátis →") continua como constante local.
+- `SoftBlur` (blur 1.5px + CTA no hover) — bom para blocos inteiros, mas fraco para "meia frase".
+- `BlurredOverlay` (overlay backdrop-blur sobre o conteúdo) — bom para o radar, já em uso.
+- **Novo `PartialReveal`** (~20 linhas, mesma linguagem visual): recebe o texto real e uma proporção (`revealRatio`, ex. 0.45). Renderiza o primeiro trecho nítido e o restante com `blur-[4px] select-none pointer-events-none` + `aria-hidden`, terminando com um fade `mask-image` para a direita, para o corte não parecer truncamento e sim conteúdo bloqueado. O corte é feito por palavra (não por caractere) para não cortar no meio de uma palavra.
 
-## Etapa 4 — Refatorar `supabase/functions/create-checkout/index.ts`
-Restrição: Deno edge não importa de `src/`. Criar `supabase/functions/_shared/pricing.ts` com apenas:
-```ts
-export const PLAN_ANNUAL_VALUES = { presenca: 397, influencia: 717, autoridade: 1197 };
-```
-Importar do edge. Adicionar em `pricing-rules.test.ts` uma asserção que trava divergência entre `PLANOS[k].annualPrice` e esses valores (se um dia mudarem, o teste falha). Nenhuma outra mudança na função — fluxo Asaas, insert em `assinaturas` e valor cobrado intactos.
+Regras aplicadas:
+- Nenhum número (score de pilar, peso de critério) aparece nas amostras — só texto.
+- Conteúdo borrado com `userSelect: none`, `onCopy` bloqueado e `onContextMenu` bloqueado, igual ao bloco de plano de ação atual (evita copiar o texto via seleção).
+- Cada amostra ganha um selo discreto "Amostra — 1 de 5" / "Prévia parcial" e um link "Ver completo" que rola até o formulário no final (`scrollIntoView`).
 
-## Etapa 5 — Reconstruir `src/components/dashboard/UpgradeModal.tsx`
-- **Remover** `PLANS` hardcoded e o plano "Domínio" completo.
-- Grid volta a `xl:grid-cols-3` (era `xl:grid-cols-4`).
-- Importar `PLANOS_ARRAY`, `formatBRL`, `annualSavingBRL`, `nextTier` de `pricing-rules.ts`.
-- Manter local: ícones das métricas, CTAs por plano ("Garantir presença" / "Ampliar influência" / "Consolidar autoridade").
-- Manter `highlights.slice(0, 2)` para preservar densidade visual do modal.
+## 3. Critérios de seleção da amostra
 
-**Destaque dinâmico** — consumir `useSubscriptionStatus()`:
-```
-loading            → nenhum card destacado, sem badge (evita flash)
-plano = presenca   → destaca Influência, badge "Próximo passo"
-plano = influencia → destaca Autoridade, badge "Próximo passo"
-plano = autoridade → destaca Autoridade, badge "Seu plano atual"
-plano = null       → destaca Influência, badge "Mais escolhido"
+- **Pilar detalhado (item 3):** o pilar com **menor score entre os que têm `hasData === true`**. Exibe nome + ícone + `summary` nítido, e a `justificativa` do critério de maior peso desse pilar em `PartialReveal` (45% nítido). Score, faixa e barra ficam ocultos.
+- **Diagnóstico final (item 4):** primeiro parágrafo do diagnóstico (o que depende da faixa de `geoScore`) com `PartialReveal` a ~50%. O segundo parágrafo (que nomeia os 2 pilares mais fracos) fica de fora do teaser, já que os nomes dos 2 mais fracos já são revelados no radar (Prompt B).
+- **Plano de ação (item 5):** como não existe plano personalizado, proponho um mapa determinístico `pilar → ação prioritária` (5 entradas, reaproveitando os textos `recBad`/`recGood` que já existem em `buildPillarDetails`). A amostra mostra a ação do **pilar mais fraco**, numerada como "1 de 5", com título nítido e descrição em `PartialReveal` (40%). Sem inventar prazos, responsáveis ou métricas.
+  - Alternativa, se preferir: manter o array atual mas selecionar qual dos 5 itens mostrar pelo pilar mais fraco. Menos personalizado, mudança menor. Minha recomendação é o mapa determinístico.
+- Se nenhum pilar tiver dados (`hasData` falso em todos), as três amostras não são renderizadas — o formulário aparece direto, sem placeholder fabricado (consistente com a correção do score fabricado).
+
+## 4. Auto-unlock (usuário vindo do Hero)
+
+Confirmado e sem risco. O gate já é controlado por um único estado: `leadSubmitted`, inicializado com `cameIdentifiedFromHero` (name válido + email válido nos search params). Mover o formulário para o final não altera essa lógica — o formulário e todas as amostras ficam sob `{!leadSubmitted && ...}`, e o conteúdo completo sob `{leadSubmitted && ...}`.
+
+Portanto: **sim, quem chega identificado via URL vê tudo liberado direto, sem nenhum teaser, blur ou formulário** — a página fica idêntica ao estado pós-desbloqueio de hoje. Nenhuma mudança nos campos do formulário, no schema de validação, no `handleLeadSubmit` ou na gravação do lead.
+
+## 5. Layout final proposto (ordem do topo)
+
+```text
+1. Score geral + presença nas 3 IAs + contador fortes/críticos   [livre]
+2. Radar Estratégico em teaser (2 pilares mais fracos nomeados nos eixos)
+3. Amostra "5 pilares detalhados"  — 1 pilar (mais fraco), texto parcial
+4. Amostra "Diagnóstico final"     — 1º parágrafo, texto parcial
+5. Amostra "Plano de ação"         — ação 1 de 5, descrição parcial
+6. FORMULÁRIO (gate)               — nome / e-mail / site / celular
+7. [pós-desbloqueio] radar completo, 5 pilares, diagnóstico, plano, CTAs
 ```
 
-`highlighted` e `badge` do `pricing-rules.ts` são apenas defaults — o modal computa os seus a partir de `nextTier(plano)` e sobrescreve no render. Preservar 100% do layout, cores, animações, sub-modal "Falar com o time" e eventos `track()`.
+O card sticky do formulário atual passa a ser um bloco normal (não sticky) no fim da sequência de teasers; para não perder conversão de quem lê rápido, sugiro uma barra fina fixa no rodapé mobile com "Desbloquear análise completa" que rola até o formulário — dizer se quer isso incluído.
 
-## Etapa 6 — Verificar 4 call sites do modal
-Sem mudança de código, só confirmação visual: `AssinaturaPage`, `GeradorConteudoPage`, `TrialLockedPage`, `TrialBanner` abrem o modal e renderizam os 3 planos com destaque dinâmico correto.
+## 6. Escopo técnico da implementação (quando aprovado)
 
-## Fora do escopo (não vou tocar)
-`ProtectedRoute.tsx`, `useSubscriptionStatus.ts`, `access-control.ts`, `FeatureGate.tsx`, `handle_new_user_trial`, fluxo Asaas, valores cobrados, gating por plano, unique constraint em `assinaturas`.
-
-## Consumidores atuais de `PLANOS` que continuam funcionando
-`pricing-rules.test.ts`, `onboarding-recommendation.ts`, `RecusaModal.tsx`, `PropostaComercialPage.tsx`, `OnboardingPerguntasPage.tsx`, `responder-proposta/index.ts` — apenas adiciono campos, não removo nem renomeio.
-
-## Checklist de validação (reporto item a item ao final)
-- [ ] `pricing-rules.ts` estendido com `badge`, `highlighted`, `inheritsFrom`, `formatBRL`, `annualSavingBRL`, `PLANOS_ARRAY`, `nextTier` — consumidores atuais sem quebra
-- [ ] `_shared/pricing.ts` criado + teste de sincronia com `pricing-rules.ts`
-- [ ] `InvestSection.tsx` lê de `pricing-rules.ts` — landing pixel-idêntica
-- [ ] `EscolherPlanoPage.tsx` lê de `pricing-rules.ts` — checkout inalterado
-- [ ] `create-checkout/index.ts` importa de `_shared/pricing.ts` — valores 397/717/1.197 intactos
-- [ ] `UpgradeModal.tsx` reconstruído: sem "Domínio", 3 planos, preços 497/897/1.497 mensal e 397/717/1.197 anual, destaque dinâmico via `useSubscriptionStatus + nextTier`, sem flash no loading
-- [ ] 4 call sites do modal verificados
-- [ ] Zero mudança em ProtectedRoute, access-control, FeatureGate, gating, trigger, unique constraint
+- Arquivo único: `src/pages/PreviewPage.tsx` (reordenação de blocos + novo componente `PartialReveal` local + mapa `pilar → ação`).
+- Nenhuma mudança em `simulate-ai`, no schema do lead, na gravação de lead/proposta, no `scoreForRecords`, nem no corte validado (score + presença livres).
+- Validação por Playwright em 3 cenários: visitante anônimo (3 amostras + formulário no final), visitante identificado via URL (zero blur), e análise sem dados de pilar (amostras ausentes).
