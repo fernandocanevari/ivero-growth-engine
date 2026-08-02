@@ -903,7 +903,11 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                             <stop offset="0%" stopColor="hsl(265 70% 28%)" stopOpacity={0.4} />
                             <stop offset="100%" stopColor="hsl(330 85% 55%)" stopOpacity={0.4} />
                           </linearGradient>
+                          <filter id="teaserLabelBlur" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" />
+                          </filter>
                         </defs>
+
                       </RadarChart>
                     </ResponsiveContainer>
                     {locked && weakestNames.length === 2 && (
