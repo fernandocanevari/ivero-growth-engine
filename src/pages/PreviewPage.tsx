@@ -301,100 +301,35 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.04] blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.03] blur-[120px] pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md px-6 space-y-10 text-center relative z-10"
+        className="w-full max-w-md px-6 text-center relative z-10"
       >
-        {/* Animated logo */}
-        <div className="relative mx-auto w-32 h-32">
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{ background: "conic-gradient(from 0deg, hsl(265 70% 28% / 0.6), hsl(330 85% 55% / 0.6), hsl(265 70% 28% / 0.1), hsl(265 70% 28% / 0.6))" }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-          />
-          <div className="absolute inset-[3px] rounded-full bg-background" />
-          <motion.div
-            className="absolute inset-4 rounded-full"
-            style={{ background: "conic-gradient(from 180deg, hsl(330 85% 55% / 0.5), hsl(265 70% 28% / 0.5), hsl(330 85% 55% / 0.1), hsl(330 85% 55% / 0.5))" }}
-            animate={{ rotate: -360 }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-          />
-          <div className="absolute inset-[19px] rounded-full bg-background" />
-          <motion.div
-            className="absolute inset-8 rounded-full bg-ivero-gradient"
-            animate={{ scale: [0.85, 1, 0.85], opacity: [0.5, 0.9, 0.5] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-base tracking-widest">GEO</span>
-          </div>
-        </div>
-
-        <div className="h-12 flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-6" />
+        <div className="min-h-[64px] flex items-center justify-center">
           <AnimatePresence mode="wait">
-            <motion.div
+            <motion.p
               key={currentStep}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center gap-3"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.35 }}
+              className="text-lg font-display font-bold text-foreground"
             >
-              {(() => {
-                const StepIcon = loadingSteps[currentStep]?.icon || Search;
-                return <StepIcon className="w-5 h-5 text-ivero-pink shrink-0" />;
-              })()}
-              <span className="text-foreground font-display text-lg font-medium">
-                {loadingSteps[currentStep]?.text}
-              </span>
-            </motion.div>
+              {loadingSteps[currentStep]?.text}
+            </motion.p>
           </AnimatePresence>
         </div>
-
-        <div className="space-y-3">
-          <div className="h-2 rounded-full bg-muted overflow-hidden border border-primary/20">
-            <motion.div
-              className="h-full rounded-full bg-ivero-gradient"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
-          </div>
-          <span className="text-sm text-muted-foreground font-display">{Math.round(progress)}%</span>
-        </div>
-
-        <div className="space-y-2.5">
-          {loadingSteps.map((step, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: i <= currentStep ? 1 : 0.3, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="flex items-center gap-3 text-sm"
-            >
-              {i < currentStep ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              ) : i === currentStep ? (
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-                  <Loader2 className="w-4 h-4 text-ivero-pink shrink-0" />
-                </motion.div>
-              ) : (
-                <div className="w-4 h-4 rounded-full border border-ivero-slate/30 shrink-0" />
-              )}
-              <span className={i <= currentStep ? "text-foreground" : "text-muted-foreground/50"}>
-                {step.text}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+        <p className="text-sm text-muted-foreground mt-4">
+          Isso costuma levar alguns segundos.
+        </p>
       </motion.div>
     </div>
   );
 }
+
 
 /* ── Animated Score Circle ── */
 function ScoreCircle({ score, benchmark }: { score: number; benchmark: number }) {
