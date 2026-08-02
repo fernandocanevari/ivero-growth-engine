@@ -88,10 +88,10 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 
 /* ── Loading steps ── */
 const loadingSteps = [
-  { icon: Search, text: "Investigando como as IAs enxergam sua marca..." },
-  { icon: Globe, text: "Mapeando sua presença em ChatGPT, Gemini e Google Modo IA..." },
-  { icon: Bot, text: "Detectando onde sua marca está sendo ignorada..." },
-  { icon: BarChart3, text: "Revelando o caminho para virar referência..." },
+  { icon: Search, text: "Acessando o site da sua marca..." },
+  { icon: Globe, text: "Estou dando uma olhada no seu site..." },
+  { icon: Bot, text: "Interessante — já estou entendendo como sua marca se posiciona." },
+  { icon: BarChart3, text: "Quase lá, fechando o seu diagnóstico..." },
 ];
 
 /* ── AI engine result type ── */
@@ -301,100 +301,35 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(265,70%,28%)] opacity-[0.04] blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(330,85%,55%)] opacity-[0.03] blur-[120px] pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md px-6 space-y-10 text-center relative z-10"
+        className="w-full max-w-md px-6 text-center relative z-10"
       >
-        {/* Animated logo */}
-        <div className="relative mx-auto w-32 h-32">
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{ background: "conic-gradient(from 0deg, hsl(265 70% 28% / 0.6), hsl(330 85% 55% / 0.6), hsl(265 70% 28% / 0.1), hsl(265 70% 28% / 0.6))" }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-          />
-          <div className="absolute inset-[3px] rounded-full bg-background" />
-          <motion.div
-            className="absolute inset-4 rounded-full"
-            style={{ background: "conic-gradient(from 180deg, hsl(330 85% 55% / 0.5), hsl(265 70% 28% / 0.5), hsl(330 85% 55% / 0.1), hsl(330 85% 55% / 0.5))" }}
-            animate={{ rotate: -360 }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-          />
-          <div className="absolute inset-[19px] rounded-full bg-background" />
-          <motion.div
-            className="absolute inset-8 rounded-full bg-ivero-gradient"
-            animate={{ scale: [0.85, 1, 0.85], opacity: [0.5, 0.9, 0.5] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-base tracking-widest">GEO</span>
-          </div>
-        </div>
-
-        <div className="h-12 flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-6" />
+        <div className="min-h-[64px] flex items-center justify-center">
           <AnimatePresence mode="wait">
-            <motion.div
+            <motion.p
               key={currentStep}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center gap-3"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.35 }}
+              className="text-lg font-display font-bold text-foreground"
             >
-              {(() => {
-                const StepIcon = loadingSteps[currentStep]?.icon || Search;
-                return <StepIcon className="w-5 h-5 text-ivero-pink shrink-0" />;
-              })()}
-              <span className="text-foreground font-display text-lg font-medium">
-                {loadingSteps[currentStep]?.text}
-              </span>
-            </motion.div>
+              {loadingSteps[currentStep]?.text}
+            </motion.p>
           </AnimatePresence>
         </div>
-
-        <div className="space-y-3">
-          <div className="h-2 rounded-full bg-muted overflow-hidden border border-primary/20">
-            <motion.div
-              className="h-full rounded-full bg-ivero-gradient"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
-          </div>
-          <span className="text-sm text-muted-foreground font-display">{Math.round(progress)}%</span>
-        </div>
-
-        <div className="space-y-2.5">
-          {loadingSteps.map((step, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: i <= currentStep ? 1 : 0.3, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="flex items-center gap-3 text-sm"
-            >
-              {i < currentStep ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              ) : i === currentStep ? (
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-                  <Loader2 className="w-4 h-4 text-ivero-pink shrink-0" />
-                </motion.div>
-              ) : (
-                <div className="w-4 h-4 rounded-full border border-ivero-slate/30 shrink-0" />
-              )}
-              <span className={i <= currentStep ? "text-foreground" : "text-muted-foreground/50"}>
-                {step.text}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+        <p className="text-sm text-muted-foreground mt-4">
+          Isso costuma levar alguns segundos.
+        </p>
       </motion.div>
     </div>
   );
 }
+
 
 /* ── Animated Score Circle ── */
 function ScoreCircle({ score, benchmark }: { score: number; benchmark: number }) {
@@ -904,53 +839,61 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
             <div className="space-y-5">
               <SectionHeader icon={Target} title="Radar Estratégico" subtitle="Os 5 pilares que determinam se a IA recomenda sua marca" />
 
-              <div className={`w-full h-72 relative ${!leadSubmitted ? "select-none pointer-events-none blur-[6px] opacity-45" : ""}`}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
-                    <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
-                    <PolarAngleAxis
-                      dataKey="subject"
-                      tick={{ fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }}
-                    />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar
-                      name="Sua Marca"
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#radarGradient)"
-                      fillOpacity={0.3}
-                      strokeWidth={2.5}
-                    />
-                    <defs>
-                      <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="hsl(265 70% 28%)" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="hsl(330 85% 55%)" stopOpacity={0.4} />
-                      </linearGradient>
-                    </defs>
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+              {(() => {
+                // Quando bloqueado: forma/valores borrados, mas os nomes dos 2 pilares
+                // mais fracos permanecem legíveis nos próprios eixos do radar.
+                const scoredPillars = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
+                const weakestNames = [...scoredPillars].sort((a: any, b: any) => a.score - b.score).slice(0, 2).map((p: any) => p.name);
 
-              {/* Teaser livre: nomes dos 2 pilares mais fracos, sem valores */}
-              {!leadSubmitted && (() => {
-                const scored = (dynamicPillarDetails || []).filter((p: any) => p?.hasData && typeof p.score === "number");
-                if (scored.length < 2) return null;
-                const weakest = [...scored].sort((a: any, b: any) => a.score - b.score).slice(0, 2);
+                const TeaserTick = (props: any) => {
+                  const { payload, x, y, textAnchor } = props;
+                  if (!weakestNames.includes(payload.value)) return null;
+                  return (
+                    <text x={x} y={y} dy={4} textAnchor={textAnchor} className="fill-red-700" fontSize={12} fontWeight={700}>
+                      {payload.value}
+                    </text>
+                  );
+                };
+
+                const locked = !leadSubmitted;
                 return (
-                  <div className="rounded-xl bg-red-50/80 border border-red-200/60 p-4 space-y-2">
-                    <p className="text-xs font-semibold text-red-700/80 uppercase tracking-widest">Pilares que mais pesam contra sua marca</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {weakest.map((p: any) => (
-                        <span key={p.name} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white/80 text-red-700 border border-red-200 shadow-sm">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          {p.name}
-                        </span>
-                      ))}
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60">
-                        <Lock className="w-3.5 h-3.5" />
+                  <div
+                    className={`w-full h-72 relative ${
+                      locked
+                        ? "select-none pointer-events-none [&_.recharts-polar-grid]:blur-[6px] [&_.recharts-polar-grid]:opacity-45 [&_.recharts-radar]:blur-[6px] [&_.recharts-radar]:opacity-45"
+                        : ""
+                    }`}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={dynamicRadarData} cx="50%" cy="50%" outerRadius="75%">
+                        <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={locked && weakestNames.length === 2 ? (TeaserTick as any) : { fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 500 }}
+                        />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Sua Marca"
+                          dataKey="value"
+                          stroke="hsl(var(--primary))"
+                          fill="url(#radarGradient)"
+                          fillOpacity={0.3}
+                          strokeWidth={2.5}
+                        />
+                        <defs>
+                          <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="hsl(265 70% 28%)" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="hsl(330 85% 55%)" stopOpacity={0.4} />
+                          </linearGradient>
+                        </defs>
+                      </RadarChart>
+                    </ResponsiveContainer>
+                    {locked && weakestNames.length === 2 && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-muted/70 text-muted-foreground border border-border/60">
+                        <Lock className="w-3 h-3" />
                         Scores e demais pilares bloqueados
-                      </span>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
