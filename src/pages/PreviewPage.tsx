@@ -1454,7 +1454,34 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </PremiumCard>
             </AnimatedSection>
 
-            {/* ── CTA Proposta Comercial (logo abaixo do card unificado) ── */}
+
+
+            {/* ── Ivero Features ── */}
+            <AnimatedSection delay={0.68}>
+              <PremiumCard glow>
+                <div className="space-y-6">
+                  <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {iveroFeatures.map((feat, i) => {
+                      const Icon = feat.icon;
+                      return (
+                        <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
+                            <Icon className="w-5 h-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{feat.label}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </PremiumCard>
+            </AnimatedSection>
+
+            {/* ── CTA Proposta Comercial (após bloco de features) ── */}
             <AnimatedSection delay={0.6}>
               <div className="relative rounded-2xl bg-ivero-gradient p-8 sm:p-10 text-center space-y-5 shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
                 <h3 className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground leading-tight">
@@ -1497,33 +1524,6 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </div>
-            </AnimatedSection>
-
-
-
-            {/* ── Ivero Features ── */}
-            <AnimatedSection delay={0.68}>
-              <PremiumCard glow>
-                <div className="space-y-6">
-                  <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {iveroFeatures.map((feat, i) => {
-                      const Icon = feat.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
-                            <Icon className="w-5 h-5 text-primary-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{feat.label}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </PremiumCard>
             </AnimatedSection>
 
             {/* ── CTA final (repetição adaptada) ── */}
