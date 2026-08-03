@@ -1454,6 +1454,53 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </PremiumCard>
             </AnimatedSection>
 
+            {/* ── CTA Proposta Comercial (logo abaixo do card unificado) ── */}
+            <AnimatedSection delay={0.6}>
+              <div className="relative rounded-2xl bg-ivero-gradient p-8 sm:p-10 text-center space-y-5 shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
+                <h3 className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground leading-tight">
+                  Com base no seu diagnóstico, geramos um plano comercial sob medida
+                </h3>
+                <Button
+                  size="lg"
+                  className="h-14 px-8 text-base font-bold bg-white text-primary hover:bg-white/90 rounded-full shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.55)]"
+                  onClick={async () => {
+                    try {
+                      const radar = dynamicRadarData;
+                      const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
+                        body: {
+                          empresa_nome: extractBrandFromUrl(siteUrl),
+                          empresa_site: siteUrl,
+                          contato_nome: leadData?.name || null,
+                          contato_email: leadData?.email || null,
+                          contato_telefone: leadData?.phone || null,
+                          origem: "preview",
+                          score_geral: scoreForRecords,
+                          diagnostico_snapshot: {
+                            radar,
+                            pillarDetails: dynamicPillarDetails,
+                            aiEngines,
+                            siteUrl,
+                          },
+                        },
+                      });
+                      if (error || !data?.slug) {
+                        toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
+                        return;
+                      }
+                      navigate(`/propostacomercial/${data.slug}`);
+                    } catch (e: any) {
+                      toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                    }
+                  }}
+                >
+                  Ver minha proposta personalizada
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </div>
+            </AnimatedSection>
+
+
+
             {/* ── Ivero Features ── */}
             <AnimatedSection delay={0.68}>
               <PremiumCard glow>
