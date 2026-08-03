@@ -1211,14 +1211,24 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           <>
             {/* ── 5 Pilares Detalhados ── */}
             <AnimatedSection delay={0.05}>
-              <div className="space-y-2 mb-2">
-                <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Diagnóstico Detalhado
-                </h2>
-                <p className="text-sm sm:text-base text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
+              <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-5 sm:p-6 mb-2">
+                <div className="absolute -top-16 -right-10 w-44 h-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex items-start gap-3 sm:gap-4">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-ivero-gradient shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.55)] shrink-0">
+                    <Brain className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                      Diagnóstico <span className="text-gradient">Detalhado</span>
+                    </h2>
+                    <p className="text-sm sm:text-base text-foreground/80 font-medium">
+                      Cada pilar impacta diretamente se a IA <strong className="text-primary">recomenda</strong> ou <strong className="text-primary">ignora</strong> sua marca.
+                    </p>
+                  </div>
+                </div>
               </div>
             </AnimatedSection>
+
 
             {dynamicPillarDetails.map((pillar, idx) => {
               const PillarIcon = pillar.icon;
