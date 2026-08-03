@@ -1481,7 +1481,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </PremiumCard>
             </AnimatedSection>
 
-            {/* ── CTA Proposta Comercial (logo abaixo do card unificado) ── */}
+            {/* ── CTA Proposta Comercial (após bloco de features) ── */}
             <AnimatedSection delay={0.6}>
               <div className="relative rounded-2xl bg-ivero-gradient p-8 sm:p-10 text-center space-y-5 shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
                 <h3 className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground leading-tight">
