@@ -1362,12 +1362,12 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                     );
                   })()}
                 </div>
-              </PremiumCard>
-            </AnimatedSection>
+                </div>
 
-            {/* ── Plano de Ação (bloqueado + watermark) ── */}
-            <AnimatedSection delay={0.56}>
-              <PremiumCard glow>
+                <div className="my-6 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+
+                <div className="space-y-5">
+
                 <div className="space-y-5">
                   <SectionHeader
                     icon={Rocket}
