@@ -1333,22 +1333,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               );
             })}
 
-            {/* ── CTA Tensão — fechamento ── */}
-            <AnimatedSection delay={0.5}>
-              <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
-                <p className="text-2xl sm:text-3xl font-display font-bold text-foreground max-w-2xl mx-auto leading-tight">
-                  Escolha o plano certo para sua marca virar referência.
-                </p>
-                <Button
-                  size="lg"
-                  className="h-12 px-8 bg-ivero-gradient hover:opacity-90 text-primary-foreground font-bold text-base rounded-full shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)]"
-                  onClick={() => goToSignup("cta_tensao_preview")}
-                >
-                  Quero garantir meu plano agora
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </div>
-            </AnimatedSection>
+
+
 
             {/* ── Diagnóstico Final ── */}
             <AnimatedSection delay={0.54}>
