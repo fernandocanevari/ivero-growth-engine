@@ -1362,13 +1362,11 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                     );
                   })()}
                 </div>
-                </div>
 
                 <div className="my-6 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
                 <div className="space-y-5">
 
-                <div className="space-y-5">
                   <SectionHeader
                     icon={Rocket}
                     title="Plano de Ação Recomendado"
