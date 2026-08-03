@@ -1479,52 +1479,28 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </PremiumCard>
             </AnimatedSection>
 
-            {/* ── CTA Proposta Comercial ── */}
-            <AnimatedSection delay={0.7}>
-              <div className="relative rounded-2xl bg-ivero-gradient p-8 sm:p-10 text-center space-y-5 shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
-                <h3 className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground leading-tight">
-                  Com base no seu diagnóstico, geramos um plano comercial sob medida
-                </h3>
-                <Button
-                  size="lg"
-                  className="h-14 px-8 text-base font-bold bg-white text-primary hover:bg-white/90 rounded-full shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.55)]"
-                  onClick={async () => {
-                    try {
-                      const radar = dynamicRadarData;
-                      const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
-                        body: {
-                          empresa_nome: extractBrandFromUrl(siteUrl),
-                          empresa_site: siteUrl,
-                          contato_nome: leadData?.name || null,
-                          contato_email: leadData?.email || null,
-                          contato_telefone: leadData?.phone || null,
-                          origem: "preview",
-                          score_geral: scoreForRecords,
-                          diagnostico_snapshot: {
-                            radar,
-                            pillarDetails: dynamicPillarDetails,
-                            aiEngines,
-                            siteUrl,
-                          },
-                        },
-                      });
-                      if (error || !data?.slug) {
-                        toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
-                        return;
-                      }
-                      navigate(`/propostacomercial/${data.slug}`);
-                    } catch (e: any) {
-                      toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
-                    }
-                  }}
-                >
-                  Ver minha proposta personalizada
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+            {/* ── CTA final (repetição adaptada) ── */}
+            <AnimatedSection delay={0.74}>
+              <div className="relative overflow-hidden rounded-[1.75rem] p-6 sm:p-8 text-center bg-gradient-to-br from-ivero-dark via-ivero-purple to-accent shadow-[0_18px_56px_-22px_hsl(var(--accent)/0.45)] border border-primary-foreground/10">
+                <div className="absolute -top-20 -left-12 w-56 h-56 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 -right-12 w-56 h-56 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
+                <div className="relative z-10 max-w-2xl mx-auto space-y-4">
+                  <h3 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-primary-foreground leading-[1.12] tracking-tight">
+                    Agora que você viu seu diagnóstico e seu plano de ação: pare de ser invisível para as IAs.
+                    <span className="block text-gradient mt-1">Domine sua categoria.</span>
+                  </h3>
+                  <Button
+                    size="lg"
+                    className="group h-12 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-base rounded-full shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:scale-[1.01] transition-all duration-300"
+                    onClick={() => goToSignup("cta_final_preview")}
+                  >
+                    Criar minha conta — é grátis
+                    <ArrowRight className="ml-2 w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                </div>
               </div>
             </AnimatedSection>
 
-            {/* Final gradient CTA removido — proposta personalizada acima é o fechamento. */}
           </>
         )}
       </div>
