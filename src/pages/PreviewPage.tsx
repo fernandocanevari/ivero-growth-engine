@@ -1211,14 +1211,24 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
           <>
             {/* ── 5 Pilares Detalhados ── */}
             <AnimatedSection delay={0.05}>
-              <div className="space-y-2 mb-2">
-                <h2 className="text-base sm:text-lg font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Diagnóstico Detalhado
-                </h2>
-                <p className="text-sm sm:text-base text-muted-foreground">Cada pilar impacta diretamente se a IA recomenda ou ignora sua marca.</p>
+              <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-5 sm:p-6 mb-2">
+                <div className="absolute -top-16 -right-10 w-44 h-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex items-start gap-3 sm:gap-4">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-ivero-gradient shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.55)] shrink-0">
+                    <Brain className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                      Diagnóstico <span className="text-gradient">Detalhado</span>
+                    </h2>
+                    <p className="text-sm sm:text-base text-foreground/80 font-medium">
+                      Cada pilar impacta diretamente se a IA <strong className="text-primary">recomenda</strong> ou <strong className="text-primary">ignora</strong> sua marca.
+                    </p>
+                  </div>
+                </div>
               </div>
             </AnimatedSection>
+
 
             {dynamicPillarDetails.map((pillar, idx) => {
               const PillarIcon = pillar.icon;
@@ -1323,22 +1333,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               );
             })}
 
-            {/* ── CTA Tensão — fechamento ── */}
-            <AnimatedSection delay={0.5}>
-              <div className="rounded-2xl border border-primary/20 bg-ivero-gradient-soft p-10 text-center space-y-5">
-                <p className="text-2xl sm:text-3xl font-display font-bold text-foreground max-w-2xl mx-auto leading-tight">
-                  Escolha o plano certo para sua marca virar referência.
-                </p>
-                <Button
-                  size="lg"
-                  className="h-12 px-8 bg-ivero-gradient hover:opacity-90 text-primary-foreground font-bold text-base rounded-full shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)]"
-                  onClick={() => goToSignup("cta_tensao_preview")}
-                >
-                  Quero garantir meu plano agora
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </div>
-            </AnimatedSection>
+
+
 
             {/* ── Diagnóstico Final ── */}
             <AnimatedSection delay={0.54}>
@@ -1366,13 +1362,11 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                     );
                   })()}
                 </div>
-              </PremiumCard>
-            </AnimatedSection>
 
-            {/* ── Plano de Ação (bloqueado + watermark) ── */}
-            <AnimatedSection delay={0.56}>
-              <PremiumCard glow>
+                <div className="my-6 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+
                 <div className="space-y-5">
+
                   <SectionHeader
                     icon={Rocket}
                     title="Plano de Ação Recomendado"
@@ -1460,33 +1454,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </PremiumCard>
             </AnimatedSection>
 
-            {/* ── Ivero Features ── */}
-            <AnimatedSection delay={0.68}>
-              <PremiumCard glow>
-                <div className="space-y-6">
-                  <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {iveroFeatures.map((feat, i) => {
-                      const Icon = feat.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
-                            <Icon className="w-5 h-5 text-primary-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{feat.label}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </PremiumCard>
-            </AnimatedSection>
-
-            {/* ── CTA Proposta Comercial ── */}
-            <AnimatedSection delay={0.7}>
+            {/* ── CTA Proposta Comercial (logo abaixo do card unificado) ── */}
+            <AnimatedSection delay={0.6}>
               <div className="relative rounded-2xl bg-ivero-gradient p-8 sm:p-10 text-center space-y-5 shadow-[0_12px_48px_-12px_hsl(var(--primary)/0.45)] max-w-2xl mx-auto">
                 <h3 className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground leading-tight">
                   Com base no seu diagnóstico, geramos um plano comercial sob medida
@@ -1530,7 +1499,55 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </div>
             </AnimatedSection>
 
-            {/* Final gradient CTA removido — proposta personalizada acima é o fechamento. */}
+
+
+            {/* ── Ivero Features ── */}
+            <AnimatedSection delay={0.68}>
+              <PremiumCard glow>
+                <div className="space-y-6">
+                  <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {iveroFeatures.map((feat, i) => {
+                      const Icon = feat.icon;
+                      return (
+                        <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 border border-border/50 p-4 hover:border-primary/25 hover:bg-primary/5 hover:shadow-sm transition-all group">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm group-hover:shadow-md transition-shadow shrink-0">
+                            <Icon className="w-5 h-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{feat.label}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feat.desc}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </PremiumCard>
+            </AnimatedSection>
+
+            {/* ── CTA final (repetição adaptada) ── */}
+            <AnimatedSection delay={0.74}>
+              <div className="relative overflow-hidden rounded-[1.75rem] p-6 sm:p-8 text-center bg-gradient-to-br from-ivero-dark via-ivero-purple to-accent shadow-[0_18px_56px_-22px_hsl(var(--accent)/0.45)] border border-primary-foreground/10">
+                <div className="absolute -top-20 -left-12 w-56 h-56 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 -right-12 w-56 h-56 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
+                <div className="relative z-10 max-w-2xl mx-auto space-y-4">
+                  <h3 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-primary-foreground leading-[1.12] tracking-tight">
+                    Agora que você viu seu diagnóstico e seu plano de ação: pare de ser invisível para as IAs.
+                    <span className="block text-gradient mt-1">Domine sua categoria.</span>
+                  </h3>
+                  <Button
+                    size="lg"
+                    className="group h-12 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-base rounded-full shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:scale-[1.01] transition-all duration-300"
+                    onClick={() => goToSignup("cta_final_preview")}
+                  >
+                    Criar minha conta — é grátis
+                    <ArrowRight className="ml-2 w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                </div>
+              </div>
+            </AnimatedSection>
+
           </>
         )}
       </div>
