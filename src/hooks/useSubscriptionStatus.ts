@@ -48,6 +48,8 @@ export function useSubscriptionStatus() {
     const fetchAssinatura = async () => {
       setAssinaturaLoading(true);
 
+      if (!authResolved) return; // mantém loading até a sessão resolver
+
       if (!userId) {
         if (!cancelled) {
           setAssinatura(null);
@@ -75,9 +77,9 @@ export function useSubscriptionStatus() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, authResolved]);
 
-  const isLoading = roleLoading || assinaturaLoading;
+  const isLoading = roleLoading || !authResolved || assinaturaLoading;
 
   let isTrial = false;
   let isPaid = false;
