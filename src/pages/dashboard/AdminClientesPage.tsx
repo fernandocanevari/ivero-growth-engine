@@ -515,7 +515,7 @@ export default function AdminClientesPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Celular:</span>{" "}
-                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_phone || "—"}</span>
+                      <span className="font-medium text-foreground">{selectedClient.celular || "—"}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Cadastro:</span>{" "}
