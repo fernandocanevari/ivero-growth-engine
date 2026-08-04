@@ -715,6 +715,7 @@ export type Database = {
           celular: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
           is_first_login: boolean
           nome_completo: string | null
@@ -727,6 +728,7 @@ export type Database = {
           celular?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           is_first_login?: boolean
           nome_completo?: string | null
@@ -739,6 +741,7 @@ export type Database = {
           celular?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           is_first_login?: boolean
           nome_completo?: string | null
