@@ -72,23 +72,23 @@ export default function AdminClientesPage() {
     queryKey: ["admin_clients_full"],
     enabled: isAdmin,
     queryFn: async () => {
-      // Fetch profiles
+      // Fetch profiles — fonte da identidade da pessoa (PROMPT 10)
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
-        .select("user_id, display_name, created_at")
+        .select("user_id, display_name, nome_completo, celular, email, created_at")
         .order("created_at", { ascending: false });
       if (pErr) throw pErr;
       if (!profiles?.length) return [];
 
       const userIds = profiles.map((p) => p.user_id);
 
-      // Fetch onboarding, brand_settings, campaigns in parallel
-      const [onboardingRes, brandRes, campaignsRes, rolesRes] = await Promise.all([
-        supabase.from("client_onboarding").select("*").in("user_id", userIds),
+      // Fetch brand_settings, campaigns, roles in parallel
+      const [brandRes, campaignsRes, rolesRes] = await Promise.all([
         supabase.from("brand_settings").select("*").in("user_id", userIds),
         supabase.from("campaigns").select("user_id").in("user_id", userIds),
         supabase.from("user_roles").select("user_id, role"),
       ]);
+
 
       // Concorrentes vivem em outra tabela (ver PROMPT 3.5) — buscar por brand_id
       const brandIds = (brandRes.data ?? []).map((b) => b.id).filter(Boolean) as string[];
