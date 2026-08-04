@@ -645,6 +645,9 @@ export default function AdminClientesPage() {
           )}
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
+
   );
 }
