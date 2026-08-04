@@ -7,8 +7,10 @@ import { cn } from "@/lib/utils";
 import {
   ShieldAlert, Users, Download, Search, TrendingUp, TrendingDown,
   AlertTriangle, Clock, UserCheck, UserX, BarChart3, Eye, Filter,
-  CalendarIcon, X,
+  CalendarIcon, X, Mail,
 } from "lucide-react";
+import { AdminLeadsPanel } from "@/components/admin/AdminLeadsPanel";
+
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
