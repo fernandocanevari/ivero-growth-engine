@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
@@ -106,14 +106,42 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: settings } = useBrandSettings();
-  const { isAdmin } = useUserRole();
-  const { isPaid, isTrial, plano } = useSubscriptionStatus();
+  const { isAdmin: isAdminLive, isLoading: roleLoading } = useUserRole();
+  const {
+    isPaid: isPaidLive,
+    isTrial: isTrialLive,
+    plano: planoLive,
+    isLoading: subscriptionLoading,
+  } = useSubscriptionStatus();
+
+  // Durante a revalidação (ex.: volta o foco da aba) os hooks voltam a "loading"
+  // e os valores caem para o default (não-admin / trial). Em vez de renderizar o
+  // estado travado por padrão, mantemos o último estado confirmado.
+  const validating = roleLoading || subscriptionLoading;
+  const lastResolved = useRef({
+    isAdmin: isAdminLive,
+    isPaid: isPaidLive,
+    isTrial: isTrialLive,
+    plano: planoLive,
+  });
+  if (!validating) {
+    lastResolved.current = {
+      isAdmin: isAdminLive,
+      isPaid: isPaidLive,
+      isTrial: isTrialLive,
+      plano: planoLive,
+    };
+  }
+  const { isAdmin, isPaid, isTrial, plano } = validating
+    ? lastResolved.current
+    : { isAdmin: isAdminLive, isPaid: isPaidLive, isTrial: isTrialLive, plano: planoLive };
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const displayName = settings?.brand_name || "Sua Marca";
   const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
-  const showLockState = !isAdmin;
+  // Não mostra cadeados enquanto a validação de role/assinatura está em andamento.
+  const showLockState = !isAdmin && !validating;
 
   const allGroups = isAdmin ? [...menuGroups, adminGroup] : menuGroups;
 
