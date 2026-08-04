@@ -15,6 +15,8 @@ export function useSubscriptionStatus() {
   const [assinaturaLoading, setAssinaturaLoading] = useState(true);
   const [assinatura, setAssinatura] = useState<AssinaturaRow | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  // Enquanto a sessão não resolve, userId === null não significa "sem usuário".
+  const [authResolved, setAuthResolved] = useState(false);
 
   // Track auth user (server-validated) and react to login/logout
   useEffect(() => {
@@ -22,11 +24,15 @@ export function useSubscriptionStatus() {
 
     const sync = async () => {
       const { data } = await supabase.auth.getUser();
-      if (!cancelled) setUserId(data.user?.id ?? null);
+      if (!cancelled) {
+        setUserId(data.user?.id ?? null);
+        setAuthResolved(true);
+      }
     };
     sync();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthResolved(true);
       setUserId(session?.user?.id ?? null);
     });
 
@@ -41,6 +47,8 @@ export function useSubscriptionStatus() {
 
     const fetchAssinatura = async () => {
       setAssinaturaLoading(true);
+
+      if (!authResolved) return; // mantém loading até a sessão resolver
 
       if (!userId) {
         if (!cancelled) {
@@ -69,9 +77,9 @@ export function useSubscriptionStatus() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, authResolved]);
 
-  const isLoading = roleLoading || assinaturaLoading;
+  const isLoading = roleLoading || !authResolved || assinaturaLoading;
 
   let isTrial = false;
   let isPaid = false;
