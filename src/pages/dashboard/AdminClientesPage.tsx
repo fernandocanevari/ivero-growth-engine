@@ -156,8 +156,12 @@ export default function AdminClientesPage() {
           return {
             user_id: p.user_id,
             display_name: p.display_name,
+            nome_completo: p.nome_completo,
+            celular: p.celular,
+            email: p.email,
             created_at: p.created_at,
-            onboarding: onboardingMap.get(p.user_id) ?? null,
+            onboarding: (b ? onboardingByBrandId.get(b.id) : null) ?? null,
+
             brand: b
               ? {
                   id: b.id,
