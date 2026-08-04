@@ -237,10 +237,10 @@ export default function AdminClientesPage() {
   const exportToExcel = () => {
     if (!filtered?.length) return;
     const rows = filtered.map((c) => ({
-      Nome: c.display_name || "Sem nome",
-      "Contato": c.brand?.contact_name || "—",
-      "E-mail": c.brand?.contact_email || "—",
-      "Celular": c.brand?.contact_phone || "—",
+      Nome: c.nome_completo || c.display_name || "Sem nome",
+      "E-mail": c.email || "—",
+      "Celular": c.celular || "—",
+
       Marca: c.brand?.brand_name || "—",
       Setor: c.brand?.sector || "—",
       Site: c.brand?.website || "—",
