@@ -33,6 +33,9 @@ import * as XLSX from "xlsx";
 interface ClientRow {
   user_id: string;
   display_name: string | null;
+  nome_completo: string | null;
+  celular: string | null;
+  email: string | null;
   created_at: string;
   onboarding?: {
     question_1: string;
@@ -41,6 +44,7 @@ interface ClientRow {
     completed: boolean;
     created_at: string;
   } | null;
+
   brand?: {
     id?: string;
     brand_name: string;
@@ -68,34 +72,50 @@ export default function AdminClientesPage() {
     queryKey: ["admin_clients_full"],
     enabled: isAdmin,
     queryFn: async () => {
-      // Fetch profiles
+      // Fetch profiles — fonte da identidade da pessoa (PROMPT 10)
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
-        .select("user_id, display_name, created_at")
+        .select("user_id, display_name, nome_completo, celular, email, created_at")
         .order("created_at", { ascending: false });
       if (pErr) throw pErr;
       if (!profiles?.length) return [];
 
       const userIds = profiles.map((p) => p.user_id);
 
-      // Fetch onboarding, brand_settings, campaigns in parallel
-      const [onboardingRes, brandRes, campaignsRes, rolesRes] = await Promise.all([
-        supabase.from("client_onboarding").select("*").in("user_id", userIds),
+      // Fetch brand_settings, campaigns, roles in parallel
+      const [brandRes, campaignsRes, rolesRes] = await Promise.all([
         supabase.from("brand_settings").select("*").in("user_id", userIds),
         supabase.from("campaigns").select("user_id").in("user_id", userIds),
         supabase.from("user_roles").select("user_id, role"),
       ]);
 
-      // Concorrentes vivem em outra tabela (ver PROMPT 3.5) — buscar por brand_id
+
+      // Concorrentes e respostas de onboarding vivem por brand_id
       const brandIds = (brandRes.data ?? []).map((b) => b.id).filter(Boolean) as string[];
-      const competitorsRes = brandIds.length > 0
-        ? await supabase
-            .from("competitors")
-            .select("brand_id, nome, created_at")
-            .in("brand_id", brandIds)
-            .eq("aprovado_pelo_usuario", true)
-            .order("created_at", { ascending: true })
-        : { data: [] as { brand_id: string; nome: string }[] };
+      const [competitorsRes, onboardingRes] = await Promise.all([
+        brandIds.length > 0
+          ? supabase
+              .from("competitors")
+              .select("brand_id, nome, created_at")
+              .in("brand_id", brandIds)
+              .eq("aprovado_pelo_usuario", true)
+              .order("created_at", { ascending: true })
+          : Promise.resolve({ data: [] as { brand_id: string; nome: string }[] }),
+        brandIds.length > 0
+          ? supabase
+              .from("onboarding_responses")
+              .select("brand_id, p1_maturidade_ia, p2_criterio_mercado, p3_maior_risco, created_at")
+              .in("brand_id", brandIds)
+          : Promise.resolve({
+              data: [] as {
+                brand_id: string;
+                p1_maturidade_ia: string | null;
+                p2_criterio_mercado: string | null;
+                p3_maior_risco: string | null;
+                created_at: string;
+              }[],
+            }),
+      ]);
 
       const mainCompetitorByBrandId = new Map<string, string>();
       (competitorsRes.data ?? []).forEach((c) => {
@@ -104,9 +124,18 @@ export default function AdminClientesPage() {
         }
       });
 
-      const onboardingMap = new Map(
-        (onboardingRes.data ?? []).map((o) => [o.user_id, o])
-      );
+      // Onboarding atual: onboarding_responses (client_onboarding é legado)
+      const onboardingByBrandId = new Map<string, ClientRow["onboarding"]>();
+      (onboardingRes.data ?? []).forEach((o) => {
+        onboardingByBrandId.set(o.brand_id, {
+          question_1: o.p1_maturidade_ia ?? "",
+          question_2: o.p2_criterio_mercado ?? "",
+          question_3: o.p3_maior_risco ?? "",
+          completed: Boolean(o.p1_maturidade_ia && o.p2_criterio_mercado && o.p3_maior_risco),
+          created_at: o.created_at,
+        });
+      });
+
       const brandMap = new Map(
         (brandRes.data ?? []).map((b) => [b.user_id, b])
       );
@@ -127,8 +156,12 @@ export default function AdminClientesPage() {
           return {
             user_id: p.user_id,
             display_name: p.display_name,
+            nome_completo: p.nome_completo,
+            celular: p.celular,
+            email: p.email,
             created_at: p.created_at,
-            onboarding: onboardingMap.get(p.user_id) ?? null,
+            onboarding: (b ? onboardingByBrandId.get(b.id) : null) ?? null,
+
             brand: b
               ? {
                   id: b.id,
@@ -172,6 +205,9 @@ export default function AdminClientesPage() {
     const term = search.toLowerCase();
     if (term && !(
       (c.display_name?.toLowerCase().includes(term)) ||
+      (c.nome_completo?.toLowerCase().includes(term)) ||
+      (c.email?.toLowerCase().includes(term)) ||
+
       (c.brand?.brand_name?.toLowerCase().includes(term)) ||
       (c.brand?.sector?.toLowerCase().includes(term))
     )) return false;
@@ -204,10 +240,10 @@ export default function AdminClientesPage() {
   const exportToExcel = () => {
     if (!filtered?.length) return;
     const rows = filtered.map((c) => ({
-      Nome: c.display_name || "Sem nome",
-      "Contato": c.brand?.contact_name || "—",
-      "E-mail": c.brand?.contact_email || "—",
-      "Celular": c.brand?.contact_phone || "—",
+      Nome: c.nome_completo || c.display_name || "Sem nome",
+      "E-mail": c.email || "—",
+      "Celular": c.celular || "—",
+
       Marca: c.brand?.brand_name || "—",
       Setor: c.brand?.sector || "—",
       Site: c.brand?.website || "—",
@@ -404,9 +440,10 @@ export default function AdminClientesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-foreground">{c.brand?.contact_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground">{c.brand?.contact_email || ""}</div>
-                    <div className="text-xs text-muted-foreground">{c.brand?.contact_phone || ""}</div>
+                    <div className="text-sm text-foreground">{c.nome_completo || c.display_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{c.email || ""}</div>
+                    <div className="text-xs text-muted-foreground">{c.celular || ""}</div>
+
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-foreground">{c.brand?.brand_name || "—"}</div>
@@ -473,15 +510,15 @@ export default function AdminClientesPage() {
                   <CardContent className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-muted-foreground">Nome:</span>{" "}
-                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_name || "—"}</span>
+                      <span className="font-medium text-foreground">{selectedClient.nome_completo || selectedClient.display_name || "—"}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">E-mail:</span>{" "}
-                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_email || "—"}</span>
+                      <span className="font-medium text-foreground">{selectedClient.email || "—"}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Celular:</span>{" "}
-                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_phone || "—"}</span>
+                      <span className="font-medium text-foreground">{selectedClient.celular || "—"}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Cadastro:</span>{" "}
