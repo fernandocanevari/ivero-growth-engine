@@ -31,7 +31,10 @@ export function useSubscriptionStatus() {
     };
     sync();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // Ignora eventos sem sessão (ex.: INITIAL_SESSION antes da recuperação):
+      // marcariam authResolved cedo demais, com userId null → flash de bloqueio.
+      if (!session && event !== "SIGNED_OUT") return;
       setAuthResolved(true);
       setUserId(session?.user?.id ?? null);
     });

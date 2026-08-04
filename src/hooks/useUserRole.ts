@@ -18,7 +18,13 @@ export function useUserRole() {
       setAuthResolved(true);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // O supabase-js emite INITIAL_SESSION (e às vezes outros eventos) sem
+      // sessão antes da recuperação terminar. Tratar isso como "resolvido"
+      // fazia o estado virar "sem usuário / não-admin" por alguns frames.
+      // Só um SIGNED_OUT explícito (ou o getSession acima) resolve sem sessão.
+      if (!session && event !== "SIGNED_OUT") return;
+
       const newId = session?.user?.id ?? null;
       setAuthResolved(true);
       setUserId((prev) => {
