@@ -35,7 +35,7 @@ import AssinaturaPage from "./pages/dashboard/AssinaturaPage";
 import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
-import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
+
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
