@@ -33,6 +33,9 @@ import * as XLSX from "xlsx";
 interface ClientRow {
   user_id: string;
   display_name: string | null;
+  nome_completo: string | null;
+  celular: string | null;
+  email: string | null;
   created_at: string;
   onboarding?: {
     question_1: string;
@@ -41,6 +44,7 @@ interface ClientRow {
     completed: boolean;
     created_at: string;
   } | null;
+
   brand?: {
     id?: string;
     brand_name: string;
