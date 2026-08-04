@@ -71,6 +71,10 @@ export default function AdminClientesPage() {
   const { data: clients, isLoading } = useQuery({
     queryKey: ["admin_clients_full"],
     enabled: isAdmin,
+    // Mantém os dados anteriores visíveis durante revalidação (evita o "flash"
+    // da lista ao reabrir a aba ou abrir o detalhe de um cliente).
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (previous) => previous,
     queryFn: async () => {
       // Fetch profiles — fonte da identidade da pessoa (PROMPT 10)
       const { data: profiles, error: pErr } = await supabase
@@ -200,7 +204,9 @@ export default function AdminClientesPage() {
     setSearch("");
   };
 
-  const filtered = clients?.filter((c) => {
+  const filtered = useMemo(
+    () =>
+      clients?.filter((c) => {
     // Text search
     const term = search.toLowerCase();
     if (term && !(
@@ -228,8 +234,10 @@ export default function AdminClientesPage() {
       if (created > end) return false;
     }
 
-    return true;
-  });
+        return true;
+      }),
+    [clients, search, diagFilter, sectorFilter, dateFrom, dateTo],
+  );
 
   // Analytics
   const total = clients?.length ?? 0;
@@ -261,7 +269,7 @@ export default function AdminClientesPage() {
     XLSX.writeFile(wb, `clientes-ivero-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  if (roleLoading || isLoading) {
+  if ((roleLoading || isLoading) && !clients) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground text-sm">Carregando...</p>
