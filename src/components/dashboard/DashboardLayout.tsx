@@ -25,7 +25,7 @@ import { useSubscriptionGate } from "@/components/ProtectedRoute";
 
 export default function DashboardLayout() {
   
-  const { isPaid, isAdmin, isTrial, plano } = useSubscriptionStatus();
+  const { isPaid, isAdmin, isTrial, plano, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const location = useLocation();
   const navigate = useNavigate();
   const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
@@ -68,10 +68,14 @@ export default function DashboardLayout() {
     isAdmin,
     isTrial,
   );
-  const lockedInfo = allowAccess ? null : getLockedRouteInfo(location.pathname);
-  const lockedRequiredTier = allowAccess
-    ? undefined
-    : getRequiredTier(location.pathname) ?? undefined;
+  // Enquanto a assinatura/role está sendo (re)validada — inclusive no refetch
+  // disparado ao voltar o foco da aba — não renderizamos a tela de bloqueio.
+  // Mantém a tela atual/nada até resolver, evitando o flash "Recurso premium".
+  const showLockedScreen = !allowAccess && !subscriptionLoading;
+  const lockedInfo = showLockedScreen ? getLockedRouteInfo(location.pathname) : null;
+  const lockedRequiredTier = showLockedScreen
+    ? getRequiredTier(location.pathname) ?? undefined
+    : undefined;
 
   // Perfil da Marca: abre automaticamente após o 1º diagnóstico, se ainda não preenchido
   // e o usuário não pediu para adiar (skippedRecently = últimos 3 dias).
