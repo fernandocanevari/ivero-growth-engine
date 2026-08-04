@@ -25,7 +25,7 @@ import { useSubscriptionGate } from "@/components/ProtectedRoute";
 
 export default function DashboardLayout() {
   
-  const { isPaid, isAdmin, isTrial, plano } = useSubscriptionStatus();
+  const { isPaid, isAdmin, isTrial, plano, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const location = useLocation();
   const navigate = useNavigate();
   const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
