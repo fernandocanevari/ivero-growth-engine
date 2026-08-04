@@ -205,6 +205,9 @@ export default function AdminClientesPage() {
     const term = search.toLowerCase();
     if (term && !(
       (c.display_name?.toLowerCase().includes(term)) ||
+      (c.nome_completo?.toLowerCase().includes(term)) ||
+      (c.email?.toLowerCase().includes(term)) ||
+
       (c.brand?.brand_name?.toLowerCase().includes(term)) ||
       (c.brand?.sector?.toLowerCase().includes(term))
     )) return false;
