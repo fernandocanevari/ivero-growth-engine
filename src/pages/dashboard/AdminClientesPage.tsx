@@ -90,16 +90,32 @@ export default function AdminClientesPage() {
       ]);
 
 
-      // Concorrentes vivem em outra tabela (ver PROMPT 3.5) — buscar por brand_id
+      // Concorrentes e respostas de onboarding vivem por brand_id
       const brandIds = (brandRes.data ?? []).map((b) => b.id).filter(Boolean) as string[];
-      const competitorsRes = brandIds.length > 0
-        ? await supabase
-            .from("competitors")
-            .select("brand_id, nome, created_at")
-            .in("brand_id", brandIds)
-            .eq("aprovado_pelo_usuario", true)
-            .order("created_at", { ascending: true })
-        : { data: [] as { brand_id: string; nome: string }[] };
+      const [competitorsRes, onboardingRes] = await Promise.all([
+        brandIds.length > 0
+          ? supabase
+              .from("competitors")
+              .select("brand_id, nome, created_at")
+              .in("brand_id", brandIds)
+              .eq("aprovado_pelo_usuario", true)
+              .order("created_at", { ascending: true })
+          : Promise.resolve({ data: [] as { brand_id: string; nome: string }[] }),
+        brandIds.length > 0
+          ? supabase
+              .from("onboarding_responses")
+              .select("brand_id, p1_maturidade_ia, p2_criterio_mercado, p3_maior_risco, created_at")
+              .in("brand_id", brandIds)
+          : Promise.resolve({
+              data: [] as {
+                brand_id: string;
+                p1_maturidade_ia: string | null;
+                p2_criterio_mercado: string | null;
+                p3_maior_risco: string | null;
+                created_at: string;
+              }[],
+            }),
+      ]);
 
       const mainCompetitorByBrandId = new Map<string, string>();
       (competitorsRes.data ?? []).forEach((c) => {
@@ -108,9 +124,18 @@ export default function AdminClientesPage() {
         }
       });
 
-      const onboardingMap = new Map(
-        (onboardingRes.data ?? []).map((o) => [o.user_id, o])
-      );
+      // Onboarding atual: onboarding_responses (client_onboarding é legado)
+      const onboardingByBrandId = new Map<string, ClientRow["onboarding"]>();
+      (onboardingRes.data ?? []).forEach((o) => {
+        onboardingByBrandId.set(o.brand_id, {
+          question_1: o.p1_maturidade_ia ?? "",
+          question_2: o.p2_criterio_mercado ?? "",
+          question_3: o.p3_maior_risco ?? "",
+          completed: Boolean(o.p1_maturidade_ia && o.p2_criterio_mercado && o.p3_maior_risco),
+          created_at: o.created_at,
+        });
+      });
+
       const brandMap = new Map(
         (brandRes.data ?? []).map((b) => [b.user_id, b])
       );
