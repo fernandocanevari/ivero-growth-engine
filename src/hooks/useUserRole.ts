@@ -5,16 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 export function useUserRole() {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
+  // Antes da sessão resolver não sabemos nada: o default "não-admin" NÃO pode
+  // ser tratado como estado confirmado (causava flash de cadeados / tela premium).
+  const [authResolved, setAuthResolved] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setUserId(data.session?.user?.id ?? null);
+      if (!mounted) return;
+      setUserId(data.session?.user?.id ?? null);
+      setAuthResolved(true);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       const newId = session?.user?.id ?? null;
+      setAuthResolved(true);
       setUserId((prev) => {
         if (prev !== newId) {
           queryClient.invalidateQueries({ queryKey: ["user_roles"] });
@@ -45,9 +51,16 @@ export function useUserRole() {
     },
   });
 
+  // "Loading" cobre 3 janelas: sessão não resolvida, query pendente (inclusive
+  // logo após queryClient.clear(), quando ainda não há isFetching) e refetch.
+  const isLoading =
+    !authResolved ||
+    (userId !== null && (query.isPending || query.isFetching));
+
   return {
     roles: query.data ?? [],
     isAdmin: (query.data ?? []).includes("admin"),
-    isLoading: userId !== null && query.isLoading,
+    isLoading,
+    authResolved,
   };
 }
