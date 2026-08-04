@@ -507,7 +507,7 @@ export default function AdminClientesPage() {
                   <CardContent className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-muted-foreground">Nome:</span>{" "}
-                      <span className="font-medium text-foreground">{selectedClient.brand?.contact_name || "—"}</span>
+                      <span className="font-medium text-foreground">{selectedClient.nome_completo || selectedClient.display_name || "—"}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">E-mail:</span>{" "}
