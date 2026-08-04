@@ -1526,27 +1526,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
               </div>
             </AnimatedSection>
 
-            {/* ── CTA final (repetição adaptada) ── */}
-            <AnimatedSection delay={0.74}>
-              <div className="relative overflow-hidden rounded-[1.75rem] p-6 sm:p-8 text-center bg-gradient-to-br from-ivero-dark via-ivero-purple to-accent shadow-[0_18px_56px_-22px_hsl(var(--accent)/0.45)] border border-primary-foreground/10">
-                <div className="absolute -top-20 -left-12 w-56 h-56 rounded-full bg-accent/20 blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-20 -right-12 w-56 h-56 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
-                <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-                  <h3 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-primary-foreground leading-[1.12] tracking-tight">
-                    Agora que você viu seu diagnóstico e seu plano de ação: pare de ser invisível para as IAs.
-                    <span className="block text-gradient mt-1">Domine sua categoria.</span>
-                  </h3>
-                  <Button
-                    size="lg"
-                    className="group h-12 px-8 bg-primary-foreground hover:bg-primary-foreground text-primary hover:text-primary font-bold text-sm sm:text-base rounded-full shadow-[0_12px_36px_-16px_hsl(var(--primary-foreground)/0.7)] hover:scale-[1.01] transition-all duration-300"
-                    onClick={() => goToSignup("cta_final_preview")}
-                  >
-                    Criar minha conta — é grátis
-                    <ArrowRight className="ml-2 w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-                </div>
-              </div>
-            </AnimatedSection>
+
 
           </>
         )}
