@@ -546,6 +546,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          admin_notes: string
           created_at: string
           email: string
           id: string
@@ -553,8 +554,11 @@ export type Database = {
           phone: string
           site: string
           source: string
+          status: Database["public"]["Enums"]["lead_status"]
+          status_updated_at: string | null
         }
         Insert: {
+          admin_notes?: string
           created_at?: string
           email: string
           id?: string
@@ -562,8 +566,11 @@ export type Database = {
           phone?: string
           site?: string
           source?: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          status_updated_at?: string | null
         }
         Update: {
+          admin_notes?: string
           created_at?: string
           email?: string
           id?: string
@@ -571,6 +578,8 @@ export type Database = {
           phone?: string
           site?: string
           source?: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          status_updated_at?: string | null
         }
         Relationships: []
       }
@@ -967,6 +976,7 @@ export type Database = {
         | "autoridade_institucional"
         | "conteudo_multimidia"
         | "seo_geo"
+      lead_status: "novo" | "contatado" | "qualificado" | "descartado"
       proposta_motivo_recusa:
         | "preco"
         | "momento"
@@ -1133,6 +1143,7 @@ export const Constants = {
         "conteudo_multimidia",
         "seo_geo",
       ],
+      lead_status: ["novo", "contatado", "qualificado", "descartado"],
       proposta_motivo_recusa: [
         "preco",
         "momento",

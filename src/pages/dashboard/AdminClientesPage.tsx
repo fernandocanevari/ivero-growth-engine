@@ -7,8 +7,10 @@ import { cn } from "@/lib/utils";
 import {
   ShieldAlert, Users, Download, Search, TrendingUp, TrendingDown,
   AlertTriangle, Clock, UserCheck, UserX, BarChart3, Eye, Filter,
-  CalendarIcon, X,
+  CalendarIcon, X, Mail,
 } from "lucide-react";
+import { AdminLeadsPanel } from "@/components/admin/AdminLeadsPanel";
+
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -61,12 +63,14 @@ interface ClientRow {
 
 export default function AdminClientesPage() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const [tab, setTab] = useState<"contas" | "leads">("contas");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
   const [diagFilter, setDiagFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ["admin_clients_full"],
@@ -295,19 +299,46 @@ export default function AdminClientesPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-1">
               Clientes
-              <InfoTooltip text="Gerencie perfis, diagnósticos de onboarding e dados estratégicos de cada cliente. Exporte tudo em Excel para análise externa." />
+              <InfoTooltip text="Contas são pessoas que criaram cadastro. Leads são visitantes que preencheram o formulário do diagnóstico e ainda não têm conta. Exporte tudo em Excel para análise externa." />
             </h1>
             <p className="text-sm text-muted-foreground">
               Perfis, diagnósticos e análises — {total} cliente(s)
             </p>
           </div>
         </div>
-        <Button onClick={exportToExcel} variant="outline" className="gap-2" disabled={!filtered?.length}>
-          <Download className="h-4 w-4" /> Exportar Excel
+        {tab === "contas" && (
+          <Button onClick={exportToExcel} variant="outline" className="gap-2" disabled={!filtered?.length}>
+            <Download className="h-4 w-4" /> Exportar Excel
+          </Button>
+        )}
+      </div>
+
+      {/* Toggle Contas / Leads */}
+      <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary/40 p-1">
+        <Button
+          size="sm"
+          variant={tab === "contas" ? "default" : "ghost"}
+          className="gap-2"
+          onClick={() => setTab("contas")}
+        >
+          <Users className="h-4 w-4" /> Contas
+        </Button>
+        <Button
+          size="sm"
+          variant={tab === "leads" ? "default" : "ghost"}
+          className="gap-2"
+          onClick={() => setTab("leads")}
+        >
+          <Mail className="h-4 w-4" /> Leads (sem conta)
         </Button>
       </div>
 
+      {tab === "leads" ? (
+        <AdminLeadsPanel />
+      ) : (
+      <>
       {/* KPIs */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AdminKPICard icon={Users} label="Total de Clientes" value={total} />
         <AdminKPICard
@@ -616,6 +647,9 @@ export default function AdminClientesPage() {
           )}
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
+
   );
 }

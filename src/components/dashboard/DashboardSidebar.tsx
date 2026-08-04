@@ -94,7 +94,7 @@ const adminGroup: MenuGroup = {
   items: [
     { title: "Painel Admin", url: "/dashboard/admin", icon: Crown },
     { title: "Clientes", url: "/dashboard/admin/clientes", icon: Users },
-    { title: "Pistas", url: "/dashboard/admin/leads", icon: Mail },
+
     { title: "Propostas", url: "/dashboard/admin/propostas", icon: FileSignature },
     { title: "Convites", url: "/dashboard/admin/convites", icon: Send },
     { title: "Respostas", url: "/dashboard/admin/respostas", icon: MessageSquare },

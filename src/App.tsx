@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
@@ -35,7 +35,7 @@ import AssinaturaPage from "./pages/dashboard/AssinaturaPage";
 import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
-import AdminLeadsPage from "./pages/dashboard/AdminLeadsPage";
+
 import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
 import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
@@ -131,7 +131,9 @@ const App = () => (
             <Route path="admin/respostas" element={<AdminRespostasPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="admin/clientes" element={<AdminClientesPage />} />
-            <Route path="admin/leads" element={<AdminLeadsPage />} />
+            {/* Leads agora vivem dentro de Clientes (toggle "Leads (sem conta)") */}
+            <Route path="admin/leads" element={<Navigate to="/dashboard/admin/clientes" replace />} />
+
             <Route path="admin/propostas" element={<AdminPropostasPage />} />
             <Route path="admin/convites" element={<AdminConvitesPage />} />
           </Route>
