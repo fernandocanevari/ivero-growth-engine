@@ -61,12 +61,14 @@ interface ClientRow {
 
 export default function AdminClientesPage() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const [tab, setTab] = useState<"contas" | "leads">("contas");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
   const [diagFilter, setDiagFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ["admin_clients_full"],
