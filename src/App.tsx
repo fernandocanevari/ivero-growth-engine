@@ -131,7 +131,9 @@ const App = () => (
             <Route path="admin/respostas" element={<AdminRespostasPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="admin/clientes" element={<AdminClientesPage />} />
-            <Route path="admin/leads" element={<AdminLeadsPage />} />
+            {/* Leads agora vivem dentro de Clientes (toggle "Leads (sem conta)") */}
+            <Route path="admin/leads" element={<Navigate to="/dashboard/admin/clientes" replace />} />
+
             <Route path="admin/propostas" element={<AdminPropostasPage />} />
             <Route path="admin/convites" element={<AdminConvitesPage />} />
           </Route>
