@@ -437,9 +437,10 @@ export default function AdminClientesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-foreground">{c.brand?.contact_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground">{c.brand?.contact_email || ""}</div>
-                    <div className="text-xs text-muted-foreground">{c.brand?.contact_phone || ""}</div>
+                    <div className="text-sm text-foreground">{c.nome_completo || c.display_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{c.email || ""}</div>
+                    <div className="text-xs text-muted-foreground">{c.celular || ""}</div>
+
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-foreground">{c.brand?.brand_name || "—"}</div>
