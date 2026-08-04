@@ -138,7 +138,7 @@ export function DashboardSidebar() {
   const { unreadCount: perceptionUnread } = usePerceptionAlerts();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
-  const displayName = isAdmin ? "Administrador" : settings?.brand_name || "Sua Marca";
+  const displayName = settings?.brand_name || "Sua Marca";
   const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
   // Não mostra cadeados enquanto a validação de role/assinatura está em andamento.
   const showLockState = !isAdmin && !validating;
