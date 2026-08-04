@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Sessão que resolve só quando chamarmos resolveSession() — permite inspecionar
@@ -9,14 +9,18 @@ const sessionPromise = new Promise((resolve) => {
   resolveSession = resolve;
 });
 
+type Listener = (event: string, session: unknown) => void;
+const listeners: Listener[] = [];
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getSession: () => sessionPromise,
       getUser: () => sessionPromise,
-      onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      }),
+      onAuthStateChange: (cb: Listener) => {
+        listeners.push(cb);
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      },
     },
     from: () => ({
       select: () => ({
@@ -53,6 +57,14 @@ describe("janela de loading antes da sessão resolver", () => {
       </QueryClientProvider>,
     );
 
+    expect(screen.getByTestId("role").textContent).toBe("true");
+    expect(screen.getByTestId("sub").textContent).toBe("true");
+
+    // INITIAL_SESSION sem sessão (emitido pelo supabase-js antes da recuperação)
+    // NÃO pode marcar o estado como resolvido — era a origem dos flashes.
+    act(() => {
+      listeners.forEach((cb) => cb("INITIAL_SESSION", null));
+    });
     expect(screen.getByTestId("role").textContent).toBe("true");
     expect(screen.getByTestId("sub").textContent).toBe("true");
 
