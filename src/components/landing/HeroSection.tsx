@@ -19,7 +19,7 @@ const HeroSection = () => {
   const glowPinkY   = useTransform(scrollYProgress, [0, 1], [0, 50]);
 
   return (
-    <section id="diagnostico" ref={sectionRef} className="relative flex items-center overflow-hidden bg-surface-0 scroll-mt-20">
+    <section id="diagnostico" ref={sectionRef} className="relative flex items-center overflow-hidden bg-surface-0 scroll-mt-20 min-h-[90vh] lg:min-h-screen">
       {/* Subtle layered background */}
       <div className="absolute inset-0 bg-gradient-to-b from-surface-0 via-surface-2 to-surface-0" />
       
@@ -36,7 +36,7 @@ const HeroSection = () => {
       />
       
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-24 pb-14 sm:pt-28 sm:pb-16 lg:py-16">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-24 pb-14 sm:pt-28 sm:pb-16 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -50,7 +50,20 @@ const HeroSection = () => {
           </h1>
 
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-5 sm:mb-7 leading-relaxed">
-            A Ivero mostra exatamente onde sua marca deixa de existir nas IAs e o que fazer para mudar isso.
+            A Ivero mostra onde sua marca aparece — e onde não aparece — nas IAs.
+            Veja se você{" "}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple/10 text-ivero-purple font-medium">
+              👁️ aparece nas respostas
+            </span>
+            {", se é "}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium">
+              🏆 recomendado antes do concorrente
+            </span>
+            {" e "}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple-light/10 text-ivero-purple-light font-medium">
+              💡 o que fazer pra mudar isso
+            </span>
+            .
           </p>
 
           <div className="flex flex-col gap-2 w-full max-w-xl mx-auto">
