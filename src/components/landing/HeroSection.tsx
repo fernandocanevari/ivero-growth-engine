@@ -48,7 +48,7 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-3xl"
+          className="max-w-3xl mx-auto text-center"
         >
           <h1 className="font-display text-[28px] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-5">
             <span className="text-foreground">Sua marca pode estar </span>
@@ -56,11 +56,11 @@ const HeroSection = () => {
             <span className="text-foreground"> para o seu cliente e você não sabe.</span>
           </h1>
 
-          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mb-5 sm:mb-7 leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-5 sm:mb-7 leading-relaxed">
             A Ivero mostra exatamente onde sua marca deixa de existir nas IAs e o que fazer para mudar isso.
           </p>
 
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-2 w-full max-w-xl mx-auto">
             {/* Input pill — empilhado no mobile */}
             <div className="relative group">
               {/* Static glow behind */}
@@ -96,7 +96,7 @@ const HeroSection = () => {
                 </Button>
               </div>
             </div>
-            <p className="text-foreground text-xs sm:text-sm font-medium ml-1 sm:ml-5">
+            <p className="text-foreground text-xs sm:text-sm font-medium text-center">
               Diagnóstico instantâneo. Sem cadastro, sem enrolação. ⚡
             </p>
           </div>
