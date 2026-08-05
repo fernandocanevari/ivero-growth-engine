@@ -17,10 +17,9 @@ const HeroSection = () => {
 
   const glowPurpleY = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const glowPinkY   = useTransform(scrollYProgress, [0, 1], [0, 50]);
-  const streakY     = useTransform(scrollYProgress, [0, 1], [0, -40]);
 
   return (
-    <section id="diagnostico" ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden bg-surface-0 scroll-mt-20">
+    <section id="diagnostico" ref={sectionRef} className="relative flex items-center overflow-hidden bg-surface-0 scroll-mt-20">
       {/* Subtle layered background */}
       <div className="absolute inset-0 bg-gradient-to-b from-surface-0 via-surface-2 to-surface-0" />
       
@@ -36,14 +35,8 @@ const HeroSection = () => {
         className="absolute bottom-[-100px] right-[-50px] w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-accent opacity-[0.05] blur-[100px] pointer-events-none"
       />
       
-      {/* Parallax: light streak */}
-      <motion.div
-        style={{ y: streakY }}
-        className="absolute bottom-0 right-[10%] w-[2px] h-[60%] bg-gradient-to-t from-ivero-purple-light/30 to-transparent pointer-events-none"
-      />
-
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-24 pb-10 sm:pt-28 sm:pb-14 lg:py-24">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-24 pb-14 sm:pt-28 sm:pb-16 lg:py-16">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
