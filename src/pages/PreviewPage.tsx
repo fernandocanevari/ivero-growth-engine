@@ -1693,7 +1693,7 @@ export default function PreviewPage() {
     track("preview_view", {
       has_site: !!siteUrl,
       site: siteUrl || null,
-      came_from_hero: !!searchParams.get("name"), // hero form sets name; quick CTA does not
+      
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
