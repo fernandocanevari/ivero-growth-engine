@@ -65,21 +65,23 @@ const EscolherPlanoPage = () => {
       }
       // Se já existe assinatura viva (inclusive pendente/inadimplente), não
       // reabrimos o checkout — mandamos o usuário para o app/assinatura.
+      // Trial vencido NÃO conta como viva (senão viraria loop de redirect).
       const { data: subs } = await supabase
         .from("assinaturas")
-        .select("status")
+        .select("status, trial_ends_at")
         .eq("user_id", session.user.id)
         .in("status", ["ativo", "trial", "inadimplente", "pendente"])
         .limit(1);
       if (cancelled) return;
-      if (subs && subs.length > 0) {
-        const status = subs[0].status;
+      const effective = subs?.[0] ? resolveEffectiveStatus(subs[0]) : null;
+      if (effective && effective !== "trial_expirado") {
         navigate(
-          status === "ativo" || status === "trial" ? "/dashboard" : "/dashboard/assinatura",
+          effective === "ativo" || effective === "trial" ? "/dashboard" : "/dashboard/assinatura",
           { replace: true },
         );
         return;
       }
+
 
       setEmail(session.user.email ?? "");
       setNome((session.user.user_metadata?.display_name as string) ?? "");
