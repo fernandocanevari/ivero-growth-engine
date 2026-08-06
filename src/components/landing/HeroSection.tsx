@@ -106,7 +106,7 @@ const HeroSection = () => {
               </div>
             </div>
             <p className="text-foreground text-xs sm:text-sm font-medium text-center">
-              Diagnóstico instantâneo. Sem cadastro, sem enrolação. ⚡
+              Diagnóstico instantâneo. Sem cadastro, sem enrolação.
             </p>
           </div>
         </motion.div>
