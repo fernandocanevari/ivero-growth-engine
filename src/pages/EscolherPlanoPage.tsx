@@ -183,17 +183,37 @@ const EscolherPlanoPage = () => {
           transition={{ duration: 0.4 }}
           className="text-center max-w-2xl mx-auto mb-8 sm:mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold mb-4">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold mb-4 ${
+              trialExpirado
+                ? "bg-destructive/10 border-destructive/25 text-destructive"
+                : "bg-accent/10 border-accent/20 text-accent"
+            }`}
+          >
             <Sparkles className="w-3.5 h-3.5" />
-            7 dias grátis — sem cobrança imediata
+            {trialExpirado
+              ? "Teste encerrado — escolha um plano para continuar"
+              : "7 dias grátis — sem cobrança imediata"}
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
-            <span className="text-foreground">Escolha o plano ideal para sua </span>
-            <span className="text-gradient">marca</span>
+            {trialExpirado ? (
+              <>
+                <span className="text-foreground">Seu teste de 7 dias </span>
+                <span className="text-gradient">terminou</span>
+              </>
+            ) : (
+              <>
+                <span className="text-foreground">Escolha o plano ideal para sua </span>
+                <span className="text-gradient">marca</span>
+              </>
+            )}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Comece com 7 dias grátis. Cancele quando quiser.
+            {trialExpirado
+              ? "Assine agora para recuperar o acesso ao seu diagnóstico, score e plano de ação."
+              : "Comece com 7 dias grátis. Cancele quando quiser."}
           </p>
+
 
           <div className="mt-6 inline-flex items-center gap-3 bg-white border border-ivero-purple/20 rounded-full p-1.5 shadow-sm">
             <button
