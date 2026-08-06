@@ -203,7 +203,6 @@ Deno.serve(async (req) => {
     }
 
     // 6. Persist in assinaturas (service role to bypass RLS for insert)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const dataInicio = new Date();
     const dataVencimento = new Date(dataInicio.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -219,12 +218,34 @@ Deno.serve(async (req) => {
     });
 
     if (insertError) {
+      // 23505 = unique_violation no índice parcial assinaturas_user_ativa_uniq:
+      // uma assinatura viva foi criada em paralelo (duplo clique / corrida).
+      // Tratamos como sucesso idempotente e atualizamos a linha existente.
+      if ((insertError as { code?: string }).code === "23505") {
+        console.log("create-checkout: corrida detectada (23505), reaproveitando assinatura viva");
+        await supabaseAdmin
+          .from("assinaturas")
+          .update({
+            asaas_customer_id,
+            asaas_subscription_id,
+            plano,
+            trial_ends_at: trialEndsAt.toISOString(),
+          })
+          .eq("user_id", userId)
+          .in("status", LIVE_STATUSES);
+
+        return new Response(
+          JSON.stringify({ success: true, reused: true, checkoutUrl }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       console.error("create-checkout insert error:", insertError);
       return new Response(
         JSON.stringify({ error: "Falha ao registrar assinatura.", details: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     // 7. Return checkout URL
     return new Response(JSON.stringify({ success: true, checkoutUrl }), {
