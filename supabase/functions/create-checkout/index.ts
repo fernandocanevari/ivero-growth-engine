@@ -65,7 +65,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Asaas credentials
+    // 3. Idempotência: se já existe assinatura viva, reaproveita em vez de criar outra.
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "pendente"];
+    const { data: existing } = await supabaseAdmin
+      .from("assinaturas")
+      .select("id, plano, status, asaas_subscription_id")
+      .eq("user_id", userId)
+      .in("status", LIVE_STATUSES)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      console.log("create-checkout: assinatura viva já existe", existing.id, existing.status);
+      // Mesmo plano → devolve o checkout da cobrança pendente existente (se houver).
+      let checkoutUrl = "";
+      if (existing.asaas_subscription_id) {
+        try {
+          const res = await fetch(
+            `${ASAAS_BASE_URL}/payments?subscription=${existing.asaas_subscription_id}&status=PENDING`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
+              },
+            },
+          );
+          const json = await res.json();
+          checkoutUrl = json?.data?.[0]?.invoiceUrl ?? "";
+        } catch (e) {
+          console.error("create-checkout: erro ao buscar cobrança existente", e);
+        }
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reused: true,
+          assinaturaId: existing.id,
+          plano: existing.plano,
+          status: existing.status,
+          checkoutUrl,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // 3b. Asaas credentials
     const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
     if (!asaasKey) {
       return new Response(
@@ -77,6 +124,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
     };
+
 
     // 4. Create customer
     const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
