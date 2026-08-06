@@ -123,7 +123,7 @@ describe("Fluxo 4 (UI) — Planos de Ação", () => {
     const dialog = await screen.findByRole("dialog");
     const titulo = dialog.querySelector("input") as HTMLInputElement;
     await user.type(titulo, "Criar página de comparação");
-    await user.click(screen.getByRole("button", { name: /^adicionar/i }));
+    await user.click(screen.getByRole("button", { name: /criar ação/i }));
     await waitFor(() => expect(createMutate).toHaveBeenCalled());
     expect(createMutate.mock.calls[0][0]).toMatchObject({
       titulo: "Criar página de comparação",
@@ -135,7 +135,7 @@ describe("Fluxo 4 (UI) — Planos de Ação", () => {
     render(<AcoesPage />);
     await user.click(screen.getByRole("button", { name: /nova ação/i }));
     await screen.findByRole("dialog");
-    await user.click(screen.getByRole("button", { name: /^adicionar/i }));
+    await user.click(screen.getByRole("button", { name: /criar ação/i }));
     expect(createMutate).not.toHaveBeenCalled();
   });
 
