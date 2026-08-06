@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveEffectiveStatus, isAccountRoute } from "@/lib/subscription-status";
+
 
 type SubscriptionGateContextValue = {
   isInGracePeriod: boolean;
