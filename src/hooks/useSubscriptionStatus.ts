@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
+import { resolveEffectiveStatus } from "@/lib/subscription-status";
 
 type Plano = "presenca" | "influencia" | "autoridade" | null;
 
@@ -8,7 +9,9 @@ interface AssinaturaRow {
   plano: string | null;
   status: string | null;
   carencia_ate: string | null;
+  trial_ends_at: string | null;
 }
+
 
 export function useSubscriptionStatus() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
