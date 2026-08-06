@@ -141,12 +141,24 @@ const EscolherPlanoPage = () => {
         toast.error(error.message || "Erro ao criar assinatura.");
         return;
       }
+      // Assinatura viva já existia: reaproveitada, nunca duplicada.
+      if (data?.reused) {
+        if (data.checkoutUrl) {
+          toast.info("Você já tem uma assinatura em andamento — retomando o pagamento.");
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+        toast.info("Você já tem uma assinatura ativa.");
+        navigate("/dashboard/assinatura", { replace: true });
+        return;
+      }
       if (!data?.success || !data?.checkoutUrl) {
         toast.error(data?.error || "Não foi possível gerar o link de pagamento.");
         return;
       }
       // Same-tab redirect so Asaas returnUrl can bring user back to /bem-vindo
       window.location.href = data.checkoutUrl;
+
     } catch (err) {
       toast.error((err as Error).message || "Erro inesperado.");
     } finally {
