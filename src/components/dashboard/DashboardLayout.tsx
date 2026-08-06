@@ -121,7 +121,14 @@ export default function DashboardLayout() {
         <DashboardSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <div className="sticky top-0 z-10 bg-background">
-            <TrialBanner userId={userId} plano={plano} />
+            <TrialBanner
+              userId={userId}
+              plano={plano}
+              trialEndsAt={trialEndsAt}
+              isTrial={isTrial}
+              isTrialExpired={isTrialExpired}
+            />
+
             {/* Banner inline removido — substituído pelo BrandProfileReminderBanner acima do conteúdo. */}
             <header className="h-14 flex items-center gap-4 border-b border-border px-4">
               <SidebarTrigger />
