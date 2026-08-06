@@ -60,18 +60,24 @@ const EscolherPlanoPage = () => {
         navigate("/auth", { replace: true });
         return;
       }
-      // Check existing active/trial subscription
+      // Se já existe assinatura viva (inclusive pendente/inadimplente), não
+      // reabrimos o checkout — mandamos o usuário para o app/assinatura.
       const { data: subs } = await supabase
         .from("assinaturas")
         .select("status")
         .eq("user_id", session.user.id)
-        .in("status", ["ativo", "trial"])
+        .in("status", ["ativo", "trial", "inadimplente", "pendente"])
         .limit(1);
       if (cancelled) return;
       if (subs && subs.length > 0) {
-        navigate("/dashboard", { replace: true });
+        const status = subs[0].status;
+        navigate(
+          status === "ativo" || status === "trial" ? "/dashboard" : "/dashboard/assinatura",
+          { replace: true },
+        );
         return;
       }
+
       setEmail(session.user.email ?? "");
       setNome((session.user.user_metadata?.display_name as string) ?? "");
       setChecking(false);
@@ -135,12 +141,24 @@ const EscolherPlanoPage = () => {
         toast.error(error.message || "Erro ao criar assinatura.");
         return;
       }
+      // Assinatura viva já existia: reaproveitada, nunca duplicada.
+      if (data?.reused) {
+        if (data.checkoutUrl) {
+          toast.info("Você já tem uma assinatura em andamento — retomando o pagamento.");
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+        toast.info("Você já tem uma assinatura ativa.");
+        navigate("/dashboard/assinatura", { replace: true });
+        return;
+      }
       if (!data?.success || !data?.checkoutUrl) {
         toast.error(data?.error || "Não foi possível gerar o link de pagamento.");
         return;
       }
       // Same-tab redirect so Asaas returnUrl can bring user back to /bem-vindo
       window.location.href = data.checkoutUrl;
+
     } catch (err) {
       toast.error((err as Error).message || "Erro inesperado.");
     } finally {

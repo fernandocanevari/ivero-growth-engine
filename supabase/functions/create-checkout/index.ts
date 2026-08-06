@@ -65,7 +65,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Asaas credentials
+    // 3. Idempotência: se já existe assinatura viva, reaproveita em vez de criar outra.
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "pendente"];
+    const { data: existing } = await supabaseAdmin
+      .from("assinaturas")
+      .select("id, plano, status, asaas_subscription_id")
+      .eq("user_id", userId)
+      .in("status", LIVE_STATUSES)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      console.log("create-checkout: assinatura viva já existe", existing.id, existing.status);
+      // Mesmo plano → devolve o checkout da cobrança pendente existente (se houver).
+      let checkoutUrl = "";
+      if (existing.asaas_subscription_id) {
+        try {
+          const res = await fetch(
+            `${ASAAS_BASE_URL}/payments?subscription=${existing.asaas_subscription_id}&status=PENDING`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
+              },
+            },
+          );
+          const json = await res.json();
+          checkoutUrl = json?.data?.[0]?.invoiceUrl ?? "";
+        } catch (e) {
+          console.error("create-checkout: erro ao buscar cobrança existente", e);
+        }
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reused: true,
+          assinaturaId: existing.id,
+          plano: existing.plano,
+          status: existing.status,
+          checkoutUrl,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // 3b. Asaas credentials
     const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
     if (!asaasKey) {
       return new Response(
@@ -77,6 +124,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
     };
+
 
     // 4. Create customer
     const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
@@ -155,7 +203,6 @@ Deno.serve(async (req) => {
     }
 
     // 6. Persist in assinaturas (service role to bypass RLS for insert)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const dataInicio = new Date();
     const dataVencimento = new Date(dataInicio.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -171,12 +218,34 @@ Deno.serve(async (req) => {
     });
 
     if (insertError) {
+      // 23505 = unique_violation no índice parcial assinaturas_user_ativa_uniq:
+      // uma assinatura viva foi criada em paralelo (duplo clique / corrida).
+      // Tratamos como sucesso idempotente e atualizamos a linha existente.
+      if ((insertError as { code?: string }).code === "23505") {
+        console.log("create-checkout: corrida detectada (23505), reaproveitando assinatura viva");
+        await supabaseAdmin
+          .from("assinaturas")
+          .update({
+            asaas_customer_id,
+            asaas_subscription_id,
+            plano,
+            trial_ends_at: trialEndsAt.toISOString(),
+          })
+          .eq("user_id", userId)
+          .in("status", LIVE_STATUSES);
+
+        return new Response(
+          JSON.stringify({ success: true, reused: true, checkoutUrl }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       console.error("create-checkout insert error:", insertError);
       return new Response(
         JSON.stringify({ error: "Falha ao registrar assinatura.", details: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     // 7. Return checkout URL
     return new Response(JSON.stringify({ success: true, checkoutUrl }), {
