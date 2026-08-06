@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Globe, MessageSquare } from "lucide-react";
+import { ArrowRight, Globe, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -52,7 +52,7 @@ const HeroSection = () => {
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-7 sm:mb-9 leading-loose">
             A Ivero mostra como sua marca{" "}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple/10 text-ivero-purple align-middle font-semibold">
-              <MessageSquare className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              <ScanSearch className="w-3.5 h-3.5 shrink-0" aria-hidden />
               aparece
             </span>{" "}
             nas respostas das IAs, se é{" "}
