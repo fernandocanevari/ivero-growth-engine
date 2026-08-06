@@ -81,7 +81,14 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       // Subscription check with retry to tolerate read-after-write race
       // (newly-created trial row may not be visible on the very first query).
       const RETRY_DELAYS_MS = [400, 800, 1200];
-      let sub: { status: string | null; carencia_ate: string | null; updated_at: string | null } | undefined;
+      let sub:
+        | {
+            status: string | null;
+            carencia_ate: string | null;
+            trial_ends_at: string | null;
+            updated_at: string | null;
+          }
+        | undefined;
       let status: string | null = null;
       let carenciaAte: string | null = null;
       let attempt = 0;
@@ -89,7 +96,7 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       while (true) {
         const { data: subs } = await supabase
           .from("assinaturas")
-          .select("status, carencia_ate, updated_at")
+          .select("status, carencia_ate, trial_ends_at, updated_at")
           .eq("user_id", session.user.id)
           .order("updated_at", { ascending: false })
           .limit(1);
@@ -97,7 +104,8 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
         if (cancelled) return;
 
         sub = subs?.[0];
-        status = sub?.status ?? null;
+        // Status efetivo: trial vencido deixa de valer como trial.
+        status = sub ? resolveEffectiveStatus(sub) : null;
         carenciaAte = sub?.carencia_ate ?? null;
 
         const isValidNow =
@@ -134,6 +142,19 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
 
       if (cancelled) return;
 
+      // Rotas de conta (assinatura / configurações / ajuda) continuam acessíveis
+      // mesmo sem assinatura viva — o usuário precisa poder pagar e pedir ajuda.
+      if (sub && isAccountRoute(location.pathname)) {
+        setGate({
+          isInGracePeriod: status === "inadimplente",
+          status,
+          carenciaAte,
+        });
+        setAuthorized(true);
+        setLoading(false);
+        return;
+      }
+
       if (!sub || status === "pendente") {
 
         setAuthorized(false);
@@ -142,7 +163,16 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
         return;
       }
 
+      // Trial expirado: mesmo caminho de pendente/cancelado.
+      if (status === "trial_expirado") {
+        setAuthorized(false);
+        setLoading(false);
+        navigate("/escolher-plano?motivo=trial_expirado", { replace: true });
+        return;
+      }
+
       if (status === "ativo" || status === "trial") {
+
         setGate({ isInGracePeriod: false, status, carenciaAte });
         setAuthorized(true);
         setLoading(false);
