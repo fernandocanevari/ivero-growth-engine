@@ -60,18 +60,24 @@ const EscolherPlanoPage = () => {
         navigate("/auth", { replace: true });
         return;
       }
-      // Check existing active/trial subscription
+      // Se já existe assinatura viva (inclusive pendente/inadimplente), não
+      // reabrimos o checkout — mandamos o usuário para o app/assinatura.
       const { data: subs } = await supabase
         .from("assinaturas")
         .select("status")
         .eq("user_id", session.user.id)
-        .in("status", ["ativo", "trial"])
+        .in("status", ["ativo", "trial", "inadimplente", "pendente"])
         .limit(1);
       if (cancelled) return;
       if (subs && subs.length > 0) {
-        navigate("/dashboard", { replace: true });
+        const status = subs[0].status;
+        navigate(
+          status === "ativo" || status === "trial" ? "/dashboard" : "/dashboard/assinatura",
+          { replace: true },
+        );
         return;
       }
+
       setEmail(session.user.email ?? "");
       setNome((session.user.user_metadata?.display_name as string) ?? "");
       setChecking(false);
