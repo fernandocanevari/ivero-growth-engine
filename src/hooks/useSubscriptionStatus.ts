@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
+import { resolveEffectiveStatus } from "@/lib/subscription-status";
 
 type Plano = "presenca" | "influencia" | "autoridade" | null;
 
@@ -8,7 +9,9 @@ interface AssinaturaRow {
   plano: string | null;
   status: string | null;
   carencia_ate: string | null;
+  trial_ends_at: string | null;
 }
+
 
 export function useSubscriptionStatus() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
@@ -63,7 +66,7 @@ export function useSubscriptionStatus() {
 
       const { data, error } = await supabase
         .from("assinaturas")
-        .select("plano, status, carencia_ate")
+        .select("plano, status, carencia_ate, trial_ends_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -89,6 +92,11 @@ export function useSubscriptionStatus() {
   let plano: Plano = null;
   let status: string = "trial";
   const carenciaAte: string | null = assinatura?.carencia_ate ?? null;
+  const trialEndsAt: string | null = assinatura?.trial_ends_at ?? null;
+
+  // Status efetivo derivado (trial vencido nunca conta como trial válido).
+  const effectiveStatus = resolveEffectiveStatus(assinatura);
+  const isTrialExpired = effectiveStatus === "trial_expirado";
 
   if (!assinatura) {
     isTrial = true;
@@ -96,24 +104,36 @@ export function useSubscriptionStatus() {
     plano = null;
     status = "trial";
   } else {
-    status = assinatura.status ?? "trial";
     plano = (assinatura.plano as Plano) ?? null;
 
-    if (status === "ativo") {
+    if (effectiveStatus === "ativo") {
+      status = "ativo";
       isPaid = true;
       isTrial = false;
-    } else if (status === "inadimplente") {
+    } else if (effectiveStatus === "inadimplente") {
+      status = "inadimplente";
       const withinGrace =
         carenciaAte !== null && new Date(carenciaAte).getTime() > Date.now();
       isPaid = withinGrace;
       isTrial = false;
-    } else if (status === "cancelado") {
+    } else if (effectiveStatus === "cancelado") {
+      status = "cancelado";
       isPaid = false;
       isTrial = false;
-    } else if (status === "trial") {
+    } else if (effectiveStatus === "trial_expirado") {
+      status = "trial_expirado";
+      isPaid = false;
+      isTrial = false;
+    } else if (effectiveStatus === "trial") {
+      status = "trial";
+      isTrial = true;
+      isPaid = false;
+    } else if (effectiveStatus === "pendente") {
+      status = "pendente";
       isTrial = true;
       isPaid = false;
     } else {
+      status = assinatura.status ?? "trial";
       isTrial = true;
       isPaid = false;
     }
@@ -132,5 +152,9 @@ export function useSubscriptionStatus() {
     plano,
     status,
     carenciaAte,
+    trialEndsAt,
+    effectiveStatus,
+    isTrialExpired: isTrialExpired && !isAdmin,
   };
+
 }

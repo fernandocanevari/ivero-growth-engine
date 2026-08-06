@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Cpu, Bell, Search, BarChart2, Loader2, Sparkles, Bot } from "lucide-react";
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { resolveEffectiveStatus } from "@/lib/subscription-status";
+
 import {
   PLANOS_ARRAY,
   formatBRL,
@@ -42,8 +44,11 @@ const CTA_TEXT = "Começar com 7 dias grátis →";
 
 const EscolherPlanoPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const trialExpirado = searchParams.get("motivo") === "trial_expirado";
   const [isAnnual, setIsAnnual] = useState(true);
   const [checking, setChecking] = useState(true);
+
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
@@ -62,21 +67,23 @@ const EscolherPlanoPage = () => {
       }
       // Se já existe assinatura viva (inclusive pendente/inadimplente), não
       // reabrimos o checkout — mandamos o usuário para o app/assinatura.
+      // Trial vencido NÃO conta como viva (senão viraria loop de redirect).
       const { data: subs } = await supabase
         .from("assinaturas")
-        .select("status")
+        .select("status, trial_ends_at")
         .eq("user_id", session.user.id)
         .in("status", ["ativo", "trial", "inadimplente", "pendente"])
         .limit(1);
       if (cancelled) return;
-      if (subs && subs.length > 0) {
-        const status = subs[0].status;
+      const effective = subs?.[0] ? resolveEffectiveStatus(subs[0]) : null;
+      if (effective && effective !== "trial_expirado") {
         navigate(
-          status === "ativo" || status === "trial" ? "/dashboard" : "/dashboard/assinatura",
+          effective === "ativo" || effective === "trial" ? "/dashboard" : "/dashboard/assinatura",
           { replace: true },
         );
         return;
       }
+
 
       setEmail(session.user.email ?? "");
       setNome((session.user.user_metadata?.display_name as string) ?? "");
@@ -183,17 +190,37 @@ const EscolherPlanoPage = () => {
           transition={{ duration: 0.4 }}
           className="text-center max-w-2xl mx-auto mb-8 sm:mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold mb-4">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold mb-4 ${
+              trialExpirado
+                ? "bg-destructive/10 border-destructive/25 text-destructive"
+                : "bg-accent/10 border-accent/20 text-accent"
+            }`}
+          >
             <Sparkles className="w-3.5 h-3.5" />
-            7 dias grátis — sem cobrança imediata
+            {trialExpirado
+              ? "Teste encerrado — escolha um plano para continuar"
+              : "7 dias grátis — sem cobrança imediata"}
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
-            <span className="text-foreground">Escolha o plano ideal para sua </span>
-            <span className="text-gradient">marca</span>
+            {trialExpirado ? (
+              <>
+                <span className="text-foreground">Seu teste de 7 dias </span>
+                <span className="text-gradient">terminou</span>
+              </>
+            ) : (
+              <>
+                <span className="text-foreground">Escolha o plano ideal para sua </span>
+                <span className="text-gradient">marca</span>
+              </>
+            )}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Comece com 7 dias grátis. Cancele quando quiser.
+            {trialExpirado
+              ? "Assine agora para recuperar o acesso ao seu diagnóstico, score e plano de ação."
+              : "Comece com 7 dias grátis. Cancele quando quiser."}
           </p>
+
 
           <div className="mt-6 inline-flex items-center gap-3 bg-white border border-ivero-purple/20 rounded-full p-1.5 shadow-sm">
             <button
