@@ -49,22 +49,24 @@ const HeroSection = () => {
             <span className="text-foreground"> para o seu cliente e você não sabe.</span>
           </h1>
 
-          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-4 leading-relaxed">
-            A Ivero mostra onde sua marca aparece — e onde não aparece — nas IAs.
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-7 sm:mb-9 leading-loose">
+            A Ivero mostra como sua marca{" "}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple/10 text-ivero-purple align-middle">
+              <Radar className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              aparece
+            </span>{" "}
+            nas respostas das IAs, se é{" "}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent align-middle">
+              🏆 recomendada
+            </span>{" "}
+            antes do concorrente, e qual é o seu{" "}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple-light/10 text-ivero-purple-light align-middle">
+              💡 plano de ação
+            </span>{" "}
+            pra virar referência.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-5 sm:mb-7">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ivero-purple/10 text-ivero-purple text-xs sm:text-sm font-normal">
-              <Radar className="w-4 h-4 shrink-0" aria-hidden />
-              <span className="font-semibold">aparece</span> nas respostas
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs sm:text-sm font-normal">
-              🏆 <span className="font-semibold">recomendado</span> antes do concorrente
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ivero-purple-light/10 text-ivero-purple-light text-xs sm:text-sm font-normal">
-              💡 seu <span className="font-semibold">plano de ação</span> pra virar referência
-            </span>
-          </div>
+
 
 
           <div className="flex flex-col gap-2 w-full max-w-xl mx-auto">
