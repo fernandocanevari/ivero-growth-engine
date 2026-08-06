@@ -42,8 +42,11 @@ const CTA_TEXT = "Começar com 7 dias grátis →";
 
 const EscolherPlanoPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const trialExpirado = searchParams.get("motivo") === "trial_expirado";
   const [isAnnual, setIsAnnual] = useState(true);
   const [checking, setChecking] = useState(true);
+
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
