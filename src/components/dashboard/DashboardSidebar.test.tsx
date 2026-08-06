@@ -93,9 +93,9 @@ describe("DashboardSidebar — persistência após navegação", () => {
   it("aplica as classes de contraste do estado ativo no item selecionado", () => {
     render(<Harness initialPath="/dashboard" />);
     const link = screen.getByRole("link", { name: /^Painel$/i });
-    expect(link.className).toMatch(/bg-primary\/15/);
+    expect(link.className).toMatch(/bg-primary\/10/);
     expect(link.className).toMatch(/text-primary/);
-    expect(link.className).toMatch(/ring-primary\/25/);
+    expect(link.className).toMatch(/before:bg-primary/);
   });
 
   it("NÃO marca o item Painel como ativo quando em uma sub-rota (end: true)", () => {
