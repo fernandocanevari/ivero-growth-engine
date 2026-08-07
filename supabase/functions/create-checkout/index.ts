@@ -262,15 +262,51 @@ Deno.serve(async (req) => {
             callback: { successUrl, autoRedirect: true },
           }),
         });
-        const cbJson = await cbRes.json();
-        console.log("create-checkout callback update:", cbRes.status, JSON.stringify(cbJson));
+        // Instrumentação: status + corpo cru ANTES de qualquer parse, senão um
+        // corpo vazio derruba a leitura e perdemos o motivo real da falha.
+        const cbText = await cbRes.text();
+        console.log(
+          "create-checkout callback update:",
+          cbRes.status,
+          cbRes.headers.get("content-type") ?? "",
+          `len=${cbText.length}`,
+          cbText.slice(0, 800),
+        );
+        let cbJson: { invoiceUrl?: string } | null = null;
+        try {
+          cbJson = cbText ? JSON.parse(cbText) : null;
+        } catch (parseErr) {
+          console.error("create-checkout callback update: corpo não-JSON", String(parseErr));
+        }
         if (cbJson?.invoiceUrl) checkoutUrl = cbJson.invoiceUrl;
+
+        // Prova objetiva: relê a cobrança e loga o estado real do callback.
+        try {
+          const verifyRes = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
+            method: "GET",
+            headers: asaasHeaders,
+          });
+          const verifyText = await verifyRes.text();
+          let verifyJson: Record<string, unknown> | null = null;
+          try {
+            verifyJson = verifyText ? JSON.parse(verifyText) : null;
+          } catch { /* logado abaixo como texto cru */ }
+          console.log(
+            "create-checkout callback verify:",
+            verifyRes.status,
+            JSON.stringify(verifyJson?.callback ?? null),
+            verifyJson ? "" : verifyText.slice(0, 400),
+          );
+        } catch (verifyErr) {
+          console.error("create-checkout callback verify error:", String(verifyErr));
+        }
       } catch (cbErr) {
         // D. Falha no callback não bloqueia o checkout: o usuário ainda paga e
         // o estado `pending` do /bem-vindo cobre métodos sem auto-redirect.
         console.error("create-checkout callback update error:", cbErr);
       }
     }
+
 
     if (!checkoutUrl) {
       checkoutUrl = `https://sandbox.asaas.com/i/${asaas_subscription_id}`;
