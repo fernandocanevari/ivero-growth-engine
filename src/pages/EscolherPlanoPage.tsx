@@ -204,7 +204,7 @@ const EscolherPlanoPage = () => {
           transition={{ duration: 0.4 }}
           className="text-center max-w-2xl mx-auto mb-8 sm:mb-10"
         >
-          {!trialExpirado && (
+          {!trialExpirado && trialElegivel && (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-accent/10 border-accent/20 text-accent text-xs font-semibold mb-4">
               <Sparkles className="w-3.5 h-3.5" />
               7 dias grátis — sem cobrança imediata
@@ -226,7 +226,9 @@ const EscolherPlanoPage = () => {
           <p className="text-muted-foreground text-sm sm:text-base">
             {trialExpirado
               ? "Você já sabe que sua marca aparece nas IAs com a Ivero. Assine agora para aparecer ainda mais e na frente do seu concorrente."
-              : "Comece com 7 dias grátis. Cancele quando quiser."}
+              : trialElegivel
+                ? "Comece com 7 dias grátis. Cancele quando quiser."
+                : "A cobrança é feita agora. Cancele quando quiser."}
           </p>
 
 
