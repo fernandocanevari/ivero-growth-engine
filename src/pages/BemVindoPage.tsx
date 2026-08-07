@@ -30,7 +30,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 type Status = "loading" | "active" | "pending";
 
-const MAX_ATTEMPTS = 20;
+// Com Checkout Session do Asaas, a assinatura só é criada (e o webhook só
+// roda) depois que o cliente conclui o pagamento na tela do Asaas — por isso a
+// janela de espera é maior: 40 x 3s = 2 minutos.
+const MAX_ATTEMPTS = 40;
 const POLL_INTERVAL_MS = 3000;
 
 const BemVindoPage = () => {
