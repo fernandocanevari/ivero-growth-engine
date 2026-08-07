@@ -197,7 +197,9 @@ Deno.serve(async (req) => {
     const isPublicHttps =
       /^https:\/\//.test(rawOrigin) && !/localhost|127\.0\.0\.1/.test(rawOrigin);
     const baseUrl = isPublicHttps ? rawOrigin : "https://ivero.com.br";
-    const successUrl = `${baseUrl.replace(/\/$/, "")}/bem-vindo?from=asaas`;
+    // O Asaas rejeita successUrl com query string, então usamos uma rota limpa
+    // (/retorno-asaas) que no app redireciona pra /bem-vindo?from=asaas.
+    const successUrl = `${baseUrl.replace(/\/$/, "")}/retorno-asaas`;
 
     console.log("create-checkout successUrl:", successUrl);
 
@@ -211,25 +213,33 @@ Deno.serve(async (req) => {
         value,
         nextDueDate,
         description: `Ivero — Plano ${plano}`,
-        // A. O callback é definido já na criação: as cobranças geradas herdam
-        // o auto-redirect. O PUT na cobrança fica só como fallback.
-        callback: { successUrl, autoRedirect: true },
       }),
     });
 
-    const subJson = await subRes.json();
-    console.log("create-checkout asaas subscription response:", JSON.stringify(subJson));
+    // Leitura defensiva: o Asaas responde 500 com corpo VAZIO em alguns casos,
+    // e um .json() direto derruba a função com "Unexpected end of JSON input".
+    const subText = await subRes.text();
+    let subJson: Record<string, any> | null = null;
+    try {
+      subJson = subText ? JSON.parse(subText) : null;
+    } catch { /* tratado abaixo */ }
+    console.log(
+      "create-checkout asaas subscription response:",
+      subRes.status,
+      subText.slice(0, 800),
+    );
     if (!subRes.ok || !subJson?.id) {
-      console.error("create-checkout asaas subscription error:", subJson);
+      console.error("create-checkout asaas subscription error:", subRes.status, subText);
       const msg =
         subJson?.errors?.[0]?.description ||
         subJson?.message ||
         "Erro ao criar assinatura no Asaas.";
-      return new Response(JSON.stringify({ error: msg, details: subJson }), {
+      return new Response(JSON.stringify({ error: msg, details: subJson ?? subText }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
     const asaas_subscription_id: string = subJson.id;
 
     // 5b. Fetch first payment (cobrança) generated for this subscription
