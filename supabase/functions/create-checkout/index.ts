@@ -112,7 +112,32 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 3c. Elegibilidade ao trial: só quem NUNCA teve histórico de assinatura
+    // ganha os 7 dias grátis. Histórico com trial_ends_at no passado OU status
+    // em expirado/cancelado/ativo/inadimplente = já usou (ou já foi cliente).
+    const HISTORY_STATUSES = ["expirado", "trial_expirado", "cancelado", "ativo", "inadimplente"];
+    const { data: history } = await supabaseAdmin
+      .from("assinaturas")
+      .select("id, status, trial_ends_at, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    const nowMs = Date.now();
+    let trialConcedido = true;
+    for (const row of history ?? []) {
+      const usedTrial =
+        row.trial_ends_at !== null &&
+        !Number.isNaN(new Date(row.trial_ends_at as string).getTime()) &&
+        new Date(row.trial_ends_at as string).getTime() <= nowMs;
+      if (usedTrial || HISTORY_STATUSES.includes(row.status ?? "")) {
+        trialConcedido = false;
+        break;
+      }
+    }
+    console.log("create-checkout: trialConcedido =", trialConcedido);
+
     // 3b. Asaas credentials
+
     const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
     if (!asaasKey) {
       return new Response(
@@ -147,11 +172,15 @@ Deno.serve(async (req) => {
     }
     const asaas_customer_id: string = customerJson.id;
 
-    // 5. Create subscription — first charge after 7-day trial
+    // 5. Create subscription — 7 dias grátis só para quem é elegível.
+    // Não elegível → cobrança imediata (nextDueDate = hoje), sem trial.
     const today = new Date();
-    const trialEndsAt = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const nextDueDate = trialEndsAt.toISOString().slice(0, 10);
+    const trialEndsAt = trialConcedido
+      ? new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+      : null;
+    const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
     const value = PLAN_VALUES[plano];
+
 
     const subRes = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
       method: "POST",
@@ -205,17 +234,50 @@ Deno.serve(async (req) => {
     // 6. Persist in assinaturas (service role to bypass RLS for insert)
     const dataInicio = new Date();
     const dataVencimento = new Date(dataInicio.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const novoStatus = trialConcedido ? "trial" : "pendente";
 
-    const { error: insertError } = await supabaseAdmin.from("assinaturas").insert({
-      user_id: userId,
+    const assinaturaPayload = {
       asaas_customer_id,
       asaas_subscription_id,
       plano,
-      status: "trial",
+      status: novoStatus,
       data_inicio: dataInicio.toISOString(),
       data_vencimento: dataVencimento.toISOString(),
-      trial_ends_at: trialEndsAt.toISOString(),
-    });
+      trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
+    };
+
+    // D. Não acumular histórico: reaproveitamos a linha expirada mais recente
+    // (update in place) e cancelamos as demais linhas mortas do usuário.
+    const DEAD_STATUSES = ["expirado", "trial_expirado"];
+    const linhaMorta = (history ?? []).find((r) => DEAD_STATUSES.includes(r.status ?? ""));
+
+    let insertError: { code?: string; message: string } | null = null;
+
+    if (linhaMorta) {
+      const { error: updateError } = await supabaseAdmin
+        .from("assinaturas")
+        .update(assinaturaPayload)
+        .eq("id", linhaMorta.id);
+      insertError = updateError as typeof insertError;
+
+      if (!updateError) {
+        const outrasMortas = (history ?? [])
+          .filter((r) => r.id !== linhaMorta.id && DEAD_STATUSES.includes(r.status ?? ""))
+          .map((r) => r.id as string);
+        if (outrasMortas.length > 0) {
+          await supabaseAdmin
+            .from("assinaturas")
+            .update({ status: "cancelado" })
+            .in("id", outrasMortas);
+        }
+      }
+    } else {
+      const { error } = await supabaseAdmin
+        .from("assinaturas")
+        .insert({ user_id: userId, ...assinaturaPayload });
+      insertError = error as typeof insertError;
+    }
+
 
     if (insertError) {
       // 23505 = unique_violation no índice parcial assinaturas_user_ativa_uniq:
@@ -229,13 +291,13 @@ Deno.serve(async (req) => {
             asaas_customer_id,
             asaas_subscription_id,
             plano,
-            trial_ends_at: trialEndsAt.toISOString(),
+            trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
           })
           .eq("user_id", userId)
           .in("status", LIVE_STATUSES);
 
         return new Response(
-          JSON.stringify({ success: true, reused: true, checkoutUrl }),
+          JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -248,10 +310,11 @@ Deno.serve(async (req) => {
 
 
     // 7. Return checkout URL
-    return new Response(JSON.stringify({ success: true, checkoutUrl }), {
+    return new Response(JSON.stringify({ success: true, trialConcedido, checkoutUrl }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (err) {
     console.error("create-checkout error:", err instanceof Error ? err.message : String(err));
     return new Response(
