@@ -7,6 +7,12 @@ const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
 // Valores lidos do módulo compartilhado — fonte canônica: src/lib/pricing-rules.ts
 const PLAN_VALUES: Record<string, number> = PLAN_ANNUAL_VALUES;
 
+const PLAN_LABELS: Record<string, string> = {
+  presenca: "Ivero — Plano Presença",
+  influencia: "Ivero — Plano Influência",
+  autoridade: "Ivero — Plano Autoridade",
+};
+
 interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
@@ -51,12 +57,6 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as CheckoutBody;
     const { plano, nome, email } = body || ({} as CheckoutBody);
     console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
-
-
-
-
-
-
 
     if (!plano || !PLAN_VALUES[plano]) {
       return new Response(
@@ -143,7 +143,6 @@ Deno.serve(async (req) => {
     console.log("create-checkout: trialConcedido =", trialConcedido);
 
     // 3b. Asaas credentials
-
     const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
     if (!asaasKey) {
       return new Response(
@@ -153,40 +152,22 @@ Deno.serve(async (req) => {
     }
     const asaasHeaders = {
       "Content-Type": "application/json",
-      "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
+      "access_token": asaasKey,
     };
 
-
-    // 4. Create customer
-    const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
-      method: "POST",
-      headers: asaasHeaders,
-      body: JSON.stringify({ name: nome, email }),
-    });
-    const customerJson = await customerRes.json();
-    console.log("create-checkout asaas customer response:", JSON.stringify(customerJson));
-    if (!customerRes.ok || !customerJson?.id) {
-      console.error("create-checkout asaas customer error:", customerJson);
-      const msg =
-        customerJson?.errors?.[0]?.description ||
-        customerJson?.message ||
-        "Erro ao criar cliente no Asaas.";
-      return new Response(JSON.stringify({ error: msg, details: customerJson }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const asaas_customer_id: string = customerJson.id;
-
-    // 5. Create subscription — 7 dias grátis só para quem é elegível.
-    // Não elegível → cobrança imediata (nextDueDate = hoje), sem trial.
+    // 4. Datas: elegível ao trial → primeira cobrança em D+7. Não elegível →
+    // cobrança imediata (hoje), sem trial_ends_at e sem nada que pareça trial.
     const today = new Date();
     const trialEndsAt = trialConcedido
       ? new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
       : null;
     const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
     const value = PLAN_VALUES[plano];
-    // B. successUrl dinâmico: origin/Referer do request, fallback produção.
+
+    // 5. URLs de callback. O Asaas só aceita domínio público https cadastrado
+    // na conta — localhost/http são rejeitados, então caímos pra produção.
+    // Também rejeita query string, por isso usamos rotas limpas que o app
+    // redireciona internamente.
     const rawOrigin =
       req.headers.get("origin") ||
       (req.headers.get("referer")
@@ -198,149 +179,83 @@ Deno.serve(async (req) => {
             }
           })()
         : "");
-    // Asaas só aceita callback em domínio público https cadastrado na conta —
-    // localhost/127.0.0.1/http são rejeitados, então caímos pra produção.
     const isPublicHttps =
       /^https:\/\//.test(rawOrigin) && !/localhost|127\.0\.0\.1/.test(rawOrigin);
-    const baseUrl = isPublicHttps ? rawOrigin : "https://ivero.com.br";
-    // O Asaas rejeita successUrl com query string, então usamos uma rota limpa
-    // (/retorno-asaas) que no app redireciona pra /bem-vindo?from=asaas.
-    const successUrl = `${baseUrl.replace(/\/$/, "")}/retorno-asaas`;
+    const baseUrl = (isPublicHttps ? rawOrigin : "https://ivero.com.br").replace(/\/$/, "");
+    const successUrl = `${baseUrl}/retorno-asaas`;
+    const cancelUrl = `${baseUrl}/retorno-asaas-cancelado`;
+    const expiredUrl = `${baseUrl}/retorno-asaas-expirado`;
+    console.log("create-checkout callback urls:", successUrl, cancelUrl, expiredUrl);
 
-    console.log("create-checkout successUrl:", successUrl);
+    // 6. Checkout Session (POST /checkouts).
+    // Diferente do fluxo antigo (customer + subscription + PUT /payments com
+    // callback, que o Asaas responde 500 com corpo vazio), aqui o `callback`
+    // é aceito e o auto-redirect funciona. Não passamos `customer`: o Asaas
+    // coleta nome/CPF/endereço na própria tela do checkout.
+    const checkoutPayload: Record<string, unknown> = {
+      billingTypes: ["CREDIT_CARD"],
+      chargeTypes: ["RECURRENT"],
+      minutesToExpire: 60,
+      externalReference: userId,
+      callback: { successUrl, cancelUrl, expiredUrl, autoRedirect: true },
+      items: [
+        {
+          name: PLAN_LABELS[plano] ?? `Ivero — Plano ${plano}`,
+          description: `Assinatura mensal — plano ${plano}`,
+          quantity: 1,
+          value,
+        },
+      ],
+      subscription: {
+        cycle: "MONTHLY",
+        nextDueDate,
+      },
+    };
 
-    const subRes = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
+    const checkoutRes = await fetch(`${ASAAS_BASE_URL}/checkouts`, {
       method: "POST",
       headers: asaasHeaders,
-      body: JSON.stringify({
-        customer: asaas_customer_id,
-        billingType: "CREDIT_CARD",
-        cycle: "MONTHLY",
-        value,
-        nextDueDate,
-        description: `Ivero — Plano ${plano}`,
-      }),
+      body: JSON.stringify(checkoutPayload),
     });
 
     // Leitura defensiva: o Asaas responde 500 com corpo VAZIO em alguns casos,
     // e um .json() direto derruba a função com "Unexpected end of JSON input".
-    const subText = await subRes.text();
-    let subJson: Record<string, any> | null = null;
+    const checkoutText = await checkoutRes.text();
+    let checkoutJson: Record<string, any> | null = null;
     try {
-      subJson = subText ? JSON.parse(subText) : null;
+      checkoutJson = checkoutText ? JSON.parse(checkoutText) : null;
     } catch { /* tratado abaixo */ }
     console.log(
-      "create-checkout asaas subscription response:",
-      subRes.status,
-      subText.slice(0, 800),
+      "create-checkout asaas checkout response:",
+      checkoutRes.status,
+      checkoutText.slice(0, 800),
     );
-    if (!subRes.ok || !subJson?.id) {
-      console.error("create-checkout asaas subscription error:", subRes.status, subText);
+
+    const checkoutUrl: string = checkoutJson?.link || checkoutJson?.url || "";
+    if (!checkoutRes.ok || !checkoutUrl) {
+      console.error("create-checkout asaas checkout error:", checkoutRes.status, checkoutText);
       const msg =
-        subJson?.errors?.[0]?.description ||
-        subJson?.message ||
-        "Erro ao criar assinatura no Asaas.";
-      return new Response(JSON.stringify({ error: msg, details: subJson ?? subText }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const asaas_subscription_id: string = subJson.id;
-
-    // 5b. Fetch first payment (cobrança) generated for this subscription
-    let checkoutUrl: string =
-      subJson.invoiceUrl || subJson.bankSlipUrl || subJson.paymentLink || "";
-    let firstPaymentId = "";
-    try {
-      const paymentsRes = await fetch(
-        `${ASAAS_BASE_URL}/payments?subscription=${asaas_subscription_id}`,
-        { method: "GET", headers: asaasHeaders },
+        checkoutJson?.errors?.[0]?.description ||
+        checkoutJson?.message ||
+        "Erro ao criar checkout no Asaas.";
+      return new Response(
+        JSON.stringify({ error: msg, details: checkoutJson ?? checkoutText }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
-      const paymentsData = await paymentsRes.json();
-      console.log("create-checkout payments response:", JSON.stringify(paymentsData));
-      const firstPayment = paymentsData?.data?.[0];
-      if (firstPayment?.invoiceUrl) {
-        checkoutUrl = firstPayment.invoiceUrl;
-      }
-      firstPaymentId = firstPayment?.id ?? "";
-    } catch (paymentsErr) {
-      console.error("create-checkout payments fetch error:", paymentsErr);
     }
+    const asaasCheckoutId: string = checkoutJson?.id ?? "";
 
-    // Verifica se a cobrança herdou o callback da assinatura. Só se não herdou
-    // tentamos o PUT — e com payload MÍNIMO (só `callback`): reenviar
-    // billingType/value/dueDate numa cobrança de assinatura faz o Asaas
-    // responder 500 com corpo vazio.
-    const readPaymentCallback = async (): Promise<unknown> => {
-      const res = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
-        method: "GET",
-        headers: asaasHeaders,
-      });
-      const text = await res.text();
-      let json: Record<string, unknown> | null = null;
-      try {
-        json = text ? JSON.parse(text) : null;
-      } catch { /* corpo não-JSON */ }
-      console.log(
-        "create-checkout callback verify:",
-        res.status,
-        JSON.stringify(json?.callback ?? null),
-        json ? "" : text.slice(0, 400),
-      );
-      return json?.callback ?? null;
-    };
-
-    if (firstPaymentId) {
-      try {
-        const inherited = await readPaymentCallback();
-        const hasCallback = !!(inherited && (inherited as { successUrl?: string }).successUrl);
-
-        if (!hasCallback) {
-          const cbRes = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
-            method: "PUT",
-            headers: asaasHeaders,
-            body: JSON.stringify({ callback: { successUrl, autoRedirect: true } }),
-          });
-          const cbText = await cbRes.text();
-          console.log(
-            "create-checkout callback update:",
-            cbRes.status,
-            cbRes.headers.get("content-type") ?? "",
-            `len=${cbText.length}`,
-            cbText.slice(0, 800),
-          );
-          let cbJson: { invoiceUrl?: string } | null = null;
-          try {
-            cbJson = cbText ? JSON.parse(cbText) : null;
-          } catch (parseErr) {
-            console.error("create-checkout callback update: corpo não-JSON", String(parseErr));
-          }
-          if (cbJson?.invoiceUrl) checkoutUrl = cbJson.invoiceUrl;
-          await readPaymentCallback();
-        }
-      } catch (cbErr) {
-        // D. Falha no callback não bloqueia o checkout: o usuário ainda paga e
-        // o estado `pending` do /bem-vindo cobre métodos sem auto-redirect.
-        console.error("create-checkout callback update error:", cbErr);
-      }
-    }
-
-
-
-    if (!checkoutUrl) {
-      checkoutUrl = `https://sandbox.asaas.com/i/${asaas_subscription_id}`;
-    }
-
-
-    // 6. Persist in assinaturas (service role to bypass RLS for insert)
+    // 7. Persist in assinaturas (service role to bypass RLS for insert).
+    // asaas_customer_id / asaas_subscription_id ficam nulos aqui: a assinatura
+    // no Asaas só passa a existir depois que o cliente conclui o checkout, e o
+    // asaas-webhook grava esses IDs na confirmação do pagamento.
     const dataInicio = new Date();
     const dataVencimento = new Date(dataInicio.getTime() + 30 * 24 * 60 * 60 * 1000);
     const novoStatus = trialConcedido ? "trial" : "pendente";
 
     const assinaturaPayload = {
-      asaas_customer_id,
-      asaas_subscription_id,
+      asaas_customer_id: null,
+      asaas_subscription_id: null,
       plano,
       status: novoStatus,
       data_inicio: dataInicio.toISOString(),
@@ -348,7 +263,7 @@ Deno.serve(async (req) => {
       trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
     };
 
-    // D. Não acumular histórico: reaproveitamos a linha expirada mais recente
+    // Não acumular histórico: reaproveitamos a linha expirada mais recente
     // (update in place) e cancelamos as demais linhas mortas do usuário.
     const DEAD_STATUSES = ["expirado", "trial_expirado"];
     const linhaMorta = (history ?? []).find((r) => DEAD_STATUSES.includes(r.status ?? ""));
@@ -380,7 +295,6 @@ Deno.serve(async (req) => {
       insertError = error as typeof insertError;
     }
 
-
     if (insertError) {
       // 23505 = unique_violation no índice parcial assinaturas_user_ativa_uniq:
       // uma assinatura viva foi criada em paralelo (duplo clique / corrida).
@@ -390,8 +304,6 @@ Deno.serve(async (req) => {
         await supabaseAdmin
           .from("assinaturas")
           .update({
-            asaas_customer_id,
-            asaas_subscription_id,
             plano,
             trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
           })
@@ -399,7 +311,13 @@ Deno.serve(async (req) => {
           .in("status", LIVE_STATUSES);
 
         return new Response(
-          JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl }),
+          JSON.stringify({
+            success: true,
+            reused: true,
+            trialConcedido,
+            checkoutUrl,
+            asaasCheckoutId,
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -410,13 +328,11 @@ Deno.serve(async (req) => {
       );
     }
 
-
-    // 7. Return checkout URL
-    return new Response(JSON.stringify({ success: true, trialConcedido, checkoutUrl }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
+    // 8. Return checkout URL
+    return new Response(
+      JSON.stringify({ success: true, trialConcedido, checkoutUrl, asaasCheckoutId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     console.error("create-checkout error:", err instanceof Error ? err.message : String(err));
     return new Response(
