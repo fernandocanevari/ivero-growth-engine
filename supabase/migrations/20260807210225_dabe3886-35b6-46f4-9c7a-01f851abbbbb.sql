@@ -1,0 +1,1 @@
+UPDATE public.assinaturas SET status = 'expirado', trial_ends_at = now() - interval '1 day', updated_at = now() WHERE user_id = '4484b7c1-38a6-42fc-8ca4-9537f49ab87e';

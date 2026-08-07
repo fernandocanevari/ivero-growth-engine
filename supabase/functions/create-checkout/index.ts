@@ -211,8 +211,12 @@ Deno.serve(async (req) => {
         value,
         nextDueDate,
         description: `Ivero — Plano ${plano}`,
+        // A. O callback é definido já na criação: as cobranças geradas herdam
+        // o auto-redirect. O PUT na cobrança fica só como fallback.
+        callback: { successUrl, autoRedirect: true },
       }),
     });
+
     const subJson = await subRes.json();
     console.log("create-checkout asaas subscription response:", JSON.stringify(subJson));
     if (!subRes.ok || !subJson?.id) {
@@ -248,57 +252,56 @@ Deno.serve(async (req) => {
       console.error("create-checkout payments fetch error:", paymentsErr);
     }
 
-    // A. O redirect pós-pagamento vive no objeto `callback` do PAYMENT,
-    // não na criação da subscription (a API ignora redirectUrl lá).
+    // Verifica se a cobrança herdou o callback da assinatura. Só se não herdou
+    // tentamos o PUT — e com payload MÍNIMO (só `callback`): reenviar
+    // billingType/value/dueDate numa cobrança de assinatura faz o Asaas
+    // responder 500 com corpo vazio.
+    const readPaymentCallback = async (): Promise<unknown> => {
+      const res = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
+        method: "GET",
+        headers: asaasHeaders,
+      });
+      const text = await res.text();
+      let json: Record<string, unknown> | null = null;
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch { /* corpo não-JSON */ }
+      console.log(
+        "create-checkout callback verify:",
+        res.status,
+        JSON.stringify(json?.callback ?? null),
+        json ? "" : text.slice(0, 400),
+      );
+      return json?.callback ?? null;
+    };
+
     if (firstPaymentId) {
       try {
-        const cbRes = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
-          method: "PUT",
-          headers: asaasHeaders,
-          body: JSON.stringify({
-            billingType: "CREDIT_CARD",
-            value,
-            dueDate: nextDueDate,
-            callback: { successUrl, autoRedirect: true },
-          }),
-        });
-        // Instrumentação: status + corpo cru ANTES de qualquer parse, senão um
-        // corpo vazio derruba a leitura e perdemos o motivo real da falha.
-        const cbText = await cbRes.text();
-        console.log(
-          "create-checkout callback update:",
-          cbRes.status,
-          cbRes.headers.get("content-type") ?? "",
-          `len=${cbText.length}`,
-          cbText.slice(0, 800),
-        );
-        let cbJson: { invoiceUrl?: string } | null = null;
-        try {
-          cbJson = cbText ? JSON.parse(cbText) : null;
-        } catch (parseErr) {
-          console.error("create-checkout callback update: corpo não-JSON", String(parseErr));
-        }
-        if (cbJson?.invoiceUrl) checkoutUrl = cbJson.invoiceUrl;
+        const inherited = await readPaymentCallback();
+        const hasCallback = !!(inherited && (inherited as { successUrl?: string }).successUrl);
 
-        // Prova objetiva: relê a cobrança e loga o estado real do callback.
-        try {
-          const verifyRes = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
-            method: "GET",
+        if (!hasCallback) {
+          const cbRes = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
+            method: "PUT",
             headers: asaasHeaders,
+            body: JSON.stringify({ callback: { successUrl, autoRedirect: true } }),
           });
-          const verifyText = await verifyRes.text();
-          let verifyJson: Record<string, unknown> | null = null;
-          try {
-            verifyJson = verifyText ? JSON.parse(verifyText) : null;
-          } catch { /* logado abaixo como texto cru */ }
+          const cbText = await cbRes.text();
           console.log(
-            "create-checkout callback verify:",
-            verifyRes.status,
-            JSON.stringify(verifyJson?.callback ?? null),
-            verifyJson ? "" : verifyText.slice(0, 400),
+            "create-checkout callback update:",
+            cbRes.status,
+            cbRes.headers.get("content-type") ?? "",
+            `len=${cbText.length}`,
+            cbText.slice(0, 800),
           );
-        } catch (verifyErr) {
-          console.error("create-checkout callback verify error:", String(verifyErr));
+          let cbJson: { invoiceUrl?: string } | null = null;
+          try {
+            cbJson = cbText ? JSON.parse(cbText) : null;
+          } catch (parseErr) {
+            console.error("create-checkout callback update: corpo não-JSON", String(parseErr));
+          }
+          if (cbJson?.invoiceUrl) checkoutUrl = cbJson.invoiceUrl;
+          await readPaymentCallback();
         }
       } catch (cbErr) {
         // D. Falha no callback não bloqueia o checkout: o usuário ainda paga e
@@ -306,6 +309,7 @@ Deno.serve(async (req) => {
         console.error("create-checkout callback update error:", cbErr);
       }
     }
+
 
 
     if (!checkoutUrl) {
