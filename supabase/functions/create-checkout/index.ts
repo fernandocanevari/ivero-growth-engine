@@ -172,11 +172,12 @@ Deno.serve(async (req) => {
       "access_token": asaasKey,
     };
 
-    // 4. Datas: elegível ao trial → primeira cobrança em D+7. Não elegível →
-    // cobrança imediata (hoje), sem trial_ends_at e sem nada que pareça trial.
+    // 4. Datas: elegível ao trial → primeira cobrança no fim do trial (data em
+    // curso, se já houver, senão D+7). Não elegível → cobrança imediata (hoje),
+    // sem trial_ends_at e sem nada que pareça trial.
     const today = new Date();
     const trialEndsAt = trialConcedido
-      ? new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+      ? new Date(trialEmCursoMs ?? today.getTime() + 7 * 24 * 60 * 60 * 1000)
       : null;
     const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
     const value = PLAN_VALUES[plano];
