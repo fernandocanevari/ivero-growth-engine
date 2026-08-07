@@ -95,19 +95,26 @@ const BemVindoPage = () => {
         if (cancelled) return;
         const { data } = await supabase
           .from("assinaturas")
-          .select("status")
+          .select("status, asaas_subscription_id")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (data?.status === "ativo" || data?.status === "trial") {
+        // Libera quando o status já está vivo OU quando o webhook do Asaas já
+        // vinculou a assinatura (asaas_subscription_id preenchido).
+        if (
+          data?.status === "ativo" ||
+          data?.status === "trial" ||
+          !!data?.asaas_subscription_id
+        ) {
           if (!cancelled) setStatus("active");
           try {
             sessionStorage.removeItem("ivero_checkout_url");
           } catch { /* noop */ }
           return;
         }
+
 
         attempts++;
         if (attempts >= MAX_ATTEMPTS) {
