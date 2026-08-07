@@ -233,17 +233,50 @@ Deno.serve(async (req) => {
     // 6. Persist in assinaturas (service role to bypass RLS for insert)
     const dataInicio = new Date();
     const dataVencimento = new Date(dataInicio.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const novoStatus = trialConcedido ? "trial" : "pendente";
 
-    const { error: insertError } = await supabaseAdmin.from("assinaturas").insert({
-      user_id: userId,
+    const assinaturaPayload = {
       asaas_customer_id,
       asaas_subscription_id,
       plano,
-      status: "trial",
+      status: novoStatus,
       data_inicio: dataInicio.toISOString(),
       data_vencimento: dataVencimento.toISOString(),
-      trial_ends_at: trialEndsAt.toISOString(),
-    });
+      trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
+    };
+
+    // D. Não acumular histórico: reaproveitamos a linha expirada mais recente
+    // (update in place) e cancelamos as demais linhas mortas do usuário.
+    const DEAD_STATUSES = ["expirado", "trial_expirado"];
+    const linhaMorta = (history ?? []).find((r) => DEAD_STATUSES.includes(r.status ?? ""));
+
+    let insertError: { code?: string; message: string } | null = null;
+
+    if (linhaMorta) {
+      const { error: updateError } = await supabaseAdmin
+        .from("assinaturas")
+        .update(assinaturaPayload)
+        .eq("id", linhaMorta.id);
+      insertError = updateError as typeof insertError;
+
+      if (!updateError) {
+        const outrasMortas = (history ?? [])
+          .filter((r) => r.id !== linhaMorta.id && DEAD_STATUSES.includes(r.status ?? ""))
+          .map((r) => r.id as string);
+        if (outrasMortas.length > 0) {
+          await supabaseAdmin
+            .from("assinaturas")
+            .update({ status: "cancelado" })
+            .in("id", outrasMortas);
+        }
+      }
+    } else {
+      const { error } = await supabaseAdmin
+        .from("assinaturas")
+        .insert({ user_id: userId, ...assinaturaPayload });
+      insertError = error as typeof insertError;
+    }
+
 
     if (insertError) {
       // 23505 = unique_violation no índice parcial assinaturas_user_ativa_uniq:
