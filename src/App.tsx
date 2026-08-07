@@ -13,6 +13,7 @@ import OnboardingPerguntasPage from "./pages/OnboardingPerguntasPage";
 import OnboardingSitePage from "./pages/OnboardingSitePage";
 import OnboardingDiagnosticoPlaceholderPage from "./pages/OnboardingDiagnosticoPlaceholderPage";
 import EscolherPlanoPage from "./pages/EscolherPlanoPage";
+import RetornoAsaasPage from "./pages/RetornoAsaasPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
