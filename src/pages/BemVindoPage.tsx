@@ -30,7 +30,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 type Status = "loading" | "active" | "pending";
 
-const MAX_ATTEMPTS = 20;
+// Com Checkout Session do Asaas, a assinatura só é criada (e o webhook só
+// roda) depois que o cliente conclui o pagamento na tela do Asaas — por isso a
+// janela de espera é maior: 40 x 3s = 2 minutos.
+const MAX_ATTEMPTS = 40;
 const POLL_INTERVAL_MS = 3000;
 
 const BemVindoPage = () => {
@@ -92,19 +95,26 @@ const BemVindoPage = () => {
         if (cancelled) return;
         const { data } = await supabase
           .from("assinaturas")
-          .select("status")
+          .select("status, asaas_subscription_id")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (data?.status === "ativo" || data?.status === "trial") {
+        // Libera quando o status já está vivo OU quando o webhook do Asaas já
+        // vinculou a assinatura (asaas_subscription_id preenchido).
+        if (
+          data?.status === "ativo" ||
+          data?.status === "trial" ||
+          !!data?.asaas_subscription_id
+        ) {
           if (!cancelled) setStatus("active");
           try {
             sessionStorage.removeItem("ivero_checkout_url");
           } catch { /* noop */ }
           return;
         }
+
 
         attempts++;
         if (attempts >= MAX_ATTEMPTS) {

@@ -44,35 +44,87 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
-    // Helper to update by asaas_subscription_id
-    const updateBySubscription = async (
+    const paymentSubId: string = body?.payment?.subscription ?? "";
+    const paymentCustomerId: string = body?.payment?.customer ?? "";
+    const subscriptionSubId: string = body?.subscription?.id ?? "";
+    const subscriptionCustomerId: string = body?.subscription?.customer ?? "";
+    // Com Checkout Session o vínculo com o usuário chega no externalReference
+    // (gravado como user_id em create-checkout), porque a assinatura no Asaas
+    // só existe depois que o cliente conclui o checkout.
+    const externalReference: string =
+      body?.payment?.externalReference ?? body?.subscription?.externalReference ?? "";
+
+    /**
+     * Atualiza a assinatura do usuário.
+     * 1º tenta pelo asaas_subscription_id (fluxo já vinculado);
+     * se nada casar, cai pro externalReference (user_id) e aproveita para
+     * gravar os IDs do Asaas — o "binding" acontece na confirmação do pagamento.
+     */
+    const updateAssinatura = async (
       subscriptionId: string,
+      customerId: string,
       patch: Record<string, unknown>,
     ) => {
-      if (!subscriptionId) {
-        console.error("[asaas-webhook] Missing subscription id for", event);
-        return { error: "Missing subscription id" };
-      }
-      const { error } = await supabase
-        .from("assinaturas")
-        .update({ ...patch, updated_at: new Date().toISOString() })
-        .eq("asaas_subscription_id", subscriptionId);
-      if (error) {
-        console.error("[asaas-webhook] DB update error:", error);
-        return { error: error.message };
-      }
-      return { ok: true };
-    };
+      const now = new Date().toISOString();
+      const bindIds: Record<string, unknown> = {};
+      if (subscriptionId) bindIds.asaas_subscription_id = subscriptionId;
+      if (customerId) bindIds.asaas_customer_id = customerId;
 
-    const paymentSubId: string = body?.payment?.subscription ?? "";
-    const subscriptionSubId: string = body?.subscription?.id ?? "";
+      if (subscriptionId) {
+        const { data, error } = await supabase
+          .from("assinaturas")
+          .update({ ...patch, ...bindIds, updated_at: now })
+          .eq("asaas_subscription_id", subscriptionId)
+          .select("id");
+        if (error) {
+          console.error("[asaas-webhook] DB update error (by subscription):", error);
+          return { error: error.message };
+        }
+        if (data && data.length > 0) return { ok: true, matched: "subscription" };
+      }
+
+      if (externalReference) {
+        const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
+        const { data: row, error: selError } = await supabase
+          .from("assinaturas")
+          .select("id")
+          .eq("user_id", externalReference)
+          .in("status", LIVE_STATUSES)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (selError) {
+          console.error("[asaas-webhook] DB select error (by externalReference):", selError);
+          return { error: selError.message };
+        }
+        if (row) {
+          const { error } = await supabase
+            .from("assinaturas")
+            .update({ ...patch, ...bindIds, updated_at: now })
+            .eq("id", row.id);
+          if (error) {
+            console.error("[asaas-webhook] DB update error (by externalReference):", error);
+            return { error: error.message };
+          }
+          console.log("[asaas-webhook] matched via externalReference:", externalReference);
+          return { ok: true, matched: "externalReference" };
+        }
+      }
+
+      console.error(
+        "[asaas-webhook] No assinatura matched for",
+        event,
+        JSON.stringify({ subscriptionId, externalReference }),
+      );
+      return { error: "No matching assinatura" };
+    };
 
     switch (event) {
       case "PAYMENT_CONFIRMED":
       case "PAYMENT_RECEIVED": {
         const nextDue = new Date();
         nextDue.setDate(nextDue.getDate() + 30);
-        const res = await updateBySubscription(paymentSubId, {
+        const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
           status: "ativo",
           carencia_ate: null,
           data_vencimento: nextDue.toISOString(),
@@ -85,7 +137,7 @@ Deno.serve(async (req) => {
       case "PAYMENT_OVERDUE": {
         const carencia = new Date();
         carencia.setDate(carencia.getDate() + 7);
-        const res = await updateBySubscription(paymentSubId, {
+        const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
           status: "atrasado",
           carencia_ate: carencia.toISOString(),
         });
@@ -94,7 +146,7 @@ Deno.serve(async (req) => {
       }
 
       case "PAYMENT_DELETED": {
-        const res = await updateBySubscription(paymentSubId, {
+        const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
           status: "cancelado",
           carencia_ate: null,
         });
@@ -102,9 +154,16 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "SUBSCRIPTION_CREATED": {
+        // Vincula os IDs do Asaas assim que a assinatura nasce no checkout.
+        const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {});
+        if (res.error) return json(500, res);
+        break;
+      }
+
       case "SUBSCRIPTION_DELETED":
       case "SUBSCRIPTION_INACTIVATED": {
-        const res = await updateBySubscription(subscriptionSubId, {
+        const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {
           status: "cancelado",
           carencia_ate: null,
         });
