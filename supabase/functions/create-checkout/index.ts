@@ -171,11 +171,15 @@ Deno.serve(async (req) => {
     }
     const asaas_customer_id: string = customerJson.id;
 
-    // 5. Create subscription — first charge after 7-day trial
+    // 5. Create subscription — 7 dias grátis só para quem é elegível.
+    // Não elegível → cobrança imediata (nextDueDate = hoje), sem trial.
     const today = new Date();
-    const trialEndsAt = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const nextDueDate = trialEndsAt.toISOString().slice(0, 10);
+    const trialEndsAt = trialConcedido
+      ? new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+      : null;
+    const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
     const value = PLAN_VALUES[plano];
+
 
     const subRes = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
       method: "POST",
