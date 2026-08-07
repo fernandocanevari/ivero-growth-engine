@@ -211,8 +211,12 @@ Deno.serve(async (req) => {
         value,
         nextDueDate,
         description: `Ivero — Plano ${plano}`,
+        // A. O callback é definido já na criação: as cobranças geradas herdam
+        // o auto-redirect. O PUT na cobrança fica só como fallback.
+        callback: { successUrl, autoRedirect: true },
       }),
     });
+
     const subJson = await subRes.json();
     console.log("create-checkout asaas subscription response:", JSON.stringify(subJson));
     if (!subRes.ok || !subJson?.id) {
