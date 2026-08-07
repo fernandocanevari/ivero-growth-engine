@@ -111,8 +111,10 @@ describe("EscolherPlanoPage — elegibilidade ao trial", () => {
   it("trial ainda válido continua elegível", async () => {
     const futuro = new Date(Date.now() + 3 * 86_400_000).toISOString();
     assinaturaRows = [{ status: "trial", trial_ends_at: futuro }];
-    await renderPage();
-    // assinatura viva → redireciona para o dashboard
-    expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
+    render(<EscolherPlanoPage />);
+    // assinatura viva → redireciona para o dashboard (tela fica em loading)
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true }),
+    );
   });
 });
