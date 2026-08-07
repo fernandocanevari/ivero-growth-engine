@@ -28,16 +28,28 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 type Status = "loading" | "active" | "pending";
 
+const MAX_ATTEMPTS = 20;
+const POLL_INTERVAL_MS = 3000;
+
 const BemVindoPage = () => {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const [status, setStatus] = useState<Status>("loading");
   const [hasDiagnosis, setHasDiagnosis] = useState<boolean>(false);
+  const [recheckToken, setRecheckToken] = useState(0);
+  const [checkoutUrl, setCheckoutUrl] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      setCheckoutUrl(sessionStorage.getItem("ivero_checkout_url") ?? "");
+    } catch {
+      setCheckoutUrl("");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 10;
 
     const fromAsaas =
       new URLSearchParams(window.location.search).get("from") === "asaas";
@@ -86,15 +98,18 @@ const BemVindoPage = () => {
 
         if (data?.status === "ativo" || data?.status === "trial") {
           if (!cancelled) setStatus("active");
+          try {
+            sessionStorage.removeItem("ivero_checkout_url");
+          } catch { /* noop */ }
           return;
         }
 
         attempts++;
-        if (attempts >= maxAttempts) {
+        if (attempts >= MAX_ATTEMPTS) {
           if (!cancelled) setStatus("pending");
           return;
         }
-        setTimeout(poll, 3000);
+        setTimeout(poll, POLL_INTERVAL_MS);
       };
 
       poll();
@@ -104,7 +119,13 @@ const BemVindoPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, recheckToken]);
+
+  const handleRecheck = () => {
+    setStatus("loading");
+    setRecheckToken((t) => t + 1);
+  };
+
 
   const ctaLabel = hasDiagnosis
     ? "Ver meu diagnóstico →"
