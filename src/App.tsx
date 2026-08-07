@@ -99,6 +99,9 @@ const App = () => (
           <Route path="/welcome" element={<ProtectedRoute requireSubscription={false}><BemVindoPage /></ProtectedRoute>} />
           <Route path="/bem-vindo" element={<ProtectedRoute requireSubscription={false}><BemVindoPage /></ProtectedRoute>} />
           <Route path="/escolher-plano" element={<ProtectedRoute requireSubscription={false}><EscolherPlanoPage /></ProtectedRoute>} />
+          <Route path="/retorno-asaas" element={<RetornoAsaasPage outcome="success" />} />
+          <Route path="/retorno-asaas-cancelado" element={<RetornoAsaasPage outcome="cancelado" />} />
+          <Route path="/retorno-asaas-expirado" element={<RetornoAsaasPage outcome="expirado" />} />
           <Route path="/onboarding/perguntas" element={<ProtectedRoute requireSubscription={false}><OnboardingPerguntasPage /></ProtectedRoute>} />
           <Route path="/onboarding/site" element={<ProtectedRoute requireSubscription={false}><OnboardingSitePage /></ProtectedRoute>} />
           <Route path="/onboarding/diagnostico" element={<ProtectedRoute requireSubscription={false}><OnboardingDiagnosticoPlaceholderPage /></ProtectedRoute>} />
