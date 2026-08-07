@@ -190,6 +190,12 @@ const EscolherPlanoPage = () => {
           transition={{ duration: 0.4 }}
           className="text-center max-w-2xl mx-auto mb-8 sm:mb-10"
         >
+          {!trialExpirado && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-accent/10 border-accent/20 text-accent text-xs font-semibold mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              7 dias grátis — sem cobrança imediata
+            </div>
+          )}
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
             {trialExpirado ? (
               <>
