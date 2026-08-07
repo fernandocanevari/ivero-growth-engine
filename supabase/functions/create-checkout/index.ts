@@ -112,7 +112,31 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 3c. Elegibilidade ao trial: só quem NUNCA teve histórico de assinatura
+    // ganha os 7 dias grátis. Histórico com trial_ends_at no passado OU status
+    // em expirado/cancelado/ativo/inadimplente = já usou (ou já foi cliente).
+    const HISTORY_STATUSES = ["expirado", "trial_expirado", "cancelado", "ativo", "inadimplente"];
+    const { data: history } = await supabaseAdmin
+      .from("assinaturas")
+      .select("id, status, trial_ends_at")
+      .eq("user_id", userId);
+
+    const nowMs = Date.now();
+    let trialConcedido = true;
+    for (const row of history ?? []) {
+      const usedTrial =
+        row.trial_ends_at !== null &&
+        !Number.isNaN(new Date(row.trial_ends_at as string).getTime()) &&
+        new Date(row.trial_ends_at as string).getTime() <= nowMs;
+      if (usedTrial || HISTORY_STATUSES.includes(row.status ?? "")) {
+        trialConcedido = false;
+        break;
+      }
+    }
+    console.log("create-checkout: trialConcedido =", trialConcedido);
+
     // 3b. Asaas credentials
+
     const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
     if (!asaasKey) {
       return new Response(
