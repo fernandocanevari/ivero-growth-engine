@@ -192,8 +192,13 @@ Deno.serve(async (req) => {
             }
           })()
         : "");
-    const baseUrl = /^https?:\/\//.test(rawOrigin) ? rawOrigin : "https://ivero.com.br";
+    // Asaas só aceita callback em domínio público https cadastrado na conta —
+    // localhost/127.0.0.1/http são rejeitados, então caímos pra produção.
+    const isPublicHttps =
+      /^https:\/\//.test(rawOrigin) && !/localhost|127\.0\.0\.1/.test(rawOrigin);
+    const baseUrl = isPublicHttps ? rawOrigin : "https://ivero.com.br";
     const successUrl = `${baseUrl.replace(/\/$/, "")}/bem-vindo?from=asaas`;
+
     console.log("create-checkout successUrl:", successUrl);
 
     const subRes = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
