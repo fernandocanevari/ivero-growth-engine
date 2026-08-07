@@ -953,6 +953,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_expired_trials: { Args: never; Returns: number }
     }
     Enums: {
       action_category:
