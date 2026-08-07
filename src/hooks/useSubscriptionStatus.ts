@@ -98,6 +98,13 @@ export function useSubscriptionStatus() {
   const effectiveStatus = resolveEffectiveStatus(assinatura);
   const isTrialExpired = effectiveStatus === "trial_expirado";
 
+  // Elegibilidade ao trial de 7 dias — usada SÓ para copy (a decisão real é
+  // feita no create-checkout, com o histórico completo do usuário).
+  const isTrialElegivel =
+    !assinatura ||
+    (effectiveStatus === "trial" && !isTrialExpired && trialEndsAt !== null) ||
+    (assinatura.status === null && trialEndsAt === null);
+
   if (!assinatura) {
     isTrial = true;
     isPaid = false;
@@ -154,6 +161,7 @@ export function useSubscriptionStatus() {
     carenciaAte,
     trialEndsAt,
     effectiveStatus,
+    isTrialElegivel,
     isTrialExpired: isTrialExpired && !isAdmin,
   };
 

@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { resolveEffectiveStatus } from "@/lib/subscription-status";
 
 import {
+  PLANOS,
   PLANOS_ARRAY,
   formatBRL,
   annualSavingBRL,
@@ -39,7 +40,7 @@ const METRIC_ICON: Record<string, typeof Cpu> = {
   "Consultas/mês": BarChart2,
 };
 
-const CTA_TEXT = "Começar com 7 dias grátis →";
+
 
 
 const EscolherPlanoPage = () => {
@@ -48,6 +49,8 @@ const EscolherPlanoPage = () => {
   const trialExpirado = searchParams.get("motivo") === "trial_expirado";
   const [isAnnual, setIsAnnual] = useState(true);
   const [checking, setChecking] = useState(true);
+  // Elegibilidade ao trial: derivada do histórico de assinaturas. Só afeta copy.
+  const [trialElegivel, setTrialElegivel] = useState(true);
 
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
@@ -68,13 +71,24 @@ const EscolherPlanoPage = () => {
       // Se já existe assinatura viva (inclusive pendente/inadimplente), não
       // reabrimos o checkout — mandamos o usuário para o app/assinatura.
       // Trial vencido NÃO conta como viva (senão viraria loop de redirect).
-      const { data: subs } = await supabase
+      const { data: allSubs } = await supabase
         .from("assinaturas")
         .select("status, trial_ends_at")
         .eq("user_id", session.user.id)
-        .in("status", ["ativo", "trial", "inadimplente", "pendente"])
-        .limit(1);
+        .order("created_at", { ascending: false });
       if (cancelled) return;
+
+      const HISTORY_STATUSES = ["expirado", "trial_expirado", "cancelado", "ativo", "inadimplente"];
+      const jaTeveHistorico = (allSubs ?? []).some((r) => {
+        const usouTrial =
+          !!r.trial_ends_at && new Date(r.trial_ends_at).getTime() <= Date.now();
+        return usouTrial || HISTORY_STATUSES.includes(r.status ?? "");
+      });
+      setTrialElegivel(!jaTeveHistorico);
+
+      const subs = (allSubs ?? []).filter((r) =>
+        ["ativo", "trial", "inadimplente", "pendente"].includes(r.status ?? ""),
+      );
       const effective = subs?.[0] ? resolveEffectiveStatus(subs[0]) : null;
       if (effective && effective !== "trial_expirado") {
         navigate(
@@ -384,7 +398,7 @@ const EscolherPlanoPage = () => {
                         handlePlanClick(plan.name);
                       }}
                     >
-                      {CTA_TEXT}
+                      {trialElegivel ? "Começar com 7 dias grátis →" : "Assinar plano →"}
                     </Button>
                   </div>
                 </div>
@@ -400,7 +414,19 @@ const EscolherPlanoPage = () => {
           <DialogHeader>
             <DialogTitle>Confirmar assinatura</DialogTitle>
             <DialogDescription>
-              Você terá 7 dias grátis antes da primeira cobrança. Cancele quando quiser.
+              {trialElegivel
+                ? "Você terá 7 dias grátis antes da primeira cobrança. Cancele quando quiser."
+                : `A cobrança do plano ${
+                    selectedPlano ? PLANOS[selectedPlano].name : ""
+                  } será feita agora, no valor de ${
+                    selectedPlano
+                      ? formatBRL(
+                          isAnnual
+                            ? PLANOS[selectedPlano].annualPrice
+                            : PLANOS[selectedPlano].monthlyPrice,
+                        )
+                      : ""
+                  }. Cancele quando quiser.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -432,7 +458,7 @@ const EscolherPlanoPage = () => {
                   Gerando link...
                 </>
               ) : (
-                "Iniciar 7 dias grátis"
+                trialElegivel ? "Iniciar 7 dias grátis" : "Assinar agora"
               )}
             </Button>
           </DialogFooter>
