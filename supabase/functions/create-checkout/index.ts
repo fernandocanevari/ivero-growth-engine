@@ -290,13 +290,13 @@ Deno.serve(async (req) => {
             asaas_customer_id,
             asaas_subscription_id,
             plano,
-            trial_ends_at: trialEndsAt.toISOString(),
+            trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
           })
           .eq("user_id", userId)
           .in("status", LIVE_STATUSES);
 
         return new Response(
-          JSON.stringify({ success: true, reused: true, checkoutUrl }),
+          JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -309,10 +309,11 @@ Deno.serve(async (req) => {
 
 
     // 7. Return checkout URL
-    return new Response(JSON.stringify({ success: true, checkoutUrl }), {
+    return new Response(JSON.stringify({ success: true, trialConcedido, checkoutUrl }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (err) {
     console.error("create-checkout error:", err instanceof Error ? err.message : String(err));
     return new Response(
