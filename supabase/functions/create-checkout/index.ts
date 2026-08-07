@@ -69,6 +69,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Modo diagnóstico temporário: testa um PUT de callback e devolve a resposta crua.
+    const dbgPut = (body as unknown as { debugPutPaymentId?: string; debugSuccessUrl?: string })
+      .debugPutPaymentId;
+    if (dbgPut) {
+      const dbgUrl =
+        (body as unknown as { debugSuccessUrl?: string }).debugSuccessUrl ??
+        "https://ivero.com.br/retorno-asaas";
+      const res = await fetch(`${ASAAS_BASE_URL}/payments/${dbgPut}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
+        },
+        body: JSON.stringify({ callback: { successUrl: dbgUrl, autoRedirect: true } }),
+      });
+      const text = await res.text();
+      return new Response(
+        JSON.stringify({ status: res.status, len: text.length, body: text.slice(0, 1000) }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+
 
 
     if (!plano || !PLAN_VALUES[plano]) {
