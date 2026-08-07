@@ -48,9 +48,28 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     // 2. Parse + validate body
-    const body = (await req.json()) as CheckoutBody;
+    const body = (await req.json()) as CheckoutBody & { debugPaymentId?: string };
     const { plano, nome, email } = body || ({} as CheckoutBody);
     console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
+
+    // Modo diagnóstico temporário: devolve o estado real da cobrança no Asaas
+    // (inclusive o objeto `callback`) sem depender de logs.
+    if (body?.debugPaymentId) {
+      const res = await fetch(`${ASAAS_BASE_URL}/payments/${body.debugPaymentId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
+        },
+      });
+      const text = await res.text();
+      return new Response(JSON.stringify({ status: res.status, body: text }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
 
     if (!plano || !PLAN_VALUES[plano]) {
       return new Response(
