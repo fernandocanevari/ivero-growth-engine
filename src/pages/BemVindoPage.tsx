@@ -11,6 +11,8 @@ import {
   MessageCircle,
   Mail,
   CheckCircle2,
+  RefreshCw,
+
 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -28,16 +30,28 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 type Status = "loading" | "active" | "pending";
 
+const MAX_ATTEMPTS = 20;
+const POLL_INTERVAL_MS = 3000;
+
 const BemVindoPage = () => {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const [status, setStatus] = useState<Status>("loading");
   const [hasDiagnosis, setHasDiagnosis] = useState<boolean>(false);
+  const [recheckToken, setRecheckToken] = useState(0);
+  const [checkoutUrl, setCheckoutUrl] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      setCheckoutUrl(sessionStorage.getItem("ivero_checkout_url") ?? "");
+    } catch {
+      setCheckoutUrl("");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 10;
 
     const fromAsaas =
       new URLSearchParams(window.location.search).get("from") === "asaas";
@@ -86,15 +100,18 @@ const BemVindoPage = () => {
 
         if (data?.status === "ativo" || data?.status === "trial") {
           if (!cancelled) setStatus("active");
+          try {
+            sessionStorage.removeItem("ivero_checkout_url");
+          } catch { /* noop */ }
           return;
         }
 
         attempts++;
-        if (attempts >= maxAttempts) {
+        if (attempts >= MAX_ATTEMPTS) {
           if (!cancelled) setStatus("pending");
           return;
         }
-        setTimeout(poll, 3000);
+        setTimeout(poll, POLL_INTERVAL_MS);
       };
 
       poll();
@@ -104,7 +121,13 @@ const BemVindoPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, recheckToken]);
+
+  const handleRecheck = () => {
+    setStatus("loading");
+    setRecheckToken((t) => t + 1);
+  };
+
 
   const ctaLabel = hasDiagnosis
     ? "Ver meu diagnóstico →"
@@ -152,13 +175,35 @@ const BemVindoPage = () => {
                 Seu pagamento está sendo confirmado. Assim que confirmado, seu acesso será
                 liberado automaticamente. Você receberá um e-mail de confirmação.
               </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleRecheck}
+                  className="text-base px-8 py-5 h-auto rounded-full bg-gradient-to-r from-ivero-purple to-accent text-white hover:opacity-95"
+                >
+                  <RefreshCw className="mr-2" size={18} /> Verificar novamente
+                </Button>
+                {checkoutUrl && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
+                  >
+                    <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+                      Reabrir pagamento
+                    </a>
+                  </Button>
+                )}
+              </div>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="lg"
-                className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
+                className="mt-4 text-base px-8 py-5 h-auto rounded-full text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
                 onClick={() => navigate(isAdmin ? "/admin" : "/dashboard")}
               >
                 {isAdmin ? "Ir para o Painel Administrativo" : "Ir Para o Dashboard"}
+
               </Button>
             </motion.div>
           </div>

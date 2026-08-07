@@ -180,7 +180,21 @@ Deno.serve(async (req) => {
       : null;
     const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
     const value = PLAN_VALUES[plano];
-
+    // B. successUrl dinâmico: origin/Referer do request, fallback produção.
+    const rawOrigin =
+      req.headers.get("origin") ||
+      (req.headers.get("referer")
+        ? (() => {
+            try {
+              return new URL(req.headers.get("referer")!).origin;
+            } catch {
+              return "";
+            }
+          })()
+        : "");
+    const baseUrl = /^https?:\/\//.test(rawOrigin) ? rawOrigin : "https://ivero.com.br";
+    const successUrl = `${baseUrl.replace(/\/$/, "")}/bem-vindo?from=asaas`;
+    console.log("create-checkout successUrl:", successUrl);
 
     const subRes = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
       method: "POST",
@@ -192,7 +206,6 @@ Deno.serve(async (req) => {
         value,
         nextDueDate,
         description: `Ivero — Plano ${plano}`,
-        redirectUrl: "https://ivero.com.br/bem-vindo",
       }),
     });
     const subJson = await subRes.json();
@@ -213,6 +226,7 @@ Deno.serve(async (req) => {
     // 5b. Fetch first payment (cobrança) generated for this subscription
     let checkoutUrl: string =
       subJson.invoiceUrl || subJson.bankSlipUrl || subJson.paymentLink || "";
+    let firstPaymentId = "";
     try {
       const paymentsRes = await fetch(
         `${ASAAS_BASE_URL}/payments?subscription=${asaas_subscription_id}`,
@@ -224,12 +238,39 @@ Deno.serve(async (req) => {
       if (firstPayment?.invoiceUrl) {
         checkoutUrl = firstPayment.invoiceUrl;
       }
+      firstPaymentId = firstPayment?.id ?? "";
     } catch (paymentsErr) {
       console.error("create-checkout payments fetch error:", paymentsErr);
     }
+
+    // A. O redirect pós-pagamento vive no objeto `callback` do PAYMENT,
+    // não na criação da subscription (a API ignora redirectUrl lá).
+    if (firstPaymentId) {
+      try {
+        const cbRes = await fetch(`${ASAAS_BASE_URL}/payments/${firstPaymentId}`, {
+          method: "PUT",
+          headers: asaasHeaders,
+          body: JSON.stringify({
+            billingType: "CREDIT_CARD",
+            value,
+            dueDate: nextDueDate,
+            callback: { successUrl, autoRedirect: true },
+          }),
+        });
+        const cbJson = await cbRes.json();
+        console.log("create-checkout callback update:", cbRes.status, JSON.stringify(cbJson));
+        if (cbJson?.invoiceUrl) checkoutUrl = cbJson.invoiceUrl;
+      } catch (cbErr) {
+        // D. Falha no callback não bloqueia o checkout: o usuário ainda paga e
+        // o estado `pending` do /bem-vindo cobre métodos sem auto-redirect.
+        console.error("create-checkout callback update error:", cbErr);
+      }
+    }
+
     if (!checkoutUrl) {
       checkoutUrl = `https://sandbox.asaas.com/i/${asaas_subscription_id}`;
     }
+
 
     // 6. Persist in assinaturas (service role to bypass RLS for insert)
     const dataInicio = new Date();
