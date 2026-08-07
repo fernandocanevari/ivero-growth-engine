@@ -190,18 +190,6 @@ const EscolherPlanoPage = () => {
           transition={{ duration: 0.4 }}
           className="text-center max-w-2xl mx-auto mb-8 sm:mb-10"
         >
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold mb-4 ${
-              trialExpirado
-                ? "bg-destructive/10 border-destructive/25 text-destructive"
-                : "bg-accent/10 border-accent/20 text-accent"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            {trialExpirado
-              ? "Teste encerrado — escolha um plano para continuar"
-              : "7 dias grátis — sem cobrança imediata"}
-          </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
             {trialExpirado ? (
               <>
@@ -217,7 +205,7 @@ const EscolherPlanoPage = () => {
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
             {trialExpirado
-              ? "Assine agora para recuperar o acesso ao seu diagnóstico, score e plano de ação."
+              ? "Você já sabe que sua marca aparece nas IAs com a Ivero. Assine agora para aparecer ainda mais e na frente do seu concorrente."
               : "Comece com 7 dias grátis. Cancele quando quiser."}
           </p>
 
