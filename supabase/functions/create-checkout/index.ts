@@ -69,27 +69,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Modo diagnóstico temporário: testa um PUT de callback e devolve a resposta crua.
-    const dbgPut = (body as unknown as { debugPutPaymentId?: string; debugSuccessUrl?: string })
-      .debugPutPaymentId;
-    if (dbgPut) {
-      const dbgUrl =
-        (body as unknown as { debugSuccessUrl?: string }).debugSuccessUrl ??
-        "https://ivero.com.br/retorno-asaas";
-      const res = await fetch(`${ASAAS_BASE_URL}/payments/${dbgPut}`, {
-        method: "PUT",
+    // Modo diagnóstico temporário: dispara uma chamada crua no Asaas e devolve
+    // status + corpo, pra isolar qual campo/rota o sandbox rejeita.
+    const dbg = body as unknown as {
+      debugMethod?: string;
+      debugPath?: string;
+      debugBody?: Record<string, unknown>;
+    };
+    if (dbg.debugPath) {
+      const res = await fetch(`${ASAAS_BASE_URL}${dbg.debugPath}`, {
+        method: dbg.debugMethod ?? "GET",
         headers: {
           "Content-Type": "application/json",
           "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
         },
-        body: JSON.stringify({ callback: { successUrl: dbgUrl, autoRedirect: true } }),
+        body: dbg.debugBody ? JSON.stringify(dbg.debugBody) : undefined,
       });
       const text = await res.text();
       return new Response(
-        JSON.stringify({ status: res.status, len: text.length, body: text.slice(0, 1000) }),
+        JSON.stringify({ status: res.status, len: text.length, body: text.slice(0, 1200) }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
 
 
