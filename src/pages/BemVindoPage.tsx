@@ -173,13 +173,35 @@ const BemVindoPage = () => {
                 Seu pagamento está sendo confirmado. Assim que confirmado, seu acesso será
                 liberado automaticamente. Você receberá um e-mail de confirmação.
               </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleRecheck}
+                  className="text-base px-8 py-5 h-auto rounded-full bg-gradient-to-r from-ivero-purple to-accent text-white hover:opacity-95"
+                >
+                  <RefreshCw className="mr-2" size={18} /> Verificar novamente
+                </Button>
+                {checkoutUrl && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
+                  >
+                    <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+                      Reabrir pagamento
+                    </a>
+                  </Button>
+                )}
+              </div>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="lg"
-                className="text-base px-8 py-5 h-auto rounded-full border-ivero-purple/30 text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
+                className="mt-4 text-base px-8 py-5 h-auto rounded-full text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
                 onClick={() => navigate(isAdmin ? "/admin" : "/dashboard")}
               >
                 {isAdmin ? "Ir para o Painel Administrativo" : "Ir Para o Dashboard"}
+
               </Button>
             </motion.div>
           </div>
