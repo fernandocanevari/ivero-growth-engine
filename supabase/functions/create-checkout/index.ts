@@ -48,49 +48,11 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     // 2. Parse + validate body
-    const body = (await req.json()) as CheckoutBody & { debugPaymentId?: string };
+    const body = (await req.json()) as CheckoutBody;
     const { plano, nome, email } = body || ({} as CheckoutBody);
     console.log("create-checkout body:", JSON.stringify({ plano, nome, email }));
 
-    // Modo diagnóstico temporário: devolve o estado real da cobrança no Asaas
-    // (inclusive o objeto `callback`) sem depender de logs.
-    if (body?.debugPaymentId) {
-      const res = await fetch(`${ASAAS_BASE_URL}/payments/${body.debugPaymentId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
-        },
-      });
-      const text = await res.text();
-      return new Response(JSON.stringify({ status: res.status, body: text }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    // Modo diagnóstico temporário: dispara uma chamada crua no Asaas e devolve
-    // status + corpo, pra isolar qual campo/rota o sandbox rejeita.
-    const dbg = body as unknown as {
-      debugMethod?: string;
-      debugPath?: string;
-      debugBody?: Record<string, unknown>;
-    };
-    if (dbg.debugPath) {
-      const res = await fetch(`${ASAAS_BASE_URL}${dbg.debugPath}`, {
-        method: dbg.debugMethod ?? "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
-        },
-        body: dbg.debugBody ? JSON.stringify(dbg.debugBody) : undefined,
-      });
-      const text = await res.text();
-      return new Response(
-        JSON.stringify({ status: res.status, len: text.length, body: text.slice(0, 1200) }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
 
 
