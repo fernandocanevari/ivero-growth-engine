@@ -118,8 +118,9 @@ Deno.serve(async (req) => {
     const HISTORY_STATUSES = ["expirado", "trial_expirado", "cancelado", "ativo", "inadimplente"];
     const { data: history } = await supabaseAdmin
       .from("assinaturas")
-      .select("id, status, trial_ends_at")
-      .eq("user_id", userId);
+      .select("id, status, trial_ends_at, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     const nowMs = Date.now();
     let trialConcedido = true;
