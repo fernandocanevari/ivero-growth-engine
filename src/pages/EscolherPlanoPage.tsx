@@ -177,8 +177,14 @@ const EscolherPlanoPage = () => {
         toast.error(data?.error || "Não foi possível gerar o link de pagamento.");
         return;
       }
+      // D. Guardado pra /bem-vindo poder reabrir o checkout se o pagamento
+      // ainda estiver pendente (boleto/pix não redirecionam sozinhos).
+      try {
+        sessionStorage.setItem("ivero_checkout_url", data.checkoutUrl);
+      } catch { /* storage bloqueado: fallback é só não mostrar o link */ }
       // Same-tab redirect so Asaas returnUrl can bring user back to /bem-vindo
       window.location.href = data.checkoutUrl;
+
 
     } catch (err) {
       toast.error((err as Error).message || "Erro inesperado.");
