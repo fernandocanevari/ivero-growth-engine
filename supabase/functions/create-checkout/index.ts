@@ -71,7 +71,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Idempotência: se já existe assinatura viva, reaproveita em vez de criar outra.
+    // 3. Idempotência: só reaproveita quando a assinatura já está vinculada ao
+    // Asaas (asaas_subscription_id preenchido). Uma linha de trial local, sem
+    // vínculo, NÃO bloqueia a criação da Checkout Session — é exatamente o caso
+    // de quem está no trial e escolhe o plano para pagar.
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "pendente"];
     const { data: existing } = await supabaseAdmin
@@ -79,6 +82,7 @@ Deno.serve(async (req) => {
       .select("id, plano, status, asaas_subscription_id")
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
+      .not("asaas_subscription_id", "is", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
