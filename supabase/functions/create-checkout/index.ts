@@ -134,17 +134,30 @@ Deno.serve(async (req) => {
 
     const nowMs = Date.now();
     let trialConcedido = true;
+    // Trial em curso: mantemos a data original — escolher o plano durante o
+    // trial não estende o período grátis.
+    let trialEmCursoMs: number | null = null;
     for (const row of history ?? []) {
-      const usedTrial =
-        row.trial_ends_at !== null &&
-        !Number.isNaN(new Date(row.trial_ends_at as string).getTime()) &&
-        new Date(row.trial_ends_at as string).getTime() <= nowMs;
+      const trialMs = row.trial_ends_at
+        ? new Date(row.trial_ends_at as string).getTime()
+        : NaN;
+      const trialValido = !Number.isNaN(trialMs);
+      if (trialValido && trialMs > nowMs && trialEmCursoMs === null) {
+        trialEmCursoMs = trialMs;
+      }
+      const usedTrial = trialValido && trialMs <= nowMs;
       if (usedTrial || HISTORY_STATUSES.includes(row.status ?? "")) {
         trialConcedido = false;
         break;
       }
     }
-    console.log("create-checkout: trialConcedido =", trialConcedido);
+    console.log(
+      "create-checkout: trialConcedido =",
+      trialConcedido,
+      "trialEmCurso =",
+      trialEmCursoMs !== null,
+    );
+
 
     // 3b. Asaas credentials
     const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
