@@ -115,8 +115,25 @@ const BemVindoPage = () => {
           return;
         }
 
-
         attempts++;
+
+        // Rede de segurança: se após ~15s o webhook ainda não chegou, consulta
+        // o Asaas direto (reconcile-asaas) a cada 5 tentativas.
+        if (attempts >= 5 && attempts % 5 === 0) {
+          try {
+            const { data: rec } = await supabase.functions.invoke("reconcile-asaas");
+            if (rec?.reconciled) {
+              if (!cancelled) setStatus("active");
+              try {
+                sessionStorage.removeItem("ivero_checkout_url");
+              } catch { /* noop */ }
+              return;
+            }
+          } catch (e) {
+            console.error("reconcile-asaas falhou:", e);
+          }
+        }
+
         if (attempts >= MAX_ATTEMPTS) {
           if (!cancelled) setStatus("pending");
           return;
