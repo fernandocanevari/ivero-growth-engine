@@ -182,6 +182,26 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "CHECKOUT_PAID": {
+        // Checkout Session concluída: libera acesso e vincula os IDs do Asaas.
+        const nextDue = new Date();
+        nextDue.setDate(nextDue.getDate() + 30);
+        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {
+          status: "ativo",
+          carencia_ate: null,
+          data_vencimento: nextDue.toISOString(),
+          trial_ends_at: null,
+        });
+        if (res.error) return json(500, res);
+        break;
+      }
+
+      case "CHECKOUT_CANCELED":
+      case "CHECKOUT_EXPIRED": {
+        console.log("[asaas-webhook] Checkout não concluído:", event, checkoutId);
+        break;
+      }
+
       case "SUBSCRIPTION_CREATED": {
         // Vincula os IDs do Asaas assim que a assinatura nasce no checkout.
         const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {});
