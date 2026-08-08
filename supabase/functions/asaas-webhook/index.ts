@@ -48,11 +48,23 @@ Deno.serve(async (req) => {
     const paymentCustomerId: string = body?.payment?.customer ?? "";
     const subscriptionSubId: string = body?.subscription?.id ?? "";
     const subscriptionCustomerId: string = body?.subscription?.customer ?? "";
+    // Eventos de Checkout Session (CHECKOUT_PAID etc.)
+    const checkout = body?.checkout ?? {};
+    const checkoutId: string = checkout?.id ?? "";
+    const checkoutSubId: string =
+      (typeof checkout?.subscription === "string"
+        ? checkout.subscription
+        : checkout?.subscription?.id) ?? "";
+    const checkoutCustomerId: string =
+      (typeof checkout?.customer === "string" ? checkout.customer : checkout?.customer?.id) ?? "";
     // Com Checkout Session o vínculo com o usuário chega no externalReference
     // (gravado como user_id em create-checkout), porque a assinatura no Asaas
     // só existe depois que o cliente conclui o checkout.
     const externalReference: string =
-      body?.payment?.externalReference ?? body?.subscription?.externalReference ?? "";
+      body?.payment?.externalReference ??
+      body?.subscription?.externalReference ??
+      checkout?.externalReference ??
+      "";
 
     /**
      * Atualiza a assinatura do usuário.
@@ -82,6 +94,22 @@ Deno.serve(async (req) => {
         }
         if (data && data.length > 0) return { ok: true, matched: "subscription" };
       }
+
+      // Fallback por asaas_checkout_id (gravado em create-checkout).
+      if (checkoutId) {
+        const { data, error } = await supabase
+          .from("assinaturas")
+          .update({ ...patch, ...bindIds, updated_at: now })
+          .eq("asaas_checkout_id", checkoutId)
+          .select("id");
+        if (error) {
+          console.error("[asaas-webhook] DB update error (by checkout):", error);
+          return { error: error.message };
+        }
+        if (data && data.length > 0) return { ok: true, matched: "checkout" };
+      }
+
+
 
       if (externalReference) {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
@@ -151,6 +179,26 @@ Deno.serve(async (req) => {
           carencia_ate: null,
         });
         if (res.error) return json(500, res);
+        break;
+      }
+
+      case "CHECKOUT_PAID": {
+        // Checkout Session concluída: libera acesso e vincula os IDs do Asaas.
+        const nextDue = new Date();
+        nextDue.setDate(nextDue.getDate() + 30);
+        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {
+          status: "ativo",
+          carencia_ate: null,
+          data_vencimento: nextDue.toISOString(),
+          trial_ends_at: null,
+        });
+        if (res.error) return json(500, res);
+        break;
+      }
+
+      case "CHECKOUT_CANCELED":
+      case "CHECKOUT_EXPIRED": {
+        console.log("[asaas-webhook] Checkout não concluído:", event, checkoutId);
         break;
       }
 
