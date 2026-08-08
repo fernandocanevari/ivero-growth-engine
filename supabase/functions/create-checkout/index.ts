@@ -274,6 +274,9 @@ Deno.serve(async (req) => {
     const assinaturaPayload = {
       asaas_customer_id: null,
       asaas_subscription_id: null,
+      // Guardamos o id da Checkout Session para permitir reconciliação ativa
+      // (consulta direta ao Asaas) caso o webhook não chegue.
+      asaas_checkout_id: asaasCheckoutId || null,
       plano,
       status: novoStatus,
       data_inicio: dataInicio.toISOString(),
