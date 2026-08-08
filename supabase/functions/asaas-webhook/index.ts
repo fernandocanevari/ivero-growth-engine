@@ -95,6 +95,22 @@ Deno.serve(async (req) => {
         if (data && data.length > 0) return { ok: true, matched: "subscription" };
       }
 
+      // Fallback por asaas_checkout_id (gravado em create-checkout).
+      if (checkoutId) {
+        const { data, error } = await supabase
+          .from("assinaturas")
+          .update({ ...patch, ...bindIds, updated_at: now })
+          .eq("asaas_checkout_id", checkoutId)
+          .select("id");
+        if (error) {
+          console.error("[asaas-webhook] DB update error (by checkout):", error);
+          return { error: error.message };
+        }
+        if (data && data.length > 0) return { ok: true, matched: "checkout" };
+      }
+
+
+
       if (externalReference) {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
         const { data: row, error: selError } = await supabase
