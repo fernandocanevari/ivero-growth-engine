@@ -48,11 +48,23 @@ Deno.serve(async (req) => {
     const paymentCustomerId: string = body?.payment?.customer ?? "";
     const subscriptionSubId: string = body?.subscription?.id ?? "";
     const subscriptionCustomerId: string = body?.subscription?.customer ?? "";
+    // Eventos de Checkout Session (CHECKOUT_PAID etc.)
+    const checkout = body?.checkout ?? {};
+    const checkoutId: string = checkout?.id ?? "";
+    const checkoutSubId: string =
+      (typeof checkout?.subscription === "string"
+        ? checkout.subscription
+        : checkout?.subscription?.id) ?? "";
+    const checkoutCustomerId: string =
+      (typeof checkout?.customer === "string" ? checkout.customer : checkout?.customer?.id) ?? "";
     // Com Checkout Session o vínculo com o usuário chega no externalReference
     // (gravado como user_id em create-checkout), porque a assinatura no Asaas
     // só existe depois que o cliente conclui o checkout.
     const externalReference: string =
-      body?.payment?.externalReference ?? body?.subscription?.externalReference ?? "";
+      body?.payment?.externalReference ??
+      body?.subscription?.externalReference ??
+      checkout?.externalReference ??
+      "";
 
     /**
      * Atualiza a assinatura do usuário.
