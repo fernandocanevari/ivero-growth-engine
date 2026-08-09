@@ -1830,6 +1830,16 @@ export default function PreviewPage() {
         setTotalModels(modelResults.length);
         setAllModelsFailed(false);
 
+        // Base de modelos que realmente responderam. Modelos com error: true são
+        // excluídos da média (falha de API de terceiro não derruba o score) e a
+        // lista é persistida para que deltas comparem análises com a mesma base.
+        const modelsOk: string[] = modelResults
+          .filter((r: any) => !r?.error)
+          .map((r: any) => String(r?.model ?? ""))
+          .filter(Boolean)
+          .sort();
+
+
         // Build per-pillar aggregation
         const results: PillarAnalysis[] = pillarKeys.map(({ key, name }) => {
           const aiDetails = modelResults.map((r) => {
