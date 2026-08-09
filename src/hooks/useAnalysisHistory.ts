@@ -66,6 +66,7 @@ export function useAnalysisHistory() {
       positioning: number;
       experience: number;
       keyword_cloud?: KeywordCloud;
+      models_ok?: string[];
     }) => {
       if (!userId) throw new Error("Not authenticated");
       const clarity = randomVariation(input.clarity);
@@ -88,9 +89,11 @@ export function useAnalysisHistory() {
         experience_score: experience,
         perception_snapshot: perception_snapshot as unknown as never,
         keyword_cloud: (input.keyword_cloud ?? []) as unknown as never,
+        models_ok: ([...(input.models_ok ?? [])].sort()) as unknown as never,
       });
       if (error) throw error;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["analysis-history", userId] });
     },
