@@ -39,12 +39,6 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
   useEffect(() => {
     if (!slug) return;
     (async () => {
-      const { data: result, error: invokeErr } = await supabase.functions.invoke("get-proposta-public", {
-        body: null,
-        method: "GET" as any,
-        headers: {} as any,
-      });
-      // Fallback: fetch direto (functions.invoke não suporta GET com query nativamente)
       try {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-proposta-public?slug=${encodeURIComponent(slug)}`;
         const res = await fetch(url, {
@@ -100,7 +94,8 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
     );
   }
 
-  const plano = PLANOS[data.plano_sugerido];
+  // Fallback defensivo: valores legados (ex. "dominio") não podem quebrar a tela.
+  const plano = PLANOS[data.plano_sugerido] ?? PLANOS.autoridade;
   const expiresDate = new Date(data.expires_at);
   const expired = data.status === "expirada" || expiresDate < new Date();
   const diasRestantes = Math.max(0, Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));

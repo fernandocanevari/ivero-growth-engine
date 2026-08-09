@@ -5,18 +5,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// FONTE CANÔNICA: src/lib/pricing-rules.ts (PLANOS[k].monthlyPrice / planoFromScore).
+// 3 tiers apenas — "dominio" foi descontinuado.
 const PLAN_PRICE: Record<string, number> = {
-  presenca: 197,
-  influencia: 397,
-  autoridade: 697,
-  dominio: 1497,
+  presenca: 497,
+  influencia: 897,
+  autoridade: 1497,
 };
 
 function planoFromScore(score: number): string {
   if (score < 40) return "presenca";
   if (score < 60) return "influencia";
-  if (score < 80) return "autoridade";
-  return "dominio";
+  return "autoridade";
 }
 
 function generateSlug(): string {
