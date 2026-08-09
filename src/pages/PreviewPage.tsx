@@ -1213,6 +1213,24 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                     Já sou cliente — Entrar
                   </button>
                 </div>
+                {prefetchStatus !== "idle" && (
+                  <p
+                    aria-live="polite"
+                    className="flex items-center justify-center gap-1.5 pt-1 text-[11px] sm:text-xs text-primary-foreground/60"
+                  >
+                    {prefetchStatus === "running" ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Lendo seu site para montar o perfil da marca...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3 h-3" />
+                        Perfil da marca pré-carregado ✓
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
             </motion.div>
           </AnimatedSection>
