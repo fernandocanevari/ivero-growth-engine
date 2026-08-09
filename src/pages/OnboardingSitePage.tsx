@@ -204,6 +204,7 @@ export default function OnboardingSitePage() {
 
   const handleTryAnother = () => {
     setUrl("");
+    setInheritedUrl(null);
     setErrorState(null);
     setTimeout(() => urlInputRef.current?.focus(), 0);
   };
