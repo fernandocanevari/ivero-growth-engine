@@ -52,6 +52,7 @@ export default function OnboardingSitePage() {
   const [url, setUrl] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [inheritedUrl, setInheritedUrl] = useState<string | null>(null);
   const [brandName, setBrandName] = useState("");
   const [description, setDescription] = useState("");
   const [sector, setSector] = useState("");
