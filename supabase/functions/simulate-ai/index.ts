@@ -239,7 +239,12 @@ async function callModel(
           { role: "user", parts: [{ text: `${systemPrompt}\n\nUser query: ${userPrompt}` }] },
         ],
         ...(useGrounding ? { tools: [{ google_search: {} }] } : {}),
-        generationConfig: { maxOutputTokens: maxTokens },
+        generationConfig: {
+          maxOutputTokens: maxTokens,
+          // Determinismo: temperature 0 nos modelos não-grounded para estabilizar o score.
+          // O "Google Modo IA" fica variável de propósito (busca web em tempo real).
+          ...(useGrounding ? {} : { temperature: 0 }),
+        },
       };
 
     } else if (config.name === "ChatGPT") {
@@ -251,6 +256,8 @@ async function callModel(
           { role: "user", content: userPrompt },
         ],
         max_tokens: isDiagnostico ? 2000 : 400,
+        temperature: 0,
+        seed: 42,
       };
 
     } else if (config.name === "Claude") {
@@ -260,6 +267,7 @@ async function callModel(
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
         max_tokens: isDiagnostico ? 2000 : 400,
+        temperature: 0,
       };
 
     } else {
@@ -270,8 +278,10 @@ async function callModel(
           { role: "user", content: userPrompt },
         ],
         max_tokens: maxTokens,
+        temperature: 0,
       };
     }
+
 
 
     const response = await fetch(config.url, {
