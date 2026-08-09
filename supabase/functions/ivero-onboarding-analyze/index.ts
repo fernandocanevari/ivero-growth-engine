@@ -81,6 +81,43 @@ Deno.serve(async (req) => {
     let normalizedUrl = url.trim();
     if (!/^https?:\/\//i.test(normalizedUrl)) normalizedUrl = `https://${normalizedUrl}`;
 
+    // Rate limit por IP: 5 análises por hora (função é pública, verify_jwt=false).
+    try {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim()
+        || req.headers.get("cf-connecting-ip")
+        || req.headers.get("x-real-ip")
+        || "unknown";
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && serviceKey) {
+        const rl = await fetch(`${supabaseUrl}/rest/v1/rpc/check_and_increment_rate_limit`, {
+          method: "POST",
+          headers: {
+            "apikey": serviceKey,
+            "Authorization": `Bearer ${serviceKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            p_ip: ip,
+            p_function: "ivero_onboarding_analyze",
+            p_max: 5,
+            p_window: "01:00:00",
+          }),
+        });
+        if (rl.ok) {
+          const allowed = await rl.json();
+          if (allowed === false) {
+            return new Response(
+              JSON.stringify({ error: "rate_limited", message: "Muitas análises em pouco tempo. Tente novamente em alguns minutos." }),
+              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+        }
+      }
+    } catch (_) {
+      // Falha no rate limit não bloqueia a análise.
+    }
+
     const apiKey = Deno.env.get("Key_antropic_claude");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "Chave da IA não configurada" }), {
