@@ -1491,8 +1491,12 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                 </h3>
                 <Button
                   size="lg"
-                  className="h-14 px-8 text-base font-bold bg-white text-primary hover:bg-white/90 rounded-full shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.55)]"
+                  disabled={gerandoProposta}
+                  className="h-14 px-8 text-base font-bold bg-white text-primary hover:bg-white/90 rounded-full shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.55)] disabled:opacity-70"
                   onClick={async () => {
+                    if (propostaInFlight.current) return;
+                    propostaInFlight.current = true;
+                    setGerandoProposta(true);
                     try {
                       const radar = dynamicRadarData;
                       const { data, error } = await supabase.functions.invoke("gerar-proposta-from-preview", {
@@ -1514,16 +1518,29 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                       });
                       if (error || !data?.slug) {
                         toast({ title: "Erro", description: error?.message || "Falha ao gerar proposta", variant: "destructive" });
+                        propostaInFlight.current = false;
+                        setGerandoProposta(false);
                         return;
                       }
                       navigate(`/propostacomercial/${data.slug}`);
                     } catch (e: any) {
                       toast({ title: "Erro", description: e?.message || "Erro ao gerar proposta", variant: "destructive" });
+                      propostaInFlight.current = false;
+                      setGerandoProposta(false);
                     }
                   }}
                 >
-                  Ver minha proposta personalizada
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  {gerandoProposta ? (
+                    <>
+                      <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                      Gerando sua proposta...
+                    </>
+                  ) : (
+                    <>
+                      Ver minha proposta personalizada
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </>
+                  )}
                 </Button>
               </div>
             </AnimatedSection>
