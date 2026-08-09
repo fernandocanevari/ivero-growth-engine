@@ -17,7 +17,10 @@ export interface AnalysisRecord {
   created_at: string;
   perception_snapshot?: PerceptionSnapshot | Record<string, never>;
   keyword_cloud?: KeywordCloud;
+  /** Modelos de IA que responderam nessa análise. Deltas só comparam bases iguais. */
+  models_ok?: string[];
 }
+
 
 function randomVariation(base: number, range = 8): number {
   const delta = Math.round((Math.random() - 0.4) * range);
@@ -63,6 +66,7 @@ export function useAnalysisHistory() {
       positioning: number;
       experience: number;
       keyword_cloud?: KeywordCloud;
+      models_ok?: string[];
     }) => {
       if (!userId) throw new Error("Not authenticated");
       const clarity = randomVariation(input.clarity);
@@ -85,9 +89,11 @@ export function useAnalysisHistory() {
         experience_score: experience,
         perception_snapshot: perception_snapshot as unknown as never,
         keyword_cloud: (input.keyword_cloud ?? []) as unknown as never,
+        models_ok: ([...(input.models_ok ?? [])].sort()) as unknown as never,
       });
       if (error) throw error;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["analysis-history", userId] });
     },

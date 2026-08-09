@@ -331,7 +331,16 @@ export default function PilaresPage() {
   const displayName = settings?.brand_name || "sua marca";
 
   const latestReport = reports[0]; // sorted DESC in hook
-  const previousAnalysis = history.length >= 2 ? history[history.length - 2] : null;
+  // Deltas só fazem sentido entre análises com a MESMA base de modelos de IA.
+  // Se a base mudou (um modelo caiu ou entrou), a comparação é omitida.
+  const previousAnalysis = useMemo(() => {
+    if (history.length < 2) return null;
+    const latest = history[history.length - 1];
+    const previous = history[history.length - 2];
+    const norm = (m?: string[] | null) => [...(m ?? [])].sort().join("|");
+    if (norm(latest.models_ok) !== norm(previous.models_ok)) return null;
+    return previous;
+  }, [history]);
 
   const resolvedPillars: ResolvedPillar[] = useMemo(() => {
     const details = (latestReport?.pillar_details ?? []) as PillarDetail[];
@@ -340,6 +349,7 @@ export default function PilaresPage() {
       const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_PILLAR_ICON[d.name] || Sparkles;
       const col = PILLAR_DB_COLUMN[d.name];
       const previousScore = col && previousAnalysis ? (previousAnalysis[col] as number) ?? d.score : d.score;
+
       return {
         key: d.name,
         score: d.score ?? 0,

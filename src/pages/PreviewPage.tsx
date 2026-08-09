@@ -1830,6 +1830,16 @@ export default function PreviewPage() {
         setTotalModels(modelResults.length);
         setAllModelsFailed(false);
 
+        // Base de modelos que realmente responderam. Modelos com error: true são
+        // excluídos da média (falha de API de terceiro não derruba o score) e a
+        // lista é persistida para que deltas comparem análises com a mesma base.
+        const modelsOk: string[] = modelResults
+          .filter((r: any) => !r?.error)
+          .map((r: any) => String(r?.model ?? ""))
+          .filter(Boolean)
+          .sort();
+
+
         // Build per-pillar aggregation
         const results: PillarAnalysis[] = pillarKeys.map(({ key, name }) => {
           const aiDetails = modelResults.map((r) => {
@@ -1926,8 +1936,10 @@ export default function PreviewPage() {
               radar,
               pillarDetails: details,
               keyword_cloud: keywordCloud,
+              models_ok: modelsOk,
               savedAt: new Date().toISOString(),
             })
+
           );
           sessionStorage.removeItem("ivero:audit_adopted");
         } catch {
@@ -1958,11 +1970,16 @@ export default function PreviewPage() {
           if (r.error) {
             return { name: r.model, found: false, error: true, errorMessage: r.errorMessage };
           }
-          const scores = pillarKeys.map((p) => r.pillars?.[p.key]?.score || 0);
-          const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+          // Pilares ausentes na resposta são ignorados (não contam 0) para não
+          // penalizar o modelo por um campo faltante.
+          const scores = pillarKeys
+            .map((p) => r.pillars?.[p.key]?.score)
+            .filter((s: unknown): s is number => typeof s === "number");
+          const avg = scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
           return { name: r.model, found: avg >= 50 };
         });
         setAiEngines(engines);
+
       } catch (e) {
         console.error("Pillar analysis failed:", e);
         totalFailure = true;
