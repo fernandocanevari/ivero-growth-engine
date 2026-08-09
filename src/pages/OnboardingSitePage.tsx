@@ -20,10 +20,10 @@ type AnalysisResult = {
 };
 
 const LOADING_MESSAGES = [
-  "Acessando o site da sua marca...",
-  "Estou dando uma olhada em tudo que você publica...",
-  "Interessante — já estou entendendo como sua marca se posiciona",
-  "Agora estou mapeando quem divide esse mercado com você",
+  "Agora vou ler o seu site — no diagnóstico eu só ouvi o que as IAs dizem sobre você",
+  "Lendo suas páginas para montar o perfil da sua marca...",
+  "Identificando nome oficial, segmento e como você se descreve",
+  "Mapeando quem divide esse mercado com você",
   "Pronto. Tenho o que precisava para começar.",
 ];
 
