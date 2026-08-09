@@ -181,6 +181,7 @@ export default function OnboardingSitePage() {
   // Escape hatch: a URL herdada do preview pode não ser a marca certa.
   const handleAnalyzeAnotherSite = () => {
     setUrl("");
+    setInheritedUrl(null);
     setAnalysis(null);
     setBrandName("");
     setDescription("");
