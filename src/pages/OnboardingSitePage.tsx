@@ -137,6 +137,7 @@ export default function OnboardingSitePage() {
     const target = rawUrl.trim();
     if (!target) return;
     setErrorState(null);
+    if (target !== inheritedUrl) setInheritedUrl(null);
     setPhase("loading");
     try {
       const { data, error } = await supabase.functions.invoke("ivero-onboarding-analyze", {
