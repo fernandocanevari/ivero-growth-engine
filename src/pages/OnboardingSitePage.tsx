@@ -20,10 +20,10 @@ type AnalysisResult = {
 };
 
 const LOADING_MESSAGES = [
-  "Acessando o site da sua marca...",
-  "Estou dando uma olhada em tudo que você publica...",
-  "Interessante — já estou entendendo como sua marca se posiciona",
-  "Agora estou mapeando quem divide esse mercado com você",
+  "Agora vou ler o seu site — no diagnóstico eu só ouvi o que as IAs dizem sobre você",
+  "Lendo suas páginas para montar o perfil da sua marca...",
+  "Identificando nome oficial, segmento e como você se descreve",
+  "Mapeando quem divide esse mercado com você",
   "Pronto. Tenho o que precisava para começar.",
 ];
 
@@ -52,6 +52,7 @@ export default function OnboardingSitePage() {
   const [url, setUrl] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [inheritedUrl, setInheritedUrl] = useState<string | null>(null);
   const [brandName, setBrandName] = useState("");
   const [description, setDescription] = useState("");
   const [sector, setSector] = useState("");
@@ -114,6 +115,7 @@ export default function OnboardingSitePage() {
       setBooting(false);
       if (inherited) {
         setUrl(inherited);
+        setInheritedUrl(inherited);
         void runAnalysis(inherited);
       }
     })();
@@ -135,6 +137,7 @@ export default function OnboardingSitePage() {
     const target = rawUrl.trim();
     if (!target) return;
     setErrorState(null);
+    if (target !== inheritedUrl) setInheritedUrl(null);
     setPhase("loading");
     try {
       const { data, error } = await supabase.functions.invoke("ivero-onboarding-analyze", {
@@ -178,6 +181,7 @@ export default function OnboardingSitePage() {
   // Escape hatch: a URL herdada do preview pode não ser a marca certa.
   const handleAnalyzeAnotherSite = () => {
     setUrl("");
+    setInheritedUrl(null);
     setAnalysis(null);
     setBrandName("");
     setDescription("");
@@ -200,6 +204,7 @@ export default function OnboardingSitePage() {
 
   const handleTryAnother = () => {
     setUrl("");
+    setInheritedUrl(null);
     setErrorState(null);
     setTimeout(() => urlInputRef.current?.focus(), 0);
   };
@@ -386,6 +391,14 @@ export default function OnboardingSitePage() {
               exit={{ opacity: 0 }}
               className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-10 text-center"
             >
+              <p className="text-xs font-medium uppercase tracking-wider text-ivero-purple mb-6">
+                Etapa 2 de 3 · Perfil da marca
+              </p>
+              {inheritedUrl && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Usando o site que você já informou: <span className="font-medium text-[#1A1A2E]">{inheritedUrl}</span>
+                </p>
+              )}
               <Loader2 className="h-10 w-10 animate-spin text-[#6C5CE7] mx-auto mb-6" />
               <div className="min-h-[60px] flex items-center justify-center">
                 <AnimatePresence mode="wait">
