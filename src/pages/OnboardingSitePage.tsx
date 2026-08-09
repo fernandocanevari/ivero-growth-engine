@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { StepSubtitle } from "@/components/onboarding/StepSubtitle";
+import { readBrandPrefetch, clearBrandPrefetch } from "@/lib/brand-prefetch";
 
 type Phase = "url" | "loading" | "confirm" | "objectives";
 
@@ -116,6 +118,14 @@ export default function OnboardingSitePage() {
       if (inherited) {
         setUrl(inherited);
         setInheritedUrl(inherited);
+        // Hit de prefetch: o site já foi lido em paralelo ao gate do preview.
+        // Pula loading e a chamada da análise, indo direto pra confirmação.
+        const prefetched = readBrandPrefetch(inherited);
+        if (prefetched) {
+          applyAnalysis({ ...prefetched, normalized_url: prefetched.normalized_url || inherited });
+          clearBrandPrefetch();
+          return;
+        }
         void runAnalysis(inherited);
       }
     })();
@@ -132,6 +142,15 @@ export default function OnboardingSitePage() {
     loadingTimerRef.current = id;
     return () => window.clearInterval(id);
   }, [phase]);
+
+  const applyAnalysis = (result: AnalysisResult) => {
+    setAnalysis(result);
+    setBrandName(result.brand_name || "");
+    setDescription(result.description || "");
+    setSector(result.sector || "");
+    setCompetitors((result.competitors || []).map((name) => ({ name, suggested: true })));
+    setPhase("confirm");
+  };
 
   const runAnalysis = async (rawUrl: string) => {
     const target = rawUrl.trim();
@@ -155,15 +174,7 @@ export default function OnboardingSitePage() {
         return;
       }
       if (!data || data.error) throw new Error(data?.error || "Erro ao analisar");
-      const result = data as AnalysisResult;
-      setAnalysis(result);
-      setBrandName(result.brand_name || "");
-      setDescription(result.description || "");
-      setSector(result.sector || "");
-      setCompetitors(
-        (result.competitors || []).map((name) => ({ name, suggested: true })),
-      );
-      setPhase("confirm");
+      applyAnalysis(data as AnalysisResult);
     } catch {
       setErrorState({
         kind: "site_inaccessible",
@@ -180,6 +191,7 @@ export default function OnboardingSitePage() {
 
   // Escape hatch: a URL herdada do preview pode não ser a marca certa.
   const handleAnalyzeAnotherSite = () => {
+    clearBrandPrefetch();
     setUrl("");
     setInheritedUrl(null);
     setAnalysis(null);
@@ -391,9 +403,7 @@ export default function OnboardingSitePage() {
               exit={{ opacity: 0 }}
               className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-10 text-center"
             >
-              <p className="text-xs font-medium uppercase tracking-wider text-ivero-purple mb-6">
-                Etapa 2 de 3 · Perfil da marca
-              </p>
+              <StepSubtitle step={2} label="Perfil da marca" />
               {inheritedUrl && (
                 <p className="text-sm text-muted-foreground mb-4">
                   Usando o site que você já informou: <span className="font-medium text-[#1A1A2E]">{inheritedUrl}</span>

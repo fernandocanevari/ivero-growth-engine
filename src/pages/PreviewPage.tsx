@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { startBrandPrefetch } from "@/lib/brand-prefetch";
+import { RadarPulse } from "@/components/ui/radar-pulse";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { z } from "zod";
@@ -357,7 +359,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md px-6 text-center relative z-10"
       >
-        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-6" />
+        <RadarPulse className="mb-6" />
         <div className="min-h-[64px] flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.p
@@ -538,6 +540,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
     prefillName.length >= 2 && leadSchema.shape.email.safeParse(prefillEmail).success;
 
   const [leadSubmitted, setLeadSubmitted] = useState(cameIdentifiedFromHero);
+  // Prefetch do perfil da marca disparado no gate (fire-and-forget).
+  const [prefetchStatus, setPrefetchStatus] = useState<"idle" | "running" | "done">("idle");
   const [leadData, setLeadData] = useState<{ name: string; email: string; site: string; phone: string }>({
     name: cameIdentifiedFromHero ? prefillName : "",
     email: cameIdentifiedFromHero ? prefillEmail : "",
@@ -578,6 +582,15 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
     } catch (_) { /* silently continue */ }
     setLeadData({ name, email, site: site || "", phone: phone || "" });
     setLeadSubmitted(true);
+
+    // Em paralelo ao desbloqueio: lê o site para pré-montar o perfil da marca.
+    const prefetchTarget = site || siteUrl;
+    if (prefetchTarget) {
+      setPrefetchStatus("running");
+      void startBrandPrefetch(prefetchTarget).then((ok) =>
+        setPrefetchStatus(ok ? "done" : "idle"),
+      );
+    }
 
     // Funnel step 2: preview gate unlocked. Re-identify in case the user
     // arrived here directly (without going through the hero form).
@@ -1200,6 +1213,24 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
                     Já sou cliente — Entrar
                   </button>
                 </div>
+                {prefetchStatus !== "idle" && (
+                  <p
+                    aria-live="polite"
+                    className="flex items-center justify-center gap-1.5 pt-1 text-[11px] sm:text-xs text-primary-foreground/60"
+                  >
+                    {prefetchStatus === "running" ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Lendo seu site para montar o perfil da marca...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3 h-3" />
+                        Perfil da marca pré-carregado ✓
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
             </motion.div>
           </AnimatedSection>
