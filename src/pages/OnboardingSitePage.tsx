@@ -115,6 +115,7 @@ export default function OnboardingSitePage() {
       setBooting(false);
       if (inherited) {
         setUrl(inherited);
+        setInheritedUrl(inherited);
         void runAnalysis(inherited);
       }
     })();
