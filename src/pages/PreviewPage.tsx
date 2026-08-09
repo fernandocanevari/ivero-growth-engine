@@ -1936,8 +1936,10 @@ export default function PreviewPage() {
               radar,
               pillarDetails: details,
               keyword_cloud: keywordCloud,
+              models_ok: modelsOk,
               savedAt: new Date().toISOString(),
             })
+
           );
           sessionStorage.removeItem("ivero:audit_adopted");
         } catch {
