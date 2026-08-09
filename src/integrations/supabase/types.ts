@@ -110,6 +110,7 @@ export type Database = {
           experience_score: number
           id: string
           keyword_cloud: Json
+          models_ok: Json
           overall_score: number
           perception_snapshot: Json
           positioning_score: number
@@ -123,6 +124,7 @@ export type Database = {
           experience_score?: number
           id?: string
           keyword_cloud?: Json
+          models_ok?: Json
           overall_score?: number
           perception_snapshot?: Json
           positioning_score?: number
@@ -136,6 +138,7 @@ export type Database = {
           experience_score?: number
           id?: string
           keyword_cloud?: Json
+          models_ok?: Json
           overall_score?: number
           perception_snapshot?: Json
           positioning_score?: number
