@@ -414,6 +414,13 @@ export default function OnboardingSitePage() {
                 <p className="text-base text-muted-foreground">
                   Confira e ajuste o que precisar antes de continuar.
                 </p>
+                <button
+                  type="button"
+                  onClick={handleAnalyzeAnotherSite}
+                  className="mt-2 text-xs text-muted-foreground underline underline-offset-4 hover:text-ivero-purple transition-colors"
+                >
+                  Analisar outro site
+                </button>
               </div>
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-6 sm:p-8 space-y-5">
                 <div>
