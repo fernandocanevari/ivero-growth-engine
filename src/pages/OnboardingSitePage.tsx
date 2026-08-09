@@ -292,6 +292,14 @@ export default function OnboardingSitePage() {
     }
   };
 
+  if (booting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#F8F5FF] via-white to-[#FBF7FF] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-ivero-purple" aria-label="Carregando" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F8F5FF] via-white to-[#FBF7FF] px-4 sm:px-6 py-10 sm:py-16">
       <div className="max-w-2xl mx-auto">
