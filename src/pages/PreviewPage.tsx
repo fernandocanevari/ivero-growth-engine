@@ -1970,11 +1970,16 @@ export default function PreviewPage() {
           if (r.error) {
             return { name: r.model, found: false, error: true, errorMessage: r.errorMessage };
           }
-          const scores = pillarKeys.map((p) => r.pillars?.[p.key]?.score || 0);
-          const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+          // Pilares ausentes na resposta são ignorados (não contam 0) para não
+          // penalizar o modelo por um campo faltante.
+          const scores = pillarKeys
+            .map((p) => r.pillars?.[p.key]?.score)
+            .filter((s: unknown): s is number => typeof s === "number");
+          const avg = scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
           return { name: r.model, found: avg >= 50 };
         });
         setAiEngines(engines);
+
       } catch (e) {
         console.error("Pillar analysis failed:", e);
         totalFailure = true;
