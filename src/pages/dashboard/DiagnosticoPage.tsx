@@ -253,11 +253,15 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     // Reaproveita a nuvem de termos extraída no último Diagnóstico (PreviewPage),
     // armazenada em sessionStorage. Ausente em sessões antigas → grava [].
     let keyword_cloud: unknown[] = [];
+    // Base de modelos da última análise: guardada junto para que os deltas da
+    // Evolução Estratégica só comparem análises com a mesma base de modelos.
+    let models_ok: string[] = [];
     try {
       const raw = sessionStorage.getItem("ivero:lastDiagnostic");
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed?.keyword_cloud)) keyword_cloud = parsed.keyword_cloud;
+        if (Array.isArray(parsed?.models_ok)) models_ok = parsed.models_ok.filter((m: unknown) => typeof m === "string");
       }
     } catch {
       /* sessionStorage indisponível */
@@ -270,7 +274,9 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
         positioning: 64,
         experience: 71,
         keyword_cloud: keyword_cloud as never,
+        models_ok,
       },
+
       {
         onSuccess: async () => {
           toast.success("Nova análise realizada com sucesso!");
