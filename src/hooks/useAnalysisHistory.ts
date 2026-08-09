@@ -17,7 +17,10 @@ export interface AnalysisRecord {
   created_at: string;
   perception_snapshot?: PerceptionSnapshot | Record<string, never>;
   keyword_cloud?: KeywordCloud;
+  /** Modelos de IA que responderam nessa análise. Deltas só comparam bases iguais. */
+  models_ok?: string[];
 }
+
 
 function randomVariation(base: number, range = 8): number {
   const delta = Math.round((Math.random() - 0.4) * range);
