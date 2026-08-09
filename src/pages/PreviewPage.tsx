@@ -526,6 +526,8 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [gerandoProposta, setGerandoProposta] = useState(false);
+  const propostaInFlight = useRef(false);
 
   // Auto-unlock: quem veio do formulário completo do Hero já se identificou (name + email na URL).
   const [gateParams] = useSearchParams();
