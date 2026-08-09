@@ -61,18 +61,63 @@ export default function OnboardingSitePage() {
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [errorState, setErrorState] = useState<{ kind: "site_inaccessible" | "insufficient_content"; message: string; normalizedUrl?: string } | null>(null);
+  // Gate de loading curto: evita flash da tela de URL antes de decidirmos se
+  // existe uma URL herdada do preview (sessionStorage / brand_settings).
+  const [booting, setBooting] = useState(true);
   const loadingTimerRef = useRef<number | null>(null);
   const urlInputRef = useRef<HTMLInputElement | null>(null);
+  // Guard contra redisparo da análise em re-render / React StrictMode.
+  const didBootstrapRef = useRef(false);
+
+  // Resolve a URL já analisada no preview, com precedência:
+  // sessionStorage["ivero:lastDiagnostic"].siteUrl → brand_settings.website → vazio
+  const resolveInheritedUrl = async (uid: string): Promise<string> => {
+    try {
+      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.siteUrl === "string" && parsed.siteUrl.trim()) {
+          return parsed.siteUrl.trim();
+        }
+      }
+    } catch {
+      /* storage indisponível ou JSON inválido: segue para o fallback */
+    }
+    try {
+      const { data } = await supabase
+        .from("brand_settings")
+        .select("website")
+        .eq("user_id", uid)
+        .limit(1)
+        .maybeSingle();
+      const website = (data as { website?: string } | null)?.website;
+      if (typeof website === "string" && website.trim()) return website.trim();
+    } catch {
+      /* ignora: cai no comportamento padrão (fase "url") */
+    }
+    return "";
+  };
 
   useEffect(() => {
     (async () => {
+      if (didBootstrapRef.current) return;
+      didBootstrapRef.current = true;
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate("/login");
         return;
       }
       setUserId(user.id);
+
+      const inherited = await resolveInheritedUrl(user.id);
+      setBooting(false);
+      if (inherited) {
+        setUrl(inherited);
+        void runAnalysis(inherited);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // Loading message cycler
@@ -86,14 +131,14 @@ export default function OnboardingSitePage() {
     return () => window.clearInterval(id);
   }, [phase]);
 
-  const handleAnalyze = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) return;
+  const runAnalysis = async (rawUrl: string) => {
+    const target = rawUrl.trim();
+    if (!target) return;
     setErrorState(null);
     setPhase("loading");
     try {
       const { data, error } = await supabase.functions.invoke("ivero-onboarding-analyze", {
-        body: { url: url.trim() },
+        body: { url: target },
       });
       if (error) throw error;
       if (data?.error === "site_inaccessible") {
@@ -123,6 +168,24 @@ export default function OnboardingSitePage() {
       });
       setPhase("url");
     }
+  };
+
+  const handleAnalyze = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runAnalysis(url);
+  };
+
+  // Escape hatch: a URL herdada do preview pode não ser a marca certa.
+  const handleAnalyzeAnotherSite = () => {
+    setUrl("");
+    setAnalysis(null);
+    setBrandName("");
+    setDescription("");
+    setSector("");
+    setCompetitors([]);
+    setErrorState(null);
+    setPhase("url");
+    setTimeout(() => urlInputRef.current?.focus(), 0);
   };
 
   const handleContinueAnyway = () => {
