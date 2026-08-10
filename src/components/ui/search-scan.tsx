@@ -22,20 +22,20 @@ export function SearchScan({ className = "" }: { className?: string }) {
         />
         <g className="origin-center animate-[spin_2.6s_linear_infinite]">
           {/* lupa orbitando o centro */}
-          <g transform="translate(50 16)">
+          <g transform="translate(50 14)">
             <circle
               cx="0"
               cy="0"
-              r="11"
+              r="13"
               fill="hsl(var(--primary) / 0.12)"
               stroke="hsl(var(--primary))"
-              strokeWidth="3.5"
+              strokeWidth="4"
             />
             <line
-              x1="7.8"
-              y1="7.8"
-              x2="16"
-              y2="16"
+              x1="9.2"
+              y1="9.2"
+              x2="19"
+              y2="19"
               stroke="hsl(var(--primary))"
               strokeWidth="4"
               strokeLinecap="round"
