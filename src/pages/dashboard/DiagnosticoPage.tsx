@@ -262,10 +262,26 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     );
   };
 
-  if (isLoading) return <DiagnosticoSkeleton />;
+  if (isLoading || (!snapshotOverride && reportsLoading)) return <DiagnosticoSkeleton />;
 
-  // Compute overall score from effective (live or mock) radar
+  // Sem nenhuma análise real: empty state honesto, sem números inventados.
+  if (!hasDiagnostic) {
+    return (
+      <EmptyStatePage
+        icon={<Brain className="w-10 h-10" />}
+        title="🧠 Diagnóstico de Influência em IA"
+        subtitle="Como as IAs percebem e recomendam sua marca"
+        message="Rode seu primeiro diagnóstico"
+        description="Ainda não existe nenhuma análise da sua marca. Assim que o diagnóstico for executado, o radar dos 5 pilares e o plano de leitura completo aparecem aqui."
+        hasBrand={!!settings?.brand_name}
+        cta={{ label: "Rodar meu diagnóstico", to: "/onboarding/diagnostico" }}
+      />
+    );
+  }
+
+  // Score geral a partir do radar real
   const overallScore = liveScore ?? Math.round(effectiveRadar.reduce((s, d) => s + d.value, 0) / effectiveRadar.length);
+
   const sortedRadar = [...effectiveRadar].sort((a, b) => b.value - a.value);
   const strongestPillar = sortedRadar[0];
   const weakestPillar = sortedRadar[sortedRadar.length - 1];
