@@ -255,9 +255,20 @@ export default function OnboardingSitePage() {
       // 1) Upsert brand_settings
       const { data: existing } = await supabase
         .from("brand_settings")
-        .select("id")
+        .select("id, contact_name, contact_email, contact_phone")
         .eq("user_id", userId)
         .maybeSingle();
+
+      // Dados de contato: no cadastro direto (caminho 2) o lead não existe, então
+      // buscamos em profiles para brand_settings nunca ficar sem contato.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("nome_completo, display_name, email, celular")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const p = (profile ?? {}) as { nome_completo?: string; display_name?: string; email?: string; celular?: string };
+      const ex = (existing ?? {}) as { contact_name?: string; contact_email?: string; contact_phone?: string };
+      const { data: { user: authUser } } = await supabase.auth.getUser();
 
       const brandPayload = {
         user_id: userId,
@@ -267,7 +278,11 @@ export default function OnboardingSitePage() {
         website: analysis?.normalized_url || url.trim(),
         objetivos,
         onboarding_completed_at: new Date().toISOString(),
+        contact_name: ex.contact_name?.trim() || p.nome_completo?.trim() || p.display_name?.trim() || "",
+        contact_email: ex.contact_email?.trim() || p.email?.trim() || authUser?.email || "",
+        contact_phone: ex.contact_phone?.trim() || p.celular?.trim() || "",
       } as never;
+
 
       let brandId: string;
       if (existing?.id) {
