@@ -10,7 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { useAuditReports } from "@/hooks/useAuditReports";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { DiagnosticoSkeleton } from "@/components/dashboard/LoadingStates";
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
