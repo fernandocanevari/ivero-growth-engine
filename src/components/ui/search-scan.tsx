@@ -6,7 +6,7 @@
  */
 export function SearchScan({ className = "" }: { className?: string }) {
   // Cada nó orbita num raio e duração distintos para criar movimento orgânico (não sincronizado).
-  // Raio maior = órbita mais lenta; raios menores = mais rápidos.
+  // Raio maior = órbita mais lenta; raios menores = mais rápidos. startAngle = posição inicial.
   const nodes = [
     { r: 18, dur: "2.4s", delay: "0s", size: 2.6, startAngle: 0 },
     { r: 27, dur: "3.4s", delay: "-1.1s", size: 2.2, startAngle: 90 },
@@ -39,32 +39,28 @@ export function SearchScan({ className = "" }: { className?: string }) {
         <circle cx="50" cy="50" r="4.5" fill="hsl(var(--primary))" />
         <circle cx="50" cy="50" r="8" fill="none" stroke="hsl(var(--primary) / 0.35)" strokeWidth="0.75" />
 
-        {/* Nós de IA orbitando */}
+        {/* Nós de IA orbitando ao redor do centro (50,50) */}
         {nodes.map((n, i) => {
-          // Posição inicial no ângulo de partida (graus) — compensa o delay da animação
+          // Posição inicial no ângulo de partida (graus)
           const rad = (n.startAngle * Math.PI) / 180;
           const sx = 50 + n.r * Math.cos(rad);
           const sy = 50 + n.r * Math.sin(rad);
+          const reverse = i === 2 ? "reverse" : "normal";
           return (
             <g
               key={`node-${i}`}
-              className="origin-center"
               style={{
-                animation: `ai-orbit-${i} ${n.dur} linear infinite`,
+                transformBox: "view-box",
+                transformOrigin: "50px 50px",
+                animation: `ai-orbit ${n.dur} linear ${reverse} infinite`,
                 animationDelay: n.delay,
-                transformBox: "fill-box",
               }}
             >
+              <circle cx={sx} cy={sy} r={n.size} fill="hsl(var(--primary))" />
               <circle
                 cx={sx}
                 cy={sy}
-                r={n.size}
-                fill="hsl(var(--primary))"
-              />
-              <circle
-                cx={sx}
-                cy={sy}
-                r={n.size + 2}
+                r={n.size + 2.2}
                 fill="none"
                 stroke="hsl(var(--primary) / 0.3)"
                 strokeWidth="0.6"
@@ -74,19 +70,10 @@ export function SearchScan({ className = "" }: { className?: string }) {
         })}
       </svg>
 
-      {/* Keyframes inline — cada órbita gira em torno do centro (50,50) do SVG */}
       <style>{`
-        @keyframes ai-orbit-0 {
+        @keyframes ai-orbit {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
-        }
-        @keyframes ai-orbit-1 {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-        @keyframes ai-orbit-2 {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(-360deg); }
         }
       `}</style>
     </div>
