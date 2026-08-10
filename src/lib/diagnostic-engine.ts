@@ -10,6 +10,7 @@
  * apenas invoca (mode: "diagnostico"), agrega os resultados por pilar e
  * monta o payload de exibição/persistência.
  */
+import type React from "react";
 import { Eye, ShieldCheck, Target, Rocket, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPerceptionSnapshot } from "@/lib/perception-tags";
