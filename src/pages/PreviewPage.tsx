@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startBrandPrefetch } from "@/lib/brand-prefetch";
-import { RadarPulse } from "@/components/ui/radar-pulse";
+import { SearchScan } from "@/components/ui/search-scan";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { z } from "zod";
@@ -359,7 +359,7 @@ function LoadingScreen({ currentStep, progress }: { currentStep: number; progres
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md px-6 text-center relative z-10"
       >
-        <RadarPulse className="mb-6" />
+        <SearchScan className="mb-6" />
         <div className="min-h-[64px] flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.p

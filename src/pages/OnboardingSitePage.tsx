@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { StepSubtitle } from "@/components/onboarding/StepSubtitle";
+import { SearchScan } from "@/components/ui/search-scan";
 import { readBrandPrefetch, clearBrandPrefetch } from "@/lib/brand-prefetch";
 
 type Phase = "url" | "loading" | "confirm" | "objectives";
@@ -403,13 +403,13 @@ export default function OnboardingSitePage() {
               exit={{ opacity: 0 }}
               className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-10 text-center"
             >
-              <StepSubtitle step={2} label="Perfil da marca" />
               {inheritedUrl && (
                 <p className="text-sm text-muted-foreground mb-4">
                   Usando o site que você já informou: <span className="font-medium text-[#1A1A2E]">{inheritedUrl}</span>
                 </p>
               )}
-              <Loader2 className="h-10 w-10 animate-spin text-[#6C5CE7] mx-auto mb-6" />
+              <SearchScan className="mb-6" />
+
               <div className="min-h-[60px] flex items-center justify-center">
                 <AnimatePresence mode="wait">
                   <motion.p
