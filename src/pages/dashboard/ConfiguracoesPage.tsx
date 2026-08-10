@@ -63,15 +63,36 @@ export default function ConfiguracoesPage() {
     coverage_region: "",
   });
 
+  // Fallback de contato: contas antigas do cadastro direto têm os dados só em
+  // profiles, então lemos de lá quando brand_settings está vazio.
+  const [profileContact, setProfileContact] = useState<{ name: string; email: string; phone: string } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("nome_completo, display_name, email, celular")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const p = (data ?? {}) as { nome_completo?: string; display_name?: string; email?: string; celular?: string };
+      setProfileContact({
+        name: p.nome_completo || p.display_name || "",
+        email: p.email || user.email || "",
+        phone: p.celular || "",
+      });
+    })();
+  }, []);
+
   useEffect(() => {
     if (settings) {
       setForm({
         brand_name: settings.brand_name,
         website: settings.website,
         sector: settings.sector,
-        contact_name: settings.contact_name || "",
-        contact_email: settings.contact_email || "",
-        contact_phone: settings.contact_phone || "",
+        contact_name: settings.contact_name || profileContact?.name || "",
+        contact_email: settings.contact_email || profileContact?.email || "",
+        contact_phone: settings.contact_phone || profileContact?.phone || "",
         logo_url: settings.logo_url || "",
         coverage_type: (settings.coverage_type as "national" | "regional") || "national",
         coverage_city: settings.coverage_city || "",
@@ -79,7 +100,8 @@ export default function ConfiguracoesPage() {
         coverage_region: settings.coverage_region || "",
       });
     }
-  }, [settings]);
+  }, [settings, profileContact]);
+
 
   useEffect(() => {
     if (competitorRows) {
