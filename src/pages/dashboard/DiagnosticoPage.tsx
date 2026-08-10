@@ -133,7 +133,9 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
   // TODO: Replace with real plan status check
   const hasPlan = true;
 
-  // Read latest diagnostic payload (saved by PreviewPage) to use REAL data
+  // Fonte de verdade: sessionStorage (análise recém-rodada) e, na ausência
+  // dela, o audit_report mais recente do banco. Nunca dados mockados.
+  const { reports, isLoading: reportsLoading } = useAuditReports();
   const [livePillars, setLivePillars] = useState<PillarPayload[] | null>(null);
   const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
   const [liveScore, setLiveScore] = useState<number | null>(null);
@@ -146,25 +148,33 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     }
     try {
       const raw = sessionStorage.getItem("ivero:lastDiagnostic");
-      if (!raw) return;
-      const payload = JSON.parse(raw);
-      if (Array.isArray(payload.pillarDetails) && payload.pillarDetails.length > 0) {
-        setLivePillars(payload.pillarDetails);
-      }
-      if (Array.isArray(payload.radar) && payload.radar.length > 0) {
-        setLiveRadar(payload.radar);
-      }
-      if (typeof payload.geoScore === "number") {
-        setLiveScore(payload.geoScore);
+      if (raw) {
+        const payload = JSON.parse(raw);
+        const hasPillars = Array.isArray(payload.pillarDetails) && payload.pillarDetails.length > 0;
+        const hasRadar = Array.isArray(payload.radar) && payload.radar.length > 0;
+        if (hasPillars) setLivePillars(payload.pillarDetails);
+        if (hasRadar) setLiveRadar(payload.radar);
+        if (typeof payload.geoScore === "number") setLiveScore(payload.geoScore);
+        if (hasPillars || hasRadar) return;
       }
     } catch {
-      /* ignore */
+      /* sessionStorage indisponível */
     }
-  }, [snapshotOverride]);
+    // Fallback de banco: último relatório salvo (caminho 2 e sessões novas).
+    const latest = reports[0];
+    if (!latest) return;
+    if (Array.isArray(latest.pillar_details) && latest.pillar_details.length > 0) {
+      setLivePillars(latest.pillar_details as unknown as PillarPayload[]);
+    }
+    if (Array.isArray(latest.radar_data) && latest.radar_data.length > 0) {
+      setLiveRadar(latest.radar_data);
+    }
+    if (typeof latest.overall_score === "number") setLiveScore(latest.overall_score);
+  }, [snapshotOverride, reports]);
 
-  // Merge live data with mock fallback (mock used only if no analysis was run yet)
-  const effectiveRadar = liveRadar ?? radarData;
-  const effectivePillars = (livePillars ?? pillarDetails).map((p) => ({
+  const hasDiagnostic = !!(liveRadar && liveRadar.length > 0);
+  const effectiveRadar = liveRadar ?? [];
+  const effectivePillars = (livePillars ?? []).map((p) => ({
     ...p,
     icon: PILLAR_ICON_MAP[p.name] ?? Eye,
     subtitle: p.subtitle ?? "",
@@ -175,6 +185,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     definition: p.definition ?? "",
     status: p.status ?? "",
   }));
+
   const criteriaByPillar: Record<string, PillarCriterion[]> = {};
   (livePillars ?? []).forEach((p) => {
     if (p?.name && Array.isArray(p.criterios) && p.criterios.length > 0) {
