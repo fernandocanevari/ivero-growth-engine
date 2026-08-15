@@ -2,24 +2,15 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, Search, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CTA_SECTION } from "@/content/landing";
 
-const stats = [
-  {
-    icon: ShoppingCart,
-    value: "75%",
-    label: "dos consumidores já usam IA para pesquisar antes de comprar",
-  },
-  {
-    icon: Search,
-    value: "40%",
-    label: "das buscas por produtos começam em IAs generativas",
-  },
-  {
-    icon: TrendingUp,
-    value: "3x",
-    label: "mais chances de conversão quando a marca é citada pela IA",
-  },
-];
+const STAT_ICONS: Record<string, typeof TrendingUp> = {
+  consumidores: ShoppingCart,
+  buscas: Search,
+  conversao: TrendingUp,
+};
+
+const stats = CTA_SECTION.stats.map((stat) => ({ ...stat, icon: STAT_ICONS[stat.key] }));
 
 const CTASection = () => {
   const navigate = useNavigate();
