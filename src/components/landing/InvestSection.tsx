@@ -14,6 +14,7 @@ import {
   annualSavingBRL,
   type PlanoSugerido,
 } from "@/lib/pricing-rules";
+import { PRICING_COPY } from "@/content/landing";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 
@@ -33,11 +34,9 @@ const METRIC_ICON: Record<string, typeof Cpu> = {
   "Consultas/mês": BarChart2,
 };
 
-const CTA_BY_PLAN: Record<PlanoSlug, string> = {
-  presenca: "Quero ser visto pelas IAs →",
-  influencia: "Quero superar meus concorrentes →",
-  autoridade: "Quero dominar meu setor nas IAs →",
-};
+const CTA_BY_PLAN: Record<PlanoSlug, string> = PRICING_COPY.ctaByPlan;
+
+const GUARANTEE_ICONS = [Gauge, Radar, BellRing, Mail, Headphones, Compass];
 
 const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -178,8 +177,8 @@ const InvestSection = () => {
           className="text-center mb-8 sm:mb-10"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
-            <span className="text-foreground">Nossos </span>
-            <span className="text-gradient">Planos</span>
+            <span className="text-foreground">{PRICING_COPY.headline.before}</span>
+            <span className="text-gradient">{PRICING_COPY.headline.highlight}</span>
           </h2>
 
           {/* Toggle mensal/anual */}
