@@ -215,8 +215,8 @@ const AudienceSection = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-7 sm:mb-10 leading-tight">
-              A Ivero é para marcas que querem ser{" "}
-              <span className="text-gradient">relevante nas IA's</span>
+              {AUDIENCE.headline.before}
+              <span className="text-gradient">{AUDIENCE.headline.highlight}</span>
             </h2>
 
             <div className="space-y-3 sm:space-y-4">
