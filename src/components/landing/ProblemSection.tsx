@@ -67,7 +67,7 @@ const ProblemSection = () => {
           className="text-center"
         >
           <Button variant="hero" size="lg" className="text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto">
-            Descubra como sua marca aparece na IA
+            {PROBLEM.ctaLabel}
             <ArrowRight className="ml-2" />
           </Button>
         </motion.div>
