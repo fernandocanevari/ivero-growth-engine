@@ -46,7 +46,9 @@ export function buildLandingMarkdown(): string {
   L.push("");
   L.push(heroSubheadline());
   L.push("");
-  L.push(`Chamada para ação: **${HERO.ctaLabel}** (informe o site da sua empresa — ex.: ${HERO.inputPlaceholder}).`);
+  L.push(
+    `Chamada para ação: **${HERO.ctaLabel}** (informe o site da sua empresa — ${HERO.inputPlaceholder}).`,
+  );
   L.push("");
   L.push(HERO.note);
   L.push("");

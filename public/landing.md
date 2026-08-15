@@ -10,7 +10,7 @@
 
 A Ivero mostra como sua marca aparece nas respostas das IAs, se é 🏆 recomendada antes do concorrente, e qual é o seu 💡 plano de ação pra virar referência.
 
-Chamada para ação: **Descobrir minha visibilidade agora** (informe o site da sua empresa — ex.: Ex.: www.suaempresa.com.br).
+Chamada para ação: **Descobrir minha visibilidade agora** (informe o site da sua empresa — Ex.: www.suaempresa.com.br).
 
 Diagnóstico instantâneo. Sem cadastro, sem enrolação.
 
