@@ -13,7 +13,7 @@ export const LANDING_META = {
   siteUrl: "https://ivero.com.br",
   title: "Ivero — Descubra se sua marca está invisível para as IAs",
   description:
-    "A Ivero audita como sua marca aparece (ou não) no ChatGPT, Gemini, Claude e Perplexity. Diagnóstico instantâneo de visibilidade em IA.",
+    "A Ivero audita como sua marca aparece (ou não) no ChatGPT, Gemini, Google Modo IA e Claude. Diagnóstico instantâneo de visibilidade em IA.",
 } as const;
 
 /* ── Hero ── */
@@ -269,7 +269,7 @@ export const FAQ = {
       key: "quais-ias",
       question: "Quais IAs a Ivero monitora?",
       answer:
-        "No MVP monitoramos as três IAs com maior alcance hoje: ChatGPT (OpenAI), Gemini (Google) e Google Modo IA (Gemini com grounding de busca em tempo real). Claude, Perplexity, GPT-5 e Copilot estão no roadmap para as próximas fases.",
+        "Hoje monitoramos as quatro IAs com maior alcance: ChatGPT (OpenAI), Gemini (Google), Google Modo IA (Gemini com grounding de busca em tempo real) e Claude (Anthropic). Perplexity, GPT-5 e Copilot estão no roadmap para as próximas fases.",
     },
     {
       key: "score",
