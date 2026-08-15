@@ -4,57 +4,52 @@ import { useEffect, useState } from "react";
 import productNike from "@/assets/product-nike.png";
 import productAdidas from "@/assets/product-adidas.png";
 import productNewBalance from "@/assets/product-newbalance.png";
+import { AUDIENCE } from "@/content/landing";
 
-const audiences = [
-  {
+const AUDIENCE_STYLE: Record<
+  string,
+  { icon: typeof Building2; borderColor: string; iconBg: string; iconColor: string; glowColor: string }
+> = {
+  marcas: {
     icon: Building2,
-    text: (
-      <>
-        <strong className="text-foreground">Marcas</strong> que querem ser <strong className="text-foreground">referências</strong>
-      </>
-    ),
     borderColor: "border-[hsl(265,70%,65%)]",
     iconBg: "bg-[hsl(265,70%,95%)]",
     iconColor: "text-[hsl(265,70%,45%)]",
     glowColor: "bg-[hsl(265,70%,65%)]",
   },
-  {
+  agencias: {
     icon: Megaphone,
-    text: (
-      <>
-        <strong className="text-foreground">Agências de MKT</strong> que querem vender o <strong className="text-foreground">futuro</strong>
-      </>
-    ),
     borderColor: "border-[hsl(280,60%,65%)]",
     iconBg: "bg-[hsl(280,60%,95%)]",
     iconColor: "text-[hsl(280,60%,45%)]",
     glowColor: "bg-[hsl(280,60%,65%)]",
   },
-  {
+  ecommerce: {
     icon: ShoppingBag,
-    text: (
-      <>
-        <strong className="text-foreground">E-commerce</strong> que querem ser <strong className="text-foreground">recomendados</strong>
-      </>
-    ),
     borderColor: "border-[hsl(300,50%,65%)]",
     iconBg: "bg-[hsl(300,50%,95%)]",
     iconColor: "text-[hsl(300,50%,45%)]",
     glowColor: "bg-[hsl(300,50%,65%)]",
   },
-  {
+  varejo: {
     icon: Store,
-    text: (
-      <>
-        <strong className="text-foreground">Varejo</strong> que quer dominar a nova <strong className="text-foreground">vitrine digital</strong>
-      </>
-    ),
     borderColor: "border-[hsl(330,85%,70%)]",
     iconBg: "bg-[hsl(330,85%,95%)]",
     iconColor: "text-[hsl(330,85%,45%)]",
     glowColor: "bg-[hsl(330,85%,65%)]",
   },
-];
+};
+
+const audiences = AUDIENCE.items.map((item) => ({
+  ...AUDIENCE_STYLE[item.key],
+  text: (
+    <>
+      <strong className="text-foreground">{item.strong1}</strong>
+      {item.middle}
+      <strong className="text-foreground">{item.strong2}</strong>
+    </>
+  ),
+}));
 
 const chatResults = [
   {
