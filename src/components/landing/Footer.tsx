@@ -17,7 +17,7 @@ const Footer = () => {
           </div>
 
           {/* Links — grid 2 cols no mobile, 5 cols no desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 text-sm w-full md:w-auto shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-6 text-sm w-full md:flex-1 md:min-w-0">
             {FOOTER_COPY.columns.map((column) => (
               <div key={column.title} className="flex flex-col gap-1">
                 <h4 className="font-semibold text-foreground mb-1">{column.title}</h4>
