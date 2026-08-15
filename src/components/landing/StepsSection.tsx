@@ -1,26 +1,14 @@
 import { motion } from "framer-motion";
 import { Scan, BarChart3, Rocket } from "lucide-react";
+import { STEPS } from "@/content/landing";
 
-const steps = [
-  {
-    number: "01",
-    icon: Scan,
-    title: "Monitore as respostas",
-    description: "A Ivero consulta as principais IAs generativas (ChatGPT, Gemini e Google Modo IA com grounding em tempo real do Google) com perguntas reais do seu setor e registra se sua marca aparece — e como aparece.",
-  },
-  {
-    number: "02",
-    icon: BarChart3,
-    title: "Analise e compare",
-    description: "Receba dashboards com análises comparativas: visibilidade da sua marca vs concorrentes, sentimento, contexto de citação e evolução ao longo do tempo.",
-  },
-  {
-    number: "03",
-    icon: Rocket,
-    title: "Aja com precisão",
-    description: "A Ivero gera planos de ação estratégicos para melhorar o posicionamento da sua marca nas respostas de IAs generativas. Decisões baseadas em dados, não em suposições.",
-  },
-];
+const STEP_ICONS: Record<string, typeof Scan> = {
+  monitorar: Scan,
+  analisar: BarChart3,
+  agir: Rocket,
+};
+
+const steps = STEPS.items.map((step) => ({ ...step, icon: STEP_ICONS[step.key] }));
 
 const StepsSection = () => {
   return (
