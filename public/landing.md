@@ -1,6 +1,6 @@
 # Ivero — Descubra se sua marca está invisível para as IAs
 
-> A Ivero audita como sua marca aparece (ou não) no ChatGPT, Gemini, Claude e Perplexity. Diagnóstico instantâneo de visibilidade em IA.
+> A Ivero audita como sua marca aparece (ou não) no ChatGPT, Gemini, Google Modo IA e Claude. Diagnóstico instantâneo de visibilidade em IA.
 
 - URL canônica: https://ivero.com.br/
 - Versão Markdown desta página: https://ivero.com.br/landing.md

@@ -13,7 +13,7 @@ export const LANDING_META = {
   siteUrl: "https://ivero.com.br",
   title: "Ivero — Descubra se sua marca está invisível para as IAs",
   description:
-    "A Ivero audita como sua marca aparece (ou não) no ChatGPT, Gemini, Claude e Perplexity. Diagnóstico instantâneo de visibilidade em IA.",
+    "A Ivero audita como sua marca aparece (ou não) no ChatGPT, Gemini, Google Modo IA e Claude. Diagnóstico instantâneo de visibilidade em IA.",
 } as const;
 
 /* ── Hero ── */
