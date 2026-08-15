@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     sitemapPlugin(),
+    landingMdPlugin(),
     mcpPlugin(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
