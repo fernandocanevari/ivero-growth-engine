@@ -1,24 +1,18 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { EyeOff, ShieldAlert, TrendingDown, ArrowRight } from "lucide-react";
+import { PROBLEM } from "@/content/landing";
 
-const problems = [
-  {
-    icon: EyeOff,
-    title: "Invisibilidade nas IAs",
-    description: "Quando alguém pergunta ao ChatGPT, Gemini ou Google Modo IA sobre seu setor, sua marca simplesmente não aparece.",
-  },
-  {
-    icon: ShieldAlert,
-    title: "Concorrentes sendo recomendados",
-    description: "Enquanto você não monitora, IAs generativas estão recomendando seus concorrentes em vez da sua marca.",
-  },
-  {
-    icon: TrendingDown,
-    title: "Decisões sem dados de IA",
-    description: "Sem entender como as IAs percebem sua marca, suas estratégias de conteúdo e posicionamento são cegas.",
-  },
-];
+const PROBLEM_ICONS: Record<string, typeof EyeOff> = {
+  invisibilidade: EyeOff,
+  concorrentes: ShieldAlert,
+  decisoes: TrendingDown,
+};
+
+const problems = PROBLEM.items.map((item) => ({
+  ...item,
+  icon: PROBLEM_ICONS[item.key],
+}));
 
 const ProblemSection = () => {
   return (
