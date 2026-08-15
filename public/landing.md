@@ -124,7 +124,7 @@ Tudo do plano Influência e mais:
 
 Chamada para ação: **Quero dominar meu setor nas IAs →**
 
-### Incluído em todos os planos
+### Incluso em todos os planos
 
 - Score GEO
 - Monitoramento de IAs

@@ -230,7 +230,7 @@ export const PRICING_COPY = {
     autoridade: "Quero dominar meu setor nas IAs →",
   },
   guarantee: {
-    titleBefore: "Incluído em ",
+    titleBefore: "Incluso em ",
     titleHighlight: "todos os planos",
     benefits: [
       "Score GEO",
@@ -240,8 +240,11 @@ export const PRICING_COPY = {
       "Suporte prioritário",
       "Onboarding Ivero",
     ],
-    footnote:
-      "Sem fidelidade • Cancele quando quiser • Evolua conforme sua operação cresce",
+    footnoteParts: [
+      "Sem fidelidade",
+      "Cancele quando quiser",
+      "Evolua conforme sua operação cresce",
+    ],
   },
 } as const;
 

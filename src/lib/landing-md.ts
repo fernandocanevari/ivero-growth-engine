@@ -136,7 +136,7 @@ export function buildLandingMarkdown(): string {
     L.push(`- ${benefit}`);
   }
   L.push("");
-  L.push(PRICING_COPY.guarantee.footnote);
+  L.push(PRICING_COPY.guarantee.footnoteParts.join(" • "));
   L.push("");
 
   // FAQ
