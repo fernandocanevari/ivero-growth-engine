@@ -25,10 +25,10 @@ const ProblemSection = () => {
           className="text-center mb-10 sm:mb-16"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
-            As IAs reconhecem <span className="text-gradient">sua marca?</span>
+            {PROBLEM.headline.before}<span className="text-gradient">{PROBLEM.headline.highlight}</span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Quando a IA não cita sua marca, a escolha do seu cliente vai para outro lugar.
+            {PROBLEM.subheadline}
           </p>
         </motion.div>
 
