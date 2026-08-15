@@ -1,24 +1,18 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { EyeOff, ShieldAlert, TrendingDown, ArrowRight } from "lucide-react";
+import { PROBLEM } from "@/content/landing";
 
-const problems = [
-  {
-    icon: EyeOff,
-    title: "Invisibilidade nas IAs",
-    description: "Quando alguém pergunta ao ChatGPT, Gemini ou Google Modo IA sobre seu setor, sua marca simplesmente não aparece.",
-  },
-  {
-    icon: ShieldAlert,
-    title: "Concorrentes sendo recomendados",
-    description: "Enquanto você não monitora, IAs generativas estão recomendando seus concorrentes em vez da sua marca.",
-  },
-  {
-    icon: TrendingDown,
-    title: "Decisões sem dados de IA",
-    description: "Sem entender como as IAs percebem sua marca, suas estratégias de conteúdo e posicionamento são cegas.",
-  },
-];
+const PROBLEM_ICONS: Record<string, typeof EyeOff> = {
+  invisibilidade: EyeOff,
+  concorrentes: ShieldAlert,
+  decisoes: TrendingDown,
+};
+
+const problems = PROBLEM.items.map((item) => ({
+  ...item,
+  icon: PROBLEM_ICONS[item.key],
+}));
 
 const ProblemSection = () => {
   return (
@@ -31,10 +25,10 @@ const ProblemSection = () => {
           className="text-center mb-10 sm:mb-16"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 sm:mb-6">
-            As IAs reconhecem <span className="text-gradient">sua marca?</span>
+            {PROBLEM.headline.before}<span className="text-gradient">{PROBLEM.headline.highlight}</span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Quando a IA não cita sua marca, a escolha do seu cliente vai para outro lugar.
+            {PROBLEM.subheadline}
           </p>
         </motion.div>
 
@@ -73,7 +67,7 @@ const ProblemSection = () => {
           className="text-center"
         >
           <Button variant="hero" size="lg" className="text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto">
-            Descubra como sua marca aparece na IA
+            {PROBLEM.ctaLabel}
             <ArrowRight className="ml-2" />
           </Button>
         </motion.div>

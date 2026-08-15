@@ -2,24 +2,15 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, Search, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CTA_SECTION } from "@/content/landing";
 
-const stats = [
-  {
-    icon: ShoppingCart,
-    value: "75%",
-    label: "dos consumidores já usam IA para pesquisar antes de comprar",
-  },
-  {
-    icon: Search,
-    value: "40%",
-    label: "das buscas por produtos começam em IAs generativas",
-  },
-  {
-    icon: TrendingUp,
-    value: "3x",
-    label: "mais chances de conversão quando a marca é citada pela IA",
-  },
-];
+const STAT_ICONS: Record<string, typeof TrendingUp> = {
+  consumidores: ShoppingCart,
+  buscas: Search,
+  conversao: TrendingUp,
+};
+
+const stats = CTA_SECTION.stats.map((stat) => ({ ...stat, icon: STAT_ICONS[stat.key] }));
 
 const CTASection = () => {
   const navigate = useNavigate();
@@ -62,18 +53,17 @@ const CTASection = () => {
             className="text-center flex-1 max-w-2xl"
           >
             <h2 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-5 sm:mb-6">
-              <span className="text-foreground">Sua marca será </span>
-              <span className="text-gradient">lembrada ou esquecida?</span>
+              <span className="text-foreground">{CTA_SECTION.headline.before}</span>
+              <span className="text-gradient">{CTA_SECTION.headline.highlight}</span>
             </h2>
 
             <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-xl mx-auto">
-              Milhões de decisões de compra já passam pelas IAs generativas. 
-              Garanta que sua marca esteja presente quando alguém perguntar.
+              {CTA_SECTION.paragraph}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="lg" className="text-sm sm:text-base px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto" onClick={() => navigate("/auth")}>
-                Queremos você como cliente — Comece agora
+                {CTA_SECTION.ctaLabel}
                 <ArrowRight className="ml-2 w-6 h-6" />
               </Button>
             </div>

@@ -1,66 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight, Map, BarChart3, FlaskConical, Search } from "lucide-react";
+import { FEATURES } from "@/content/landing";
 
 const AUTOPLAY_INTERVAL = 6000;
 const CARDS_PER_VIEW = { desktop: 3, tablet: 2, mobile: 1 };
 
-const features = [
-  {
-    icon: Bot,
-    title: "Monitoramento Multi-IA",
-    description: "Rastreie menções da sua marca no ChatGPT, Gemini e Google Modo IA, os motores generativos com maior alcance.",
-    mockup: "monitoring",
-  },
-  {
-    icon: GitCompare,
-    title: "Análise Comparativa",
-    description: "Compare sua visibilidade com concorrentes diretos em cada motor de IA.",
-    mockup: "compare",
-  },
-  {
-    icon: TrendingUp,
-    title: "Score de Visibilidade GEO",
-    description: "Métrica proprietária de 0 a 100 que quantifica sua presença nas respostas de IA.",
-    mockup: "score",
-  },
-  {
-    icon: Shield,
-    title: "Análise de Sentimento",
-    description: "Entenda se a IA fala da sua marca de forma positiva, neutra ou negativa.",
-    mockup: "sentiment",
-  },
-  {
-    icon: FileText,
-    title: "Planos de Ação Estratégicos",
-    description: "Receba recomendações prescritivas para melhorar sua presença em IA.",
-    mockup: "actions",
-  },
-  {
-    icon: Bell,
-    title: "Alertas em Tempo Real",
-    description: "Seja notificado quando houver mudanças na forma como IAs citam sua marca.",
-    mockup: "alerts",
-  },
-  {
-    icon: Map,
-    title: "Mapa de Prompts Estratégicos",
-    description: "Descubra quais perguntas fazem sua marca aparecer — e quais não fazem.",
-    mockup: "prompts",
-  },
-  {
-    icon: BarChart3,
-    title: "Dominância por Modelo de IA",
-    description: "Compare sua visibilidade no ChatGPT, Gemini e Google Modo IA — lado a lado com seus concorrentes.",
-    mockup: "dominance",
-  },
-  {
-    icon: FlaskConical,
-    title: "Simulador de Influência em IA",
-    description: "Teste perguntas reais e veja como cada modelo responde sobre sua marca — em tempo real.",
-    mockup: "simulator",
-  },
-];
+const FEATURE_ICONS: Record<string, typeof Bot> = {
+  monitoring: Bot,
+  compare: GitCompare,
+  score: TrendingUp,
+  sentiment: Shield,
+  actions: FileText,
+  alerts: Bell,
+  prompts: Map,
+  dominance: BarChart3,
+  simulator: FlaskConical,
+};
+
+const features = FEATURES.items.map((item) => ({
+  ...item,
+  icon: FEATURE_ICONS[item.key],
+  mockup: item.key,
+}));
 
 /* ── Mockups ── */
 
@@ -385,8 +347,8 @@ const FeaturesSection = () => {
           className="text-center mb-14"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Recursos da Ivero para{" "}
-            <span className="text-gradient">a presença da sua marca nas IAs</span>
+            {FEATURES.headline.before}
+            <span className="text-gradient">{FEATURES.headline.highlight}</span>
           </h2>
         </motion.div>
 

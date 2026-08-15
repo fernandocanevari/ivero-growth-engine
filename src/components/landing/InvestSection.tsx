@@ -14,6 +14,7 @@ import {
   annualSavingBRL,
   type PlanoSugerido,
 } from "@/lib/pricing-rules";
+import { PRICING_COPY } from "@/content/landing";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 
@@ -33,11 +34,9 @@ const METRIC_ICON: Record<string, typeof Cpu> = {
   "Consultas/mês": BarChart2,
 };
 
-const CTA_BY_PLAN: Record<PlanoSlug, string> = {
-  presenca: "Quero ser visto pelas IAs →",
-  influencia: "Quero superar meus concorrentes →",
-  autoridade: "Quero dominar meu setor nas IAs →",
-};
+const CTA_BY_PLAN: Record<PlanoSlug, string> = PRICING_COPY.ctaByPlan;
+
+const GUARANTEE_ICONS = [Gauge, Radar, BellRing, Mail, Headphones, Compass];
 
 const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -178,8 +177,8 @@ const InvestSection = () => {
           className="text-center mb-8 sm:mb-10"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
-            <span className="text-foreground">Nossos </span>
-            <span className="text-gradient">Planos</span>
+            <span className="text-foreground">{PRICING_COPY.headline.before}</span>
+            <span className="text-gradient">{PRICING_COPY.headline.highlight}</span>
           </h2>
 
           {/* Toggle mensal/anual */}
@@ -394,38 +393,39 @@ const InvestSection = () => {
                     <ShieldCheck className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
                   </div>
                   <h3 className="font-display text-sm sm:text-base font-bold text-foreground tracking-tight leading-tight">
-                    Incluso em<br className="hidden lg:block" />{" "}
-                    <span className="text-gradient">todos os planos</span>
+                    {PRICING_COPY.guarantee.titleBefore.trimEnd()}<br className="hidden lg:block" />{" "}
+                    <span className="text-gradient">{PRICING_COPY.guarantee.titleHighlight}</span>
                   </h3>
                 </div>
 
                 {/* Grid horizontal de benefícios */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 flex-1">
-                  {[
-                    { icon: Gauge, label: "Score GEO" },
-                    { icon: Radar, label: "Monitoramento de IAs" },
-                    { icon: BellRing, label: "Alertas de menções" },
-                    { icon: Mail, label: "Relatório semanal" },
-                    { icon: Headphones, label: "Suporte prioritário" },
-                    { icon: Compass, label: "Onboarding Ivero" },
-                  ].map(({ icon: Icon, label }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/60 border border-ivero-purple/10"
-                    >
-                      <Icon className="w-3.5 h-3.5 text-accent shrink-0" strokeWidth={2.25} />
-                      <span className="text-[11px] sm:text-xs font-medium text-foreground/85 leading-tight">
-                        {label}
-                      </span>
-                    </div>
-                  ))}
+                  {PRICING_COPY.guarantee.benefits.map((label, i) => {
+                    const Icon = GUARANTEE_ICONS[i] ?? Gauge;
+                    return (
+                      <div
+                        key={label}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/60 border border-ivero-purple/10"
+                      >
+                        <Icon className="w-3.5 h-3.5 text-accent shrink-0" strokeWidth={2.25} />
+                        <span className="text-[11px] sm:text-xs font-medium text-foreground/85 leading-tight">
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Faixa inferior */}
               <div className="mt-5 pt-4 border-t border-ivero-purple/10">
                 <p className="text-center text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">
-                  Sem fidelidade <span className="text-accent">•</span> Cancele quando quiser <span className="text-accent">•</span> Evolua conforme sua operação cresce
+                  {PRICING_COPY.guarantee.footnoteParts.map((part, i) => (
+                    <span key={part}>
+                      {i > 0 && <span className="text-accent"> • </span>}
+                      {part}
+                    </span>
+                  ))}
                 </p>
               </div>
             </div>
