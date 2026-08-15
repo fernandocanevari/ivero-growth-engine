@@ -347,8 +347,8 @@ const FeaturesSection = () => {
           className="text-center mb-14"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Recursos da Ivero para{" "}
-            <span className="text-gradient">a presença da sua marca nas IAs</span>
+            {FEATURES.headline.before}
+            <span className="text-gradient">{FEATURES.headline.highlight}</span>
           </h2>
         </motion.div>
 
