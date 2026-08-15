@@ -24,8 +24,8 @@ const StepsSection = () => {
           className="text-center mb-12 sm:mb-20"
         >
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
-            <span className="text-foreground">3 passos para </span>
-            <span className="text-gradient">dominar a IA</span>
+            <span className="text-foreground">{STEPS.headline.before}</span>
+            <span className="text-gradient">{STEPS.headline.highlight}</span>
           </h2>
         </motion.div>
 
