@@ -269,7 +269,7 @@ export const FAQ = {
       key: "quais-ias",
       question: "Quais IAs a Ivero monitora?",
       answer:
-        "No MVP monitoramos as três IAs com maior alcance hoje: ChatGPT (OpenAI), Gemini (Google) e Google Modo IA (Gemini com grounding de busca em tempo real). Claude, Perplexity, GPT-5 e Copilot estão no roadmap para as próximas fases.",
+        "Hoje monitoramos as quatro IAs com maior alcance: ChatGPT (OpenAI), Gemini (Google), Google Modo IA (Gemini com grounding de busca em tempo real) e Claude (Anthropic). Perplexity, GPT-5 e Copilot estão no roadmap para as próximas fases.",
     },
     {
       key: "score",
