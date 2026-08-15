@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { track } from "@/lib/analytics";
+import { HERO } from "@/content/landing";
 
 const HeroSection = () => {
   const [siteUrl, setSiteUrl] = useState("");
@@ -44,26 +45,26 @@ const HeroSection = () => {
           className="max-w-3xl mx-auto text-center"
         >
           <h1 className="font-display text-[28px] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-5">
-            <span className="text-foreground">Sua marca pode estar </span>
-            <span className="text-gradient">invisível agora</span>
-            <span className="text-foreground"> para o seu cliente e você não sabe.</span>
+            <span className="text-foreground">{HERO.headline.before}</span>
+            <span className="text-gradient">{HERO.headline.highlight}</span>
+            <span className="text-foreground">{HERO.headline.after}</span>
           </h1>
 
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-7 sm:mb-9 leading-loose">
-            A Ivero mostra como sua marca{" "}
+            {HERO.subheadline.p1}{" "}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple/10 text-ivero-purple align-middle font-semibold">
               <ScanSearch className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              aparece
+              {HERO.subheadline.pill1}
             </span>{" "}
-            nas respostas das IAs, se é{" "}
+            {HERO.subheadline.p2}{" "}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent align-middle font-semibold">
-              🏆 recomendada
+              {HERO.subheadline.pill2}
             </span>{" "}
-            antes do concorrente, e qual é o seu{" "}
+            {HERO.subheadline.p3}{" "}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ivero-purple-light/10 text-ivero-purple-light align-middle font-semibold">
-              💡 plano de ação
+              {HERO.subheadline.pill3}
             </span>{" "}
-            pra virar referência.
+            {HERO.subheadline.p4}
           </p>
 
 
@@ -80,7 +81,7 @@ const HeroSection = () => {
                   <input
                     id="hero-site-input"
                     type="url"
-                    placeholder="Ex.: www.suaempresa.com.br"
+                    placeholder={HERO.inputPlaceholder}
                     value={siteUrl}
                     onChange={(e) => setSiteUrl(e.target.value)}
                     className="flex-1 min-w-0 bg-transparent text-foreground placeholder:text-muted-foreground text-sm sm:text-base outline-none border-none px-4 pt-4 pb-2 sm:px-3 sm:py-0"
@@ -100,13 +101,13 @@ const HeroSection = () => {
                     navigate(`/preview${trimmed ? `?url=${encodeURIComponent(trimmed)}` : ""}`);
                   }}
                 >
-                  Descobrir minha visibilidade agora
+                  {HERO.ctaLabel}
                   <ArrowRight className="ml-1.5 w-4 h-4" />
                 </Button>
               </div>
             </div>
             <p className="text-foreground text-xs sm:text-sm font-medium text-center">
-              Diagnóstico instantâneo. Sem cadastro, sem enrolação.
+              {HERO.note}
             </p>
           </div>
         </motion.div>
