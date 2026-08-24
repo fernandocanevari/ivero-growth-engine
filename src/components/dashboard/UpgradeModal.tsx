@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Bell, Search, BarChart2, Check, Mail, Bot } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,6 +18,9 @@ import {
   type PlanoSugerido,
 } from "@/lib/pricing-rules";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { PLANOS } from "@/lib/pricing-rules";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -54,7 +56,7 @@ interface UpgradeModalProps {
 export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
   const [isAnnual, setIsAnnual] = useState(true);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
-  const { plano, isLoading } = useSubscriptionStatus();
+  const { plano, isLoading, isPaid, isAdmin } = useSubscriptionStatus();
 
   // Cálculo do destaque dinâmico. Enquanto carrega → highlightKey = null (sem badge).
   const highlightKey: PlanoSugerido | null = isLoading ? null : nextTier(plano);
@@ -67,24 +69,61 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
     return "Próximo passo";
   };
 
-  const handleSelectPlan = (planName: string) => {
+  const handleSelectPlan = async (planKey: PlanoSugerido, planName: string) => {
     // Funil de conversão: descobrir quais planos são clicados e onde param.
     track("upgrade_plan_clicked", {
       plan: planName,
       billing_cycle: isAnnual ? "annual" : "monthly",
       surface: "upgrade_modal",
     });
+    if (pendingPlan) return; // guarda de duplo clique
     setPendingPlan(planName);
-  };
 
-  const handleContact = () => {
-    track("upgrade_contact_clicked", {
-      plan: pendingPlan,
-      billing_cycle: isAnnual ? "annual" : "monthly",
-      surface: "upgrade_modal",
-    });
-    const subject = encodeURIComponent(`Quero assinar o plano ${pendingPlan}`);
-    window.location.href = `mailto:contato@ivero.com.br?subject=${subject}`;
+    try {
+      // Já é pagante (assinatura viva no Asaas) → troca de plano.
+      // Trial / sem assinatura no gateway → primeira contratação (checkout).
+      if (isPaid && !isAdmin) {
+        const { data, error } = await supabase.functions.invoke("manage-subscription", {
+          body: { action: "change_plan", plano: planKey },
+        });
+        if (error || data?.error) throw new Error(error?.message ?? data?.error);
+        toast({
+          title: `Plano alterado para ${planName}`,
+          description:
+            data?.mode === "asaas"
+              ? "O novo valor já vale para as próximas cobranças."
+              : "Seu plano foi atualizado.",
+        });
+        onOpenChange(false);
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          plano: planKey,
+          nome:
+            (userData.user?.user_metadata?.display_name as string) ??
+            userData.user?.email ??
+            "Cliente Ivero",
+          email: userData.user?.email ?? "",
+        },
+      });
+      if (error || data?.error) throw new Error(error?.message ?? data?.error);
+      if (data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl as string;
+        return;
+      }
+      throw new Error("Não recebemos o link de pagamento. Tente novamente.");
+    } catch (err) {
+      toast({
+        title: "Não foi possível concluir",
+        description: err instanceof Error ? err.message : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setPendingPlan(null);
+    }
   };
 
   return (
@@ -242,10 +281,19 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
                     variant={highlighted ? "default" : "outline"}
                     size="sm"
                     className="w-full text-xs mt-auto"
-                    onClick={() => handleSelectPlan(plan.name)}
-                    disabled={isAtTop && highlighted}
+                    onClick={() => void handleSelectPlan(plan.key, plan.name)}
+                    disabled={(isAtTop && highlighted) || pendingPlan !== null}
                   >
-                    {isAtTop && highlighted ? "Plano atual" : CTA_BY_PLAN[plan.key]}
+                    {pendingPlan === plan.name ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        Processando...
+                      </>
+                    ) : isAtTop && highlighted ? (
+                      "Plano atual"
+                    ) : (
+                      CTA_BY_PLAN[plan.key]
+                    )}
                   </Button>
                 </motion.div>
               );
@@ -258,29 +306,6 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
         </div>
       </DialogContent>
 
-      {/* Sub-modal: confirmação de interesse (gateway ainda não está ativo) */}
-      <Dialog open={!!pendingPlan} onOpenChange={(o) => !o && setPendingPlan(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Vamos ativar o plano {pendingPlan}</DialogTitle>
-            <DialogDescription className="pt-2 leading-relaxed">
-              Estamos finalizando a integração com o provedor de pagamentos.
-              Para garantir o seu plano{" "}
-              <span className="font-semibold text-foreground">{pendingPlan}</span>{" "}
-              agora, fale com o nosso time — ativamos manualmente em até 1 dia útil.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" onClick={() => setPendingPlan(null)}>
-              Voltar
-            </Button>
-            <Button onClick={handleContact} className="gap-1.5">
-              <Mail className="w-3.5 h-3.5" />
-              Falar com o time
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }
