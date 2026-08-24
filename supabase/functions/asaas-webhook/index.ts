@@ -209,6 +209,16 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "SUBSCRIPTION_UPDATED": {
+        // Confirmação da troca de plano feita em manage-subscription (ou no
+        // painel do Asaas): só reafirma o vínculo dos IDs.
+        const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {});
+        if (res.error) return json(500, res);
+        break;
+      }
+
+
+
       case "SUBSCRIPTION_DELETED":
       case "SUBSCRIPTION_INACTIVATED": {
         const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {

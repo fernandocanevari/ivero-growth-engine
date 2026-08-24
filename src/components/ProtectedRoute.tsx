@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveEffectiveStatus, isAccountRoute } from "@/lib/subscription-status";
+import { cancelAccessUntil, resolveEffectiveStatus, isAccountRoute } from "@/lib/subscription-status";
 
 
 type SubscriptionGateContextValue = {
@@ -96,7 +96,7 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       while (true) {
         const { data: subs } = await supabase
           .from("assinaturas")
-          .select("status, carencia_ate, trial_ends_at, updated_at")
+          .select("status, carencia_ate, trial_ends_at, data_vencimento, updated_at")
           .eq("user_id", session.user.id)
           .order("updated_at", { ascending: false })
           .limit(1);
@@ -194,6 +194,13 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       }
 
       if (status === "cancelado") {
+        // Cancelou, mas o período já pago ainda está em aberto → mantém acesso.
+        if (cancelAccessUntil(sub)) {
+          setGate({ isInGracePeriod: false, status, carenciaAte });
+          setAuthorized(true);
+          setLoading(false);
+          return;
+        }
         setAuthorized(false);
         setLoading(false);
         navigate("/escolher-plano?motivo=cancelado", { replace: true });

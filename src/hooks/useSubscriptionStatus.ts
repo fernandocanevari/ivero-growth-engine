@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
-import { resolveEffectiveStatus } from "@/lib/subscription-status";
+import { cancelAccessUntil, resolveEffectiveStatus } from "@/lib/subscription-status";
 
 type Plano = "presenca" | "influencia" | "autoridade" | null;
 
@@ -10,6 +10,7 @@ interface AssinaturaRow {
   status: string | null;
   carencia_ate: string | null;
   trial_ends_at: string | null;
+  data_vencimento: string | null;
 }
 
 
@@ -66,7 +67,7 @@ export function useSubscriptionStatus() {
 
       const { data, error } = await supabase
         .from("assinaturas")
-        .select("plano, status, carencia_ate, trial_ends_at")
+        .select("plano, status, carencia_ate, trial_ends_at, data_vencimento")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -92,6 +93,7 @@ export function useSubscriptionStatus() {
   let plano: Plano = null;
   let status: string = "trial";
   const carenciaAte: string | null = assinatura?.carencia_ate ?? null;
+  const dataVencimento: string | null = assinatura?.data_vencimento ?? null;
   const trialEndsAt: string | null = assinatura?.trial_ends_at ?? null;
 
   // Status efetivo derivado (trial vencido nunca conta como trial válido).
@@ -125,7 +127,8 @@ export function useSubscriptionStatus() {
       isTrial = false;
     } else if (effectiveStatus === "cancelado") {
       status = "cancelado";
-      isPaid = false;
+      // Mantém acesso até o fim do período já pago.
+      isPaid = cancelAccessUntil(assinatura) !== null;
       isTrial = false;
     } else if (effectiveStatus === "trial_expirado") {
       status = "trial_expirado";
@@ -159,6 +162,8 @@ export function useSubscriptionStatus() {
     plano,
     status,
     carenciaAte,
+    dataVencimento,
+    canceladoAcessoAte: cancelAccessUntil(assinatura),
     trialEndsAt,
     effectiveStatus,
     isTrialElegivel,

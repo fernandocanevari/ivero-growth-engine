@@ -26,7 +26,25 @@ export type SubscriptionLike = {
   status?: string | null;
   trial_ends_at?: string | null;
   carencia_ate?: string | null;
+  data_vencimento?: string | null;
 } | null;
+
+/**
+ * Cancelamento não corta o acesso na hora: o cliente mantém o que já pagou.
+ * Devolve a data-limite quando o cancelamento ainda tem período pago em aberto,
+ * ou null quando o acesso já venceu / não se aplica.
+ */
+export function cancelAccessUntil(
+  row: SubscriptionLike,
+  now: Date = new Date(),
+): string | null {
+  if (!row || row.status !== "cancelado") return null;
+  const until = row.data_vencimento ?? null;
+  if (!until) return null;
+  const ts = new Date(until).getTime();
+  if (Number.isNaN(ts) || ts <= now.getTime()) return null;
+  return until;
+}
 
 /** Rotas de conta: sempre acessíveis, mesmo com trial expirado. */
 export const ACCOUNT_ROUTES: readonly string[] = [
