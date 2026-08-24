@@ -1,52 +1,52 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  CreditCard, Download, Sparkles, AlertCircle, Calendar, CheckCircle2,
-  ArrowUpRight, Info, HelpCircle,
+  CreditCard, Download, Sparkles, Calendar, Loader2,
+  ArrowUpRight, HelpCircle, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
 import { track } from "@/lib/analytics";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useBillingInvoices, INVOICE_STATUS_LABEL } from "@/hooks/useBillingInvoices";
 import { PLANOS, formatBRL } from "@/lib/pricing-rules";
 
 /**
- * AssinaturaPage — área financeira do cliente.
+ * AssinaturaPage — área financeira do cliente, ligada ao Asaas de verdade.
  *
- * Estado atual: SEM gateway de pagamento integrado. A página renderiza um
- * shell visual realista com dados mock, claramente etiquetada como
- * "Demonstração". Ações sensíveis (atualizar cartão, mudar plano, cancelar)
- * abrem modal de "em breve" — exceto "Ver planos" que abre o UpgradeModal
- * existente, mantendo consistência com o TrialBanner.
- *
- * Quando integrar Stripe/Paddle, substituir os mocks por dados reais vindos
- * do gateway via edge function.
+ * Faturas, próxima cobrança e forma de pagamento vêm de `manage-subscription`
+ * (GET /subscriptions/{id}/payments). Cancelamento e troca de cartão também
+ * passam por essa função. Nunca coletamos dados de cartão aqui: a atualização
+ * acontece na página hospedada pelo Asaas.
  */
 
-const mockInvoices = [
-  { date: "—", value: "—", status: "Aguardando 1ª cobrança" },
-];
+const formatDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
+
+const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 
 export default function AssinaturaPage() {
-  const { plano, status } = useSubscriptionStatus();
+  const { plano, status, canceladoAcessoAte, isLoading: statusLoading } = useSubscriptionStatus();
+  const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
-  const [comingSoonContext, setComingSoonContext] = useState<string>("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelMotivo, setCancelMotivo] = useState("");
+  const [busy, setBusy] = useState<"cancel" | "card" | null>(null);
 
-  const openComingSoon = (context: string) => {
-    track("billing_action_blocked", { action: context, surface: "assinatura_page" });
-    setComingSoonContext(context);
-    setComingSoonOpen(true);
-  };
+  const planoInfo = plano ? PLANOS[plano] : null;
 
   const handleChangePlan = () => {
     track("upgrade_plan_clicked", {
@@ -56,13 +56,48 @@ export default function AssinaturaPage() {
     setUpgradeOpen(true);
   };
 
-  const handleContactSupport = () => {
-    track("upgrade_contact_clicked", {
-      action: comingSoonContext,
-      surface: "assinatura_page_coming_soon",
+  const handleUpdateCard = async () => {
+    setBusy("card");
+    const { data, error } = await supabase.functions.invoke("manage-subscription", {
+      body: { action: "update_card" },
     });
-    setComingSoonOpen(false);
-    window.location.href = "mailto:contato@ivero.com.br?subject=Suporte%20Assinatura";
+    setBusy(null);
+    if (data?.url) {
+      window.open(data.url as string, "_blank", "noopener");
+      return;
+    }
+    toast({
+      title: "Forma de pagamento",
+      description:
+        (data?.message as string) ??
+        error?.message ??
+        "Escolha um plano para cadastrar a forma de pagamento.",
+    });
+  };
+
+  const handleCancel = async () => {
+    setBusy("cancel");
+    const { data, error } = await supabase.functions.invoke("manage-subscription", {
+      body: { action: "cancel", motivo: cancelMotivo },
+    });
+    setBusy(null);
+    if (error || data?.error) {
+      toast({
+        title: "Não foi possível cancelar",
+        description: error?.message ?? (data?.error as string) ?? "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    track("subscription_canceled", { plan: plano ?? "none", surface: "assinatura_page" });
+    setCancelOpen(false);
+    toast({
+      title: "Assinatura cancelada",
+      description: data?.acessoAte
+        ? `Seu acesso continua até ${formatDate(data.acessoAte as string)}.`
+        : "Seu acesso permanece até o fim do período já pago.",
+    });
+    void reload();
   };
 
   return (
@@ -82,10 +117,6 @@ export default function AssinaturaPage() {
             Gerencie seu plano, forma de pagamento e histórico de faturas.
           </p>
         </div>
-        <Badge variant="outline" className="gap-1.5 border-accent/40 bg-accent/10 text-accent-foreground">
-          <Info className="w-3 h-3" />
-          Demonstração — gateway em breve
-        </Badge>
       </div>
 
       {/* Top: Plano atual + Próxima cobrança */}
@@ -104,40 +135,46 @@ export default function AssinaturaPage() {
                 Teste grátis
               </Badge>
             )}
+            {status === "cancelado" && (
+              <Badge variant="outline" className="border-destructive/40 text-destructive">
+                Cancelada
+              </Badge>
+            )}
           </div>
 
-          {(() => {
-            const planoInfo = plano ? PLANOS[plano] : null;
-            const displayName = planoInfo?.name ?? "Plano —";
-            const displayPrice = planoInfo ? formatBRL(planoInfo.monthlyPrice) : "—";
-            const tagline =
-              planoInfo?.tagline ??
-              "Escolha um plano para desbloquear os recursos avançados.";
-            return (
-              <>
-                <h2 className="text-2xl font-bold text-foreground mb-1">
-                  Plano {displayName}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-4">{tagline}</p>
-                <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-3xl font-bold text-foreground">{displayPrice}</span>
-                  <span className="text-sm text-muted-foreground">/ mês</span>
-                </div>
-              </>
-            );
-          })()}
+          <h2 className="text-2xl font-bold text-foreground mb-1">
+            Plano {planoInfo?.name ?? "—"}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {planoInfo?.tagline ?? "Escolha um plano para desbloquear os recursos avançados."}
+          </p>
+          <div className="flex items-baseline gap-2 mb-6">
+            <span className="text-3xl font-bold text-foreground">
+              {planoInfo ? formatBRL(planoInfo.monthlyPrice) : "—"}
+            </span>
+            <span className="text-sm text-muted-foreground">/ mês</span>
+          </div>
+
+          {canceladoAcessoAte && (
+            <p className="text-xs text-muted-foreground mb-4">
+              Cancelada — seu acesso continua até{" "}
+              <span className="font-semibold text-foreground">
+                {formatDate(canceladoAcessoAte)}
+              </span>
+              .
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleChangePlan} className="gap-1.5">
-              Mudar plano
+              {status === "cancelado" ? "Reativar plano" : "Mudar plano"}
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => openComingSoon("cancelar a assinatura")}
-            >
-              Cancelar
-            </Button>
+            {status !== "cancelado" && (
+              <Button variant="outline" onClick={() => setCancelOpen(true)}>
+                Cancelar
+              </Button>
+            )}
           </div>
         </Card>
 
@@ -150,134 +187,183 @@ export default function AssinaturaPage() {
             </span>
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-1">
-            Sem cobrança agendada
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Você ainda não escolheu um plano pago.
-          </p>
-
-          <div className="space-y-2 pt-4 border-t border-border">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Valor previsto</span>
-              <span className="font-semibold text-foreground">—</span>
+          {invoicesLoading || statusLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-4 w-56" />
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Data prevista</span>
-              <span className="font-semibold text-foreground">—</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Forma de pagamento</span>
-              <span className="font-semibold text-foreground">Não cadastrada</span>
-            </div>
-          </div>
+          ) : next ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">
+                {formatBRL(next.value)}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Vencimento em {formatDate(next.dueDate)}
+              </p>
+              <div className="space-y-2 pt-4 border-t border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Status</span>
+                  <span className="font-semibold text-foreground">
+                    {INVOICE_STATUS_LABEL[next.status] ?? next.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Forma de pagamento</span>
+                  <span className="font-semibold text-foreground">
+                    {next.billingType === "CREDIT_CARD" ? "Cartão de crédito" : next.billingType ?? "—"}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">
+                Sem cobrança agendada
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {status === "trial"
+                  ? "A primeira cobrança acontece ao fim do teste, quando você escolher o plano."
+                  : "Escolha um plano para ativar a cobrança recorrente."}
+              </p>
+            </>
+          )}
         </Card>
       </div>
 
       {/* Forma de pagamento */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
           <div>
             <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-muted-foreground" />
               Forma de pagamento
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Cartões salvos para cobranças recorrentes.
+              A atualização do cartão acontece na página segura do nosso provedor.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openComingSoon("cadastrar um cartão")}
-          >
-            Adicionar cartão
+          <Button variant="outline" size="sm" onClick={handleUpdateCard} disabled={busy === "card"}>
+            {busy === "card" ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Atualizar cartão
           </Button>
         </div>
 
-        <div className="rounded-lg border border-dashed border-border p-6 text-center">
-          <CreditCard className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
-          <p className="text-sm text-muted-foreground">
-            Nenhum cartão cadastrado ainda.
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            Cadastre uma forma de pagamento ao escolher um plano.
-          </p>
-        </div>
+        {next?.billingType === "CREDIT_CARD" ? (
+          <div className="rounded-lg border border-border p-4 flex items-center gap-3">
+            <CreditCard className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Cartão de crédito ativo</p>
+              <p className="text-xs text-muted-foreground">
+                Cobrança recorrente do plano {planoInfo?.name ?? "—"}.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center">
+            <CreditCard className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+            <p className="text-sm text-muted-foreground">Nenhum cartão cadastrado ainda.</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Cadastre uma forma de pagamento ao escolher um plano.
+            </p>
+          </div>
+        )}
       </Card>
 
       {/* Histórico de faturas */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-base font-semibold text-foreground">
-              Histórico de faturas
-            </h3>
+            <h3 className="text-base font-semibold text-foreground">Histórico de faturas</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Todas as cobranças e recibos da sua conta.
             </p>
           </div>
         </div>
 
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 border-b border-border">
-              <tr className="text-left">
-                <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                  Data
-                </th>
-                <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                  Valor
-                </th>
-                <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                  Status
-                </th>
-                <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground text-right">
-                  Recibo
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockInvoices.map((inv, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 text-foreground">{inv.date}</td>
-                  <td className="px-4 py-3 text-foreground font-medium">{inv.value}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <CheckCircle2 className="w-3 h-3" />
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled
-                      className="text-xs h-7"
-                    >
-                      <Download className="w-3 h-3 mr-1" />
-                      —
-                    </Button>
-                  </td>
+        {invoicesLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : invoices.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center">
+            <p className="text-sm text-muted-foreground">Nenhuma cobrança ainda.</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              As faturas aparecem aqui após a primeira cobrança do seu plano.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 border-b border-border">
+                <tr className="text-left">
+                  <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+                    Data
+                  </th>
+                  <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+                    Valor
+                  </th>
+                  <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-muted-foreground text-right">
+                    Recibo
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1.5">
-          <AlertCircle className="w-3 h-3" />
-          As faturas aparecerão aqui assim que o gateway de pagamento for ativado.
-        </p>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => {
+                  const link = PAID_STATUSES.includes(inv.status)
+                    ? inv.receiptUrl ?? inv.invoiceUrl
+                    : inv.invoiceUrl;
+                  return (
+                    <tr key={inv.id} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3 text-foreground">{formatDate(inv.dueDate)}</td>
+                      <td className="px-4 py-3 text-foreground font-medium">
+                        {formatBRL(inv.value)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-muted-foreground">
+                          {INVOICE_STATUS_LABEL[inv.status] ?? inv.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs h-7"
+                          disabled={!link}
+                          asChild={!!link}
+                        >
+                          {link ? (
+                            <a href={link} target="_blank" rel="noopener noreferrer">
+                              <Download className="w-3 h-3 mr-1" />
+                              Abrir
+                            </a>
+                          ) : (
+                            <span>—</span>
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
-      {/* FAQ — antecipa as 5 dúvidas mais comuns sobre trial e gateway */}
+      {/* FAQ */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-1">
           <HelpCircle className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">
-            Perguntas frequentes
-          </h3>
+          <h3 className="text-base font-semibold text-foreground">Perguntas frequentes</h3>
         </div>
         <p className="text-xs text-muted-foreground mb-4">
           Tudo o que você precisa saber sobre o trial e a cobrança.
@@ -305,36 +391,18 @@ export default function AssinaturaPage() {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="gateway">
-            <AccordionTrigger
-              className="text-sm font-medium text-left"
-              onClick={() => track("billing_faq_opened", { question: "por_que_gateway_em_breve" })}
-            >
-              Por que o gateway de pagamento ainda está em finalização?
-            </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-              Estamos integrando o provedor de pagamentos com a infraestrutura da
-              Ivero (cobrança recorrente, emissão de nota fiscal e relatórios
-              financeiros). Enquanto a integração não está 100%, ativamos os planos{" "}
-              <span className="font-medium text-foreground">manualmente em até 1
-              dia útil</span> — você fala com nosso time, escolhe o plano e
-              começamos a cobrar no cartão de crédito. É o mesmo plano, mesmo
-              preço, com atendimento direto.
-            </AccordionContent>
-          </AccordionItem>
-
           <AccordionItem value="cobranca">
             <AccordionTrigger
               className="text-sm font-medium text-left"
               onClick={() => track("billing_faq_opened", { question: "vou_ser_cobrada_no_trial" })}
             >
-              Vou ser cobrada automaticamente quando o trial acabar?
+              Quando a primeira cobrança acontece?
             </AccordionTrigger>
             <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-              Não. Como o gateway ainda está em finalização e você não cadastrou
-              nenhuma forma de pagamento, nada será cobrado automaticamente. No
-              fim dos 7 dias o acesso aos recursos do trial continua disponível
-              até você decidir contratar um plano pago.
+              Ao escolher um plano você é levado à página segura de pagamento. Se
+              ainda estiver no teste, a primeira cobrança é agendada para o fim
+              dos 7 dias — e nada é cobrado antes disso. Depois, a renovação é
+              mensal e automática no cartão cadastrado.
             </AccordionContent>
           </AccordionItem>
 
@@ -343,13 +411,28 @@ export default function AssinaturaPage() {
               className="text-sm font-medium text-left"
               onClick={() => track("billing_faq_opened", { question: "como_mudar_de_plano" })}
             >
-              Como faço para mudar de plano depois?
+              Como faço para mudar de plano?
             </AccordionTrigger>
             <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-              Quando o gateway estiver no ar, você poderá fazer upgrade ou
-              downgrade direto desta página, com cobrança proporcional ao período
-              restante. Por enquanto, qualquer mudança é feita por contato com o
-              nosso time — sem burocracia, sem multa.
+              Clique em <span className="font-medium text-foreground">Mudar plano</span>{" "}
+              e escolha o novo plano. A alteração é imediata no acesso e o novo
+              valor passa a valer nas próximas cobranças — não há cobrança
+              proporcional retroativa nem multa.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="cartao">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "como_atualizar_cartao" })}
+            >
+              Como atualizo o cartão de crédito?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Use o botão{" "}
+              <span className="font-medium text-foreground">Atualizar cartão</span>. Você
+              é levado à página segura do nosso provedor de pagamentos — a Ivero
+              nunca armazena os dados do seu cartão.
             </AccordionContent>
           </AccordionItem>
 
@@ -371,27 +454,38 @@ export default function AssinaturaPage() {
       {/* Upgrade modal (planos reais) */}
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
 
-      {/* Coming soon modal */}
-      <Dialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
+      {/* Confirmação de cancelamento */}
+      <Dialog open={cancelOpen} onOpenChange={(o) => !o && setCancelOpen(false)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Disponível em breve</DialogTitle>
-            <DialogDescription className="pt-2">
-              A opção de <span className="font-medium text-foreground">{comingSoonContext}</span>{" "}
-              estará disponível assim que finalizarmos a integração com o
-              provedor de pagamentos. Enquanto isso, fale com o nosso suporte e
-              resolvemos manualmente.
+            <DialogTitle>Cancelar assinatura?</DialogTitle>
+            <DialogDescription className="pt-2 leading-relaxed">
+              A recorrência é encerrada e nada mais será cobrado. Seu acesso
+              continua até{" "}
+              <span className="font-semibold text-foreground">
+                {formatDate(next?.dueDate ?? null)}
+              </span>{" "}
+              — o fim do período já pago.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setComingSoonOpen(false)}
-            >
-              Entendi
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              O que motivou o cancelamento? (opcional)
+            </label>
+            <Textarea
+              value={cancelMotivo}
+              onChange={(e) => setCancelMotivo(e.target.value)}
+              placeholder="Sua resposta nos ajuda a melhorar a Ivero."
+              rows={3}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setCancelOpen(false)}>
+              Manter assinatura
             </Button>
-            <Button onClick={handleContactSupport}>
-              Falar com suporte
+            <Button variant="destructive" onClick={handleCancel} disabled={busy === "cancel"}>
+              {busy === "cancel" && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+              Confirmar cancelamento
             </Button>
           </DialogFooter>
         </DialogContent>
