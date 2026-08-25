@@ -86,13 +86,16 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
           body: { action: "change_plan", plano: planKey },
         });
         if (error || data?.error) throw new Error(error?.message ?? data?.error);
+        const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
         toast({
           title: `Plano alterado para ${planName}`,
-          description:
-            data?.mode === "asaas"
+          description: pr
+            ? `Geramos uma cobrança de R$ ${pr.value.toFixed(2).replace(".", ",")} pela diferença proporcional aos ${pr.days} dia(s) restantes do ciclo atual. O novo valor vale integralmente a partir da próxima cobrança.`
+            : data?.mode === "asaas"
               ? "O novo valor já vale para as próximas cobranças."
               : "Seu plano foi atualizado.",
         });
+        if (pr?.invoiceUrl) window.open(pr.invoiceUrl, "_blank", "noopener");
         onOpenChange(false);
         return;
       }

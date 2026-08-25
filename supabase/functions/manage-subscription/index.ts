@@ -136,6 +136,53 @@ Deno.serve(async (req) => {
       }
 
       requireAsaas();
+
+      // 3.1 Estado atual da assinatura no Asaas (valor antigo, ciclo, vencimento
+      // e customer — precisamos do customer pra emitir a cobrança avulsa).
+      const cur = await fetchAsaas(`/subscriptions/${subId}`);
+      if (!cur.ok) {
+        console.error("change_plan get sub error:", cur.status, cur.text.slice(0, 500));
+        return json(502, { error: "Não foi possível ler a assinatura no provedor de pagamentos." });
+      }
+      const oldValue = Number(cur.json?.value ?? 0);
+      const cycle = String(cur.json?.cycle ?? "MONTHLY");
+      const nextDue: string | null = cur.json?.nextDueDate ?? null;
+      const customerId: string | null = cur.json?.customer ?? assinatura.asaas_customer_id ?? null;
+
+      // 3.2 Há cobrança pendente do ciclo atual? Se sim, o próprio
+      // updatePendingPayments corrige o valor dela — não existe diferença a
+      // cobrar à parte (senão o cliente pagaria duas vezes pelo delta).
+      const pend = await fetchAsaas(`/subscriptions/${subId}/payments?status=PENDING&limit=1`);
+      const hasPending = Array.isArray(pend.json?.data) && pend.json!.data.length > 0;
+
+      // 3.3 Diferença proporcional ao que resta do ciclo JÁ PAGO.
+      const CYCLE_DAYS: Record<string, number> = {
+        WEEKLY: 7,
+        BIWEEKLY: 14,
+        MONTHLY: 30,
+        BIMONTHLY: 60,
+        QUARTERLY: 90,
+        SEMIANNUALLY: 182,
+        YEARLY: 365,
+      };
+      const cycleDays = CYCLE_DAYS[cycle] ?? 30;
+      const msDay = 86_400_000;
+      const startOfToday = new Date(new Date().toISOString().slice(0, 10)).getTime();
+      const dueTs = nextDue ? new Date(nextDue).getTime() : NaN;
+      const daysLeft = Number.isNaN(dueTs)
+        ? 0
+        : Math.max(0, Math.min(cycleDays, Math.round((dueTs - startOfToday) / msDay)));
+
+      const delta = value - oldValue;
+      const isUpgrade = delta > 0;
+      // Só cobramos quando: é upgrade, o ciclo atual está pago (sem pendente),
+      // ainda sobra tempo de ciclo e o valor arredondado é cobrável no Asaas.
+      const proRataRaw = isUpgrade && !hasPending ? (delta * daysLeft) / cycleDays : 0;
+      const proRataValue = Math.round(proRataRaw * 100) / 100;
+      const shouldChargeProRata = proRataValue >= 5 && !!customerId;
+
+      // 3.4 Atualiza o valor da assinatura (vale pros ciclos futuros; com
+      // updatePendingPayments ajusta também a pendente do ciclo corrente).
       const upd = await fetchAsaas(`/subscriptions/${subId}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -153,18 +200,72 @@ Deno.serve(async (req) => {
         });
       }
 
+      // 3.5 Cobrança avulsa da diferença proporcional (upgrade no meio do ciclo).
+      // Falha aqui NÃO desfaz a troca de plano: o cliente já está no plano novo
+      // e a diferença fica registrada no log para tratamento manual.
+      let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
+      if (shouldChargeProRata) {
+        const today = new Date().toISOString().slice(0, 10);
+        const pay = await fetchAsaas(`/payments`, {
+          method: "POST",
+          body: JSON.stringify({
+            customer: customerId,
+            billingType: "UNDEFINED",
+            value: proRataValue,
+            dueDate: today,
+            description:
+              `Ivero — diferença proporcional do upgrade para ${plano} ` +
+              `(${daysLeft} dia(s) restantes do ciclo atual)`,
+            externalReference: `prorata:${assinatura.id}:${plano}`,
+          }),
+        });
+        if (pay.ok) {
+          proRata = {
+            value: proRataValue,
+            days: daysLeft,
+            invoiceUrl: pay.json?.invoiceUrl ?? pay.json?.bankSlipUrl ?? null,
+          };
+        } else {
+          console.error(
+            "change_plan prorata error:",
+            pay.status,
+            pay.text.slice(0, 500),
+            "value:",
+            proRataValue,
+          );
+        }
+      }
+
       const { error } = await supabaseAdmin
         .from("assinaturas")
         .update({ plano })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
+      console.log(
+        "change_plan asaas:",
+        userId,
+        plano,
+        "oldValue:",
+        oldValue,
+        "newValue:",
+        value,
+        "daysLeft:",
+        daysLeft,
+        "hasPending:",
+        hasPending,
+        "proRata:",
+        proRata?.value ?? 0,
+      );
+
       return json(200, {
         success: true,
         mode: "asaas",
         plano,
         value,
+        previousValue: oldValue,
         nextDueDate: upd.json?.nextDueDate ?? null,
+        proRata,
       });
     }
 
