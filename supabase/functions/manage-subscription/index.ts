@@ -341,8 +341,12 @@ Deno.serve(async (req) => {
       receiptUrl: (p.transactionReceiptUrl ?? null) as string | null,
       billingType: (p.billingType ?? null) as string | null,
     }));
+    // Próxima cobrança = pendente com vencimento MAIS PRÓXIMO (a API devolve
+    // em ordem decrescente, então não podemos usar o primeiro que aparecer).
     const next =
-      invoices.find((i) => i.status === "PENDING" || i.status === "AWAITING_RISK_ANALYSIS") ?? null;
+      invoices
+        .filter((i) => i.status === "PENDING" || i.status === "AWAITING_RISK_ANALYSIS")
+        .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))[0] ?? null;
 
     return json(200, { success: true, invoices, next });
   } catch (err) {
