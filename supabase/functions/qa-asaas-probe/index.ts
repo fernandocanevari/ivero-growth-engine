@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 /**
@@ -7,7 +8,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
  * assinatura, confirmar cobrança em dinheiro) e validar `manage-subscription`
  * com chamadas reais. DEVE SER REMOVIDA depois dos testes.
  *
- * Proteção: exige o header `x-qa-token` igual ao ASAAS_WEBHOOK_TOKEN.
+ * Proteção: exige JWT válido de um usuário com role 'admin'.
  */
 
 const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
@@ -21,10 +22,26 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  const expected = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
-  if (!expected || req.headers.get("x-qa-token") !== expected) {
-    return json(401, { error: "Unauthorized" });
-  }
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return json(401, { error: "Unauthorized" });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: claims, error: claimsError } = await anon.auth.getClaims(
+    authHeader.replace("Bearer ", ""),
+  );
+  if (claimsError || !claims?.claims) return json(401, { error: "Unauthorized" });
+
+  const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false },
+  });
+  const { data: isAdmin } = await admin.rpc("has_role", {
+    _user_id: claims.claims.sub as string,
+    _role: "admin",
+  });
+  if (!isAdmin) return json(403, { error: "Forbidden" });
 
   const body = (await req.json().catch(() => ({}))) as {
     path?: string;
