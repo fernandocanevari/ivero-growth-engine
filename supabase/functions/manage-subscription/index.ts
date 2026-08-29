@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_customer_id, data_vencimento, trial_ends_at",
+        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, data_vencimento, trial_ends_at",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       "access_token": asaasKey ?? "",
     };
-    const subId = assinatura.asaas_subscription_id as string | null;
+    let subId = assinatura.asaas_subscription_id as string | null;
 
     const requireAsaas = () => {
       if (!asaasKey) throw new Error("ASAAS_API_KEY_SANDBOX não configurada.");
