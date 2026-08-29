@@ -165,6 +165,11 @@ export function useSubscriptionStatus() {
     effectiveStatus,
     isTrialElegivel,
     isTrialExpired: isTrialExpired && !isAdmin,
+    /** Existe vínculo vivo no provedor de pagamentos (assinatura recorrente). */
+    hasAsaasSubscription: !!assinatura?.asaas_subscription_id,
+    /** Recarrega a assinatura do banco (usado após upgrade/retorno de checkout). */
+    refresh: fetchAssinatura,
   };
+
 
 }
