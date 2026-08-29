@@ -59,8 +59,9 @@ const BemVindoPage = () => {
     let cancelled = false;
     let attempts = 0;
 
-    const fromAsaas =
-      new URLSearchParams(window.location.search).get("from") === "asaas";
+    const params = new URLSearchParams(window.location.search);
+    const fromAsaas = params.get("from") === "asaas";
+    const isUpgrade = params.get("tipo") === "upgrade";
 
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -87,6 +88,14 @@ const BemVindoPage = () => {
         .eq("user_id", user.id)
         .limit(1);
       if (!cancelled) setHasDiagnosis(!!(hist && hist.length > 0));
+
+      // Onboarding já concluído (ou retorno de upgrade) → confirmação enxuta.
+      const { data: brand } = await supabase
+        .from("brand_settings")
+        .select("onboarding_completed_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) setLeanConfirm(isUpgrade || !!brand?.onboarding_completed_at);
 
       // Sem ?from=asaas, essa tela não faz sentido — manda direto pro dashboard.
       if (!fromAsaas) {
