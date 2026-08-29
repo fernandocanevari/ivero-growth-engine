@@ -383,17 +383,21 @@ Deno.serve(async (req) => {
       // Condições de negócio esperadas respondem HTTP 200 com ok:false — não
       // são erros de verdade, e o supabase.functions.invoke esconde o corpo de
       // respostas non-2xx.
-      if (!subId) {
+      const resolved = await resolveSubId();
+      if (!resolved) {
+        const orfa = !!(assinatura.asaas_checkout_id || assinatura.asaas_customer_id);
         return json(200, {
           ok: false,
-          reason: "sem_assinatura_asaas",
-          message: "Escolha um plano para cadastrar a forma de pagamento.",
+          reason: orfa ? "assinatura_nao_localizada" : "sem_assinatura_asaas",
+          message: orfa
+            ? "Não localizamos sua assinatura no provedor de pagamentos. Fale com o suporte."
+            : "Escolha um plano para cadastrar a forma de pagamento.",
         });
       }
       requireAsaas();
       // Página hospedada pelo Asaas da próxima cobrança: é lá que o cliente
       // troca o cartão sem que a gente toque em dado de cartão (PCI).
-      const list = await fetchAsaas(`/subscriptions/${subId}/payments?status=PENDING&limit=1`);
+      const list = await fetchAsaas(`/subscriptions/${resolved}/payments?status=PENDING&limit=1`);
       const url: string =
         list.json?.data?.[0]?.invoiceUrl || list.json?.data?.[0]?.bankSlipUrl || "";
       if (!url) {
@@ -408,11 +412,12 @@ Deno.serve(async (req) => {
     }
 
     // list_invoices
-    if (!subId) {
+    const resolvedForList = await resolveSubId();
+    if (!resolvedForList) {
       return json(200, { success: true, invoices: [], next: null });
     }
     requireAsaas();
-    const list = await fetchAsaas(`/subscriptions/${subId}/payments?limit=50`);
+    const list = await fetchAsaas(`/subscriptions/${resolvedForList}/payments?limit=50`);
     if (!list.ok) {
       console.error("list_invoices asaas error:", list.status, list.text.slice(0, 500));
       return json(502, { error: "Não foi possível carregar as faturas." });
