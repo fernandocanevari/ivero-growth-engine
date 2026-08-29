@@ -248,7 +248,33 @@ const BemVindoPage = () => {
           </div>
         )}
 
-        {status === "active" && (
+        {status === "active" && leanConfirm && (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center max-w-lg"
+            >
+              <CheckCircle2 className="mx-auto text-ivero-purple mb-6" size={56} />
+              <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#1A1A2E] mb-3">
+                Pagamento confirmado
+              </h1>
+              <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed">
+                Seu plano já está ativo. Tudo pronto para continuar de onde você parou.
+              </p>
+              <Button
+                size="lg"
+                onClick={() => navigate("/dashboard")}
+                className="text-base px-10 py-6 h-auto rounded-full bg-gradient-to-r from-ivero-purple to-accent hover:opacity-95 text-white shadow-lg shadow-ivero-purple/25"
+              >
+                Acessar Dashboard
+              </Button>
+            </motion.div>
+          </div>
+        )}
+
+        {status === "active" && !leanConfirm && (
           <div className="max-w-4xl mx-auto space-y-16 sm:space-y-20">
             <motion.section
               initial={{ opacity: 0, y: 16 }}
