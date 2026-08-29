@@ -289,12 +289,15 @@ Deno.serve(async (req) => {
     };
 
     // Não acumular histórico: reaproveitamos a linha viva sem vínculo com o
-    // Asaas (trial/pendente local) ou, na falta dela, a linha expirada mais
-    // recente — sempre update in place — e cancelamos as demais linhas mortas.
-    const DEAD_STATUSES = ["expirado", "trial_expirado"];
+    // Asaas (trial/pendente local) ou, na falta dela, a linha morta mais
+    // recente (expirada OU cancelada — reativação) — sempre update in place —
+    // e cancelamos as demais linhas mortas. Reativação nunca ganha trial novo:
+    // `trialConcedido` já é false por causa do histórico.
+    const DEAD_STATUSES = ["expirado", "trial_expirado", "cancelado"];
     const linhaViva = (history ?? []).find((r) => LIVE_STATUSES.includes(r.status ?? ""));
     const linhaMorta =
       linhaViva ?? (history ?? []).find((r) => DEAD_STATUSES.includes(r.status ?? ""));
+
 
     let insertError: { code?: string; message: string } | null = null;
 
