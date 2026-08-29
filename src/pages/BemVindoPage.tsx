@@ -43,6 +43,9 @@ const BemVindoPage = () => {
   const [hasDiagnosis, setHasDiagnosis] = useState<boolean>(false);
   const [recheckToken, setRecheckToken] = useState(0);
   const [checkoutUrl, setCheckoutUrl] = useState<string>("");
+  // true = cliente já concluiu o onboarding (ou voltou de um upgrade):
+  // mostramos apenas a confirmação de pagamento, sem a jornada de 3 passos.
+  const [leanConfirm, setLeanConfirm] = useState(false);
 
   useEffect(() => {
     try {
