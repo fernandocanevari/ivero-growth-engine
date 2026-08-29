@@ -81,14 +81,43 @@ Deno.serve(async (req) => {
     let normalizedUrl = url.trim();
     if (!/^https?:\/\//i.test(normalizedUrl)) normalizedUrl = `https://${normalizedUrl}`;
 
-    // Rate limit por IP: 5 análises por hora (função é pública, verify_jwt=false).
+    // Rate limit com baldes separados:
+    //  - caminho 1 (prefetch anônimo no gate): 5/hora por IP
+    //  - caminho 2 (onboarding autenticado): 20/hora por user_id
     try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+      // Identifica usuário autenticado (verify_jwt=false, validamos manualmente).
+      let userId: string | null = null;
+      const authHeader = req.headers.get("Authorization") || "";
+      const token = authHeader.toLowerCase().startsWith("bearer ")
+        ? authHeader.slice(7).trim()
+        : "";
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+      if (token && supabaseUrl && anonKey && token !== anonKey) {
+        try {
+          const ures = await fetch(`${supabaseUrl}/auth/v1/user`, {
+            headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+          });
+          if (ures.ok) {
+            const u = await ures.json().catch(() => null);
+            if (u?.id) userId = u.id as string;
+          }
+        } catch (_) { /* segue como anônimo */ }
+      }
+
       const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim()
         || req.headers.get("cf-connecting-ip")
         || req.headers.get("x-real-ip")
         || "unknown";
-      const supabaseUrl = Deno.env.get("SUPABASE_URL");
-      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+      const bucketKey = userId ? `user:${userId}` : `ip:${ip}`;
+      const bucketName = userId
+        ? "ivero_onboarding_analyze_auth"
+        : "ivero_onboarding_analyze_anon";
+      const bucketMax = userId ? 20 : 5;
+
       if (supabaseUrl && serviceKey) {
         const rl = await fetch(`${supabaseUrl}/rest/v1/rpc/check_and_increment_rate_limit`, {
           method: "POST",
@@ -98,9 +127,9 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            p_ip: ip,
-            p_function: "ivero_onboarding_analyze",
-            p_max: 5,
+            p_ip: bucketKey,
+            p_function: bucketName,
+            p_max: bucketMax,
             p_window: "01:00:00",
           }),
         });
@@ -108,8 +137,11 @@ Deno.serve(async (req) => {
           const allowed = await rl.json();
           if (allowed === false) {
             return new Response(
-              JSON.stringify({ error: "rate_limited", message: "Muitas análises em pouco tempo. Tente novamente em alguns minutos." }),
-              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+              JSON.stringify({
+                error: "rate_limited",
+                message: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
+              }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
             );
           }
         }
@@ -117,6 +149,7 @@ Deno.serve(async (req) => {
     } catch (_) {
       // Falha no rate limit não bloqueia a análise.
     }
+
 
     const apiKey = Deno.env.get("Key_antropic_claude");
     if (!apiKey) {
