@@ -39,15 +39,34 @@ const formatDate = (iso: string | null) =>
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 
 export default function AssinaturaPage() {
-  const { plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt, isLoading: statusLoading } =
-    useSubscriptionStatus();
+  const {
+    plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
+    effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
+  } = useSubscriptionStatus();
   const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
+  const [searchParams] = useSearchParams();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [busy, setBusy] = useState<"cancel" | "card" | null>(null);
 
   const planoInfo = plano ? PLANOS[plano] : null;
+
+  // Voltando do checkout (upgrade/contratação): os cards precisam refletir a
+  // cobrança nova sem depender de F5.
+  const returnedFromCheckout =
+    searchParams.get("from") === "asaas" || searchParams.get("tipo") === "upgrade";
+  useEffect(() => {
+    if (!returnedFromCheckout) return;
+    void refreshStatus();
+    void reload();
+  }, [returnedFromCheckout, refreshStatus, reload]);
+
+  const refreshBilling = () => {
+    void refreshStatus();
+    void reload();
+  };
+
 
   const handleChangePlan = () => {
     track("upgrade_plan_clicked", {
