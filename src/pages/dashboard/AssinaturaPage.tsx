@@ -238,18 +238,51 @@ export default function AssinaturaPage() {
                 </div>
               </div>
             </>
+          ) : effectiveStatus === "trial" && trialEndsAt ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">
+                {planoInfo ? formatBRL(planoInfo.monthlyPrice) : "A definir"}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Primeira cobrança prevista para {formatDate(trialEndsAt)}, ao fim do teste
+                {planoInfo ? ` do plano ${planoInfo.name}` : ""}.
+              </p>
+            </>
+          ) : effectiveStatus === "pendente" ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Pagamento pendente</h2>
+              <p className="text-sm text-muted-foreground">
+                Estamos aguardando a confirmação do seu pagamento. Assim que ele for
+                confirmado, a cobrança recorrente aparece aqui.
+              </p>
+            </>
+          ) : effectiveStatus === "cancelado" ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Cobrança encerrada</h2>
+              <p className="text-sm text-muted-foreground">
+                {canceladoAcessoAte
+                  ? `Não haverá novas cobranças. Seu acesso vai até ${formatDate(canceladoAcessoAte)}.`
+                  : "Não haverá novas cobranças. Contrate um plano para voltar a usar."}
+              </p>
+            </>
+          ) : effectiveStatus === "trial_expirado" ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Teste encerrado</h2>
+              <p className="text-sm text-muted-foreground">
+                Contrate um plano para ativar a cobrança recorrente e recuperar o acesso.
+              </p>
+            </>
           ) : (
             <>
               <h2 className="text-2xl font-bold text-foreground mb-1">
                 Sem cobrança agendada
               </h2>
               <p className="text-sm text-muted-foreground">
-                {status === "trial"
-                  ? "A primeira cobrança acontece ao fim do teste, quando você escolher o plano."
-                  : "Escolha um plano para ativar a cobrança recorrente."}
+                Escolha um plano para ativar a cobrança recorrente.
               </p>
             </>
           )}
+
         </Card>
       </div>
 
