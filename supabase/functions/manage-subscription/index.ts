@@ -273,8 +273,9 @@ Deno.serve(async (req) => {
       );
 
       return json(200, {
+        ok: true,
         success: true,
-        mode: "asaas",
+
         plano,
         value,
         previousValue: oldValue,
