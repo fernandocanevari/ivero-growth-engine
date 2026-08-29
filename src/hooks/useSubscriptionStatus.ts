@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
 import { cancelAccessUntil, resolveEffectiveStatus } from "@/lib/subscription-status";
@@ -11,7 +11,9 @@ interface AssinaturaRow {
   carencia_ate: string | null;
   trial_ends_at: string | null;
   data_vencimento: string | null;
+  asaas_subscription_id: string | null;
 }
+
 
 
 export function useSubscriptionStatus() {
