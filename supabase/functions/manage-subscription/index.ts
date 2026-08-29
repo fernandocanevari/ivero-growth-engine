@@ -299,9 +299,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update_card") {
+      // Condições de negócio esperadas respondem HTTP 200 com ok:false — não
+      // são erros de verdade, e o supabase.functions.invoke esconde o corpo de
+      // respostas non-2xx.
       if (!subId) {
-        return json(409, {
-          error: "sem_assinatura_asaas",
+        return json(200, {
+          ok: false,
+          reason: "sem_assinatura_asaas",
           message: "Escolha um plano para cadastrar a forma de pagamento.",
         });
       }
@@ -312,13 +316,14 @@ Deno.serve(async (req) => {
       const url: string =
         list.json?.data?.[0]?.invoiceUrl || list.json?.data?.[0]?.bankSlipUrl || "";
       if (!url) {
-        return json(409, {
-          error: "sem_cobranca_pendente",
+        return json(200, {
+          ok: false,
+          reason: "sem_cobranca_pendente",
           message:
             "Não há cobrança pendente para atualizar o cartão agora. A troca ficará disponível na próxima cobrança.",
         });
       }
-      return json(200, { success: true, url });
+      return json(200, { ok: true, success: true, url });
     }
 
     // list_invoices

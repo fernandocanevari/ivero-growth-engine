@@ -109,6 +109,8 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
             userData.user?.email ??
             "Cliente Ivero",
           email: userData.user?.email ?? "",
+          // Cliente existente trocando de plano: retorno enxuto (sem onboarding).
+          tipo: "upgrade",
         },
       });
       if (error || data?.error) throw new Error(error?.message ?? data?.error);
