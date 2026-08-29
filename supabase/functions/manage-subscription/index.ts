@@ -194,8 +194,9 @@ Deno.serve(async (req) => {
       const value = PLAN_VALUES[plano];
 
       // Sem vínculo no Asaas (trial local ou pendente): troca só local. A
-      // cobrança correta nasce depois, no create-checkout.
-      if (!subId) {
+      // cobrança correta nasce depois, no create-checkout. Antes tentamos o
+      // auto-vínculo — a linha pode estar órfã por falha de webhook.
+      if (!(await resolveSubId())) {
         const { error } = await supabaseAdmin
           .from("assinaturas")
           .update({ plano })
