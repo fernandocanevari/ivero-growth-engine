@@ -508,7 +508,7 @@ export default function AssinaturaPage() {
       </Card>
 
       {/* Upgrade modal (planos reais) */}
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} onPlanChanged={refreshBilling} />
 
       {/* Confirmação de cancelamento */}
       <Dialog open={cancelOpen} onOpenChange={(o) => !o && setCancelOpen(false)}>
