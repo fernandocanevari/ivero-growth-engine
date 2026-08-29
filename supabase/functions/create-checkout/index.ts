@@ -17,6 +17,8 @@ interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
   email: string;
+  /** "upgrade" = cliente existente trocando de plano (retorno próprio). */
+  tipo?: "upgrade";
 }
 
 Deno.serve(async (req) => {
@@ -200,7 +202,9 @@ Deno.serve(async (req) => {
     const isPublicHttps =
       /^https:\/\//.test(rawOrigin) && !/localhost|127\.0\.0\.1/.test(rawOrigin);
     const baseUrl = (isPublicHttps ? rawOrigin : "https://ivero.com.br").replace(/\/$/, "");
-    const successUrl = `${baseUrl}/retorno-asaas`;
+    // Upgrade de cliente existente volta por rota própria, para o /bem-vindo
+    // mostrar a confirmação enxuta em vez da jornada de onboarding.
+    const successUrl = `${baseUrl}${tipo === "upgrade" ? "/retorno-asaas-upgrade" : "/retorno-asaas"}`;
     const cancelUrl = `${baseUrl}/retorno-asaas-cancelado`;
     const expiredUrl = `${baseUrl}/retorno-asaas-expirado`;
     console.log("create-checkout callback urls:", successUrl, cancelUrl, expiredUrl);
