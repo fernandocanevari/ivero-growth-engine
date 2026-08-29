@@ -39,7 +39,8 @@ const formatDate = (iso: string | null) =>
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 
 export default function AssinaturaPage() {
-  const { plano, status, canceladoAcessoAte, isLoading: statusLoading } = useSubscriptionStatus();
+  const { plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt, isLoading: statusLoading } =
+    useSubscriptionStatus();
   const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -463,7 +464,7 @@ export default function AssinaturaPage() {
               A recorrência é encerrada e nada mais será cobrado. Seu acesso
               continua até{" "}
               <span className="font-semibold text-foreground">
-                {formatDate(next?.dueDate ?? null)}
+                {formatDate(dataVencimento ?? next?.dueDate ?? trialEndsAt ?? null)}
               </span>{" "}
               — o fim do período já pago.
             </DialogDescription>
