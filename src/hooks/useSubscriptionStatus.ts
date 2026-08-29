@@ -51,42 +51,37 @@ export function useSubscriptionStatus() {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Extraído do effect para permitir recarga sob demanda (ex.: após troca de
+  // plano ou retorno do checkout) sem forçar F5.
+  const fetchAssinatura = useCallback(async () => {
+    setAssinaturaLoading(true);
 
-    const fetchAssinatura = async () => {
-      setAssinaturaLoading(true);
+    if (!authResolved) return; // mantém loading até a sessão resolver
 
-      if (!authResolved) return; // mantém loading até a sessão resolver
+    if (!userId) {
+      setAssinatura(null);
+      setAssinaturaLoading(false);
+      return;
+    }
 
-      if (!userId) {
-        if (!cancelled) {
-          setAssinatura(null);
-          setAssinaturaLoading(false);
-        }
-        return;
-      }
+    const { data, error } = await supabase
+      .from("assinaturas")
+      .select(
+        "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      const { data, error } = await supabase
-        .from("assinaturas")
-        .select("plano, status, carencia_ate, trial_ends_at, data_vencimento")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!cancelled) {
-        setAssinatura(error ? null : (data as AssinaturaRow | null));
-        setAssinaturaLoading(false);
-      }
-    };
-
-    fetchAssinatura();
-
-    return () => {
-      cancelled = true;
-    };
+    setAssinatura(error ? null : (data as AssinaturaRow | null));
+    setAssinaturaLoading(false);
   }, [userId, authResolved]);
+
+  useEffect(() => {
+    void fetchAssinatura();
+  }, [fetchAssinatura]);
+
 
   const isLoading = roleLoading || !authResolved || assinaturaLoading;
 
