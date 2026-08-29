@@ -343,7 +343,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "cancel") {
-      if (subId) {
+      if (await resolveSubId()) {
         requireAsaas();
         const del = await fetchAsaas(`/subscriptions/${subId}`, { method: "DELETE" });
         // 404 = já não existe no Asaas: seguimos com o cancelamento local.
