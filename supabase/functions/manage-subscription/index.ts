@@ -300,17 +300,26 @@ Deno.serve(async (req) => {
       }
 
       // Acesso preservado até o fim do período já pago (data_vencimento intacta).
+      // O vínculo com o Asaas é limpo (a assinatura lá deixou de existir), mas
+      // guardamos o id anterior para auditoria/suporte.
       const { error } = await supabaseAdmin
         .from("assinaturas")
-        .update({ status: "cancelado", carencia_ate: null })
+        .update({
+          status: "cancelado",
+          carencia_ate: null,
+          asaas_subscription_id: null,
+          asaas_subscription_id_anterior: subId ?? null,
+        })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
       console.log("cancel:", userId, "motivo:", (body.motivo ?? "").slice(0, 200));
       return json(200, {
+        ok: true,
         success: true,
         acessoAte: assinatura.data_vencimento ?? assinatura.trial_ends_at ?? null,
       });
+
     }
 
     if (action === "update_card") {
