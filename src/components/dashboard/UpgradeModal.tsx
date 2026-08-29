@@ -62,7 +62,13 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
 
   // Cálculo do destaque dinâmico. Enquanto carrega → highlightKey = null (sem badge).
   const highlightKey: PlanoSugerido | null = isLoading ? null : nextTier(plano);
-  const isAtTop = !isLoading && plano === "autoridade";
+  // "Plano atual" só bloqueia quem realmente está com a assinatura viva —
+  // cancelado/expirado no topo precisa poder recontratar.
+  const isAtTop =
+    !isLoading &&
+    plano === "autoridade" &&
+    (effectiveStatus === "ativo" || effectiveStatus === "inadimplente" || effectiveStatus === "trial");
+
 
   const badgeFor = (key: PlanoSugerido): string | null => {
     if (highlightKey !== key) return null;
