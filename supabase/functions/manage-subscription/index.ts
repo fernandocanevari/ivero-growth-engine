@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_customer_id, data_vencimento, trial_ends_at",
+        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, data_vencimento, trial_ends_at",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       "access_token": asaasKey ?? "",
     };
-    const subId = assinatura.asaas_subscription_id as string | null;
+    let subId = assinatura.asaas_subscription_id as string | null;
 
     const requireAsaas = () => {
       if (!asaasKey) throw new Error("ASAAS_API_KEY_SANDBOX não configurada.");
@@ -110,7 +110,64 @@ Deno.serve(async (req) => {
       return { ok: res.ok, status: res.status, json: parsed, text };
     };
 
+    /**
+     * Auto-vínculo: quando o webhook falhou em gravar asaas_subscription_id, a
+     * assinatura existe no Asaas mas a linha local está "órfã". Resolvemos na
+     * hora pelo checkout ou pelo customer, gravamos o id e seguimos.
+     * Retorna o id resolvido (ou null quando realmente não existe nada lá).
+     */
+    const resolveSubId = async (): Promise<string | null> => {
+      if (subId) return subId;
+      const checkoutId = assinatura.asaas_checkout_id as string | null;
+      let customerId = assinatura.asaas_customer_id as string | null;
+      if (!checkoutId && !customerId) return null;
+
+      requireAsaas();
+
+      // 1) Pelo checkout: traz subscription e/ou customer.
+      if (checkoutId) {
+        const co = await fetchAsaas(`/checkouts/${checkoutId}`);
+        if (co.ok && co.json) {
+          const fromCheckout =
+            (co.json.subscription?.id ?? co.json.subscription ?? null) as string | null;
+          if (typeof fromCheckout === "string" && fromCheckout.startsWith("sub_")) {
+            subId = fromCheckout;
+          }
+          const coCustomer = (co.json.customer?.id ?? co.json.customer ?? null) as string | null;
+          if (!customerId && typeof coCustomer === "string") customerId = coCustomer;
+        } else {
+          console.error("resolveSubId checkout error:", co.status, co.text.slice(0, 300));
+        }
+      }
+
+      // 2) Pelo customer: assinatura ativa mais recente.
+      if (!subId && customerId) {
+        const subs = await fetchAsaas(`/subscriptions?customer=${customerId}&limit=10`);
+        if (subs.ok && Array.isArray(subs.json?.data)) {
+          const rows = subs.json!.data as any[];
+          const pick =
+            rows.find((s) => String(s.status ?? "").toUpperCase() === "ACTIVE") ?? rows[0] ?? null;
+          if (pick?.id) subId = String(pick.id);
+        } else if (!subs.ok) {
+          console.error("resolveSubId subs error:", subs.status, subs.text.slice(0, 300));
+        }
+      }
+
+      if (!subId) return null;
+
+      const patch: Record<string, string> = { asaas_subscription_id: subId };
+      if (customerId && !assinatura.asaas_customer_id) patch.asaas_customer_id = customerId;
+      const { error: bindError } = await supabaseAdmin
+        .from("assinaturas")
+        .update(patch)
+        .eq("id", assinatura.id);
+      if (bindError) console.error("resolveSubId bind error:", bindError.message);
+      console.log("resolveSubId bound:", userId, subId);
+      return subId;
+    };
+
     // ---------------------------------------------------------------- ações
+
 
     if (action === "change_plan") {
       const plano = body.plano;
@@ -137,8 +194,9 @@ Deno.serve(async (req) => {
       const value = PLAN_VALUES[plano];
 
       // Sem vínculo no Asaas (trial local ou pendente): troca só local. A
-      // cobrança correta nasce depois, no create-checkout.
-      if (!subId) {
+      // cobrança correta nasce depois, no create-checkout. Antes tentamos o
+      // auto-vínculo — a linha pode estar órfã por falha de webhook.
+      if (!(await resolveSubId())) {
         const { error } = await supabaseAdmin
           .from("assinaturas")
           .update({ plano })
@@ -285,7 +343,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "cancel") {
-      if (subId) {
+      if (await resolveSubId()) {
         requireAsaas();
         const del = await fetchAsaas(`/subscriptions/${subId}`, { method: "DELETE" });
         // 404 = já não existe no Asaas: seguimos com o cancelamento local.
@@ -326,17 +384,21 @@ Deno.serve(async (req) => {
       // Condições de negócio esperadas respondem HTTP 200 com ok:false — não
       // são erros de verdade, e o supabase.functions.invoke esconde o corpo de
       // respostas non-2xx.
-      if (!subId) {
+      const resolved = await resolveSubId();
+      if (!resolved) {
+        const orfa = !!(assinatura.asaas_checkout_id || assinatura.asaas_customer_id);
         return json(200, {
           ok: false,
-          reason: "sem_assinatura_asaas",
-          message: "Escolha um plano para cadastrar a forma de pagamento.",
+          reason: orfa ? "assinatura_nao_localizada" : "sem_assinatura_asaas",
+          message: orfa
+            ? "Não localizamos sua assinatura no provedor de pagamentos. Fale com o suporte."
+            : "Escolha um plano para cadastrar a forma de pagamento.",
         });
       }
       requireAsaas();
       // Página hospedada pelo Asaas da próxima cobrança: é lá que o cliente
       // troca o cartão sem que a gente toque em dado de cartão (PCI).
-      const list = await fetchAsaas(`/subscriptions/${subId}/payments?status=PENDING&limit=1`);
+      const list = await fetchAsaas(`/subscriptions/${resolved}/payments?status=PENDING&limit=1`);
       const url: string =
         list.json?.data?.[0]?.invoiceUrl || list.json?.data?.[0]?.bankSlipUrl || "";
       if (!url) {
@@ -351,11 +413,12 @@ Deno.serve(async (req) => {
     }
 
     // list_invoices
-    if (!subId) {
+    const resolvedForList = await resolveSubId();
+    if (!resolvedForList) {
       return json(200, { success: true, invoices: [], next: null });
     }
     requireAsaas();
-    const list = await fetchAsaas(`/subscriptions/${subId}/payments?limit=50`);
+    const list = await fetchAsaas(`/subscriptions/${resolvedForList}/payments?limit=50`);
     if (!list.ok) {
       console.error("list_invoices asaas error:", list.status, list.text.slice(0, 500));
       return json(502, { error: "Não foi possível carregar as faturas." });
