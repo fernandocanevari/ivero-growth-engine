@@ -124,7 +124,8 @@ Deno.serve(async (req) => {
 
       requireAsaas();
 
-      // 1) Pelo checkout: traz subscription e/ou customer.
+      // 1) Pelo checkout: traz subscription e/ou customer. Sessões antigas
+      // podem já não existir mais no Asaas (404) — segue pro passo 2.
       if (checkoutId) {
         const co = await fetchAsaas(`/checkouts/${checkoutId}`);
         if (co.ok && co.json) {
@@ -140,7 +141,23 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 2) Pelo customer: assinatura ativa mais recente.
+      // 2) Sem customer gravado: localiza pelo e-mail da conta.
+      if (!subId && !customerId) {
+        const { data: prof } = await supabaseAdmin
+          .from("profiles")
+          .select("email")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const email = (prof?.email as string | null) ?? null;
+        if (email) {
+          const cus = await fetchAsaas(`/customers?email=${encodeURIComponent(email)}&limit=10`);
+          const found = Array.isArray(cus.json?.data) ? cus.json!.data[0] : null;
+          if (found?.id) customerId = String(found.id);
+          else console.error("resolveSubId customer lookup vazio:", cus.status);
+        }
+      }
+
+      // 3) Pelo customer: assinatura ativa mais recente.
       if (!subId && customerId) {
         const subs = await fetchAsaas(`/subscriptions?customer=${customerId}&limit=10`);
         if (subs.ok && Array.isArray(subs.json?.data)) {
@@ -152,6 +169,7 @@ Deno.serve(async (req) => {
           console.error("resolveSubId subs error:", subs.status, subs.text.slice(0, 300));
         }
       }
+
 
       if (!subId) return null;
 
