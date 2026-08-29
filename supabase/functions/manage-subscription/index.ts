@@ -110,7 +110,64 @@ Deno.serve(async (req) => {
       return { ok: res.ok, status: res.status, json: parsed, text };
     };
 
+    /**
+     * Auto-vínculo: quando o webhook falhou em gravar asaas_subscription_id, a
+     * assinatura existe no Asaas mas a linha local está "órfã". Resolvemos na
+     * hora pelo checkout ou pelo customer, gravamos o id e seguimos.
+     * Retorna o id resolvido (ou null quando realmente não existe nada lá).
+     */
+    const resolveSubId = async (): Promise<string | null> => {
+      if (subId) return subId;
+      const checkoutId = assinatura.asaas_checkout_id as string | null;
+      let customerId = assinatura.asaas_customer_id as string | null;
+      if (!checkoutId && !customerId) return null;
+
+      requireAsaas();
+
+      // 1) Pelo checkout: traz subscription e/ou customer.
+      if (checkoutId) {
+        const co = await fetchAsaas(`/checkouts/${checkoutId}`);
+        if (co.ok && co.json) {
+          const fromCheckout =
+            (co.json.subscription?.id ?? co.json.subscription ?? null) as string | null;
+          if (typeof fromCheckout === "string" && fromCheckout.startsWith("sub_")) {
+            subId = fromCheckout;
+          }
+          const coCustomer = (co.json.customer?.id ?? co.json.customer ?? null) as string | null;
+          if (!customerId && typeof coCustomer === "string") customerId = coCustomer;
+        } else {
+          console.error("resolveSubId checkout error:", co.status, co.text.slice(0, 300));
+        }
+      }
+
+      // 2) Pelo customer: assinatura ativa mais recente.
+      if (!subId && customerId) {
+        const subs = await fetchAsaas(`/subscriptions?customer=${customerId}&limit=10`);
+        if (subs.ok && Array.isArray(subs.json?.data)) {
+          const rows = subs.json!.data as any[];
+          const pick =
+            rows.find((s) => String(s.status ?? "").toUpperCase() === "ACTIVE") ?? rows[0] ?? null;
+          if (pick?.id) subId = String(pick.id);
+        } else if (!subs.ok) {
+          console.error("resolveSubId subs error:", subs.status, subs.text.slice(0, 300));
+        }
+      }
+
+      if (!subId) return null;
+
+      const patch: Record<string, string> = { asaas_subscription_id: subId };
+      if (customerId && !assinatura.asaas_customer_id) patch.asaas_customer_id = customerId;
+      const { error: bindError } = await supabaseAdmin
+        .from("assinaturas")
+        .update(patch)
+        .eq("id", assinatura.id);
+      if (bindError) console.error("resolveSubId bind error:", bindError.message);
+      console.log("resolveSubId bound:", userId, subId);
+      return subId;
+    };
+
     // ---------------------------------------------------------------- ações
+
 
     if (action === "change_plan") {
       const plano = body.plano;
