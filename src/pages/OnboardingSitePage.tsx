@@ -63,7 +63,7 @@ export default function OnboardingSitePage() {
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [errorState, setErrorState] = useState<{ kind: "site_inaccessible" | "insufficient_content"; message: string; normalizedUrl?: string } | null>(null);
+  const [errorState, setErrorState] = useState<{ kind: "site_inaccessible" | "insufficient_content" | "rate_limited"; message: string; normalizedUrl?: string } | null>(null);
   // Gate de loading curto: evita flash da tela de URL antes de decidirmos se
   // existe uma URL herdada do preview (sessionStorage / brand_settings).
   const [booting, setBooting] = useState(true);
@@ -162,7 +162,29 @@ export default function OnboardingSitePage() {
       const { data, error } = await supabase.functions.invoke("ivero-onboarding-analyze", {
         body: { url: target },
       });
-      if (error) throw error;
+      if (error) {
+        // 429 vem com corpo JSON no context; tratamos como rate limit explícito.
+        let isRateLimit = false;
+        try {
+          const ctx = (error as unknown as { context?: Response }).context;
+          if (ctx?.status === 429) isRateLimit = true;
+          else if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.clone().json();
+            if (body?.error === "rate_limited") isRateLimit = true;
+          }
+        } catch (_) { /* ignora */ }
+        if (isRateLimit) {
+          setErrorState({ kind: "rate_limited", message: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente." });
+          setPhase("url");
+          return;
+        }
+        throw error;
+      }
+      if (data?.error === "rate_limited") {
+        setErrorState({ kind: "rate_limited", message: data?.message || "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente." });
+        setPhase("url");
+        return;
+      }
       if (data?.error === "site_inaccessible") {
         setErrorState({ kind: "site_inaccessible", message: data?.message || "Hmm, não consegui acessar esse site. Verifique o endereço e tente novamente." });
         setPhase("url");
