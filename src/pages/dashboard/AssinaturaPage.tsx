@@ -114,6 +114,8 @@ export default function AssinaturaPage() {
     }
     track("subscription_canceled", { plan: plano ?? "none", surface: "assinatura_page" });
     setCancelOpen(false);
+    refreshBilling();
+
     toast({
       title: "Assinatura cancelada",
       description: data?.acessoAte
