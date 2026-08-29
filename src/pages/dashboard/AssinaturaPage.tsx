@@ -63,10 +63,11 @@ export default function AssinaturaPage() {
       body: { action: "update_card" },
     });
     setBusy(null);
-    if (data?.url) {
+    if (data?.ok && data?.url) {
       window.open(data.url as string, "_blank", "noopener");
       return;
     }
+    // Condição de negócio esperada: a function responde 200 com ok:false + message.
     toast({
       title: "Forma de pagamento",
       description:
