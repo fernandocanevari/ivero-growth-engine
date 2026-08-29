@@ -50,16 +50,25 @@ const CTA_BY_PLAN: Record<PlanoSugerido, string> = {
 interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Disparado após uma troca de plano concluída no provedor (para recarregar cards). */
+  onPlanChanged?: () => void;
 }
 
-export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
+export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModalProps) {
   const [isAnnual, setIsAnnual] = useState(true);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
-  const { plano, isLoading, isPaid, isAdmin } = useSubscriptionStatus();
+  const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription } =
+    useSubscriptionStatus();
 
   // Cálculo do destaque dinâmico. Enquanto carrega → highlightKey = null (sem badge).
   const highlightKey: PlanoSugerido | null = isLoading ? null : nextTier(plano);
-  const isAtTop = !isLoading && plano === "autoridade";
+  // "Plano atual" só bloqueia quem realmente está com a assinatura viva —
+  // cancelado/expirado no topo precisa poder recontratar.
+  const isAtTop =
+    !isLoading &&
+    plano === "autoridade" &&
+    (effectiveStatus === "ativo" || effectiveStatus === "inadimplente" || effectiveStatus === "trial");
+
 
   const badgeFor = (key: PlanoSugerido): string | null => {
     if (highlightKey !== key) return null;
@@ -79,13 +88,26 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
     setPendingPlan(planName);
 
     try {
-      // Já é pagante (assinatura viva no Asaas) → troca de plano.
-      // Trial / sem assinatura no gateway → primeira contratação (checkout).
-      if (isPaid && !isAdmin) {
+      // Troca de plano (change_plan) só vale para assinatura VIVA no provedor:
+      // ativo/inadimplente com asaas_subscription_id. Cancelado, trial expirado
+      // ou sem assinatura são contratações de verdade → checkout real.
+      const canChangePlan =
+        !isAdmin &&
+        hasAsaasSubscription &&
+        (effectiveStatus === "ativo" || effectiveStatus === "inadimplente");
+
+      if (canChangePlan) {
         const { data, error } = await supabase.functions.invoke("manage-subscription", {
           body: { action: "change_plan", plano: planKey },
         });
         if (error || data?.error) throw new Error(error?.message ?? data?.error);
+        if (data?.ok === false) {
+          // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
+          throw new Error(
+            (data?.message as string) ??
+              "Não foi possível trocar o plano. Tente contratar novamente.",
+          );
+        }
         const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
         toast({
           title: `Plano alterado para ${planName}`,
@@ -96,9 +118,11 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
               : "Seu plano foi atualizado.",
         });
         if (pr?.invoiceUrl) window.open(pr.invoiceUrl, "_blank", "noopener");
+        onPlanChanged?.();
         onOpenChange(false);
         return;
       }
+
 
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase.functions.invoke("create-checkout", {

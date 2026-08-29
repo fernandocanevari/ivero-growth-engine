@@ -1,0 +1,1 @@
+ALTER TABLE public.assinaturas ADD COLUMN IF NOT EXISTS asaas_subscription_id_anterior text;

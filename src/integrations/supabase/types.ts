@@ -151,6 +151,7 @@ export type Database = {
           asaas_checkout_id: string | null
           asaas_customer_id: string | null
           asaas_subscription_id: string | null
+          asaas_subscription_id_anterior: string | null
           carencia_ate: string | null
           created_at: string
           data_inicio: string
@@ -166,6 +167,7 @@ export type Database = {
           asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
+          asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
           created_at?: string
           data_inicio?: string
@@ -181,6 +183,7 @@ export type Database = {
           asaas_checkout_id?: string | null
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
+          asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
           created_at?: string
           data_inicio?: string

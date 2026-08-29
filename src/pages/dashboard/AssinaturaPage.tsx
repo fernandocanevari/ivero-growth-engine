@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+
 import {
   CreditCard, Download, Sparkles, Calendar, Loader2,
   ArrowUpRight, HelpCircle, ExternalLink,
@@ -39,15 +41,34 @@ const formatDate = (iso: string | null) =>
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 
 export default function AssinaturaPage() {
-  const { plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt, isLoading: statusLoading } =
-    useSubscriptionStatus();
+  const {
+    plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
+    effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
+  } = useSubscriptionStatus();
   const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
+  const [searchParams] = useSearchParams();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [busy, setBusy] = useState<"cancel" | "card" | null>(null);
 
   const planoInfo = plano ? PLANOS[plano] : null;
+
+  // Voltando do checkout (upgrade/contratação): os cards precisam refletir a
+  // cobrança nova sem depender de F5.
+  const returnedFromCheckout =
+    searchParams.get("from") === "asaas" || searchParams.get("tipo") === "upgrade";
+  useEffect(() => {
+    if (!returnedFromCheckout) return;
+    void refreshStatus();
+    void reload();
+  }, [returnedFromCheckout, refreshStatus, reload]);
+
+  const refreshBilling = () => {
+    void refreshStatus();
+    void reload();
+  };
+
 
   const handleChangePlan = () => {
     track("upgrade_plan_clicked", {
@@ -93,6 +114,8 @@ export default function AssinaturaPage() {
     }
     track("subscription_canceled", { plan: plano ?? "none", surface: "assinatura_page" });
     setCancelOpen(false);
+    refreshBilling();
+
     toast({
       title: "Assinatura cancelada",
       description: data?.acessoAte
@@ -217,18 +240,51 @@ export default function AssinaturaPage() {
                 </div>
               </div>
             </>
+          ) : effectiveStatus === "trial" && trialEndsAt ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">
+                {planoInfo ? formatBRL(planoInfo.monthlyPrice) : "A definir"}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Primeira cobrança prevista para {formatDate(trialEndsAt)}, ao fim do teste
+                {planoInfo ? ` do plano ${planoInfo.name}` : ""}.
+              </p>
+            </>
+          ) : effectiveStatus === "pendente" ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Pagamento pendente</h2>
+              <p className="text-sm text-muted-foreground">
+                Estamos aguardando a confirmação do seu pagamento. Assim que ele for
+                confirmado, a cobrança recorrente aparece aqui.
+              </p>
+            </>
+          ) : effectiveStatus === "cancelado" ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Cobrança encerrada</h2>
+              <p className="text-sm text-muted-foreground">
+                {canceladoAcessoAte
+                  ? `Não haverá novas cobranças. Seu acesso vai até ${formatDate(canceladoAcessoAte)}.`
+                  : "Não haverá novas cobranças. Contrate um plano para voltar a usar."}
+              </p>
+            </>
+          ) : effectiveStatus === "trial_expirado" ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">Teste encerrado</h2>
+              <p className="text-sm text-muted-foreground">
+                Contrate um plano para ativar a cobrança recorrente e recuperar o acesso.
+              </p>
+            </>
           ) : (
             <>
               <h2 className="text-2xl font-bold text-foreground mb-1">
                 Sem cobrança agendada
               </h2>
               <p className="text-sm text-muted-foreground">
-                {status === "trial"
-                  ? "A primeira cobrança acontece ao fim do teste, quando você escolher o plano."
-                  : "Escolha um plano para ativar a cobrança recorrente."}
+                Escolha um plano para ativar a cobrança recorrente.
               </p>
             </>
           )}
+
         </Card>
       </div>
 
@@ -454,7 +510,7 @@ export default function AssinaturaPage() {
       </Card>
 
       {/* Upgrade modal (planos reais) */}
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} onPlanChanged={refreshBilling} />
 
       {/* Confirmação de cancelamento */}
       <Dialog open={cancelOpen} onOpenChange={(o) => !o && setCancelOpen(false)}>

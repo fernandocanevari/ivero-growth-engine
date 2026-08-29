@@ -117,8 +117,21 @@ Deno.serve(async (req) => {
       if (!plano || !PLAN_VALUES[plano]) {
         return json(400, { error: "Plano inválido. Use: presenca, influencia ou autoridade." });
       }
+
+      // Assinatura cancelada NÃO é troca de plano: é recontratação. Antes isso
+      // caía no modo "local" silencioso e o cliente achava que tinha reativado
+      // sem nunca passar por pagamento.
+      if (assinatura.status === "cancelado") {
+        return json(200, {
+          ok: false,
+          reason: "assinatura_cancelada",
+          message:
+            "Sua assinatura está cancelada. Para voltar a usar, é preciso contratar o plano novamente.",
+        });
+      }
+
       if (plano === assinatura.plano) {
-        return json(200, { success: true, mode: "noop", plano });
+        return json(200, { ok: true, success: true, mode: "noop", plano });
       }
 
       const value = PLAN_VALUES[plano];
@@ -132,8 +145,9 @@ Deno.serve(async (req) => {
           .eq("id", assinatura.id);
         if (error) return json(500, { error: error.message });
         console.log("change_plan local:", userId, plano);
-        return json(200, { success: true, mode: "local", plano });
+        return json(200, { ok: true, success: true, mode: "local", plano });
       }
+
 
       requireAsaas();
 
@@ -259,6 +273,7 @@ Deno.serve(async (req) => {
       );
 
       return json(200, {
+        ok: true,
         success: true,
         mode: "asaas",
         plano,
@@ -285,17 +300,26 @@ Deno.serve(async (req) => {
       }
 
       // Acesso preservado até o fim do período já pago (data_vencimento intacta).
+      // O vínculo com o Asaas é limpo (a assinatura lá deixou de existir), mas
+      // guardamos o id anterior para auditoria/suporte.
       const { error } = await supabaseAdmin
         .from("assinaturas")
-        .update({ status: "cancelado", carencia_ate: null })
+        .update({
+          status: "cancelado",
+          carencia_ate: null,
+          asaas_subscription_id: null,
+          asaas_subscription_id_anterior: subId ?? null,
+        })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
       console.log("cancel:", userId, "motivo:", (body.motivo ?? "").slice(0, 200));
       return json(200, {
+        ok: true,
         success: true,
         acessoAte: assinatura.data_vencimento ?? assinatura.trial_ends_at ?? null,
       });
+
     }
 
     if (action === "update_card") {
