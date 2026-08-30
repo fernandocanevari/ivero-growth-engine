@@ -79,7 +79,11 @@ export function useSubscriptionStatus() {
       .limit(1)
       .maybeSingle();
 
-    setAssinatura(error ? null : (data as AssinaturaRow | null));
+    if (error) {
+      setAssinatura(null);
+    } else {
+      setAssinatura((data as unknown as AssinaturaRow | null) ?? null);
+    }
     setAssinaturaLoading(false);
   }, [userId, authResolved]);
 
