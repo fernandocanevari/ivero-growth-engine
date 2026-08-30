@@ -98,7 +98,7 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
 
       if (canChangePlan) {
         const { data, error } = await supabase.functions.invoke("manage-subscription", {
-          body: { action: "change_plan", plano: planKey },
+          body: { action: "change_plan", plano: planKey, ciclo: isAnnual ? "anual" : "mensal" },
         });
         if (error || data?.error) throw new Error(error?.message ?? data?.error);
         if (data?.ok === false) {
@@ -135,6 +135,7 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
           email: userData.user?.email ?? "",
           // Cliente existente trocando de plano: retorno enxuto (sem onboarding).
           tipo: "upgrade",
+          ciclo: isAnnual ? "anual" : "mensal",
         },
       });
       if (error || data?.error) throw new Error(error?.message ?? data?.error);

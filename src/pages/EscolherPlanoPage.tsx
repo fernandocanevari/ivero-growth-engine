@@ -156,7 +156,7 @@ const EscolherPlanoPage = () => {
         return;
       }
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plano: selectedPlano, nome, email },
+        body: { plano: selectedPlano, nome, email, ciclo: isAnnual ? "anual" : "mensal" },
       });
       if (error) {
         toast.error(error.message || "Erro ao criar assinatura.");

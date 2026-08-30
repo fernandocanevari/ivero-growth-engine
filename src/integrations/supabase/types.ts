@@ -153,6 +153,10 @@ export type Database = {
           asaas_subscription_id: string | null
           asaas_subscription_id_anterior: string | null
           carencia_ate: string | null
+          ciclo_contratado: string
+          ciclos_pagos: number
+          compromisso_inicio: string | null
+          compromisso_meses: number
           created_at: string
           data_inicio: string
           data_vencimento: string | null
@@ -169,6 +173,10 @@ export type Database = {
           asaas_subscription_id?: string | null
           asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
+          ciclo_contratado?: string
+          ciclos_pagos?: number
+          compromisso_inicio?: string | null
+          compromisso_meses?: number
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
@@ -185,6 +193,10 @@ export type Database = {
           asaas_subscription_id?: string | null
           asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
+          ciclo_contratado?: string
+          ciclos_pagos?: number
+          compromisso_inicio?: string | null
+          compromisso_meses?: number
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null

@@ -1,11 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { PLAN_ANNUAL_VALUES } from "../_shared/pricing.ts";
+import { normalizeCiclo, planValue, COMPROMISSO_MESES } from "../_shared/pricing.ts";
 
 const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
 
-// Valores lidos do módulo compartilhado — fonte canônica: src/lib/pricing-rules.ts
-const PLAN_VALUES: Record<string, number> = PLAN_ANNUAL_VALUES;
+// Valores lidos do módulo compartilhado — fonte canônica: src/lib/pricing-rules.ts.
+// O valor cobrado depende do ciclo escolhido: mensal = valor cheio (sem
+// compromisso), anual = valor promocional com compromisso de 12 meses
+// (rastreado localmente; no Asaas a recorrência é MONTHLY nos dois casos).
+const PLANOS_VALIDOS = ["presenca", "influencia", "autoridade"];
 
 const PLAN_LABELS: Record<string, string> = {
   presenca: "Ivero — Plano Presença",
@@ -19,6 +22,10 @@ interface CheckoutBody {
   email: string;
   /** "upgrade" = cliente existente trocando de plano (retorno próprio). */
   tipo?: "upgrade";
+  /** Ciclo escolhido pelo cliente. Ausente = anual (comportamento legado). */
+  ciclo?: "mensal" | "anual";
+  /** Legado do UpgradeModal: "annual" | "monthly". */
+  billing_cycle?: string;
 }
 
 Deno.serve(async (req) => {
@@ -58,9 +65,10 @@ Deno.serve(async (req) => {
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
     const { plano, nome, email, tipo } = body || ({} as CheckoutBody);
-    console.log("create-checkout body:", JSON.stringify({ plano, nome, email, tipo }));
+    const ciclo = normalizeCiclo(body?.ciclo ?? body?.billing_cycle);
+    console.log("create-checkout body:", JSON.stringify({ plano, nome, email, tipo, ciclo }));
 
-    if (!plano || !PLAN_VALUES[plano]) {
+    if (!plano || !PLANOS_VALIDOS.includes(plano)) {
       return new Response(
         JSON.stringify({ error: "Plano inválido. Use: presenca, influencia ou autoridade." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -182,7 +190,7 @@ Deno.serve(async (req) => {
       ? new Date(trialEmCursoMs ?? today.getTime() + 7 * 24 * 60 * 60 * 1000)
       : null;
     const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
-    const value = PLAN_VALUES[plano];
+    const value = planValue(plano, ciclo);
 
     // 5. URLs de callback. O Asaas só aceita domínio público https cadastrado
     // na conta — localhost/http são rejeitados, então caímos pra produção.
@@ -223,7 +231,10 @@ Deno.serve(async (req) => {
       items: [
         {
           name: PLAN_LABELS[plano] ?? `Ivero — Plano ${plano}`,
-          description: `Assinatura mensal — plano ${plano}`,
+          description:
+            ciclo === "anual"
+              ? `Plano ${plano} — mensalidade promocional com compromisso de ${COMPROMISSO_MESES} meses`
+              : `Plano ${plano} — mensalidade sem compromisso`,
           quantity: 1,
           value,
         },
@@ -286,6 +297,12 @@ Deno.serve(async (req) => {
       data_inicio: dataInicio.toISOString(),
       data_vencimento: dataVencimento.toISOString(),
       trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
+      ciclo_contratado: ciclo,
+      compromisso_meses: COMPROMISSO_MESES,
+      // compromisso_inicio/ciclos_pagos passam a valer no 1o pagamento
+      // confirmado (asaas-webhook). Nova contratação zera a contagem.
+      compromisso_inicio: null,
+      ciclos_pagos: 0,
     };
 
     // Não acumular histórico: reaproveitamos a linha viva sem vínculo com o
@@ -336,6 +353,7 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({
             plano,
+            ciclo_contratado: ciclo,
             trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
           })
           .eq("user_id", userId)
