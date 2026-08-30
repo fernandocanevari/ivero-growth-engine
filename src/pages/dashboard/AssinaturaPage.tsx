@@ -102,15 +102,21 @@ export default function AssinaturaPage() {
       window.open(data.url as string, "_blank", "noopener");
       return;
     }
+    // Cliente em trial já escolheu plano — só ainda não há cobrança/assinatura
+    // no provedor. A copy genérica ("escolha um plano") ficaria errada aqui.
+    const trialSemCobranca =
+      data?.reason === "sem_assinatura_asaas" && effectiveStatus === "trial" && !!plano;
     // Condição de negócio esperada: a function responde 200 com ok:false + message.
     toast({
       title: "Forma de pagamento",
-      description:
-        (data?.message as string) ??
-        error?.message ??
-        "Escolha um plano para cadastrar a forma de pagamento.",
+      description: trialSemCobranca
+        ? "Você ainda está no período de teste — a forma de pagamento será solicitada quando o trial terminar."
+        : ((data?.message as string) ??
+          error?.message ??
+          "Escolha um plano para cadastrar a forma de pagamento."),
     });
   };
+
 
   const handleCancel = async () => {
     setBusy("cancel");
