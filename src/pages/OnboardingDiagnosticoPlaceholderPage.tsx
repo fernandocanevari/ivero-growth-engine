@@ -138,7 +138,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
         <div className="max-w-xl w-full text-center">
           <SearchScan className="mx-auto mb-8" />
           <p className="font-display text-2xl md:text-3xl font-bold text-[#1A1A2E] mb-3">
-            Analisando sua marca nas IAs
+            Agora vou analisar sua marca nas respostas das IAs
           </p>
           <AnimatePresence mode="wait">
             <motion.p
@@ -243,7 +243,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
           onClick={() => navigate("/dashboard/diagnostico")}
           className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
         >
-          Ver diagnóstico completo <ArrowRight className="w-4 h-4 ml-1.5" />
+          Ir para o meu dashboard <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
       </motion.div>
     </div>
