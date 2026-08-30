@@ -44,6 +44,7 @@ export default function AssinaturaPage() {
   const {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
+    cicloContratado, ciclosPagos, compromissoMeses,
   } = useSubscriptionStatus();
   const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
   const [searchParams] = useSearchParams();
@@ -53,6 +54,19 @@ export default function AssinaturaPage() {
   const [busy, setBusy] = useState<"cancel" | "card" | null>(null);
 
   const planoInfo = plano ? PLANOS[plano] : null;
+
+  // Compromisso anual: valor promocional em troca de 12 ciclos. Cancelar antes
+  // gera cobrança da diferença dos meses já usufruídos com desconto.
+  const isAnual = cicloContratado === "anual";
+  const valorMensalAtual = planoInfo
+    ? isAnual ? planoInfo.annualPrice : planoInfo.monthlyPrice
+    : null;
+  const ciclosRestantes = Math.max(0, compromissoMeses - ciclosPagos);
+  const emCompromisso = isAnual && ciclosPagos > 0 && ciclosRestantes > 0;
+  const multaEstimada =
+    emCompromisso && planoInfo
+      ? (planoInfo.monthlyPrice - planoInfo.annualPrice) * Math.min(ciclosPagos, compromissoMeses)
+      : 0;
 
   // Voltando do checkout (upgrade/contratação): os cards precisam refletir a
   // cobrança nova sem depender de F5.
@@ -118,10 +132,21 @@ export default function AssinaturaPage() {
 
     toast({
       title: "Assinatura cancelada",
-      description: data?.acessoAte
-        ? `Seu acesso continua até ${formatDate(data.acessoAte as string)}.`
-        : "Seu acesso permanece até o fim do período já pago.",
+      description: [
+        data?.acessoAte
+          ? `Seu acesso continua até ${formatDate(data.acessoAte as string)}.`
+          : "Seu acesso permanece até o fim do período já pago.",
+        (data?.multa as { value?: number } | null)?.value
+          ? `Geramos a cobrança da diferença de fidelidade: ${formatBRL(
+              (data.multa as { value: number }).value,
+            )}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
     });
+    const multaUrl = (data?.multa as { invoiceUrl?: string | null } | null)?.invoiceUrl;
+    if (multaUrl) window.open(multaUrl, "_blank", "noopener");
     void reload();
   };
 
@@ -175,10 +200,32 @@ export default function AssinaturaPage() {
           </p>
           <div className="flex items-baseline gap-2 mb-6">
             <span className="text-3xl font-bold text-foreground">
-              {planoInfo ? formatBRL(planoInfo.monthlyPrice) : "—"}
+              {valorMensalAtual !== null ? formatBRL(valorMensalAtual) : "—"}
             </span>
             <span className="text-sm text-muted-foreground">/ mês</span>
           </div>
+
+          {planoInfo && (
+            <p className="text-xs text-muted-foreground mb-4">
+              {isAnual ? (
+                <>
+                  Cobrança mensal com{" "}
+                  <span className="font-semibold text-foreground">
+                    compromisso de {compromissoMeses} meses
+                  </span>
+                  {ciclosPagos > 0 && (
+                    <>
+                      {" "}— {ciclosPagos} de {compromissoMeses} ciclos pagos
+                      {ciclosRestantes > 0 && `, faltam ${ciclosRestantes}`}
+                    </>
+                  )}
+                  .
+                </>
+              ) : (
+                <>Cobrança mensal sem compromisso — cancele quando quiser.</>
+              )}
+            </p>
+          )}
 
           {canceladoAcessoAte && (
             <p className="text-xs text-muted-foreground mb-4">
@@ -502,8 +549,13 @@ export default function AssinaturaPage() {
               Posso cancelar quando quiser?
             </AccordionTrigger>
             <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-              Sim. Sem fidelidade e sem multa de cancelamento. Você mantém o
-              acesso até o final do ciclo já pago e nada é cobrado depois disso.
+              Sim. No plano <span className="font-medium text-foreground">mensal</span>{" "}
+              não há fidelidade: você mantém o acesso até o fim do ciclo já pago
+              e nada é cobrado depois. No plano{" "}
+              <span className="font-medium text-foreground">anual</span> (preço
+              promocional), o compromisso é de 12 meses — cancelando antes, é
+              cobrada a diferença entre o valor cheio e o promocional dos meses
+              já utilizados com desconto.
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -524,6 +576,20 @@ export default function AssinaturaPage() {
                 {formatDate(dataVencimento ?? next?.dueDate ?? trialEndsAt ?? null)}
               </span>{" "}
               — o fim do período já pago.
+              {emCompromisso && multaEstimada > 0 && (
+                <>
+                  {" "}
+                  <span className="block mt-3 text-foreground">
+                    Seu plano tem preço promocional com compromisso de{" "}
+                    {compromissoMeses} meses. Cancelando agora, será gerada uma
+                    cobrança única de{" "}
+                    <span className="font-semibold">{formatBRL(multaEstimada)}</span>{" "}
+                    — a diferença entre o valor cheio e o promocional dos{" "}
+                    {Math.min(ciclosPagos, compromissoMeses)} mês(es) já
+                    utilizados com desconto.
+                  </span>
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

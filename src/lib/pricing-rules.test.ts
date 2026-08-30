@@ -8,7 +8,13 @@ import {
   annualSavingBRL,
   nextTier,
 } from "./pricing-rules";
-import { PLAN_ANNUAL_VALUES } from "../../supabase/functions/_shared/pricing";
+import {
+  PLAN_ANNUAL_VALUES,
+  PLAN_MONTHLY_VALUES,
+  planValue,
+  normalizeCiclo,
+  multaFidelidade,
+} from "../../supabase/functions/_shared/pricing";
 
 describe("planoFromScore", () => {
   it("score baixo → presenca", () => {
@@ -55,6 +61,36 @@ describe("edge <-> frontend price sync", () => {
     expect(PLAN_ANNUAL_VALUES.presenca).toBe(PLANOS.presenca.annualPrice);
     expect(PLAN_ANNUAL_VALUES.influencia).toBe(PLANOS.influencia.annualPrice);
     expect(PLAN_ANNUAL_VALUES.autoridade).toBe(PLANOS.autoridade.annualPrice);
+  });
+
+  it("PLAN_MONTHLY_VALUES bate com PLANOS[k].monthlyPrice", () => {
+    expect(PLAN_MONTHLY_VALUES.presenca).toBe(PLANOS.presenca.monthlyPrice);
+    expect(PLAN_MONTHLY_VALUES.influencia).toBe(PLANOS.influencia.monthlyPrice);
+    expect(PLAN_MONTHLY_VALUES.autoridade).toBe(PLANOS.autoridade.monthlyPrice);
+  });
+
+  it("planValue respeita o ciclo escolhido", () => {
+    expect(planValue("presenca", "mensal")).toBe(497);
+    expect(planValue("presenca", "anual")).toBe(397);
+    expect(planValue("autoridade", "mensal")).toBe(1497);
+    expect(planValue("autoridade", "anual")).toBe(1197);
+  });
+
+  it("normalizeCiclo aceita legado e faz default anual", () => {
+    expect(normalizeCiclo("mensal")).toBe("mensal");
+    expect(normalizeCiclo("monthly")).toBe("mensal");
+    expect(normalizeCiclo("anual")).toBe("anual");
+    expect(normalizeCiclo("annual")).toBe("anual");
+    expect(normalizeCiclo(undefined)).toBe("anual");
+  });
+
+  it("multaFidelidade = diferença mensal x ciclos com desconto", () => {
+    expect(multaFidelidade("presenca", 0)).toBe(0);
+    expect(multaFidelidade("presenca", 2)).toBe(200);
+    expect(multaFidelidade("influencia", 3)).toBe(540);
+    expect(multaFidelidade("autoridade", 12)).toBe(3600);
+    // nunca passa do compromisso
+    expect(multaFidelidade("presenca", 20)).toBe(1200);
   });
 });
 

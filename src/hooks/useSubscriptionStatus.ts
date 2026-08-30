@@ -12,6 +12,10 @@ interface AssinaturaRow {
   trial_ends_at: string | null;
   data_vencimento: string | null;
   asaas_subscription_id: string | null;
+  ciclo_contratado: string | null;
+  ciclos_pagos: number | null;
+  compromisso_inicio: string | null;
+  compromisso_meses: number | null;
 }
 
 
@@ -67,7 +71,8 @@ export function useSubscriptionStatus() {
     const { data, error } = await supabase
       .from("assinaturas")
       .select(
-        "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id",
+        "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id, " +
+          "ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses",
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -167,6 +172,14 @@ export function useSubscriptionStatus() {
     isTrialExpired: isTrialExpired && !isAdmin,
     /** Existe vínculo vivo no provedor de pagamentos (assinatura recorrente). */
     hasAsaasSubscription: !!assinatura?.asaas_subscription_id,
+    /** "mensal" (valor cheio, sem compromisso) ou "anual" (promocional, 12 meses). */
+    cicloContratado: (assinatura?.ciclo_contratado === "mensal" ? "mensal" : "anual") as
+      | "mensal"
+      | "anual",
+    /** Mensalidades já confirmadas — base da multa de fidelidade. */
+    ciclosPagos: assinatura?.ciclos_pagos ?? 0,
+    compromissoMeses: assinatura?.compromisso_meses ?? 12,
+    compromissoInicio: assinatura?.compromisso_inicio ?? null,
     /** Recarrega a assinatura do banco (usado após upgrade/retorno de checkout). */
     refresh: fetchAssinatura,
   };

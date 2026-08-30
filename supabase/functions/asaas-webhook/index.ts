@@ -72,11 +72,18 @@ Deno.serve(async (req) => {
      * se nada casar, cai pro externalReference (user_id) e aproveita para
      * gravar os IDs do Asaas — o "binding" acontece na confirmação do pagamento.
      */
+    type MatchedRow = {
+      id: string;
+      ciclo_contratado?: string | null;
+      ciclos_pagos?: number | null;
+      compromisso_inicio?: string | null;
+    };
+
     const updateAssinatura = async (
       subscriptionId: string,
       customerId: string,
       patch: Record<string, unknown>,
-    ) => {
+    ): Promise<{ ok?: boolean; matched?: string; row?: MatchedRow; error?: string }> => {
       const now = new Date().toISOString();
       const bindIds: Record<string, unknown> = {};
       if (subscriptionId) bindIds.asaas_subscription_id = subscriptionId;
@@ -87,12 +94,12 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({ ...patch, ...bindIds, updated_at: now })
           .eq("asaas_subscription_id", subscriptionId)
-          .select("id");
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio");
         if (error) {
           console.error("[asaas-webhook] DB update error (by subscription):", error);
           return { error: error.message };
         }
-        if (data && data.length > 0) return { ok: true, matched: "subscription" };
+        if (data && data.length > 0) return { ok: true, matched: "subscription", row: data[0] };
       }
 
       // Fallback por asaas_checkout_id (gravado em create-checkout).
@@ -101,12 +108,12 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({ ...patch, ...bindIds, updated_at: now })
           .eq("asaas_checkout_id", checkoutId)
-          .select("id");
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio");
         if (error) {
           console.error("[asaas-webhook] DB update error (by checkout):", error);
           return { error: error.message };
         }
-        if (data && data.length > 0) return { ok: true, matched: "checkout" };
+        if (data && data.length > 0) return { ok: true, matched: "checkout", row: data[0] };
       }
 
 
@@ -115,7 +122,7 @@ Deno.serve(async (req) => {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
         const { data: row, error: selError } = await supabase
           .from("assinaturas")
-          .select("id")
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio")
           .eq("user_id", externalReference)
           .in("status", LIVE_STATUSES)
           .order("created_at", { ascending: false })
@@ -135,7 +142,7 @@ Deno.serve(async (req) => {
             return { error: error.message };
           }
           console.log("[asaas-webhook] matched via externalReference:", externalReference);
-          return { ok: true, matched: "externalReference" };
+          return { ok: true, matched: "externalReference", row };
         }
       }
 
@@ -159,6 +166,29 @@ Deno.serve(async (req) => {
           trial_ends_at: null,
         });
         if (res.error) return json(500, res);
+
+        // Contagem de mensalidades efetivamente pagas — base do cálculo da
+        // multa de fidelidade no cancelamento do ciclo anual.
+        // Só contamos em PAYMENT_CONFIRMED (o Asaas dispara CONFIRMED e depois
+        // RECEIVED para o mesmo pagamento) e ignoramos cobranças avulsas
+        // (pró-rata do upgrade / multa de fidelidade), que não são mensalidade.
+        const payExternalRef: string = body?.payment?.externalReference ?? "";
+        const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
+        if (event === "PAYMENT_CONFIRMED" && !isAvulsa && res.row) {
+          const ciclos = (res.row.ciclos_pagos ?? 0) + 1;
+          const inicio =
+            res.row.compromisso_inicio ??
+            (res.row.ciclo_contratado === "anual" ? new Date().toISOString() : null);
+          const { error: incError } = await supabase
+            .from("assinaturas")
+            .update({ ciclos_pagos: ciclos, compromisso_inicio: inicio })
+            .eq("id", res.row.id);
+          if (incError) {
+            console.error("[asaas-webhook] ciclos_pagos increment error:", incError);
+          } else {
+            console.log("[asaas-webhook] ciclos_pagos =", ciclos, "assinatura:", res.row.id);
+          }
+        }
         break;
       }
 

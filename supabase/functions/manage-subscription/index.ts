@@ -1,6 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { PLAN_ANNUAL_VALUES } from "../_shared/pricing.ts";
+import {
+  normalizeCiclo,
+  planValue,
+  multaFidelidade,
+  COMPROMISSO_MESES,
+} from "../_shared/pricing.ts";
 
 /**
  * manage-subscription — gestão de assinatura JÁ existente.
@@ -21,7 +26,7 @@ import { PLAN_ANNUAL_VALUES } from "../_shared/pricing.ts";
 
 const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
 
-const PLAN_VALUES: Record<string, number> = PLAN_ANNUAL_VALUES;
+const PLANOS_VALIDOS = ["presenca", "influencia", "autoridade"];
 
 type Plano = "presenca" | "influencia" | "autoridade";
 type Action = "change_plan" | "cancel" | "update_card" | "list_invoices";
@@ -36,6 +41,10 @@ interface Body {
   action?: Action;
   plano?: Plano;
   motivo?: string;
+  /** Ciclo escolhido pelo cliente. Ausente = ciclo já contratado. */
+  ciclo?: "mensal" | "anual";
+  /** Legado do UpgradeModal. */
+  billing_cycle?: string;
 }
 
 Deno.serve(async (req) => {
@@ -77,7 +86,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, data_vencimento, trial_ends_at",
+        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -108,6 +117,47 @@ Deno.serve(async (req) => {
         parsed = text ? JSON.parse(text) : null;
       } catch { /* corpo vazio / não-JSON */ }
       return { ok: res.ok, status: res.status, json: parsed, text };
+    };
+
+    /**
+     * Cobrança avulsa (PAYMENT único) no Asaas. Usada tanto pela diferença
+     * proporcional do upgrade quanto pela multa de fidelidade do ciclo anual.
+     * Nunca lança: em falha, loga e devolve null (a operação principal segue).
+     */
+    const cobrarAvulsa = async (args: {
+      customerId: string;
+      value: number;
+      description: string;
+      externalReference: string;
+    }): Promise<{ value: number; invoiceUrl: string | null } | null> => {
+      const today = new Date().toISOString().slice(0, 10);
+      const pay = await fetchAsaas(`/payments`, {
+        method: "POST",
+        body: JSON.stringify({
+          customer: args.customerId,
+          billingType: "UNDEFINED",
+          value: args.value,
+          dueDate: today,
+          description: args.description,
+          externalReference: args.externalReference,
+        }),
+      });
+      if (!pay.ok) {
+        console.error(
+          "cobrarAvulsa error:",
+          pay.status,
+          pay.text.slice(0, 500),
+          "value:",
+          args.value,
+          "ref:",
+          args.externalReference,
+        );
+        return null;
+      }
+      return {
+        value: args.value,
+        invoiceUrl: pay.json?.invoiceUrl ?? pay.json?.bankSlipUrl ?? null,
+      };
     };
 
     /**
@@ -189,7 +239,7 @@ Deno.serve(async (req) => {
 
     if (action === "change_plan") {
       const plano = body.plano;
-      if (!plano || !PLAN_VALUES[plano]) {
+      if (!plano || !PLANOS_VALIDOS.includes(plano)) {
         return json(400, { error: "Plano inválido. Use: presenca, influencia ou autoridade." });
       }
 
@@ -209,7 +259,11 @@ Deno.serve(async (req) => {
         return json(200, { ok: true, success: true, mode: "noop", plano });
       }
 
-      const value = PLAN_VALUES[plano];
+      // Ciclo: o enviado agora ou, na ausência, o já contratado.
+      const ciclo = body.ciclo || body.billing_cycle
+        ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
+        : normalizeCiclo(assinatura.ciclo_contratado);
+      const value = planValue(plano, ciclo);
 
       // Sem vínculo no Asaas (trial local ou pendente): troca só local. A
       // cobrança correta nasce depois, no create-checkout. Antes tentamos o
@@ -217,11 +271,11 @@ Deno.serve(async (req) => {
       if (!(await resolveSubId())) {
         const { error } = await supabaseAdmin
           .from("assinaturas")
-          .update({ plano })
+          .update({ plano, ciclo_contratado: ciclo })
           .eq("id", assinatura.id);
         if (error) return json(500, { error: error.message });
-        console.log("change_plan local:", userId, plano);
-        return json(200, { ok: true, success: true, mode: "local", plano });
+        console.log("change_plan local:", userId, plano, ciclo);
+        return json(200, { ok: true, success: true, mode: "local", plano, ciclo });
       }
 
 
@@ -295,40 +349,20 @@ Deno.serve(async (req) => {
       // e a diferença fica registrada no log para tratamento manual.
       let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
       if (shouldChargeProRata) {
-        const today = new Date().toISOString().slice(0, 10);
-        const pay = await fetchAsaas(`/payments`, {
-          method: "POST",
-          body: JSON.stringify({
-            customer: customerId,
-            billingType: "UNDEFINED",
-            value: proRataValue,
-            dueDate: today,
-            description:
-              `Ivero — diferença proporcional do upgrade para ${plano} ` +
-              `(${daysLeft} dia(s) restantes do ciclo atual)`,
-            externalReference: `prorata:${assinatura.id}:${plano}`,
-          }),
+        const cobranca = await cobrarAvulsa({
+          customerId: customerId!,
+          value: proRataValue,
+          description:
+            `Ivero — diferença proporcional do upgrade para ${plano} ` +
+            `(${daysLeft} dia(s) restantes do ciclo atual)`,
+          externalReference: `prorata:${assinatura.id}:${plano}`,
         });
-        if (pay.ok) {
-          proRata = {
-            value: proRataValue,
-            days: daysLeft,
-            invoiceUrl: pay.json?.invoiceUrl ?? pay.json?.bankSlipUrl ?? null,
-          };
-        } else {
-          console.error(
-            "change_plan prorata error:",
-            pay.status,
-            pay.text.slice(0, 500),
-            "value:",
-            proRataValue,
-          );
-        }
+        if (cobranca) proRata = { ...cobranca, days: daysLeft };
       }
 
       const { error } = await supabaseAdmin
         .from("assinaturas")
-        .update({ plano })
+        .update({ plano, ciclo_contratado: ciclo })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
@@ -353,6 +387,7 @@ Deno.serve(async (req) => {
         success: true,
         mode: "asaas",
         plano,
+        ciclo,
         value,
         previousValue: oldValue,
         nextDueDate: upd.json?.nextDueDate ?? null,
@@ -361,6 +396,30 @@ Deno.serve(async (req) => {
     }
 
     if (action === "cancel") {
+      // Compromisso anual: cancelar antes de completar os 12 ciclos gera
+      // cobrança avulsa da diferença (valor cheio - promocional) x meses já
+      // usufruídos com desconto. Base primária = mensalidades confirmadas;
+      // a data de início do compromisso serve de sanidade (nunca conta mais
+      // meses do que os decorridos).
+      const cicloContratado = normalizeCiclo(assinatura.ciclo_contratado);
+      const ciclosPagos = Number(assinatura.ciclos_pagos ?? 0);
+      const compromissoMeses = Number(assinatura.compromisso_meses ?? COMPROMISSO_MESES);
+      let mesesDecorridos = ciclosPagos;
+      if (assinatura.compromisso_inicio) {
+        const inicioTs = new Date(assinatura.compromisso_inicio as string).getTime();
+        if (!Number.isNaN(inicioTs)) {
+          const dias = Math.max(0, (Date.now() - inicioTs) / 86_400_000);
+          mesesDecorridos = Math.min(ciclosPagos, Math.floor(dias / 30) + 1);
+        }
+      }
+      const ciclosComDesconto =
+        cicloContratado === "anual" && ciclosPagos > 0 && ciclosPagos < compromissoMeses
+          ? Math.max(0, mesesDecorridos)
+          : 0;
+      const multaValue = ciclosComDesconto > 0
+        ? multaFidelidade(assinatura.plano as string, ciclosComDesconto)
+        : 0;
+
       if (await resolveSubId()) {
         requireAsaas();
         const del = await fetchAsaas(`/subscriptions/${subId}`, { method: "DELETE" });
@@ -389,11 +448,47 @@ Deno.serve(async (req) => {
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
-      console.log("cancel:", userId, "motivo:", (body.motivo ?? "").slice(0, 200));
+      // Multa de fidelidade — emitida DEPOIS do cancelamento efetivo: falha
+      // aqui não impede o cliente de cancelar (mesma política do pró-rata).
+      let multa: { value: number; ciclos: number; invoiceUrl: string | null } | null = null;
+      const customerParaMulta = assinatura.asaas_customer_id as string | null;
+      if (multaValue >= 5 && customerParaMulta && asaasKey) {
+        const cobranca = await cobrarAvulsa({
+          customerId: customerParaMulta,
+          value: multaValue,
+          description:
+            `Ivero — diferença de fidelidade (plano ${assinatura.plano}, ` +
+            `${ciclosComDesconto} mês(es) com desconto anual)`,
+          externalReference: `fidelidade:${assinatura.id}:${assinatura.plano}`,
+        });
+        if (cobranca) multa = { ...cobranca, ciclos: ciclosComDesconto };
+      } else if (multaValue > 0) {
+        console.error(
+          "cancel: multa de fidelidade não emitida (sem customer/chave):",
+          userId,
+          multaValue,
+        );
+      }
+
+      console.log(
+        "cancel:",
+        userId,
+        "ciclo:",
+        cicloContratado,
+        "ciclosPagos:",
+        ciclosPagos,
+        "multa:",
+        multa?.value ?? 0,
+        "motivo:",
+        (body.motivo ?? "").slice(0, 200),
+      );
       return json(200, {
         ok: true,
         success: true,
         acessoAte: assinatura.data_vencimento ?? assinatura.trial_ends_at ?? null,
+        ciclo: cicloContratado,
+        ciclosPagos,
+        multa,
       });
 
     }
