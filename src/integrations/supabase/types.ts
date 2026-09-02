@@ -173,7 +173,7 @@ export type Database = {
           asaas_subscription_id?: string | null
           asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
-          ciclo_contratado?: string
+          ciclo_contratado: string
           ciclos_pagos?: number
           compromisso_inicio?: string | null
           compromisso_meses?: number
