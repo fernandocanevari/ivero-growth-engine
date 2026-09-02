@@ -17,6 +17,10 @@ import {
 import { PRICING_COPY } from "@/content/landing";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
+// O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
+// isso via metadata do signUp(). Sem essa chave, cai no fallback "mensal".
+const SELECTED_CICLO_STORAGE_KEY = "ivero_selected_ciclo";
+
 
 type PlanoSlug = PlanoSugerido;
 
