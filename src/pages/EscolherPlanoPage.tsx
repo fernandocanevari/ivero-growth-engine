@@ -47,7 +47,8 @@ const EscolherPlanoPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const trialExpirado = searchParams.get("motivo") === "trial_expirado";
-  const [isAnnual, setIsAnnual] = useState(true);
+  // Default vem do ciclo já contratado pelo cliente (tela com sessão).
+  const [isAnnual, setIsAnnual] = useState(false);
   const [checking, setChecking] = useState(true);
   // Elegibilidade ao trial: derivada do histórico de assinaturas. Só afeta copy.
   const [trialElegivel, setTrialElegivel] = useState(true);
@@ -73,7 +74,7 @@ const EscolherPlanoPage = () => {
       // Trial vencido NÃO conta como viva (senão viraria loop de redirect).
       const { data: allSubs } = await supabase
         .from("assinaturas")
-        .select("status, trial_ends_at")
+        .select("status, trial_ends_at, ciclo_contratado")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
       if (cancelled) return;
@@ -85,6 +86,11 @@ const EscolherPlanoPage = () => {
         return usouTrial || HISTORY_STATUSES.includes(r.status ?? "");
       });
       setTrialElegivel(!jaTeveHistorico);
+      // Reflete o ciclo real já registrado (evita assumir "anual" sempre).
+      const cicloAtual = (allSubs ?? [])[0]?.ciclo_contratado;
+      if (cicloAtual === "anual" || cicloAtual === "mensal") {
+        setIsAnnual(cicloAtual === "anual");
+      }
 
       const subs = (allSubs ?? []).filter((r) =>
         ["ativo", "trial", "inadimplente", "pendente"].includes(r.status ?? ""),
@@ -129,7 +135,10 @@ const EscolherPlanoPage = () => {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }
-    try { localStorage.removeItem("ivero_selected_plan"); } catch {}
+    try {
+      localStorage.removeItem("ivero_selected_plan");
+      localStorage.removeItem("ivero_selected_ciclo");
+    } catch {}
   }, [checking]);
 
 
