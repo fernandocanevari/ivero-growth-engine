@@ -99,7 +99,10 @@ const InvestSection = () => {
 
     if (isValidTrialOrActive) {
       // Active trial or paid → dashboard.
-      try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+      try {
+        localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY);
+        localStorage.removeItem(SELECTED_CICLO_STORAGE_KEY);
+      } catch {}
       navigate("/dashboard");
       return;
     }
@@ -111,6 +114,7 @@ const InvestSection = () => {
   const persistPendingPlan = (planName: string) => {
     try {
       localStorage.setItem(SELECTED_PLAN_STORAGE_KEY, planName);
+      localStorage.setItem(SELECTED_CICLO_STORAGE_KEY, isAnnual ? "anual" : "mensal");
     } catch {
       // ignore storage errors
     }

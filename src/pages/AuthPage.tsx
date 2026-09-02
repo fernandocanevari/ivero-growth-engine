@@ -299,6 +299,15 @@ export default function AuthPage() {
       } catch {
         // ignore storage errors
       }
+      // Ciclo escolhido na vitrine (mensal/anual). Fallback seguro: mensal —
+      // valor cheio, sem compromisso de 12 meses.
+      let cicloEscolhido = "mensal";
+      try {
+        const storedCiclo = localStorage.getItem("ivero_selected_ciclo");
+        if (storedCiclo === "anual" || storedCiclo === "mensal") cicloEscolhido = storedCiclo;
+      } catch {
+        // ignore storage errors
+      }
       // Mark this attempt as a signup BEFORE calling signUp, so the
       // onAuthStateChange listener recognizes the SIGNED_IN event as a signup
       // (even when Supabase returns a session synchronously) and routes to
@@ -318,6 +327,7 @@ export default function AuthPage() {
             nome_completo: extras.nome_completo,
             celular: extras.celular,
             plano_escolhido: planoEscolhido,
+            ciclo_escolhido: cicloEscolhido,
           },
         },
       });
@@ -357,7 +367,10 @@ export default function AuthPage() {
             : "Verifique seu email para confirmar e continuar.",
         });
         // Cleanup: chosen plan already traveled with signUp metadata
-        try { localStorage.removeItem("ivero_selected_plan"); } catch {}
+        try {
+          localStorage.removeItem("ivero_selected_plan");
+          localStorage.removeItem("ivero_selected_ciclo");
+        } catch {}
         if (userId && data.session) {
           navigate("/onboarding/perguntas", { replace: true });
         }
