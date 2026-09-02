@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -72,11 +72,20 @@ export default function AssinaturaPage() {
   // cobrança nova sem depender de F5.
   const returnedFromCheckout =
     searchParams.get("from") === "asaas" || searchParams.get("tipo") === "upgrade";
+  // Recarrega uma única vez ao voltar do checkout. As funções ficam em refs
+  // porque a identidade do refreshStatus muda quando a sessão resolve — usar
+  // como dependência re-disparava o fetch e fazia o card piscar.
+  const refreshRef = useRef(refreshStatus);
+  refreshRef.current = refreshStatus;
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+  const didRefreshRef = useRef(false);
   useEffect(() => {
-    if (!returnedFromCheckout) return;
-    void refreshStatus();
-    void reload();
-  }, [returnedFromCheckout, refreshStatus, reload]);
+    if (!returnedFromCheckout || didRefreshRef.current) return;
+    didRefreshRef.current = true;
+    void refreshRef.current();
+    void reloadRef.current();
+  }, [returnedFromCheckout]);
 
   const refreshBilling = () => {
     void refreshStatus();
@@ -296,7 +305,7 @@ export default function AssinaturaPage() {
           ) : effectiveStatus === "trial" && trialEndsAt ? (
             <>
               <h2 className="text-2xl font-bold text-foreground mb-1">
-                {planoInfo ? formatBRL(planoInfo.monthlyPrice) : "A definir"}
+                {valorMensalAtual !== null ? formatBRL(valorMensalAtual) : "A definir"}
               </h2>
               <p className="text-sm text-muted-foreground">
                 Primeira cobrança prevista para {formatDate(trialEndsAt)}, ao fim do teste

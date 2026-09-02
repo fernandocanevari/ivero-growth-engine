@@ -17,6 +17,10 @@ import {
 import { PRICING_COPY } from "@/content/landing";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
+// O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
+// isso via metadata do signUp(). Sem essa chave, cai no fallback "mensal".
+const SELECTED_CICLO_STORAGE_KEY = "ivero_selected_ciclo";
+
 
 type PlanoSlug = PlanoSugerido;
 
@@ -95,7 +99,10 @@ const InvestSection = () => {
 
     if (isValidTrialOrActive) {
       // Active trial or paid → dashboard.
-      try { localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY); } catch {}
+      try {
+        localStorage.removeItem(SELECTED_PLAN_STORAGE_KEY);
+        localStorage.removeItem(SELECTED_CICLO_STORAGE_KEY);
+      } catch {}
       navigate("/dashboard");
       return;
     }
@@ -107,6 +114,7 @@ const InvestSection = () => {
   const persistPendingPlan = (planName: string) => {
     try {
       localStorage.setItem(SELECTED_PLAN_STORAGE_KEY, planName);
+      localStorage.setItem(SELECTED_CICLO_STORAGE_KEY, isAnnual ? "anual" : "mensal");
     } catch {
       // ignore storage errors
     }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2 } from "lucide-react";
 import {
@@ -55,10 +55,17 @@ interface UpgradeModalProps {
 }
 
 export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModalProps) {
-  const [isAnnual, setIsAnnual] = useState(true);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
-  const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription } =
+  const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription, cicloContratado } =
     useSubscriptionStatus();
+  // Default do toggle segue o ciclo real do cliente — nunca assume "anual".
+  const [isAnnual, setIsAnnual] = useState(false);
+  const cicloSynced = useRef(false);
+  useEffect(() => {
+    if (isLoading || cicloSynced.current) return;
+    cicloSynced.current = true;
+    setIsAnnual(cicloContratado === "anual");
+  }, [isLoading, cicloContratado]);
 
   // Cálculo do destaque dinâmico. Enquanto carrega → highlightKey = null (sem badge).
   const highlightKey: PlanoSugerido | null = isLoading ? null : nextTier(plano);

@@ -30,12 +30,41 @@ export const INVOICE_STATUS_LABEL: Record<string, string> = {
 };
 
 export function useBillingInvoices() {
+  // Gate de auth: chamar list_invoices antes da sessão resolver devolve erro e
+  // pinta o card com o branch de fallback (flash). Esperamos o getUser().
+  const [authResolved, setAuthResolved] = useState(false);
+  const [hasUser, setHasUser] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return;
+      setHasUser(!!data.user);
+      setAuthResolved(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session && event !== "SIGNED_OUT") return;
+      setHasUser(!!session?.user);
+      setAuthResolved(true);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [next, setNext] = useState<BillingInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!authResolved) return; // mantém isLoading = true até a sessão resolver
+    if (!hasUser) {
+      setInvoices([]);
+      setNext(null);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     const { data, error: fnError } = await supabase.functions.invoke("manage-subscription", {
@@ -50,7 +79,7 @@ export function useBillingInvoices() {
       setNext((data?.next ?? null) as BillingInvoice | null);
     }
     setIsLoading(false);
-  }, []);
+  }, [authResolved, hasUser]);
 
   useEffect(() => {
     void load();

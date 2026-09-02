@@ -58,9 +58,8 @@ export function useSubscriptionStatus() {
   // Extraído do effect para permitir recarga sob demanda (ex.: após troca de
   // plano ou retorno do checkout) sem forçar F5.
   const fetchAssinatura = useCallback(async () => {
-    setAssinaturaLoading(true);
-
     if (!authResolved) return; // mantém loading até a sessão resolver
+    setAssinaturaLoading(true);
 
     if (!userId) {
       setAssinatura(null);
