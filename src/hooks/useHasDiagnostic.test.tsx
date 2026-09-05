@@ -21,7 +21,7 @@ import { useHasDiagnostic } from "./useHasDiagnostic";
 
 describe("useHasDiagnostic", () => {
   beforeEach(() => {
-    from.reset();
+    
     sessionStorage.clear();
   });
 
