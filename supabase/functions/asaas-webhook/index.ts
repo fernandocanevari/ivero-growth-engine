@@ -77,6 +77,8 @@ Deno.serve(async (req) => {
       ciclo_contratado?: string | null;
       ciclos_pagos?: number | null;
       compromisso_inicio?: string | null;
+      plano_pretendido?: string | null;
+      ciclo_pretendido?: string | null;
     };
 
     const updateAssinatura = async (
