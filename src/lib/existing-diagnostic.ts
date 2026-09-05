@@ -16,7 +16,7 @@ export interface ExistingDiagnostic {
 const SESSION_KEY = "ivero:lastDiagnostic";
 const ADOPTED_KEY = "ivero:audit_adopted";
 
-function readSessionSnapshot(): Record<string, unknown> | null {
+export function readSessionSnapshot(): Record<string, unknown> | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     const payload = raw ? JSON.parse(raw) : null;
@@ -27,6 +27,70 @@ function readSessionSnapshot(): Record<string, unknown> | null {
     /* storage indisponível ou corrompido */
   }
   return null;
+}
+
+/** Existe um diagnóstico válido na aba atual (vindo do /preview)? */
+export function hasSessionDiagnostic(): boolean {
+  return readSessionSnapshot() !== null;
+}
+
+export type AdoptResult =
+  | { status: "adopted" }
+  | { status: "already" }
+  | { status: "nothing" }
+  | { status: "failed"; message: string };
+
+/**
+ * Persiste o snapshot do /preview em audit_reports. Chamada no primeiro
+ * momento autenticado confiável (signup / pós-login) e novamente ao entrar no
+ * dashboard, como rede de segurança. Idempotente.
+ */
+export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult> {
+  const payload = readSessionSnapshot();
+  if (!payload) return { status: "nothing" };
+
+  try {
+    if (sessionStorage.getItem(ADOPTED_KEY) === "1") return { status: "already" };
+  } catch {
+    /* ignora */
+  }
+
+  const { count, error: countError } = await supabase
+    .from("audit_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (countError) return { status: "failed", message: countError.message };
+  if ((count ?? 0) > 0) {
+    markAdopted();
+    return { status: "already" };
+  }
+
+  const { error } = await supabase.from("audit_reports").insert({
+    user_id: userId,
+    source: "preview",
+    site_url: (payload.siteUrl as string) ?? "",
+    overall_score: payload.geoScore as number,
+    status_label: "",
+    radar_data: payload.radar ?? [],
+    pillar_details: payload.pillarDetails ?? [],
+    keyword_cloud: payload.keyword_cloud ?? [],
+    ai_engines: payload.aiEngines ?? [],
+  } as never);
+
+  if (error) {
+    console.error("[existing-diagnostic] adoção falhou:", error.message);
+    return { status: "failed", message: error.message };
+  }
+  markAdopted();
+  return { status: "adopted" };
+}
+
+function markAdopted() {
+  try {
+    sessionStorage.setItem(ADOPTED_KEY, "1");
+  } catch {
+    /* ignora */
+  }
 }
 
 export async function resolveExistingDiagnostic(
@@ -53,26 +117,7 @@ export async function resolveExistingDiagnostic(
 
   // Adoção: grava o snapshot do preview para o histórico e o card do Painel
   // enxergarem o mesmo diagnóstico que o cliente acabou de ver.
-  const { error } = await supabase.from("audit_reports").insert({
-    user_id: userId,
-    source: "preview",
-    site_url: (payload.siteUrl as string) ?? "",
-    overall_score: payload.geoScore as number,
-    status_label: "",
-    radar_data: payload.radar ?? [],
-    pillar_details: payload.pillarDetails ?? [],
-    keyword_cloud: payload.keyword_cloud ?? [],
-    ai_engines: payload.aiEngines ?? [],
-  } as never);
-  if (!error) {
-    try {
-      sessionStorage.setItem(ADOPTED_KEY, "1");
-    } catch {
-      /* ignora */
-    }
-  } else {
-    console.warn("[existing-diagnostic] adoção falhou:", error.message);
-  }
+  await adoptPreviewSnapshot(userId);
 
   return {
     overallScore: payload.geoScore as number,
