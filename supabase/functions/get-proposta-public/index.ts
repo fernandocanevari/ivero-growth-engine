@@ -61,6 +61,10 @@ Deno.serve(async (req) => {
       empresa_nome: proposta.empresa_nome,
       empresa_site: proposta.empresa_site,
       contato_nome: proposta.contato_nome,
+      // Link secreto por slug: devolver e-mail/telefone permite pré-preencher o
+      // cadastro (o lead já informou esses dados no preview).
+      contato_email: proposta.contato_email,
+      contato_telefone: proposta.contato_telefone,
       origem: proposta.origem,
       diagnostico_snapshot: proposta.diagnostico_snapshot,
       score_geral: proposta.score_geral,
