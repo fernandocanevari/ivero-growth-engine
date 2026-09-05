@@ -113,8 +113,11 @@ export default function AssinaturaPage() {
     }
     // Cliente em trial já escolheu plano — só ainda não há cobrança/assinatura
     // no provedor. A copy genérica ("escolha um plano") ficaria errada aqui.
+    // A function já classifica esse caso como "trial_sem_cobranca"; mantemos o
+    // reconhecimento local para o caso "sem_assinatura_asaas" por retrocompat.
     const trialSemCobranca =
-      data?.reason === "sem_assinatura_asaas" && effectiveStatus === "trial" && !!plano;
+      data?.reason === "trial_sem_cobranca" ||
+      (data?.reason === "sem_assinatura_asaas" && effectiveStatus === "trial" && !!plano);
     // Condição de negócio esperada: a function responde 200 com ok:false + message.
     toast({
       title: "Forma de pagamento",

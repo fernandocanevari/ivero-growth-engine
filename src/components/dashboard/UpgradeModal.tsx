@@ -95,13 +95,16 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
     setPendingPlan(planName);
 
     try {
-      // Troca de plano (change_plan) só vale para assinatura VIVA no provedor:
-      // ativo/inadimplente com asaas_subscription_id. Cancelado, trial expirado
-      // ou sem assinatura são contratações de verdade → checkout real.
+      // Troca de plano (change_plan) vale em dois casos:
+      // 1) assinatura VIVA no provedor (ativo/inadimplente com id do Asaas);
+      // 2) TRIAL em curso sem vínculo no provedor — não há cobrança a
+      //    conciliar, então a troca é local e gratuita, sem abrir checkout.
+      // Cancelado e trial expirado seguem sendo contratação real → checkout.
       const canChangePlan =
         !isAdmin &&
-        hasAsaasSubscription &&
-        (effectiveStatus === "ativo" || effectiveStatus === "inadimplente");
+        ((hasAsaasSubscription &&
+          (effectiveStatus === "ativo" || effectiveStatus === "inadimplente")) ||
+          (effectiveStatus === "trial" && !hasAsaasSubscription));
 
       if (canChangePlan) {
         const { data, error } = await supabase.functions.invoke("manage-subscription", {
