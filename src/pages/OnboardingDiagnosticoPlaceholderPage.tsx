@@ -94,6 +94,43 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
         (brand as { brand_name?: string } | null)?.brand_name ||
         (siteUrl ? extractBrandFromUrl(siteUrl) : "");
 
+      // ── Reaproveitamento: se o cliente já rodou o diagnóstico (veio do
+      // /preview ou já tem auditoria salva), não paga simulate-ai de novo.
+      const { data: lastAudit } = await supabase
+        .from("audit_reports")
+        .select("overall_score, pillar_details")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const audit = lastAudit as { overall_score?: number; pillar_details?: unknown } | null;
+      if (audit && typeof audit.overall_score === "number" && audit.overall_score > 0) {
+        setResult({
+          overallScore: audit.overall_score,
+          pillarDetails: (Array.isArray(audit.pillar_details) ? audit.pillar_details : []) as never,
+        } as DiagnosticSuccess);
+        setAdopted(true);
+        setPhase("done");
+        return;
+      }
+
+      try {
+        const raw = sessionStorage.getItem("ivero:lastDiagnostic");
+        const payload = raw ? JSON.parse(raw) : null;
+        if (payload && typeof payload.geoScore === "number" && payload.geoScore > 0) {
+          setResult({
+            overallScore: payload.geoScore,
+            pillarDetails: (Array.isArray(payload.pillarDetails) ? payload.pillarDetails : []) as never,
+          } as DiagnosticSuccess);
+          setAdopted(true);
+          setPhase("done");
+          return;
+        }
+      } catch {
+        // storage corrompido: segue para a análise normal
+      }
+
       if (!brandName) {
         setPhase("error");
         return;
