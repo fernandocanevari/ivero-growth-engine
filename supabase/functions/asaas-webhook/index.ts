@@ -205,6 +205,8 @@ Deno.serve(async (req) => {
         // (pró-rata do upgrade / multa de fidelidade), que não são mensalidade.
         const payExternalRef: string = body?.payment?.externalReference ?? "";
         const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
+        // Pagamento de mensalidade confirmado → promove o plano pretendido.
+        if (!isAvulsa) res.row = await promoverIntencao(res.row);
         if (event === "PAYMENT_CONFIRMED" && !isAvulsa && res.row) {
           const ciclos = (res.row.ciclos_pagos ?? 0) + 1;
           const inicio =
