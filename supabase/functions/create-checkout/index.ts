@@ -26,6 +26,8 @@ interface CheckoutBody {
   ciclo?: "mensal" | "anual";
   /** Legado do UpgradeModal: "annual" | "monthly". */
   billing_cycle?: string;
+  /** "trocar_plano" = cliente já assinante trocando (servidor decide a rota). */
+  intent?: "contratar" | "trocar_plano";
 }
 
 Deno.serve(async (req) => {
@@ -320,6 +322,18 @@ Deno.serve(async (req) => {
       );
     }
     const asaasCheckoutId: string = checkoutJson?.id ?? "";
+    console.log(
+      "create-checkout: rota=checkout",
+      userId,
+      "intent:",
+      body?.intent ?? "contratar",
+      "trialConcedido:",
+      trialConcedido,
+      "plano:",
+      plano,
+      "ciclo:",
+      ciclo,
+    );
 
     // 7. Persist in assinaturas (service role to bypass RLS for insert).
     // asaas_customer_id / asaas_subscription_id ficam nulos aqui: a assinatura
@@ -335,6 +349,7 @@ Deno.serve(async (req) => {
       // Guardamos o id da Checkout Session para permitir reconciliação ativa
       // (consulta direta ao Asaas) caso o webhook não chegue.
       asaas_checkout_id: asaasCheckoutId || null,
+      asaas_checkout_created_at: new Date().toISOString(),
       plano,
       status: novoStatus,
       data_inicio: dataInicio.toISOString(),
@@ -371,6 +386,7 @@ Deno.serve(async (req) => {
         .from("assinaturas")
         .update({
           asaas_checkout_id: asaasCheckoutId || null,
+          asaas_checkout_created_at: new Date().toISOString(),
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
         })
