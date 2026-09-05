@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses",
+        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -175,7 +175,18 @@ Deno.serve(async (req) => {
      */
     const resolveSubId = async (): Promise<string | null> => {
       if (subId) return subId;
-      const checkoutId = assinatura.asaas_checkout_id as string | null;
+      // Checkout com mais de 24h sem confirmação = tentativa abandonada. Não
+      // serve de pista para localizar assinatura no provedor (e não deve
+      // classificar a conta como "órfã"); o customer, sim, é dado estável.
+      const CHECKOUT_TTL_MS = 24 * 60 * 60 * 1000;
+      const checkoutCriadoMs = assinatura.asaas_checkout_created_at
+        ? new Date(assinatura.asaas_checkout_created_at as string).getTime()
+        : NaN;
+      const checkoutAbandonado =
+        !Number.isNaN(checkoutCriadoMs) && Date.now() - checkoutCriadoMs > CHECKOUT_TTL_MS;
+      const checkoutId = checkoutAbandonado
+        ? null
+        : (assinatura.asaas_checkout_id as string | null);
       let customerId = assinatura.asaas_customer_id as string | null;
       if (!checkoutId && !customerId) return null;
 
@@ -267,6 +278,17 @@ Deno.serve(async (req) => {
       }
 
       // Ciclo: o enviado agora ou, na ausência, o já contratado.
+      console.log(
+        "change_plan: rota decidida no servidor —",
+        userId,
+        "status:",
+        assinatura.status,
+        "vinculo:",
+        !!assinatura.asaas_subscription_id,
+        "plano solicitado:",
+        plano,
+      );
+
       const ciclo = body.ciclo || body.billing_cycle
         ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
         : normalizeCiclo(assinatura.ciclo_contratado);
