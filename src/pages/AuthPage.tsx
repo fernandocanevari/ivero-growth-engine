@@ -98,6 +98,17 @@ export default function AuthPage() {
   // Otherwise, send them to the real onboarding (never /bem-vindo, which is
   // reserved for Asaas payment returns via ?from=asaas).
   const redirectAfterAuth = async (userId: string) => {
+    // Primeiro momento autenticado confiável: grava o diagnóstico do /preview
+    // antes de qualquer navegação, para o Painel já enxergá-lo.
+    const adoption = await adoptPreviewSnapshot(userId);
+    if (adoption.status === "failed") {
+      toast({
+        title: "Não conseguimos salvar seu diagnóstico",
+        description: "Rode o Diagnóstico IA no painel para gerar o resultado novamente.",
+        variant: "destructive",
+      });
+    }
+
     if (safeRedirect) {
       navigate(safeRedirect, { replace: true });
       return;
