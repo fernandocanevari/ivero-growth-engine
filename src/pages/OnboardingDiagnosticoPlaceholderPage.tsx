@@ -11,7 +11,6 @@ import {
   runDiagnostic,
   persistDiagnostic,
   extractBrandFromUrl,
-  type DiagnosticSuccess,
 } from "@/lib/diagnostic-engine";
 
 const LOADING_MESSAGES = [
@@ -285,7 +284,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
           onClick={() => navigate("/dashboard/diagnostico")}
           className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
         >
-          Ir para o meu dashboard <ArrowRight className="w-4 h-4 ml-1.5" />
+          {adopted ? "Concluir e ir para o dashboard" : "Concluir e ver meu diagnóstico"} <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
       </motion.div>
     </div>
