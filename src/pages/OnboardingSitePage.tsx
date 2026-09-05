@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { SearchScan } from "@/components/ui/search-scan";
 import { readBrandPrefetch, clearBrandPrefetch } from "@/lib/brand-prefetch";
+import { resolveExistingDiagnostic } from "@/lib/existing-diagnostic";
 
 type Phase = "url" | "loading" | "confirm" | "objectives";
 
