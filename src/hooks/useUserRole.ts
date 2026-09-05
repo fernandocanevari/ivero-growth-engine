@@ -45,6 +45,12 @@ export function useUserRole() {
   const query = useQuery({
     queryKey: ["user_roles", userId],
     enabled: userId !== null,
+    // A cada foco de janela o react-query revalidava do zero: isFetching entrava
+    // no isLoading e todo consumidor voltava ao estado "carregando" (cadeados
+    // piscando na sidebar, skeleton no card de cobrança). Papel do staleTime +
+    // placeholderData: revalidar em segundo plano sem perder o valor conhecido.
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
@@ -57,16 +63,17 @@ export function useUserRole() {
     },
   });
 
-  // "Loading" cobre 3 janelas: sessão não resolvida, query pendente (inclusive
-  // logo após queryClient.clear(), quando ainda não há isFetching) e refetch.
+  // "Loading" cobre só a PRIMEIRA carga: sessão não resolvida ou query ainda
+  // sem dado algum. Revalidação em background NÃO é loading.
   const isLoading =
-    !authResolved ||
-    (userId !== null && (query.isPending || query.isFetching));
+    !authResolved || (userId !== null && query.isPending && query.data === undefined);
 
   return {
     roles: query.data ?? [],
     isAdmin: (query.data ?? []).includes("admin"),
     isLoading,
+    /** Revalidando em segundo plano com valor já conhecido em tela. */
+    isValidating: query.isFetching && !isLoading,
     authResolved,
   };
 }

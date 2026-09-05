@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
 import { cancelAccessUntil, resolveEffectiveStatus } from "@/lib/subscription-status";
@@ -55,14 +55,19 @@ export function useSubscriptionStatus() {
     };
   }, []);
 
+  // Já houve uma resposta do servidor? Recargas seguintes são revalidação em
+  // segundo plano: não voltam ao estado "carregando" (evita skeleton piscando).
+  const hasLoadedRef = useRef(false);
+
   // Extraído do effect para permitir recarga sob demanda (ex.: após troca de
   // plano ou retorno do checkout) sem forçar F5.
   const fetchAssinatura = useCallback(async () => {
     if (!authResolved) return; // mantém loading até a sessão resolver
-    setAssinaturaLoading(true);
+    if (!hasLoadedRef.current) setAssinaturaLoading(true);
 
     if (!userId) {
       setAssinatura(null);
+      hasLoadedRef.current = true;
       setAssinaturaLoading(false);
       return;
     }
@@ -79,12 +84,22 @@ export function useSubscriptionStatus() {
       .maybeSingle();
 
     if (error) {
-      setAssinatura(null);
+      // Erro em revalidação não apaga o que já está em tela.
+      if (!hasLoadedRef.current) setAssinatura(null);
     } else {
       setAssinatura((data as unknown as AssinaturaRow | null) ?? null);
     }
+    hasLoadedRef.current = true;
     setAssinaturaLoading(false);
   }, [userId, authResolved]);
+
+  // Troca de conta (login/logout) volta a ser primeira carga: o dado anterior
+  // pertence a outro usuário e não pode ficar em tela.
+  const lastUserRef = useRef<string | null | undefined>(undefined);
+  if (lastUserRef.current !== userId) {
+    lastUserRef.current = userId;
+    hasLoadedRef.current = false;
+  }
 
   useEffect(() => {
     void fetchAssinatura();
