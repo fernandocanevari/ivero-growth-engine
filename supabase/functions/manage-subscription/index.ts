@@ -37,6 +37,13 @@ const json = (status: number, body: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+/** Trial vencido = data no passado. Sem data, não tratamos como vencido. */
+const trialVencido = (trialEndsAt: string | null): boolean => {
+  if (!trialEndsAt) return false;
+  const ts = new Date(trialEndsAt).getTime();
+  return !Number.isNaN(ts) && ts <= Date.now();
+};
+
 interface Body {
   action?: Action;
   plano?: Plano;
