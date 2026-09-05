@@ -337,6 +337,18 @@ export default function OnboardingSitePage() {
         if (cErr) throw cErr;
       }
 
+      // 3) Quem já viu o diagnóstico no /preview não passa pela tela de
+      // revelação — vai direto para o dashboard.
+      const existing = await resolveExistingDiagnostic(userId);
+      if (existing) {
+        await supabase
+          .from("profiles")
+          .update({ is_first_login: false } as never)
+          .eq("user_id", userId);
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+
       navigate("/onboarding/diagnostico");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao salvar";
