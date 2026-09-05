@@ -156,6 +156,35 @@ Deno.serve(async (req) => {
       return { error: "No matching assinatura" };
     };
 
+    /**
+     * Promove a INTENÇÃO gravada em create-checkout (plano_pretendido /
+     * ciclo_pretendido) para o plano vigente. É aqui — e só aqui, no pagamento
+     * confirmado — que a troca de plano vale de verdade. Checkout abandonado
+     * nunca altera o plano do cliente.
+     */
+    const promoverIntencao = async (row: MatchedRow | undefined): Promise<MatchedRow | undefined> => {
+      if (!row?.plano_pretendido) return row;
+      const patch: Record<string, unknown> = {
+        plano: row.plano_pretendido,
+        plano_pretendido: null,
+        ciclo_pretendido: null,
+      };
+      if (row.ciclo_pretendido) patch.ciclo_contratado = row.ciclo_pretendido;
+      const { error } = await supabase.from("assinaturas").update(patch).eq("id", row.id);
+      if (error) {
+        console.error("[asaas-webhook] promover intenção error:", error);
+        return row;
+      }
+      console.log("[asaas-webhook] plano promovido:", row.id, row.plano_pretendido);
+      return {
+        ...row,
+        ciclo_contratado: row.ciclo_pretendido ?? row.ciclo_contratado,
+        plano_pretendido: null,
+        ciclo_pretendido: null,
+      };
+    };
+
+
     switch (event) {
       case "PAYMENT_CONFIRMED":
       case "PAYMENT_RECEIVED": {
