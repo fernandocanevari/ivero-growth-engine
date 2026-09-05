@@ -318,10 +318,25 @@ Deno.serve(async (req) => {
 
     let insertError: { code?: string; message: string } | null = null;
 
-    if (linhaMorta) {
+    if (linhaViva) {
+      // Assinatura VIVA (trial/pendente/ativa): nada de promover o plano novo
+      // antes da confirmação do pagamento. Se o cliente abandonar a tela do
+      // Asaas, o plano vigente continua valendo. Gravamos só a INTENÇÃO
+      // (plano/ciclo pretendidos) + o id da Checkout Session; a promoção real
+      // acontece no asaas-webhook / reconcile-asaas quando o pagamento entra.
       const { error: updateError } = await supabaseAdmin
         .from("assinaturas")
-        .update(assinaturaPayload)
+        .update({
+          asaas_checkout_id: asaasCheckoutId || null,
+          plano_pretendido: plano,
+          ciclo_pretendido: ciclo,
+        })
+        .eq("id", linhaViva.id);
+      insertError = updateError as typeof insertError;
+    } else if (linhaMorta) {
+      const { error: updateError } = await supabaseAdmin
+        .from("assinaturas")
+        .update({ ...assinaturaPayload, plano_pretendido: plano, ciclo_pretendido: ciclo })
         .eq("id", linhaMorta.id);
       insertError = updateError as typeof insertError;
 
@@ -339,7 +354,12 @@ Deno.serve(async (req) => {
     } else {
       const { error } = await supabaseAdmin
         .from("assinaturas")
-        .insert({ user_id: userId, ...assinaturaPayload });
+        .insert({
+          user_id: userId,
+          ...assinaturaPayload,
+          plano_pretendido: plano,
+          ciclo_pretendido: ciclo,
+        });
       insertError = error as typeof insertError;
     }
 
