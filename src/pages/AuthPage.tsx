@@ -336,6 +336,8 @@ export default function AuthPage() {
             celular: extras.celular,
             plano_escolhido: planoEscolhido,
             ciclo_escolhido: cicloEscolhido,
+            // Mantém o vínculo com a proposta aceita.
+            ...(propostaSlug ? { proposta_slug: propostaSlug } : {}),
           },
         },
       });
