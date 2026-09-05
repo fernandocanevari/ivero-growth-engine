@@ -18,6 +18,11 @@ export default function AuthPage() {
   const prefName = searchParams.get("name") || "";
   const prefSite = searchParams.get("site") || "";
   const prefPhone = searchParams.get("phone") || "";
+  // Proposta comercial: plano/ciclo recomendados chegam pela URL e têm
+  // precedência sobre a escolha guardada na vitrine (localStorage).
+  const prefPlano = searchParams.get("plano") || "";
+  const prefCiclo = searchParams.get("ciclo") || "";
+  const propostaSlug = searchParams.get("slug") || "";
   const redirectParam = searchParams.get("redirect") || "";
   // Onboarding routes are never honored as an explicit redirect target: the
   // real step is computed from the DB state by redirectAfterAuth().
@@ -299,6 +304,8 @@ export default function AuthPage() {
       } catch {
         // ignore storage errors
       }
+      // Plano vindo da proposta comercial ganha da vitrine.
+      if (prefPlano && PLAN_SLUG_MAP[prefPlano]) planoEscolhido = PLAN_SLUG_MAP[prefPlano];
       // Ciclo escolhido na vitrine (mensal/anual). Fallback seguro: mensal —
       // valor cheio, sem compromisso de 12 meses.
       let cicloEscolhido = "mensal";
@@ -308,6 +315,7 @@ export default function AuthPage() {
       } catch {
         // ignore storage errors
       }
+      if (prefCiclo === "anual" || prefCiclo === "mensal") cicloEscolhido = prefCiclo;
       // Mark this attempt as a signup BEFORE calling signUp, so the
       // onAuthStateChange listener recognizes the SIGNED_IN event as a signup
       // (even when Supabase returns a session synchronously) and routes to
@@ -328,6 +336,8 @@ export default function AuthPage() {
             celular: extras.celular,
             plano_escolhido: planoEscolhido,
             ciclo_escolhido: cicloEscolhido,
+            // Mantém o vínculo com a proposta aceita.
+            ...(propostaSlug ? { proposta_slug: propostaSlug } : {}),
           },
         },
       });
