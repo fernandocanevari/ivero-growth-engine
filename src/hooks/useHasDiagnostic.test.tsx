@@ -1,26 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { createFromMock } from "@/test/supabase-query-mock";
 
-const { from } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createFromMock: make } = require("@/test/supabase-query-mock");
+// Banco sem nenhuma linha de diagnóstico: select().eq() resolve count 0.
+vi.mock("@/integrations/supabase/client", () => {
+  const chain = {
+    select: () => chain,
+    eq: () => Promise.resolve({ count: 0, data: [], error: null }),
+  };
   return {
-    from: make({
-      audit_reports: () => ({ data: null, error: null }),
-      analysis_history: () => ({ data: null, error: null }),
-    }) as ReturnType<typeof createFromMock>,
+    supabase: {
+      from: () => chain,
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: { id: "u1" } }, error: null }),
+      },
+    },
   };
 });
-
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from,
-    auth: {
-      getUser: () => Promise.resolve({ data: { user: { id: "u1" } }, error: null }),
-    },
-  },
-}));
 
 import { useHasDiagnostic } from "./useHasDiagnostic";
 
