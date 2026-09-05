@@ -337,7 +337,7 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
                     size="sm"
                     className="w-full text-xs mt-auto"
                     onClick={() => void handleSelectPlan(plan.key, plan.name)}
-                    disabled={(isAtTop && highlighted) || pendingPlan !== null}
+                    disabled={(isAtTop && highlighted) || pendingPlan !== null || isLoading}
                   >
                     {pendingPlan === plan.name ? (
                       <>
