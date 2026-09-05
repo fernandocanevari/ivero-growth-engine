@@ -26,6 +26,8 @@ interface CheckoutBody {
   ciclo?: "mensal" | "anual";
   /** Legado do UpgradeModal: "annual" | "monthly". */
   billing_cycle?: string;
+  /** "trocar_plano" = cliente já assinante trocando (servidor decide a rota). */
+  intent?: "contratar" | "trocar_plano";
 }
 
 Deno.serve(async (req) => {
@@ -130,6 +132,49 @@ Deno.serve(async (req) => {
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // 3a-bis. AUTORIDADE DO SERVIDOR sobre a rota da troca de plano.
+    // Quem está em trial VÁLIDO e sem vínculo no Asaas não tem nada a cobrar:
+    // a troca é local (manage-subscription/change_plan). Antes essa regra
+    // existia só no front — se o estado da assinatura não estivesse resolvido
+    // no clique, o cliente caía aqui e via a tela de pagamento. Só vale quando
+    // a intenção é explicitamente "trocar_plano"; contratar segue normal.
+    if (body?.intent === "trocar_plano") {
+      const { data: viva } = await supabaseAdmin
+        .from("assinaturas")
+        .select("id, status, trial_ends_at, asaas_subscription_id")
+        .eq("user_id", userId)
+        .in("status", LIVE_STATUSES)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const trialMs = viva?.trial_ends_at
+        ? new Date(viva.trial_ends_at as string).getTime()
+        : NaN;
+      const trialEmCurso = !Number.isNaN(trialMs) && trialMs > Date.now();
+      if (viva && viva.status === "trial" && !viva.asaas_subscription_id && trialEmCurso) {
+        console.log(
+          "create-checkout: rota=troca_local",
+          userId,
+          "status:",
+          viva.status,
+          "vinculo:",
+          false,
+          "plano solicitado:",
+          plano,
+        );
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            reason: "trial_troca_local",
+            plano,
+            ciclo,
+            message: "Durante o teste a troca de plano é imediata, sem cobrança.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // 3c. Elegibilidade ao trial: só quem NUNCA teve histórico de assinatura
@@ -277,6 +322,18 @@ Deno.serve(async (req) => {
       );
     }
     const asaasCheckoutId: string = checkoutJson?.id ?? "";
+    console.log(
+      "create-checkout: rota=checkout",
+      userId,
+      "intent:",
+      body?.intent ?? "contratar",
+      "trialConcedido:",
+      trialConcedido,
+      "plano:",
+      plano,
+      "ciclo:",
+      ciclo,
+    );
 
     // 7. Persist in assinaturas (service role to bypass RLS for insert).
     // asaas_customer_id / asaas_subscription_id ficam nulos aqui: a assinatura
@@ -292,6 +349,7 @@ Deno.serve(async (req) => {
       // Guardamos o id da Checkout Session para permitir reconciliação ativa
       // (consulta direta ao Asaas) caso o webhook não chegue.
       asaas_checkout_id: asaasCheckoutId || null,
+      asaas_checkout_created_at: new Date().toISOString(),
       plano,
       status: novoStatus,
       data_inicio: dataInicio.toISOString(),
@@ -328,6 +386,7 @@ Deno.serve(async (req) => {
         .from("assinaturas")
         .update({
           asaas_checkout_id: asaasCheckoutId || null,
+          asaas_checkout_created_at: new Date().toISOString(),
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
         })

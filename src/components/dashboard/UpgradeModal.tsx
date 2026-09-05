@@ -84,7 +84,37 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
     return "Próximo passo";
   };
 
+  /** Troca de plano sem checkout (trial local ou assinatura viva no provedor). */
+  const changePlanLocalOrProvider = async (planKey: PlanoSugerido, planName: string) => {
+    const { data, error } = await supabase.functions.invoke("manage-subscription", {
+      body: { action: "change_plan", plano: planKey, ciclo: isAnnual ? "anual" : "mensal" },
+    });
+    if (error || data?.error) throw new Error(error?.message ?? data?.error);
+    if (data?.ok === false) {
+      // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
+      throw new Error(
+        (data?.message as string) ??
+          "Não foi possível trocar o plano. Tente contratar novamente.",
+      );
+    }
+    const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
+    toast({
+      title: `Plano alterado para ${planName}`,
+      description: pr
+        ? `Geramos uma cobrança de R$ ${pr.value.toFixed(2).replace(".", ",")} pela diferença proporcional aos ${pr.days} dia(s) restantes do ciclo atual. O novo valor vale integralmente a partir da próxima cobrança.`
+        : data?.mode === "asaas"
+          ? "O novo valor já vale para as próximas cobranças."
+          : "Seu plano foi atualizado.",
+    });
+    if (pr?.invoiceUrl) window.open(pr.invoiceUrl, "_blank", "noopener");
+    onPlanChanged?.();
+    onOpenChange(false);
+  };
+
   const handleSelectPlan = async (planKey: PlanoSugerido, planName: string) => {
+    // Estado da assinatura ainda não resolvido: não decidir rota com dado
+    // incompleto (era o caminho que levava um trial pra tela de pagamento).
+    if (isLoading) return;
     // Funil de conversão: descobrir quais planos são clicados e onde param.
     track("upgrade_plan_clicked", {
       plan: planName,
@@ -107,29 +137,7 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
           (effectiveStatus === "trial" && !hasAsaasSubscription));
 
       if (canChangePlan) {
-        const { data, error } = await supabase.functions.invoke("manage-subscription", {
-          body: { action: "change_plan", plano: planKey, ciclo: isAnnual ? "anual" : "mensal" },
-        });
-        if (error || data?.error) throw new Error(error?.message ?? data?.error);
-        if (data?.ok === false) {
-          // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
-          throw new Error(
-            (data?.message as string) ??
-              "Não foi possível trocar o plano. Tente contratar novamente.",
-          );
-        }
-        const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
-        toast({
-          title: `Plano alterado para ${planName}`,
-          description: pr
-            ? `Geramos uma cobrança de R$ ${pr.value.toFixed(2).replace(".", ",")} pela diferença proporcional aos ${pr.days} dia(s) restantes do ciclo atual. O novo valor vale integralmente a partir da próxima cobrança.`
-            : data?.mode === "asaas"
-              ? "O novo valor já vale para as próximas cobranças."
-              : "Seu plano foi atualizado.",
-        });
-        if (pr?.invoiceUrl) window.open(pr.invoiceUrl, "_blank", "noopener");
-        onPlanChanged?.();
-        onOpenChange(false);
+        await changePlanLocalOrProvider(planKey, planName);
         return;
       }
 
@@ -145,10 +153,18 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
           email: userData.user?.email ?? "",
           // Cliente existente trocando de plano: retorno enxuto (sem onboarding).
           tipo: "upgrade",
+          // Intenção explícita: o servidor é a autoridade final e recusa abrir
+          // checkout quando a troca deve ser local (trial sem vínculo).
+          intent: "trocar_plano",
           ciclo: isAnnual ? "anual" : "mensal",
         },
       });
       if (error || data?.error) throw new Error(error?.message ?? data?.error);
+      // Servidor mandou fazer localmente (trial em curso sem cobrança).
+      if (data?.ok === false && data?.reason === "trial_troca_local") {
+        await changePlanLocalOrProvider(planKey, planName);
+        return;
+      }
       if (data?.checkoutUrl) {
         window.location.href = data.checkoutUrl as string;
         return;
@@ -321,7 +337,7 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
                     size="sm"
                     className="w-full text-xs mt-auto"
                     onClick={() => void handleSelectPlan(plan.key, plan.name)}
-                    disabled={(isAtTop && highlighted) || pendingPlan !== null}
+                    disabled={(isAtTop && highlighted) || pendingPlan !== null || isLoading}
                   >
                     {pendingPlan === plan.name ? (
                       <>
