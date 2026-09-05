@@ -339,8 +339,8 @@ export default function OnboardingSitePage() {
 
       // 3) Quem já viu o diagnóstico no /preview não passa pela tela de
       // revelação — vai direto para o dashboard.
-      const existing = await resolveExistingDiagnostic(userId);
-      if (existing) {
+      const existingDiag = await resolveExistingDiagnostic(userId);
+      if (existingDiag) {
         await supabase
           .from("profiles")
           .update({ is_first_login: false } as never)
