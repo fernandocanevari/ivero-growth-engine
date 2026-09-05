@@ -304,6 +304,8 @@ export default function AuthPage() {
       } catch {
         // ignore storage errors
       }
+      // Plano vindo da proposta comercial ganha da vitrine.
+      if (prefPlano && PLAN_SLUG_MAP[prefPlano]) planoEscolhido = PLAN_SLUG_MAP[prefPlano];
       // Ciclo escolhido na vitrine (mensal/anual). Fallback seguro: mensal —
       // valor cheio, sem compromisso de 12 meses.
       let cicloEscolhido = "mensal";
