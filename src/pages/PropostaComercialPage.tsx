@@ -13,6 +13,8 @@ interface PropostaPublic {
   empresa_nome: string;
   empresa_site: string;
   contato_nome: string | null;
+  contato_email?: string | null;
+  contato_telefone?: string | null;
   origem: "preview" | "convite";
   diagnostico_snapshot: any;
   score_geral: number;
