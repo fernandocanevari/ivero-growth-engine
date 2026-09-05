@@ -370,6 +370,16 @@ export default function AuthPage() {
             await persistBrandFromLead(userId, email);
           }
           await persistProfileExtras(userId, extras);
+          // Diagnóstico do /preview: grava agora, no primeiro momento
+          // autenticado — não depende de chegar ao dashboard.
+          const adoption = await adoptPreviewSnapshot(userId);
+          if (adoption.status === "failed") {
+            toast({
+              title: "Não conseguimos salvar seu diagnóstico",
+              description: "Rode o Diagnóstico IA no painel para gerar o resultado novamente.",
+              variant: "destructive",
+            });
+          }
         }
 
         // Funnel step 4: signup completed. Alias the lead's email-identity
