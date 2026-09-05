@@ -499,6 +499,21 @@ Deno.serve(async (req) => {
       // respostas non-2xx.
       const resolved = await resolveSubId();
       if (!resolved) {
+        // Trial em curso nunca tem cobrança no provedor — mesmo que exista um
+        // asaas_checkout_id de uma tentativa abandonada. Esse caso não é
+        // "órfã": é simplesmente período de teste, e a copy tem que dizer isso.
+        const trialSemCobranca =
+          assinatura.status === "trial" &&
+          !assinatura.asaas_subscription_id &&
+          !trialVencido(assinatura.trial_ends_at as string | null);
+        if (trialSemCobranca) {
+          return json(200, {
+            ok: false,
+            reason: "trial_sem_cobranca",
+            message:
+              "Você ainda está no período de teste — a forma de pagamento será solicitada quando o trial terminar.",
+          });
+        }
         const orfa = !!(assinatura.asaas_checkout_id || assinatura.asaas_customer_id);
         return json(200, {
           ok: false,
