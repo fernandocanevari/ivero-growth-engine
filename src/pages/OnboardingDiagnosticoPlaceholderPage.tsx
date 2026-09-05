@@ -45,7 +45,9 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
 
   const [phase, setPhase] = useState<"loading" | "done" | "error">("loading");
   const [msgIndex, setMsgIndex] = useState(0);
-  const [result, setResult] = useState<DiagnosticSuccess | null>(null);
+  // Só o que a tela mostra — permite adotar snapshots já salvos sem
+  // reconstruir o objeto completo do motor de diagnóstico.
+  const [result, setResult] = useState<{ overallScore: number; pillarDetails: any[] } | null>(null);
   // Já existia diagnóstico (veio do /preview ou de uma auditoria anterior)?
   // Nesse caso não roda simulate-ai de novo — só adota o resultado.
   const [adopted, setAdopted] = useState(false);
@@ -108,8 +110,8 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
       if (audit && typeof audit.overall_score === "number" && audit.overall_score > 0) {
         setResult({
           overallScore: audit.overall_score,
-          pillarDetails: (Array.isArray(audit.pillar_details) ? audit.pillar_details : []) as never,
-        } as DiagnosticSuccess);
+          pillarDetails: Array.isArray(audit.pillar_details) ? audit.pillar_details : [],
+        });
         setAdopted(true);
         setPhase("done");
         return;
@@ -121,8 +123,8 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
         if (payload && typeof payload.geoScore === "number" && payload.geoScore > 0) {
           setResult({
             overallScore: payload.geoScore,
-            pillarDetails: (Array.isArray(payload.pillarDetails) ? payload.pillarDetails : []) as never,
-          } as DiagnosticSuccess);
+            pillarDetails: Array.isArray(payload.pillarDetails) ? payload.pillarDetails : [],
+          });
           setAdopted(true);
           setPhase("done");
           return;
