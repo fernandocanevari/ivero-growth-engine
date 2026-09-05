@@ -7,6 +7,7 @@ import { SearchScan } from "@/components/ui/search-scan";
 import { useOnboardingResponses } from "@/hooks/useOnboardingResponses";
 import { getOpeningPhrase } from "@/lib/onboarding-recommendation";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveExistingDiagnostic } from "@/lib/existing-diagnostic";
 import {
   runDiagnostic,
   persistDiagnostic,
@@ -47,9 +48,6 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
   // Só o que a tela mostra — permite adotar snapshots já salvos sem
   // reconstruir o objeto completo do motor de diagnóstico.
   const [result, setResult] = useState<{ overallScore: number; pillarDetails: any[] } | null>(null);
-  // Já existia diagnóstico (veio do /preview ou de uma auditoria anterior)?
-  // Nesse caso não roda simulate-ai de novo — só adota o resultado.
-  const [adopted, setAdopted] = useState(false);
   const didRun = useRef(false);
 
   // Fallback: se por algum motivo não achamos as respostas (usuário
@@ -95,42 +93,15 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
         (brand as { brand_name?: string } | null)?.brand_name ||
         (siteUrl ? extractBrandFromUrl(siteUrl) : "");
 
-      // ── Reaproveitamento: se o cliente já rodou o diagnóstico (veio do
-      // /preview ou já tem auditoria salva), não paga simulate-ai de novo.
-      const { data: lastAudit } = await supabase
-        .from("audit_reports")
-        .select("overall_score, pillar_details")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const audit = lastAudit as { overall_score?: number; pillar_details?: unknown } | null;
-      if (audit && typeof audit.overall_score === "number" && audit.overall_score > 0) {
-        setResult({
-          overallScore: audit.overall_score,
-          pillarDetails: Array.isArray(audit.pillar_details) ? audit.pillar_details : [],
-        });
-        setAdopted(true);
-        setPhase("done");
+      // ── Quem já viu o diagnóstico (veio do /preview ou já tem auditoria
+      // salva) não vê esta tela nem paga simulate-ai de novo: vai direto
+      // para o dashboard. Cobre também acesso direto por link/refresh.
+      const existing = await resolveExistingDiagnostic(user.id);
+      if (existing) {
+        navigate("/dashboard", { replace: true });
         return;
       }
 
-      try {
-        const raw = sessionStorage.getItem("ivero:lastDiagnostic");
-        const payload = raw ? JSON.parse(raw) : null;
-        if (payload && typeof payload.geoScore === "number" && payload.geoScore > 0) {
-          setResult({
-            overallScore: payload.geoScore,
-            pillarDetails: Array.isArray(payload.pillarDetails) ? payload.pillarDetails : [],
-          });
-          setAdopted(true);
-          setPhase("done");
-          return;
-        }
-      } catch {
-        // storage corrompido: segue para a análise normal
-      }
 
       if (!brandName) {
         setPhase("error");
@@ -284,7 +255,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
           onClick={() => navigate("/dashboard/diagnostico")}
           className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
         >
-          {adopted ? "Concluir e ir para o dashboard" : "Concluir e ver meu diagnóstico"} <ArrowRight className="w-4 h-4 ml-1.5" />
+          Concluir e ver meu diagnóstico <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
       </motion.div>
     </div>

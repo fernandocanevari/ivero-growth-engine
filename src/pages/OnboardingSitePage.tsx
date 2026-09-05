@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { SearchScan } from "@/components/ui/search-scan";
 import { readBrandPrefetch, clearBrandPrefetch } from "@/lib/brand-prefetch";
+import { resolveExistingDiagnostic } from "@/lib/existing-diagnostic";
 
 type Phase = "url" | "loading" | "confirm" | "objectives";
 
@@ -335,6 +336,18 @@ export default function OnboardingSitePage() {
         }));
         const { error: cErr } = await supabase.from("competitors").insert(rows as never);
         if (cErr) throw cErr;
+      }
+
+      // 3) Quem já viu o diagnóstico no /preview não passa pela tela de
+      // revelação — vai direto para o dashboard.
+      const existingDiag = await resolveExistingDiagnostic(userId);
+      if (existingDiag) {
+        await supabase
+          .from("profiles")
+          .update({ is_first_login: false } as never)
+          .eq("user_id", userId);
+        navigate("/dashboard", { replace: true });
+        return;
       }
 
       navigate("/onboarding/diagnostico");
