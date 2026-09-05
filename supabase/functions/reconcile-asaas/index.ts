@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
     const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
     const { data: row } = await supabase
       .from("assinaturas")
-      .select("id, status, plano, asaas_checkout_id, asaas_subscription_id, asaas_customer_id")
+      .select(
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_subscription_id, asaas_customer_id",
+      )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
       .order("created_at", { ascending: false })
