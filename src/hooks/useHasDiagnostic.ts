@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { hasSessionDiagnostic } from "@/lib/existing-diagnostic";
 
 /**
  * Returns whether the current user has at least one diagnostic record
- * (in audit_reports or analysis_history).
+ * (in audit_reports or analysis_history) — or um snapshot do /preview ainda
+ * na sessão, enquanto a gravação definitiva não confirma.
  */
 export function useHasDiagnostic() {
   const [hasDiagnostic, setHasDiagnostic] = useState<boolean | null>(null);
@@ -35,13 +37,15 @@ export function useHasDiagnostic() {
 
         const total = (audits.count ?? 0) + (history.count ?? 0);
         if (!cancelled) {
-          setHasDiagnostic(total > 0);
+          // Snapshot do preview conta como diagnóstico: o cliente JÁ viu o
+          // resultado, então o Painel não pode dizer "ainda não foi gerado".
+          setHasDiagnostic(total > 0 || hasSessionDiagnostic());
           setIsLoading(false);
         }
       } catch (err) {
         console.warn("[useHasDiagnostic] failed:", err);
         if (!cancelled) {
-          setHasDiagnostic(false);
+          setHasDiagnostic(hasSessionDiagnostic());
           setIsLoading(false);
         }
       }

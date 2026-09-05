@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { adoptPreviewSnapshot } from "@/lib/existing-diagnostic";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Quando um lead anônimo roda o /preview e depois cria conta + entra no
@@ -8,11 +10,10 @@ import { useQueryClient } from "@tanstack/react-query";
  * grava como audit_report no banco — assim ele aparece no histórico
  * mesmo se o cliente fechar a aba.
  *
- * Roda 1x por sessão de login. Marca como adotado em sessionStorage
- * para não duplicar.
+ * A adoção principal acontece no signup/pós-login (AuthPage). Aqui é a rede
+ * de segurança. Falha agora é VISÍVEL: o cliente precisa saber que o
+ * diagnóstico não foi salvo, em vez de sumir num console.warn.
  */
-const ADOPTED_KEY = "ivero:audit_adopted";
-
 export function useAdoptPendingAudit() {
   const queryClient = useQueryClient();
   const ranRef = useRef(false);
@@ -23,41 +24,30 @@ export function useAdoptPendingAudit() {
 
     (async () => {
       try {
-        if (sessionStorage.getItem(ADOPTED_KEY) === "1") return;
-        const raw = sessionStorage.getItem("ivero:lastDiagnostic");
-        if (!raw) return;
-        const payload = JSON.parse(raw);
-        if (!payload || typeof payload.geoScore !== "number") return;
-
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Já existe algum audit_report? Se sim, não duplica.
-        const { count } = await supabase
-          .from("audit_reports")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id);
-        if ((count ?? 0) > 0) {
-          sessionStorage.setItem(ADOPTED_KEY, "1");
-          return;
+        const result = await adoptPreviewSnapshot(user.id);
+        if (result.status === "adopted") {
+          queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
+          queryClient.invalidateQueries({ queryKey: ["has-diagnostic"] });
+        } else if (result.status === "failed") {
+          toast({
+            title: "Não conseguimos salvar seu diagnóstico",
+            description:
+              "O resultado que você viu não foi gravado na sua conta. Rode o Diagnóstico IA para gerar de novo.",
+            variant: "destructive",
+          });
         }
-
-        await supabase.from("audit_reports").insert({
-          user_id: user.id,
-          source: "preview",
-          site_url: payload.siteUrl ?? "",
-          overall_score: payload.geoScore ?? 0,
-          status_label: "",
-          radar_data: payload.radar ?? [],
-          pillar_details: payload.pillarDetails ?? [],
-          keyword_cloud: payload.keyword_cloud ?? [],
-          ai_engines: payload.aiEngines ?? [],
-        } as never);
-
-        sessionStorage.setItem(ADOPTED_KEY, "1");
-        queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
       } catch (e) {
-        console.warn("Audit adoption skipped:", e);
+        console.error("Audit adoption error:", e);
+        toast({
+          title: "Não conseguimos salvar seu diagnóstico",
+          description: "Rode o Diagnóstico IA para gerar o resultado novamente.",
+          variant: "destructive",
+        });
       }
     })();
   }, [queryClient]);

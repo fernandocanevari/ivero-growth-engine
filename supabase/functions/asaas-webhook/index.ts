@@ -77,6 +77,8 @@ Deno.serve(async (req) => {
       ciclo_contratado?: string | null;
       ciclos_pagos?: number | null;
       compromisso_inicio?: string | null;
+      plano_pretendido?: string | null;
+      ciclo_pretendido?: string | null;
     };
 
     const updateAssinatura = async (
@@ -94,7 +96,7 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({ ...patch, ...bindIds, updated_at: now })
           .eq("asaas_subscription_id", subscriptionId)
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio");
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido");
         if (error) {
           console.error("[asaas-webhook] DB update error (by subscription):", error);
           return { error: error.message };
@@ -108,7 +110,7 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({ ...patch, ...bindIds, updated_at: now })
           .eq("asaas_checkout_id", checkoutId)
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio");
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido");
         if (error) {
           console.error("[asaas-webhook] DB update error (by checkout):", error);
           return { error: error.message };
@@ -122,7 +124,7 @@ Deno.serve(async (req) => {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
         const { data: row, error: selError } = await supabase
           .from("assinaturas")
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio")
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido")
           .eq("user_id", externalReference)
           .in("status", LIVE_STATUSES)
           .order("created_at", { ascending: false })
@@ -154,6 +156,35 @@ Deno.serve(async (req) => {
       return { error: "No matching assinatura" };
     };
 
+    /**
+     * Promove a INTENÇÃO gravada em create-checkout (plano_pretendido /
+     * ciclo_pretendido) para o plano vigente. É aqui — e só aqui, no pagamento
+     * confirmado — que a troca de plano vale de verdade. Checkout abandonado
+     * nunca altera o plano do cliente.
+     */
+    const promoverIntencao = async (row: MatchedRow | undefined): Promise<MatchedRow | undefined> => {
+      if (!row?.plano_pretendido) return row;
+      const patch: Record<string, unknown> = {
+        plano: row.plano_pretendido,
+        plano_pretendido: null,
+        ciclo_pretendido: null,
+      };
+      if (row.ciclo_pretendido) patch.ciclo_contratado = row.ciclo_pretendido;
+      const { error } = await supabase.from("assinaturas").update(patch).eq("id", row.id);
+      if (error) {
+        console.error("[asaas-webhook] promover intenção error:", error);
+        return row;
+      }
+      console.log("[asaas-webhook] plano promovido:", row.id, row.plano_pretendido);
+      return {
+        ...row,
+        ciclo_contratado: row.ciclo_pretendido ?? row.ciclo_contratado,
+        plano_pretendido: null,
+        ciclo_pretendido: null,
+      };
+    };
+
+
     switch (event) {
       case "PAYMENT_CONFIRMED":
       case "PAYMENT_RECEIVED": {
@@ -174,6 +205,8 @@ Deno.serve(async (req) => {
         // (pró-rata do upgrade / multa de fidelidade), que não são mensalidade.
         const payExternalRef: string = body?.payment?.externalReference ?? "";
         const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
+        // Pagamento de mensalidade confirmado → promove o plano pretendido.
+        if (!isAvulsa) res.row = await promoverIntencao(res.row);
         if (event === "PAYMENT_CONFIRMED" && !isAvulsa && res.row) {
           const ciclos = (res.row.ciclos_pagos ?? 0) + 1;
           const inicio =
@@ -223,12 +256,22 @@ Deno.serve(async (req) => {
           trial_ends_at: null,
         });
         if (res.error) return json(500, res);
+        await promoverIntencao(res.row);
         break;
       }
 
       case "CHECKOUT_CANCELED":
       case "CHECKOUT_EXPIRED": {
         console.log("[asaas-webhook] Checkout não concluído:", event, checkoutId);
+        // Checkout abandonado/expirado: descarta a intenção de plano. O plano
+        // vigente do cliente nunca foi tocado, então não há nada a reverter.
+        if (checkoutId) {
+          const { error } = await supabase
+            .from("assinaturas")
+            .update({ plano_pretendido: null, ciclo_pretendido: null })
+            .eq("asaas_checkout_id", checkoutId);
+          if (error) console.error("[asaas-webhook] limpar intenção error:", error);
+        }
         break;
       }
 

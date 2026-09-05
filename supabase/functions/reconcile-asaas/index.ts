@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
     const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
     const { data: row } = await supabase
       .from("assinaturas")
-      .select("id, status, plano, asaas_checkout_id, asaas_subscription_id, asaas_customer_id")
+      .select(
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_subscription_id, asaas_customer_id",
+      )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
       .order("created_at", { ascending: false })
@@ -141,11 +143,23 @@ Deno.serve(async (req) => {
         carencia_ate: null,
         trial_ends_at: null,
         data_vencimento: nextDue.toISOString(),
+        // Pagamento confirmado → a intenção gravada no checkout vale agora.
+        ...(row.plano_pretendido
+          ? {
+              plano: row.plano_pretendido as string,
+              plano_pretendido: null,
+              ciclo_pretendido: null,
+              ...(row.ciclo_pretendido
+                ? { ciclo_contratado: row.ciclo_pretendido as string }
+                : {}),
+            }
+          : {}),
         ...(subscriptionId ? { asaas_subscription_id: subscriptionId } : {}),
         ...(customerId ? { asaas_customer_id: customerId } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", row.id);
+
 
     if (error) {
       console.error("[reconcile-asaas] update error:", error);

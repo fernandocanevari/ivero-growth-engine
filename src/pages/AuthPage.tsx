@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
 import { identifyUser, track } from "@/lib/analytics";
 import { formatPhoneBR } from "@/lib/format-phone";
+import { adoptPreviewSnapshot } from "@/lib/existing-diagnostic";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -97,6 +98,17 @@ export default function AuthPage() {
   // Otherwise, send them to the real onboarding (never /bem-vindo, which is
   // reserved for Asaas payment returns via ?from=asaas).
   const redirectAfterAuth = async (userId: string) => {
+    // Primeiro momento autenticado confiável: grava o diagnóstico do /preview
+    // antes de qualquer navegação, para o Painel já enxergá-lo.
+    const adoption = await adoptPreviewSnapshot(userId);
+    if (adoption.status === "failed") {
+      toast({
+        title: "Não conseguimos salvar seu diagnóstico",
+        description: "Rode o Diagnóstico IA no painel para gerar o resultado novamente.",
+        variant: "destructive",
+      });
+    }
+
     if (safeRedirect) {
       navigate(safeRedirect, { replace: true });
       return;
@@ -358,6 +370,16 @@ export default function AuthPage() {
             await persistBrandFromLead(userId, email);
           }
           await persistProfileExtras(userId, extras);
+          // Diagnóstico do /preview: grava agora, no primeiro momento
+          // autenticado — não depende de chegar ao dashboard.
+          const adoption = await adoptPreviewSnapshot(userId);
+          if (adoption.status === "failed") {
+            toast({
+              title: "Não conseguimos salvar seu diagnóstico",
+              description: "Rode o Diagnóstico IA no painel para gerar o resultado novamente.",
+              variant: "destructive",
+            });
+          }
         }
 
         // Funnel step 4: signup completed. Alias the lead's email-identity
