@@ -290,11 +290,18 @@ describe("Fluxo 2 — redirecionamento pós-login", () => {
 });
 
 describe("Fluxo proposta — plano/ciclo herdados da URL", () => {
-  it("plano da URL tem precedência sobre o localStorage", async () => {
+  it("plano/ciclo/slug da URL têm precedência sobre o localStorage", async () => {
     localStorage.setItem("ivero_selected_plan", "Presença");
-    setSearch("?mode=signup&plano=influencia&ciclo=anual&slug=abc-123&name=Ana&email=ana@x.com&phone=11912345678");
-    await doSignup();
-    const meta = signUpMock.mock.calls[0][0].options.data;
+    searchParams = new URLSearchParams(
+      "mode=signup&plano=influencia&ciclo=anual&slug=abc-123&name=Ana&email=ana@x.com&phone=11912345678",
+    );
+    const user = userEvent.setup();
+    render(<AuthPage />);
+    await user.type(screen.getByPlaceholderText("••••••••"), "senha123");
+    await user.click(screen.getByRole("button", { name: /criar conta/i }));
+
+    await waitFor(() => expect(signUpMock).toHaveBeenCalledTimes(1));
+    const meta = (signUpMock.mock.calls[0][0] as { options: { data: Record<string, string> } }).options.data;
     expect(meta.plano_escolhido).toBe("influencia");
     expect(meta.ciclo_escolhido).toBe("anual");
     expect(meta.proposta_slug).toBe("abc-123");
