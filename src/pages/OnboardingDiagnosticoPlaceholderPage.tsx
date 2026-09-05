@@ -255,7 +255,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
           onClick={() => navigate("/dashboard/diagnostico")}
           className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
         >
-          {adopted ? "Concluir e ir para o dashboard" : "Concluir e ver meu diagnóstico"} <ArrowRight className="w-4 h-4 ml-1.5" />
+          Concluir e ver meu diagnóstico <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
       </motion.div>
     </div>
