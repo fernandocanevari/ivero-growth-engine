@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({ ...patch, ...bindIds, updated_at: now })
           .eq("asaas_subscription_id", subscriptionId)
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio");
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido");
         if (error) {
           console.error("[asaas-webhook] DB update error (by subscription):", error);
           return { error: error.message };
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
           .from("assinaturas")
           .update({ ...patch, ...bindIds, updated_at: now })
           .eq("asaas_checkout_id", checkoutId)
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio");
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido");
         if (error) {
           console.error("[asaas-webhook] DB update error (by checkout):", error);
           return { error: error.message };
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
         const { data: row, error: selError } = await supabase
           .from("assinaturas")
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio")
+          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido")
           .eq("user_id", externalReference)
           .in("status", LIVE_STATUSES)
           .order("created_at", { ascending: false })
