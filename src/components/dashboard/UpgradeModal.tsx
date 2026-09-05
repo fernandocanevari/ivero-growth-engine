@@ -84,7 +84,37 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
     return "Próximo passo";
   };
 
+  /** Troca de plano sem checkout (trial local ou assinatura viva no provedor). */
+  const changePlanLocalOrProvider = async (planKey: PlanoSugerido, planName: string) => {
+    const { data, error } = await supabase.functions.invoke("manage-subscription", {
+      body: { action: "change_plan", plano: planKey, ciclo: isAnnual ? "anual" : "mensal" },
+    });
+    if (error || data?.error) throw new Error(error?.message ?? data?.error);
+    if (data?.ok === false) {
+      // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
+      throw new Error(
+        (data?.message as string) ??
+          "Não foi possível trocar o plano. Tente contratar novamente.",
+      );
+    }
+    const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
+    toast({
+      title: `Plano alterado para ${planName}`,
+      description: pr
+        ? `Geramos uma cobrança de R$ ${pr.value.toFixed(2).replace(".", ",")} pela diferença proporcional aos ${pr.days} dia(s) restantes do ciclo atual. O novo valor vale integralmente a partir da próxima cobrança.`
+        : data?.mode === "asaas"
+          ? "O novo valor já vale para as próximas cobranças."
+          : "Seu plano foi atualizado.",
+    });
+    if (pr?.invoiceUrl) window.open(pr.invoiceUrl, "_blank", "noopener");
+    onPlanChanged?.();
+    onOpenChange(false);
+  };
+
   const handleSelectPlan = async (planKey: PlanoSugerido, planName: string) => {
+    // Estado da assinatura ainda não resolvido: não decidir rota com dado
+    // incompleto (era o caminho que levava um trial pra tela de pagamento).
+    if (isLoading) return;
     // Funil de conversão: descobrir quais planos são clicados e onde param.
     track("upgrade_plan_clicked", {
       plan: planName,
