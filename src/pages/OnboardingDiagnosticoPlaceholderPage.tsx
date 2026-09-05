@@ -48,9 +48,6 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
   // Só o que a tela mostra — permite adotar snapshots já salvos sem
   // reconstruir o objeto completo do motor de diagnóstico.
   const [result, setResult] = useState<{ overallScore: number; pillarDetails: any[] } | null>(null);
-  // Já existia diagnóstico (veio do /preview ou de uma auditoria anterior)?
-  // Nesse caso não roda simulate-ai de novo — só adota o resultado.
-  const [adopted, setAdopted] = useState(false);
   const didRun = useRef(false);
 
   // Fallback: se por algum motivo não achamos as respostas (usuário
