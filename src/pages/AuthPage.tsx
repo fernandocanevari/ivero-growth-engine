@@ -18,6 +18,11 @@ export default function AuthPage() {
   const prefName = searchParams.get("name") || "";
   const prefSite = searchParams.get("site") || "";
   const prefPhone = searchParams.get("phone") || "";
+  // Proposta comercial: plano/ciclo recomendados chegam pela URL e têm
+  // precedência sobre a escolha guardada na vitrine (localStorage).
+  const prefPlano = searchParams.get("plano") || "";
+  const prefCiclo = searchParams.get("ciclo") || "";
+  const propostaSlug = searchParams.get("slug") || "";
   const redirectParam = searchParams.get("redirect") || "";
   // Onboarding routes are never honored as an explicit redirect target: the
   // real step is computed from the DB state by redirectAfterAuth().
