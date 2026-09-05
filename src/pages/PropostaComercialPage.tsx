@@ -71,8 +71,15 @@ export default function PropostaComercialPage({ variant = "proposta" }: Props) {
       toast({ title: "Erro", description: invokeErr.message, variant: "destructive" });
       return;
     }
-    // Redireciona ao cadastro com plano pré-selecionado
-    navigate(`/auth?mode=signup&intent=proposta&slug=${encodeURIComponent(slug)}&plano=${data?.plano_sugerido || ""}`);
+    // Redireciona ao cadastro herdando os dados que o lead já informou no
+    // preview (mesmo formato do buildSignupUrl do PreviewPage) + plano da proposta.
+    const params = new URLSearchParams({ mode: "signup", intent: "proposta", slug });
+    if (data?.contato_nome) params.set("name", data.contato_nome);
+    if (data?.contato_email) params.set("email", data.contato_email);
+    if (data?.contato_telefone) params.set("phone", data.contato_telefone);
+    if (data?.empresa_site) params.set("site", data.empresa_site);
+    if (data?.plano_sugerido) params.set("plano", data.plano_sugerido);
+    navigate(`/auth?${params.toString()}`);
   };
 
   if (loading) {
