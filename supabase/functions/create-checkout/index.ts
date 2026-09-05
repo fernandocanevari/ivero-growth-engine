@@ -132,6 +132,49 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 3a-bis. AUTORIDADE DO SERVIDOR sobre a rota da troca de plano.
+    // Quem está em trial VÁLIDO e sem vínculo no Asaas não tem nada a cobrar:
+    // a troca é local (manage-subscription/change_plan). Antes essa regra
+    // existia só no front — se o estado da assinatura não estivesse resolvido
+    // no clique, o cliente caía aqui e via a tela de pagamento. Só vale quando
+    // a intenção é explicitamente "trocar_plano"; contratar segue normal.
+    if (body?.intent === "trocar_plano") {
+      const { data: viva } = await supabaseAdmin
+        .from("assinaturas")
+        .select("id, status, trial_ends_at, asaas_subscription_id")
+        .eq("user_id", userId)
+        .in("status", LIVE_STATUSES)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const trialMs = viva?.trial_ends_at
+        ? new Date(viva.trial_ends_at as string).getTime()
+        : NaN;
+      const trialEmCurso = !Number.isNaN(trialMs) && trialMs > Date.now();
+      if (viva && viva.status === "trial" && !viva.asaas_subscription_id && trialEmCurso) {
+        console.log(
+          "create-checkout: rota=troca_local",
+          userId,
+          "status:",
+          viva.status,
+          "vinculo:",
+          false,
+          "plano solicitado:",
+          plano,
+        );
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            reason: "trial_troca_local",
+            plano,
+            ciclo,
+            message: "Durante o teste a troca de plano é imediata, sem cobrança.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // 3c. Elegibilidade ao trial: só quem NUNCA teve histórico de assinatura
     // ganha os 7 dias grátis. Histórico com trial_ends_at no passado OU status
     // em expirado/cancelado/ativo/inadimplente = já usou (ou já foi cliente).
