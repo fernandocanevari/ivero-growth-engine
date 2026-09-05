@@ -263,6 +263,15 @@ Deno.serve(async (req) => {
       case "CHECKOUT_CANCELED":
       case "CHECKOUT_EXPIRED": {
         console.log("[asaas-webhook] Checkout não concluído:", event, checkoutId);
+        // Checkout abandonado/expirado: descarta a intenção de plano. O plano
+        // vigente do cliente nunca foi tocado, então não há nada a reverter.
+        if (checkoutId) {
+          const { error } = await supabase
+            .from("assinaturas")
+            .update({ plano_pretendido: null, ciclo_pretendido: null })
+            .eq("asaas_checkout_id", checkoutId);
+          if (error) console.error("[asaas-webhook] limpar intenção error:", error);
+        }
         break;
       }
 
