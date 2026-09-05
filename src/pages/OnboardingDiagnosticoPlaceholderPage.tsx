@@ -46,6 +46,9 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
   const [phase, setPhase] = useState<"loading" | "done" | "error">("loading");
   const [msgIndex, setMsgIndex] = useState(0);
   const [result, setResult] = useState<DiagnosticSuccess | null>(null);
+  // Já existia diagnóstico (veio do /preview ou de uma auditoria anterior)?
+  // Nesse caso não roda simulate-ai de novo — só adota o resultado.
+  const [adopted, setAdopted] = useState(false);
   const didRun = useRef(false);
 
   // Fallback: se por algum motivo não achamos as respostas (usuário
