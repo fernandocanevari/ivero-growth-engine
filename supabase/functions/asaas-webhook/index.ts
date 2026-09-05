@@ -256,6 +256,7 @@ Deno.serve(async (req) => {
           trial_ends_at: null,
         });
         if (res.error) return json(500, res);
+        await promoverIntencao(res.row);
         break;
       }
 
