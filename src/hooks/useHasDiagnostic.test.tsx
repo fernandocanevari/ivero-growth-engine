@@ -2,9 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { createFromMock } from "@/test/supabase-query-mock";
 
-const from = createFromMock({
-  audit_reports: () => ({ data: null, error: null }),
-  analysis_history: () => ({ data: null, error: null }),
+const { from } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { createFromMock: make } = require("@/test/supabase-query-mock");
+  return {
+    from: make({
+      audit_reports: () => ({ data: null, error: null }),
+      analysis_history: () => ({ data: null, error: null }),
+    }) as ReturnType<typeof createFromMock>,
+  };
 });
 
 vi.mock("@/integrations/supabase/client", () => ({
