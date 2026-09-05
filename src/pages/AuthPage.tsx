@@ -315,6 +315,7 @@ export default function AuthPage() {
       } catch {
         // ignore storage errors
       }
+      if (prefCiclo === "anual" || prefCiclo === "mensal") cicloEscolhido = prefCiclo;
       // Mark this attempt as a signup BEFORE calling signUp, so the
       // onAuthStateChange listener recognizes the SIGNED_IN event as a signup
       // (even when Supabase returns a session synchronously) and routes to
