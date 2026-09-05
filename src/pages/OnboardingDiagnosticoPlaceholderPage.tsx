@@ -7,6 +7,7 @@ import { SearchScan } from "@/components/ui/search-scan";
 import { useOnboardingResponses } from "@/hooks/useOnboardingResponses";
 import { getOpeningPhrase } from "@/lib/onboarding-recommendation";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveExistingDiagnostic } from "@/lib/existing-diagnostic";
 import {
   runDiagnostic,
   persistDiagnostic,
