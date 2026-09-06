@@ -1,59 +1,53 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { hasSessionDiagnostic } from "@/lib/existing-diagnostic";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 
 /**
  * Returns whether the current user has at least one diagnostic record
  * (in audit_reports or analysis_history) — or um snapshot do /preview ainda
  * na sessão, enquanto a gravação definitiva não confirma.
+ *
+ * Fica em cache do React Query: navegar entre telas do dashboard não volta
+ * ao estado de carregamento (era isso que apagava o Painel a cada visita).
  */
 export function useHasDiagnostic() {
-  const [hasDiagnostic, setHasDiagnostic] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { userId, isResolving } = useAuthUserId();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const q = useQuery<boolean>({
+    queryKey: ["has-diagnostic", userId],
+    enabled: !isResolving,
+    queryFn: async () => {
+      if (!userId) return false;
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          if (!cancelled) {
-            setHasDiagnostic(false);
-            setIsLoading(false);
-          }
-          return;
-        }
-
         const [audits, history] = await Promise.all([
           supabase
             .from("audit_reports")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id),
+            .eq("user_id", userId),
           supabase
             .from("analysis_history")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", user.id),
+            .eq("user_id", userId),
         ]);
-
         const total = (audits.count ?? 0) + (history.count ?? 0);
-        if (!cancelled) {
-          // Snapshot do preview conta como diagnóstico: o cliente JÁ viu o
-          // resultado, então o Painel não pode dizer "ainda não foi gerado".
-          setHasDiagnostic(total > 0 || hasSessionDiagnostic());
-          setIsLoading(false);
-        }
+        // Snapshot do preview conta como diagnóstico: o cliente JÁ viu o
+        // resultado, então o Painel não pode dizer "ainda não foi gerado".
+        return total > 0 || hasSessionDiagnostic();
       } catch (err) {
         console.warn("[useHasDiagnostic] failed:", err);
-        if (!cancelled) {
-          setHasDiagnostic(hasSessionDiagnostic());
-          setIsLoading(false);
-        }
+        return hasSessionDiagnostic();
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    },
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
+  });
 
-  return { hasDiagnostic, isLoading };
+  return {
+    hasDiagnostic: q.data ?? null,
+    isLoading: isResolving || (q.isLoading && !q.isFetched),
+  };
 }
