@@ -32,8 +32,14 @@ export function useBrandSettings() {
       if (error) throw error;
       return data as BrandSettings | null;
     },
+    // Mantém o dado conhecido ao navegar entre telas (sem piscar).
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
+
 
 export function useUpdateBrandSettings() {
   const qc = useQueryClient();
