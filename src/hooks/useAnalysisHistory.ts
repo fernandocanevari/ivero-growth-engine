@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { buildPerceptionSnapshot, type PerceptionSnapshot } from "@/lib/perception-tags";
 import type { KeywordCloud } from "@/lib/keyword-cloud";
 import { mutationErrorToast } from "@/lib/mutation-toast";
+
 
 export interface AnalysisRecord {
   id: string;
@@ -29,11 +30,7 @@ function randomVariation(base: number, range = 8): number {
 
 export function useAnalysisHistory() {
   const queryClient = useQueryClient();
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
+  const { userId, isResolving } = useAuthUserId();
 
   const history = useQuery<AnalysisRecord[]>({
     queryKey: ["analysis-history", userId],
@@ -47,7 +44,12 @@ export function useAnalysisHistory() {
       if (error) throw error;
       return (data ?? []) as unknown as AnalysisRecord[];
     },
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+
 
   const lastAnalysis = history.data?.length ? history.data[history.data.length - 1] : null;
 
@@ -100,5 +102,14 @@ export function useAnalysisHistory() {
     onError: mutationErrorToast("salvar a análise"),
   });
 
-  return { history: history.data ?? [], lastAnalysis, canReanalyze, daysRemaining, daysSinceLast, runAnalysis, isLoading: history.isLoading };
+  return {
+    history: history.data ?? [],
+    lastAnalysis,
+    canReanalyze,
+    daysRemaining,
+    daysSinceLast,
+    runAnalysis,
+    isLoading: isResolving || (!!userId && history.isLoading && !history.isFetched),
+  };
 }
+

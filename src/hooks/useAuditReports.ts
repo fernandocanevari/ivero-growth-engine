@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { toast } from "@/hooks/use-toast";
 import { mutationErrorToast } from "@/lib/mutation-toast";
+
 
 /**
  * Audit Reports — snapshots completos navegáveis de cada auditoria.
@@ -86,7 +87,10 @@ export function useAuditReports() {
 
   return {
     reports: list.data ?? [],
-    isLoading: list.isLoading,
+    // Só é "carregando" na primeira carga real: em revalidação o dado
+    // conhecido continua em tela.
+    isLoading: isResolving || (!!userId && list.isLoading && !list.isFetched),
+
     create,
     remove,
     userId,
