@@ -167,9 +167,10 @@ export function UpgradeModal({
           email: userData.user?.email ?? "",
           // Cliente existente trocando de plano: retorno enxuto (sem onboarding).
           tipo: "upgrade",
-          // Intenção explícita: o servidor é a autoridade final e recusa abrir
-          // checkout quando a troca deve ser local (trial sem vínculo).
-          intent: "trocar_plano",
+          // Intenção explícita: o servidor é a autoridade final. Com
+          // "trocar_plano" ele recusa abrir checkout quando a troca deve ser
+          // local (trial sem vínculo); com "contratar" abre normalmente.
+          intent,
           ciclo: isAnnual ? "anual" : "mensal",
         },
       });
