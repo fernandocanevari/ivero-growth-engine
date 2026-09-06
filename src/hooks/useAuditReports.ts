@@ -32,11 +32,7 @@ export interface AuditReport extends AuditReportPayload {
 
 export function useAuditReports() {
   const queryClient = useQueryClient();
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
+  const { userId, isResolving } = useAuthUserId();
 
   const list = useQuery<AuditReport[]>({
     queryKey: ["audit-reports", userId],
@@ -50,7 +46,14 @@ export function useAuditReports() {
       if (error) throw error;
       return (data ?? []) as unknown as AuditReport[];
     },
+    // Navegar entre telas não deve recomeçar do zero: mantém o último dado
+    // conhecido e revalida em segundo plano, sem piscar.
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+
 
   const create = useMutation({
     mutationFn: async (payload: AuditReportPayload) => {
