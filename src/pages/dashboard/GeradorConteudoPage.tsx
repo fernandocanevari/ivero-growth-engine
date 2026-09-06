@@ -495,7 +495,7 @@ export default function GeradorConteudoPage() {
         </CardContent>
       </Card>
 
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} intent="contratar" />
     </div>
   );
 }

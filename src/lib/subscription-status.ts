@@ -101,7 +101,13 @@ export function trialHoursLeft(
   return Math.max(0, (ts - now.getTime()) / 3_600_000);
 }
 
-/** Dias restantes arredondados pra cima (mín. 1 enquanto houver tempo). */
+/**
+ * Dias inteiros restantes (mín. 1 enquanto houver tempo).
+ *
+ * Usa `floor`: o dia em curso é parcial e não deve ser contado como cheio —
+ * com `ceil`, 6 d 4 h aparecia como "7 de 7" durante quase 24 h e o contador
+ * parecia travado no primeiro dia.
+ */
 export function trialDaysLeft(
   trialEndsAt: string | null | undefined,
   now: Date = new Date(),
@@ -109,7 +115,7 @@ export function trialDaysLeft(
   const hours = trialHoursLeft(trialEndsAt, now);
   if (hours === null) return null;
   if (hours <= 0) return 0;
-  return Math.max(1, Math.ceil(hours / 24));
+  return Math.max(1, Math.floor(hours / 24));
 }
 
 /** Últimas 48h do trial → estado de urgência (âmbar). */
