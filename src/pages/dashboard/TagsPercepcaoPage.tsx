@@ -191,7 +191,7 @@ export default function TagsPercepcaoPage() {
     [perceptionAlerts],
   );
 
-  if (isLoading) {
+  if (isLoading && history.length === 0) {
     return (
       <div className="p-8">
         <div className="h-8 w-64 bg-muted rounded animate-pulse mb-2" />

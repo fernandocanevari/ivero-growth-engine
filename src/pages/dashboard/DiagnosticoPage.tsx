@@ -262,7 +262,10 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     );
   };
 
-  if (isLoading || (!snapshotOverride && reportsLoading)) return <DiagnosticoSkeleton />;
+  // Skeleton apenas na primeira carga real (sem nada em cache/sessão).
+  const nothingKnownYet = !settings && !snapshotOverride && reports.length === 0;
+  if ((isLoading || (!snapshotOverride && reportsLoading)) && nothingKnownYet)
+    return <DiagnosticoSkeleton />;
 
   // Sem nenhuma análise real: empty state honesto, sem números inventados.
   if (!hasDiagnostic) {
