@@ -202,10 +202,14 @@ export function UpgradeModal({
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 sm:px-8 sm:pt-8 border-b border-border">
           <DialogTitle className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Desbloqueie o monitoramento contínuo
+            {intent === "contratar"
+              ? "Assine seu plano e mantenha o acesso"
+              : "Trocar de plano"}
           </DialogTitle>
           <DialogDescription className="text-sm sm:text-base text-muted-foreground">
-            Escolha o plano ideal para garantir que sua marca seja vista pelas IAs que o mundo usa.
+            {intent === "contratar"
+              ? "Escolha o plano e finalize o pagamento para garantir que sua marca continue sendo vista pelas IAs que o mundo usa."
+              : "Escolha o novo plano. O ajuste vale a partir da sua próxima cobrança."}
           </DialogDescription>
 
           {/* Mensal / Anual */}
