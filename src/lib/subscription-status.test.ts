@@ -76,6 +76,12 @@ describe("helpers de tempo do trial", () => {
     expect(trialDaysLeft(iso(72), NOW)).toBe(3);
     expect(trialDaysLeft(iso(2), NOW)).toBe(1);
   });
+
+  it("conta de ontem mostra 6 de 7, não 7 de 7", () => {
+    // Caso real: criada 2026-09-05 17:58Z, trial até 2026-09-12 17:58Z.
+    const agora = new Date("2026-09-06T13:48:00Z");
+    expect(trialDaysLeft("2026-09-12T17:58:00Z", agora)).toBe(6);
+  });
 });
 
 describe("isAccountRoute", () => {
