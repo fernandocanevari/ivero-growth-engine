@@ -142,7 +142,9 @@ export function UpgradeModal({
       // 2) TRIAL em curso sem vínculo no provedor — não há cobrança a
       //    conciliar, então a troca é local e gratuita, sem abrir checkout.
       // Cancelado e trial expirado seguem sendo contratação real → checkout.
+      // Intenção de PAGAR AGORA nunca vira troca local: o cliente quer converter.
       const canChangePlan =
+        intent !== "contratar" &&
         !isAdmin &&
         ((hasAsaasSubscription &&
           (effectiveStatus === "ativo" || effectiveStatus === "inadimplente")) ||
