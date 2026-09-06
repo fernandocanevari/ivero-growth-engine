@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 // Banco sem nenhuma linha de diagnóstico: select().eq() resolve count 0.
 vi.mock("@/integrations/supabase/client", () => {
@@ -19,16 +21,22 @@ vi.mock("@/integrations/supabase/client", () => {
 
 import { useHasDiagnostic } from "./useHasDiagnostic";
 
+function wrapper() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
+}
+
 describe("useHasDiagnostic", () => {
   beforeEach(() => {
-    
     sessionStorage.clear();
   });
 
   it("sem linhas no banco e sem snapshot → não tem diagnóstico", async () => {
-    const { result } = renderHook(() => useHasDiagnostic());
+    const { result } = renderHook(() => useHasDiagnostic(), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.hasDiagnostic).toBe(false);
+    await waitFor(() => expect(result.current.hasDiagnostic).toBe(false));
   });
 
   it("snapshot do preview na sessão conta como diagnóstico existente", async () => {
@@ -36,8 +44,7 @@ describe("useHasDiagnostic", () => {
       "ivero:lastDiagnostic",
       JSON.stringify({ geoScore: 78, siteUrl: "https://exemplo.com" }),
     );
-    const { result } = renderHook(() => useHasDiagnostic());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.hasDiagnostic).toBe(true);
+    const { result } = renderHook(() => useHasDiagnostic(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.hasDiagnostic).toBe(true));
   });
 });
