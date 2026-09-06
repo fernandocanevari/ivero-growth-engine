@@ -123,7 +123,8 @@ export function TrialLockedPage({ title, description, requiredTier }: TrialLocke
         </div>
       </motion.div>
 
-      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} />
+      {/* Recurso bloqueado = contratar de verdade. */}
+      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} intent="contratar" />
     </>
   );
 }

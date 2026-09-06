@@ -151,7 +151,8 @@ export function TrialBanner({
         )}
       </AnimatePresence>
 
-      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} />
+      {/* Banner de trial = conversão: sempre checkout real, nunca troca local. */}
+      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} intent="contratar" />
     </>
   );
 }

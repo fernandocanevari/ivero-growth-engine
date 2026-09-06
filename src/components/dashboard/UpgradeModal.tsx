@@ -52,9 +52,21 @@ interface UpgradeModalProps {
   onOpenChange: (open: boolean) => void;
   /** Disparado após uma troca de plano concluída no provedor (para recarregar cards). */
   onPlanChanged?: () => void;
+  /**
+   * Intenção de quem abriu o modal:
+   *  - "contratar": pagar agora (banner de trial, recurso bloqueado) → SEMPRE checkout real
+   *  - "trocar_plano": ajustar o plano de quem já tem trial/assinatura → troca local/pró-rata
+   * Default "trocar_plano" preserva o comportamento da página de Assinatura.
+   */
+  intent?: "contratar" | "trocar_plano";
 }
 
-export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModalProps) {
+export function UpgradeModal({
+  open,
+  onOpenChange,
+  onPlanChanged,
+  intent = "trocar_plano",
+}: UpgradeModalProps) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription, cicloContratado } =
     useSubscriptionStatus();
@@ -130,7 +142,9 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
       // 2) TRIAL em curso sem vínculo no provedor — não há cobrança a
       //    conciliar, então a troca é local e gratuita, sem abrir checkout.
       // Cancelado e trial expirado seguem sendo contratação real → checkout.
+      // Intenção de PAGAR AGORA nunca vira troca local: o cliente quer converter.
       const canChangePlan =
+        intent !== "contratar" &&
         !isAdmin &&
         ((hasAsaasSubscription &&
           (effectiveStatus === "ativo" || effectiveStatus === "inadimplente")) ||
@@ -153,9 +167,10 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
           email: userData.user?.email ?? "",
           // Cliente existente trocando de plano: retorno enxuto (sem onboarding).
           tipo: "upgrade",
-          // Intenção explícita: o servidor é a autoridade final e recusa abrir
-          // checkout quando a troca deve ser local (trial sem vínculo).
-          intent: "trocar_plano",
+          // Intenção explícita: o servidor é a autoridade final. Com
+          // "trocar_plano" ele recusa abrir checkout quando a troca deve ser
+          // local (trial sem vínculo); com "contratar" abre normalmente.
+          intent,
           ciclo: isAnnual ? "anual" : "mensal",
         },
       });
@@ -187,10 +202,14 @@ export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModal
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 sm:px-8 sm:pt-8 border-b border-border">
           <DialogTitle className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Desbloqueie o monitoramento contínuo
+            {intent === "contratar"
+              ? "Assine seu plano e mantenha o acesso"
+              : "Trocar de plano"}
           </DialogTitle>
           <DialogDescription className="text-sm sm:text-base text-muted-foreground">
-            Escolha o plano ideal para garantir que sua marca seja vista pelas IAs que o mundo usa.
+            {intent === "contratar"
+              ? "Escolha o plano e finalize o pagamento para garantir que sua marca continue sendo vista pelas IAs que o mundo usa."
+              : "Escolha o novo plano. O ajuste vale a partir da sua próxima cobrança."}
           </DialogDescription>
 
           {/* Mensal / Anual */}
