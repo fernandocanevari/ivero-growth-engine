@@ -66,9 +66,20 @@ const queryClient = new QueryClient();
 
 // Clear cached per-user queries (roles, subscription, etc.) whenever auth state
 // changes so admin data does not leak across login sessions in the same tab.
-supabase.auth.onAuthStateChange((event) => {
-  if (event === "SIGNED_OUT" || event === "SIGNED_IN" || event === "USER_UPDATED") {
+// Limpa só em troca REAL de usuário (ou logout). Renovação de sessão dispara
+// SIGNED_IN/USER_UPDATED com o mesmo usuário e limpar o cache aí fazia cards
+// voltarem ao estado "carregando" (piscada no Painel).
+let lastAuthUserId: string | null | undefined = undefined;
+supabase.auth.onAuthStateChange((event, session) => {
+  const uid = session?.user?.id ?? null;
+  if (event === "SIGNED_OUT") {
+    lastAuthUserId = null;
     queryClient.clear();
+    return;
+  }
+  if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+    if (lastAuthUserId !== undefined && lastAuthUserId !== uid) queryClient.clear();
+    lastAuthUserId = uid;
   }
 });
 
