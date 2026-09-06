@@ -52,9 +52,21 @@ interface UpgradeModalProps {
   onOpenChange: (open: boolean) => void;
   /** Disparado após uma troca de plano concluída no provedor (para recarregar cards). */
   onPlanChanged?: () => void;
+  /**
+   * Intenção de quem abriu o modal:
+   *  - "contratar": pagar agora (banner de trial, recurso bloqueado) → SEMPRE checkout real
+   *  - "trocar_plano": ajustar o plano de quem já tem trial/assinatura → troca local/pró-rata
+   * Default "trocar_plano" preserva o comportamento da página de Assinatura.
+   */
+  intent?: "contratar" | "trocar_plano";
 }
 
-export function UpgradeModal({ open, onOpenChange, onPlanChanged }: UpgradeModalProps) {
+export function UpgradeModal({
+  open,
+  onOpenChange,
+  onPlanChanged,
+  intent = "trocar_plano",
+}: UpgradeModalProps) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription, cicloContratado } =
     useSubscriptionStatus();
