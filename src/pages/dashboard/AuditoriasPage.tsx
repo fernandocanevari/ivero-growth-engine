@@ -204,7 +204,8 @@ export default function AuditoriasPage() {
     });
   }, [reports, query, dateRange]);
 
-  if (isLoading) return <AuditoriasListSkeleton />;
+  // Skeleton só na primeira carga real: em revalidação a lista já conhecida fica em tela.
+  if (isLoading && reports.length === 0) return <AuditoriasListSkeleton />;
 
   if (reports.length === 0) {
     return (

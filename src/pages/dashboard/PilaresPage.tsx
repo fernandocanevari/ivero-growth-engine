@@ -386,7 +386,14 @@ export default function PilaresPage() {
     return resolvedPillars.map((p) => ({ subject: p.key, value: p.score, fullMark: 100 }));
   }, [latestReport, resolvedPillars]);
 
-  if (brandLoading || reportsLoading || historyLoading) return null;
+  // Esconde apenas enquanto nada é conhecido; em revalidação mantém o conteúdo.
+  if (
+    (brandLoading || reportsLoading || historyLoading) &&
+    !settings &&
+    reports.length === 0 &&
+    history.length === 0
+  )
+    return null;
 
   // EMPTY STATE — no audits AND no analysis yet
   if (!latestReport && history.length === 0) {

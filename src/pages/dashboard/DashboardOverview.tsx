@@ -61,7 +61,8 @@ export default function DashboardOverview() {
     return <Info className="h-4 w-4 text-blue-500" />;
   };
 
-  if (isLoading || loadingDiag) return null;
+  // Só oculta na primeira carga real: revalidação mantém o painel em tela.
+  if ((isLoading || loadingDiag) && !settings && hasDiagnostic === null) return null;
 
   // Empty-state mode: user hasn't generated any diagnostic yet
   if (hasDiagnostic === false) {
