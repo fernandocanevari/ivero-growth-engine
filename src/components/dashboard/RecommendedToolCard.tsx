@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,12 +21,17 @@ import { getRecommendedTool } from "@/lib/onboarding-recommendation";
  */
 export function RecommendedToolCard() {
   const navigate = useNavigate();
-  const { data: responses, isLoading } = useOnboardingResponses();
+  const { data: responses, isLoading, isFetched } = useOnboardingResponses();
   const { plano, isPaid, isAdmin, isTrial, isLoading: subLoading } =
     useSubscriptionStatus();
   const dismiss = useDismissDashboardHint();
+  // A animação de entrada roda uma única vez por sessão de tela.
+  const animatedRef = useRef(false);
 
-  if (isLoading || subLoading) return null;
+  // Esconder só na PRIMEIRA carga. Em revalidação (dado já conhecido) o card
+  // permanece em tela — era isso que causava a piscada no Painel.
+  const firstLoad = (isLoading && !isFetched) || (subLoading && !plano && !isAdmin);
+  if (!responses && firstLoad) return null;
   if (!responses) return null;
   if (responses.dashboard_hint_dismissed_at) return null;
 
@@ -48,9 +54,12 @@ export function RecommendedToolCard() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={animatedRef.current ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
+      onAnimationComplete={() => {
+        animatedRef.current = true;
+      }}
     >
       <Card className="border-[#6C5CE7]/30 bg-gradient-to-br from-[#F0EFFE] via-white to-[#FBF7FF] shadow-sm">
         <CardContent className="p-5 flex flex-col md:flex-row items-start md:items-center gap-4">

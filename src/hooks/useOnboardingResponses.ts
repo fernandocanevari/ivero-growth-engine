@@ -38,6 +38,12 @@ export function useOnboardingResponses() {
       if (error) throw error;
       return (data as OnboardingResponses | null) ?? null;
     },
+    // Revalidação em segundo plano nunca deve zerar a tela: mantém o último
+    // dado conhecido e não recarrega ao voltar o foco da aba (evita piscada).
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

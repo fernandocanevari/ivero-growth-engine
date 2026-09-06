@@ -72,12 +72,23 @@ export function UpgradeModal({
     useSubscriptionStatus();
   // Default do toggle segue o ciclo real do cliente — nunca assume "anual".
   const [isAnnual, setIsAnnual] = useState(false);
-  const cicloSynced = useRef(false);
+  // Escolha manual do cliente nunca é sobrescrita pela sincronização tardia.
+  const userPickedCiclo = useRef(false);
+  // Ressincroniza a cada abertura do modal (e quando o dado da assinatura chega),
+  // desde que o cliente ainda não tenha mexido no toggle nesta abertura.
   useEffect(() => {
-    if (isLoading || cicloSynced.current) return;
-    cicloSynced.current = true;
+    if (!open) {
+      userPickedCiclo.current = false;
+      return;
+    }
+    if (isLoading || userPickedCiclo.current) return;
     setIsAnnual(cicloContratado === "anual");
-  }, [isLoading, cicloContratado]);
+  }, [open, isLoading, cicloContratado]);
+
+  const pickCiclo = (annual: boolean) => {
+    userPickedCiclo.current = true;
+    setIsAnnual(annual);
+  };
 
   // Cálculo do destaque dinâmico. Enquanto carrega → highlightKey = null (sem badge).
   const highlightKey: PlanoSugerido | null = isLoading ? null : nextTier(plano);
@@ -87,6 +98,10 @@ export function UpgradeModal({
     !isLoading &&
     plano === "autoridade" &&
     (effectiveStatus === "ativo" || effectiveStatus === "inadimplente" || effectiveStatus === "trial");
+  // Trocar só o ciclo (mesmo plano) é mudança real de preço: o botão do plano
+  // atual precisa ficar clicável nesse caso.
+  const cicloChanged = !isLoading && (isAnnual ? "anual" : "mensal") !== cicloContratado;
+
 
 
   const badgeFor = (key: PlanoSugerido): string | null => {
@@ -217,7 +232,7 @@ export function UpgradeModal({
             <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1">
               <button
                 type="button"
-                onClick={() => setIsAnnual(false)}
+                onClick={() => pickCiclo(false)}
                 className={`text-xs font-medium px-4 py-1.5 rounded-full transition-all ${
                   !isAnnual
                     ? "bg-background text-foreground shadow-sm"
@@ -228,7 +243,7 @@ export function UpgradeModal({
               </button>
               <button
                 type="button"
-                onClick={() => setIsAnnual(true)}
+                onClick={() => pickCiclo(true)}
                 className={`text-xs font-medium px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
                   isAnnual
                     ? "bg-background text-foreground shadow-sm"
@@ -356,14 +371,14 @@ export function UpgradeModal({
                     size="sm"
                     className="w-full text-xs mt-auto"
                     onClick={() => void handleSelectPlan(plan.key, plan.name)}
-                    disabled={(isAtTop && highlighted) || pendingPlan !== null || isLoading}
+                    disabled={(isAtTop && highlighted && !cicloChanged) || pendingPlan !== null || isLoading}
                   >
                     {pendingPlan === plan.name ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                         Processando...
                       </>
-                    ) : isAtTop && highlighted ? (
+                    ) : isAtTop && highlighted && !cicloChanged ? (
                       "Plano atual"
                     ) : (
                       CTA_BY_PLAN[plan.key]

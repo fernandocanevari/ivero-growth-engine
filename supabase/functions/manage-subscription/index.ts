@@ -273,11 +273,19 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (plano === assinatura.plano) {
-        return json(200, { ok: true, success: true, mode: "noop", plano });
+      // Ciclo: o enviado agora ou, na ausência, o já contratado.
+      const ciclo = body.ciclo || body.billing_cycle
+        ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
+        : normalizeCiclo(assinatura.ciclo_contratado);
+      const cicloAtual = normalizeCiclo(assinatura.ciclo_contratado);
+      const value = planValue(plano, ciclo);
+
+      // Só é "nada a fazer" quando plano E ciclo são idênticos. Trocar apenas o
+      // ciclo (ex.: Anual → Mensal no mesmo plano) é uma mudança real de preço.
+      if (plano === assinatura.plano && ciclo === cicloAtual) {
+        return json(200, { ok: true, success: true, mode: "noop", plano, ciclo });
       }
 
-      // Ciclo: o enviado agora ou, na ausência, o já contratado.
       console.log(
         "change_plan: rota decidida no servidor —",
         userId,
@@ -287,12 +295,9 @@ Deno.serve(async (req) => {
         !!assinatura.asaas_subscription_id,
         "plano solicitado:",
         plano,
+        "ciclo solicitado:",
+        ciclo,
       );
-
-      const ciclo = body.ciclo || body.billing_cycle
-        ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
-        : normalizeCiclo(assinatura.ciclo_contratado);
-      const value = planValue(plano, ciclo);
 
       // Sem vínculo no Asaas (trial local ou pendente): troca só local. A
       // cobrança correta nasce depois, no create-checkout. Antes tentamos o
