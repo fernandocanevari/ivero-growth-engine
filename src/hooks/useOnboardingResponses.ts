@@ -8,7 +8,9 @@ export interface OnboardingResponses {
   p2_criterio_mercado: string;
   p3_maior_risco: string;
   dashboard_hint_dismissed_at: string | null;
+  perfil_revisado_em: string | null;
 }
+
 
 /**
  * Lê as respostas do onboarding (P1/P2/P3) da marca do usuário atual.
