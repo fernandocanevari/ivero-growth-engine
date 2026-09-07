@@ -1,7 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 
-const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
+const ASAAS_BASE_URL = asaasBaseUrl();
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -38,8 +39,8 @@ Deno.serve(async (req) => {
     if (claimsError || !claimsData?.claims) return json(401, { error: "Unauthorized" });
     const userId = claimsData.claims.sub as string;
 
-    const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
-    if (!asaasKey) return json(500, { error: "ASAAS_API_KEY_SANDBOX não configurada." });
+    const asaasKey = asaasApiKey();
+    if (!asaasKey) return json(500, { error: `${asaasKeyName()} não configurada.` });
     const asaasHeaders = { "Content-Type": "application/json", "access_token": asaasKey };
 
     const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
