@@ -2,7 +2,7 @@
  * Tags de Percepção da IA
  *
  * Traduz scores dos 5 pilares (0-100) em tags semânticas verde/amarelo/vermelho.
- * Função pura — usada tanto na escrita do snapshot (useAnalysisHistory.runAnalysis)
+ * Função pura — usada tanto na escrita do snapshot (persistDiagnostic)
  * quanto na leitura/backfill em runtime (TagsPercepcaoPage).
  *
  * Regra: > 80 verde · 50–80 amarelo · < 50 vermelho.
