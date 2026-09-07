@@ -23,7 +23,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { useAuditReports } from "./useAuditReports";
-import { useAnalysisHistory } from "./useAnalysisHistory";
+
 import { useOnboarding } from "./useOnboarding";
 import {
   SUPABASE_ERROR_SCENARIOS,
@@ -62,22 +62,6 @@ const CASES: HookCase[] = [
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       await act(async () => {
         try { await result.current.remove.mutateAsync("abc"); } catch {}
-      });
-    },
-  },
-  {
-    name: "useAnalysisHistory.runAnalysis",
-    expectedTitle: "Não foi possível salvar a análise",
-    terminator: "insert",
-    run: async () => {
-      const { result } = renderHook(() => useAnalysisHistory(), { wrapper: wrapper() });
-      await waitFor(() => expect(result.current.isLoading).toBe(false));
-      await act(async () => {
-        try {
-          await result.current.runAnalysis.mutateAsync({
-            clarity: 50, authority: 50, conversion: 50, positioning: 50, experience: 50,
-          });
-        } catch {}
       });
     },
   },

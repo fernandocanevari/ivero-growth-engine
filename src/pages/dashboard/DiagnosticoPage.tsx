@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { runDiagnostic, persistDiagnostic, extractBrandFromUrl } from "@/lib/diagnostic-engine";
 import { useAuditReports } from "@/hooks/useAuditReports";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { DiagnosticoSkeleton } from "@/components/dashboard/LoadingStates";
@@ -130,7 +131,7 @@ interface DiagnosticoPageProps {
 export default function DiagnosticoPage({ snapshotOverride, readOnly }: DiagnosticoPageProps = {}) {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
-  const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
+  const { history, canReanalyze, daysRemaining, daysSinceLast } = useAnalysisHistory();
   const queryClient = useQueryClient();
 
   // TODO: Replace with real plan status check
@@ -196,71 +197,58 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     }
   });
 
-  const handleReanalyze = () => {
-    if (!canReanalyze) return;
-    // Reaproveita a nuvem de termos extraída no último Diagnóstico (PreviewPage),
-    // armazenada em sessionStorage. Ausente em sessões antigas → grava [].
-    let keyword_cloud: unknown[] = [];
-    // Base de modelos da última análise: guardada junto para que os deltas da
-    // Evolução Estratégica só comparem análises com a mesma base de modelos.
-    let models_ok: string[] = [];
-    try {
-      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed?.keyword_cloud)) keyword_cloud = parsed.keyword_cloud;
-        if (Array.isArray(parsed?.models_ok)) models_ok = parsed.models_ok.filter((m: unknown) => typeof m === "string");
-      }
-    } catch {
-      /* sessionStorage indisponível */
-    }
-    runAnalysis.mutate(
-      {
-        clarity: 82,
-        authority: 35,
-        conversion: 58,
-        positioning: 64,
-        experience: 71,
-        keyword_cloud: keyword_cloud as never,
-        models_ok,
-      },
+  const [reanalyzing, setReanalyzing] = useState(false);
 
-      {
-        onSuccess: async () => {
-          toast.success("Nova análise realizada com sucesso!");
-          // Persiste snapshot completo no histórico navegável de auditorias.
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            // Recalcula a partir do estado corrente (closure captura valores ao chamar).
-            const radarNow = liveRadar ?? [];
-            const pillarsNow = (livePillars ?? []).map(({ criterios, ...rest }) => ({
-              ...rest,
-              criterios: criterios ?? [],
-            }));
-            const scoreNow = liveScore ?? (radarNow.length
-              ? Math.round(radarNow.reduce((s, d) => s + d.value, 0) / radarNow.length)
-              : 0);
-            await supabase.from("audit_reports").insert({
-              user_id: user.id,
-              source: "reanalise",
-              site_url: settings?.website ?? "",
-              overall_score: scoreNow,
-              status_label: "",
-              radar_data: radarNow,
-              pillar_details: pillarsNow,
-              keyword_cloud: keyword_cloud as never,
-              ai_engines: [],
-            } as never);
-            queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
-          } catch (e) {
-            console.warn("Audit snapshot skipped:", e);
-          }
-        },
-        onError: () => toast.error("Erro ao realizar análise. Tente novamente."),
+  /**
+   * Re-análise real: roda o MESMO motor do onboarding/preview (`runDiagnostic`
+   * → simulate-ai) e persiste o resultado verdadeiro. Nunca fabrica número.
+   */
+  const handleReanalyze = async () => {
+    if (!canReanalyze || reanalyzing) return;
+    setReanalyzing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Sessão expirada. Entre novamente para rodar a análise.");
+        return;
       }
-    );
+
+      const siteUrl = settings?.website ?? "";
+      const brandName = settings?.brand_name || extractBrandFromUrl(siteUrl);
+      if (!brandName) {
+        toast.error("Complete o perfil da marca antes de rodar uma nova análise.");
+        return;
+      }
+
+      const diag = await runDiagnostic(brandName);
+      if (!diag.ok) {
+        toast.error("As IAs não responderam agora. Tente novamente em alguns minutos.");
+        return;
+      }
+
+      await persistDiagnostic({
+        userId: user.id,
+        siteUrl,
+        source: "reanalise",
+        result: diag,
+        writeAnalysisHistory: true,
+      });
+
+      setLivePillars(diag.pillarDetails as unknown as PillarPayload[]);
+      setLiveRadar(diag.radar);
+      setLiveScore(diag.overallScore);
+
+      queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["analysis-history"] });
+      toast.success("Nova análise realizada com sucesso!");
+    } catch (e) {
+      console.error("Re-análise falhou:", e);
+      toast.error("Erro ao realizar análise. Tente novamente.");
+    } finally {
+      setReanalyzing(false);
+    }
   };
+
 
   // Skeleton apenas na primeira carga real (sem nada em cache/sessão).
   const nothingKnownYet = !settings && !snapshotOverride && reports.length === 0;
@@ -364,11 +352,11 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
               </div>
               <Button
                 onClick={handleReanalyze}
-                disabled={!canReanalyze || runAnalysis.isPending}
+                disabled={!canReanalyze || reanalyzing}
                 size="sm"
                 className="gap-2"
               >
-                {runAnalysis.isPending ? (
+                {reanalyzing ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <CalendarDays className="w-4 h-4" />
