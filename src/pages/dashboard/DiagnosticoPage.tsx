@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { runDiagnostic, persistDiagnostic, extractBrandFromUrl } from "@/lib/diagnostic-engine";
 import { useAuditReports } from "@/hooks/useAuditReports";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { DiagnosticoSkeleton } from "@/components/dashboard/LoadingStates";
