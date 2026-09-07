@@ -15,6 +15,7 @@ import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useCompetitors } from "@/hooks/useCompetitors";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { useBrandProfile } from "@/hooks/useBrandProfile";
+import { useOnboardingResponses, useMarkPerfilRevisado } from "@/hooks/useOnboardingResponses";
 import { EmptyStateCard } from "@/components/dashboard/EmptyStateCard";
 import { OnboardingChecklistCard } from "@/components/dashboard/OnboardingChecklistCard";
 import { OnboardingStepper } from "@/components/dashboard/OnboardingStepper";
