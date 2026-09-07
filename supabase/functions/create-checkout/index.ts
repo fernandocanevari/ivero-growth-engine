@@ -1,8 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, planValue, COMPROMISSO_MESES } from "../_shared/pricing.ts";
 
-const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
+const ASAAS_BASE_URL = asaasBaseUrl();
 
 // Valores lidos do módulo compartilhado — fonte canônica: src/lib/pricing-rules.ts.
 // O valor cobrado depende do ciclo escolhido: mensal = valor cheio (sem
@@ -111,7 +112,7 @@ Deno.serve(async (req) => {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                "access_token": Deno.env.get("ASAAS_API_KEY_SANDBOX")!,
+                "access_token": asaasApiKey()!,
               },
             },
           );
@@ -215,10 +216,10 @@ Deno.serve(async (req) => {
 
 
     // 3b. Asaas credentials
-    const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
+    const asaasKey = asaasApiKey();
     if (!asaasKey) {
       return new Response(
-        JSON.stringify({ error: "ASAAS_API_KEY_SANDBOX não configurada." }),
+        JSON.stringify({ error: `${asaasKeyName()} não configurada.` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

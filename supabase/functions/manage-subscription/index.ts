@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
   normalizeCiclo,
   planValue,
@@ -24,7 +25,7 @@ import {
  *    devolvemos a URL hospedada pelo Asaas da cobrança pendente.
  */
 
-const ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3";
+const ASAAS_BASE_URL = asaasBaseUrl();
 
 const PLANOS_VALIDOS = ["presenca", "influencia", "autoridade"];
 
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
       return json(404, { error: "Nenhuma assinatura encontrada para este usuário." });
     }
 
-    const asaasKey = Deno.env.get("ASAAS_API_KEY_SANDBOX");
+    const asaasKey = asaasApiKey();
     const asaasHeaders = {
       "Content-Type": "application/json",
       "access_token": asaasKey ?? "",
@@ -113,7 +114,7 @@ Deno.serve(async (req) => {
     let subId = assinatura.asaas_subscription_id as string | null;
 
     const requireAsaas = () => {
-      if (!asaasKey) throw new Error("ASAAS_API_KEY_SANDBOX não configurada.");
+      if (!asaasKey) throw new Error(`${asaasKeyName()} não configurada.`);
     };
 
     const fetchAsaas = async (path: string, init: RequestInit = {}) => {
