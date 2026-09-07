@@ -15,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
+import BrandProfileModal from "@/components/dashboard/BrandProfileModal";
 
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
