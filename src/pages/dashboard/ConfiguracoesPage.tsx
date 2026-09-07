@@ -15,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { BrandCoverageSection, validateBrandCoverage } from "@/components/dashboard/BrandCoverageSection";
+import BrandProfileModal from "@/components/dashboard/BrandProfileModal";
 
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
@@ -37,6 +38,7 @@ const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: strin
 
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
+  const [brandProfileOpen, setBrandProfileOpen] = useState(false);
   const updateMutation = useUpdateBrandSettings();
   const { data: competitorRows } = useCompetitors(settings?.id);
   const replaceCompetitors = useReplaceCompetitors();
@@ -377,9 +379,25 @@ export default function ConfiguracoesPage() {
         </CardContent>
       </Card>
 
+      {/* Respostas Estratégicas — acesso permanente à revisão do Perfil da Marca */}
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <h2 className="text-base font-semibold text-foreground">Respostas Estratégicas</h2>
+          <p className="text-sm text-muted-foreground">
+            As 3 perguntas do onboarding que personalizam suas recomendações. Revise sempre que sua marca evoluir.
+          </p>
+          <Button variant="outline" onClick={() => setBrandProfileOpen(true)}>
+            Revisar respostas
+          </Button>
+        </CardContent>
+      </Card>
+
       <Button onClick={handleSave} disabled={updateMutation.isPending} className="bg-primary text-primary-foreground">
         {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
       </Button>
+
+      {brandProfileOpen && <BrandProfileModal onClose={() => setBrandProfileOpen(false)} />}
     </div>
+
   );
 }

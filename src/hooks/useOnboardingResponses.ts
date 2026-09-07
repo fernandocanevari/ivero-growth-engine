@@ -8,7 +8,9 @@ export interface OnboardingResponses {
   p2_criterio_mercado: string;
   p3_maior_risco: string;
   dashboard_hint_dismissed_at: string | null;
+  perfil_revisado_em: string | null;
 }
+
 
 /**
  * Lê as respostas do onboarding (P1/P2/P3) da marca do usuário atual.
@@ -67,3 +69,26 @@ export function useDismissDashboardHint() {
     },
   });
 }
+
+/**
+ * Marca perfil_revisado_em = now() no 1º clique em "Revisar" do banner
+ * "Perfil da Marca" no Painel. Depois disso o banner nunca mais aparece
+ * (a edição continua disponível em Configurações).
+ */
+export function useMarkPerfilRevisado() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("onboarding_responses")
+        .update({ perfil_revisado_em: new Date().toISOString() } as never)
+        .eq("id", id)
+        .is("perfil_revisado_em", null);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["onboarding_responses"] });
+    },
+  });
+}
+
