@@ -131,7 +131,7 @@ interface DiagnosticoPageProps {
 export default function DiagnosticoPage({ snapshotOverride, readOnly }: DiagnosticoPageProps = {}) {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
-  const { history, canReanalyze, daysRemaining, daysSinceLast, runAnalysis } = useAnalysisHistory();
+  const { history, canReanalyze, daysRemaining, daysSinceLast } = useAnalysisHistory();
   const queryClient = useQueryClient();
 
   // TODO: Replace with real plan status check
