@@ -138,7 +138,8 @@ export default function DashboardOverview() {
       {/* Onboarding checklist — some sozinho quando todas etapas concluídas */}
       <OnboardingChecklistCard />
 
-      {/* Perfil da Marca — responder/revisar as 3 perguntas estratégicas */}
+      {/* Perfil da Marca — some definitivamente após o 1º "Revisar" */}
+      {!perfilRevisado && (
       <motion.div {...fade} transition={{ delay: 0.07 }}>
         <Card className="border-[#6C5CE7]/30 bg-gradient-to-br from-[#F0EFFE] to-transparent">
           <CardContent className="p-5 flex items-center justify-between gap-4">
@@ -152,7 +153,12 @@ export default function DashboardOverview() {
             </div>
             <Button
               size="sm"
-              onClick={() => setBrandModalOpen(true)}
+              onClick={() => {
+                if (hasCompletedBrandProfile && onboarding?.id && !onboarding.perfil_revisado_em) {
+                  markPerfilRevisado.mutate(onboarding.id);
+                }
+                setBrandModalOpen(true);
+              }}
               className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white shrink-0"
             >
               {hasCompletedBrandProfile ? "Revisar" : "Responder"} <ArrowRight className="h-3 w-3 ml-1" />
@@ -160,6 +166,8 @@ export default function DashboardOverview() {
           </CardContent>
         </Card>
       </motion.div>
+      )}
+
 
       {/* Setup banner when brand not configured */}
 
