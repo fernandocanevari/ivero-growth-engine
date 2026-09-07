@@ -23,7 +23,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { useAuditReports } from "./useAuditReports";
-import { useAnalysisHistory } from "./useAnalysisHistory";
+
 import { useOnboarding } from "./useOnboarding";
 import {
   SUPABASE_ERROR_SCENARIOS,
