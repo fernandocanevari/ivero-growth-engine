@@ -352,11 +352,11 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
               </div>
               <Button
                 onClick={handleReanalyze}
-                disabled={!canReanalyze || runAnalysis.isPending}
+                disabled={!canReanalyze || reanalyzing}
                 size="sm"
                 className="gap-2"
               >
-                {runAnalysis.isPending ? (
+                {reanalyzing ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <CalendarDays className="w-4 h-4" />
