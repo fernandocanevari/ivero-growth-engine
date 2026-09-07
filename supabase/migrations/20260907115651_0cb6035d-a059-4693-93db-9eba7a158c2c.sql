@@ -1,0 +1,1 @@
+ALTER TABLE public.onboarding_responses ADD COLUMN IF NOT EXISTS perfil_revisado_em timestamptz;

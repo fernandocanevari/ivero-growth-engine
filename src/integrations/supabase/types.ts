@@ -720,6 +720,7 @@ export type Database = {
           p1_maturidade_ia: string
           p2_criterio_mercado: string
           p3_maior_risco: string
+          perfil_revisado_em: string | null
         }
         Insert: {
           brand_id: string
@@ -729,6 +730,7 @@ export type Database = {
           p1_maturidade_ia?: string
           p2_criterio_mercado?: string
           p3_maior_risco?: string
+          perfil_revisado_em?: string | null
         }
         Update: {
           brand_id?: string
@@ -738,6 +740,7 @@ export type Database = {
           p1_maturidade_ia?: string
           p2_criterio_mercado?: string
           p3_maior_risco?: string
+          perfil_revisado_em?: string | null
         }
         Relationships: [
           {
