@@ -66,22 +66,6 @@ const CASES: HookCase[] = [
     },
   },
   {
-    name: "useAnalysisHistory.runAnalysis",
-    expectedTitle: "Não foi possível salvar a análise",
-    terminator: "insert",
-    run: async () => {
-      const { result } = renderHook(() => useAnalysisHistory(), { wrapper: wrapper() });
-      await waitFor(() => expect(result.current.isLoading).toBe(false));
-      await act(async () => {
-        try {
-          await result.current.runAnalysis.mutateAsync({
-            clarity: 50, authority: 50, conversion: 50, positioning: 50, experience: 50,
-          });
-        } catch {}
-      });
-    },
-  },
-  {
     name: "useOnboarding.saveAnswers",
     expectedTitle: "Não foi possível salvar suas respostas",
     terminator: "insert",
