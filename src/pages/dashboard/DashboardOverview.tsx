@@ -32,6 +32,9 @@ export default function DashboardOverview() {
   const { data: competitors } = useCompetitors(settings?.id);
   const { hasDiagnostic, isLoading: loadingDiag } = useHasDiagnostic();
   const { hasCompletedBrandProfile } = useBrandProfile();
+  const { data: onboarding } = useOnboardingResponses();
+  const markPerfilRevisado = useMarkPerfilRevisado();
+  const perfilRevisado = !!onboarding?.perfil_revisado_em;
   const [brandModalOpen, setBrandModalOpen] = useState(false);
 
   // Determine what data the client has configured
