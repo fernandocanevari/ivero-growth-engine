@@ -38,6 +38,7 @@ const MODEL_META: Record<string, { icon: typeof Cpu; desc: string; badge?: strin
 
 export default function ConfiguracoesPage() {
   const { data: settings, isLoading } = useBrandSettings();
+  const [brandProfileOpen, setBrandProfileOpen] = useState(false);
   const updateMutation = useUpdateBrandSettings();
   const { data: competitorRows } = useCompetitors(settings?.id);
   const replaceCompetitors = useReplaceCompetitors();
