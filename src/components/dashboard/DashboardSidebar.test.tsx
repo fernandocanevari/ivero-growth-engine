@@ -23,7 +23,7 @@ vi.mock("@/lib/analytics", () => ({ resetIdentity: vi.fn() }));
 
 import { DashboardSidebar } from "./DashboardSidebar";
 
-function Harness({ initialPath = "/dashboard/diagnostico" }: { initialPath?: string }) {
+function Harness({ initialPath = "/dashboard/visibilidade-ia" }: { initialPath?: string }) {
   function CurrentPath() {
     const loc = useLocation();
     return <span data-testid="current-path">{loc.pathname}</span>;
@@ -34,7 +34,7 @@ function Harness({ initialPath = "/dashboard/diagnostico" }: { initialPath?: str
         <DashboardSidebar />
         <Routes>
           <Route path="/dashboard" element={<div data-testid="page-content">Conteúdo Dashboard</div>} />
-          <Route path="/dashboard/diagnostico" element={<div data-testid="page-content">Conteúdo Diagnóstico</div>} />
+          <Route path="/dashboard/visibilidade-ia" element={<div data-testid="page-content">Conteúdo Visibilidade IA</div>} />
           <Route path="*" element={<CurrentPath />} />
         </Routes>
       </SidebarProvider>
@@ -55,10 +55,10 @@ describe("DashboardSidebar — persistência após navegação", () => {
   });
 
   it("permanece renderizada após clicar em 'Painel' e carregar a página", () => {
-    render(<Harness initialPath="/dashboard/diagnostico" />);
+    render(<Harness initialPath="/dashboard/visibilidade-ia" />);
 
     expect(screen.getByText("Ivero")).toBeInTheDocument();
-    expect(screen.getByText("Conteúdo Diagnóstico")).toBeInTheDocument();
+    expect(screen.getByText("Conteúdo Visibilidade IA")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("link", { name: /^Painel$/i }));
 
@@ -73,11 +73,11 @@ describe("DashboardSidebar — persistência após navegação", () => {
 
     expect(screen.getByRole("link", { name: /^Painel$/i })).toHaveAttribute("aria-current", "page");
 
-    fireEvent.click(screen.getByRole("link", { name: /Diagnóstico/i }));
+    fireEvent.click(screen.getByRole("link", { name: /Visibilidade IA/i }));
 
     expect(screen.getByText("Ivero")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^Painel$/i })).not.toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: /Diagnóstico/i })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /Visibilidade IA/i })).toHaveAttribute("aria-current", "page");
   });
 
   it("após remount (simulando reload) a sidebar volta com Painel ativo", () => {
@@ -99,7 +99,7 @@ describe("DashboardSidebar — persistência após navegação", () => {
   });
 
   it("NÃO marca o item Painel como ativo quando em uma sub-rota (end: true)", () => {
-    render(<Harness initialPath="/dashboard/diagnostico" />);
+    render(<Harness initialPath="/dashboard/visibilidade-ia" />);
     const link = screen.getByRole("link", { name: /^Painel$/i });
     expect(link).not.toHaveAttribute("aria-current", "page");
   });

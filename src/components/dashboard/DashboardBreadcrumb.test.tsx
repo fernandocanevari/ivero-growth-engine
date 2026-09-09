@@ -28,7 +28,7 @@ describe("DashboardBreadcrumb — match de rotas aninhadas", () => {
   it("usa o item mais específico em rota aninhada com id (relatório)", () => {
     renderAt("/dashboard/auditorias/abc-123");
     expect(screen.getByText(/Visão Geral/i)).toBeInTheDocument();
-    expect(screen.getByTestId("breadcrumb-current")).toHaveTextContent(/Análise de Resultados/i);
+    expect(screen.getByTestId("breadcrumb-current")).toHaveTextContent(/Visibilidade IA/i);
   });
 
   it("prefere /dashboard/admin/clientes sobre /dashboard/admin em rota aninhada com :id", () => {
@@ -45,8 +45,8 @@ describe("DashboardBreadcrumb — match de rotas aninhadas", () => {
   });
 
   it("ignora query string e hash ao casar a rota", () => {
-    renderAt("/dashboard/diagnostico?foo=bar#secao");
-    expect(screen.getByTestId("breadcrumb-current")).toHaveTextContent(/Diagnóstico IA/i);
+    renderAt("/dashboard/visibilidade-ia?foo=bar#secao");
+    expect(screen.getByTestId("breadcrumb-current")).toHaveTextContent(/Visibilidade IA/i);
   });
 
   it("normaliza trailing slash em sub-rotas", () => {
