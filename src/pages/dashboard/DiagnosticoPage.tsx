@@ -12,6 +12,8 @@ import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { runDiagnostic, persistDiagnostic, extractBrandFromUrl } from "@/lib/diagnostic-engine";
 import { useAuditReports } from "@/hooks/useAuditReports";
+import { readSessionSnapshot } from "@/lib/existing-diagnostic";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { DiagnosticoSkeleton } from "@/components/dashboard/LoadingStates";
 
@@ -140,6 +142,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
   // Fonte de verdade: sessionStorage (análise recém-rodada) e, na ausência
   // dela, o audit_report mais recente do banco. Nunca dados mockados.
   const { reports, isLoading: reportsLoading } = useAuditReports();
+  const { userId } = useAuthUserId();
   const [livePillars, setLivePillars] = useState<PillarPayload[] | null>(null);
   const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
   const [liveScore, setLiveScore] = useState<number | null>(null);
@@ -150,22 +153,24 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
       setLiveScore(snapshotOverride.overallScore ?? null);
       return;
     }
-    try {
-      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
-      if (raw) {
-        const payload = JSON.parse(raw);
-        const hasPillars = Array.isArray(payload.pillarDetails) && payload.pillarDetails.length > 0;
-        const hasRadar = Array.isArray(payload.radar) && payload.radar.length > 0;
-        if (hasPillars) setLivePillars(payload.pillarDetails);
-        if (hasRadar) setLiveRadar(payload.radar);
+    const latest = reports[0];
+    // Snapshot da aba: só vale se for do usuário logado e mais novo que o
+    // último relatório do banco (evita resquício de outra conta / dado velho).
+    const payload = readSessionSnapshot(userId);
+    if (payload) {
+      const savedAt = typeof payload.savedAt === "string" ? Date.parse(payload.savedAt) : NaN;
+      const latestAt = latest?.created_at ? Date.parse(latest.created_at) : NaN;
+      const dbIsNewer = !Number.isNaN(latestAt) && (Number.isNaN(savedAt) || latestAt > savedAt);
+      if (!dbIsNewer) {
+        const hasPillars = Array.isArray(payload.pillarDetails) && (payload.pillarDetails as unknown[]).length > 0;
+        const hasRadar = Array.isArray(payload.radar) && (payload.radar as unknown[]).length > 0;
+        if (hasPillars) setLivePillars(payload.pillarDetails as PillarPayload[]);
+        if (hasRadar) setLiveRadar(payload.radar as { subject: string; value: number; fullMark: number }[]);
         if (typeof payload.geoScore === "number") setLiveScore(payload.geoScore);
         if (hasPillars || hasRadar) return;
       }
-    } catch {
-      /* sessionStorage indisponível */
     }
     // Fallback de banco: último relatório salvo (caminho 2 e sessões novas).
-    const latest = reports[0];
     if (!latest) return;
     if (Array.isArray(latest.pillar_details) && latest.pillar_details.length > 0) {
       setLivePillars(latest.pillar_details as unknown as PillarPayload[]);
@@ -174,7 +179,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
       setLiveRadar(latest.radar_data);
     }
     if (typeof latest.overall_score === "number") setLiveScore(latest.overall_score);
-  }, [snapshotOverride, reports]);
+  }, [snapshotOverride, reports, userId]);
 
   const hasDiagnostic = !!(liveRadar && liveRadar.length > 0);
   const effectiveRadar = liveRadar ?? [];

@@ -33,10 +33,10 @@ export function useHasDiagnostic() {
         const total = (audits.count ?? 0) + (history.count ?? 0);
         // Snapshot do preview conta como diagnóstico: o cliente JÁ viu o
         // resultado, então o Painel não pode dizer "ainda não foi gerado".
-        return total > 0 || hasSessionDiagnostic();
+        return total > 0 || hasSessionDiagnostic(userId);
       } catch (err) {
         console.warn("[useHasDiagnostic] failed:", err);
-        return hasSessionDiagnostic();
+        return hasSessionDiagnostic(userId);
       }
     },
     staleTime: 5 * 60 * 1000,

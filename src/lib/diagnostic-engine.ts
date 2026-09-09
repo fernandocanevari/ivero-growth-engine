@@ -359,6 +359,7 @@ export async function persistDiagnostic(opts: {
     sessionStorage.setItem(
       "ivero:lastDiagnostic",
       JSON.stringify({
+        ownerUserId: userId,
         siteUrl,
         geoScore: result.overallScore,
         radar: result.radar,

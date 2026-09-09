@@ -16,11 +16,22 @@ export interface ExistingDiagnostic {
 const SESSION_KEY = "ivero:lastDiagnostic";
 const ADOPTED_KEY = "ivero:audit_adopted";
 
-export function readSessionSnapshot(): Record<string, unknown> | null {
+/**
+ * Lê o snapshot da aba. Quando `currentUserId` é informado e o snapshot foi
+ * gravado por OUTRO usuário (`ownerUserId`), ele é descartado — evita que o
+ * diagnóstico do cliente A vaze para o cliente B na mesma aba.
+ * Snapshots anônimos (vindos do /preview, sem dono) continuam válidos.
+ */
+export function readSessionSnapshot(currentUserId?: string | null): Record<string, unknown> | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     const payload = raw ? JSON.parse(raw) : null;
     if (payload && typeof payload.geoScore === "number" && payload.geoScore > 0) {
+      const owner = typeof payload.ownerUserId === "string" ? payload.ownerUserId : null;
+      if (currentUserId && owner && owner !== currentUserId) {
+        clearSessionSnapshot();
+        return null;
+      }
       return payload as Record<string, unknown>;
     }
   } catch {
@@ -29,9 +40,18 @@ export function readSessionSnapshot(): Record<string, unknown> | null {
   return null;
 }
 
+export function clearSessionSnapshot() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(ADOPTED_KEY);
+  } catch {
+    /* ignora */
+  }
+}
+
 /** Existe um diagnóstico válido na aba atual (vindo do /preview)? */
-export function hasSessionDiagnostic(): boolean {
-  return readSessionSnapshot() !== null;
+export function hasSessionDiagnostic(currentUserId?: string | null): boolean {
+  return readSessionSnapshot(currentUserId) !== null;
 }
 
 export type AdoptResult =
