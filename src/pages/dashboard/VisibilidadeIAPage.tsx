@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Lock } from "lucide-react";
+import { Lock, Brain } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
+import { ReanalyzeCard } from "@/components/dashboard/ReanalyzeCard";
+import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { isFeatureAvailable, getRequiredTier, tierLabel } from "@/lib/access-control";
 import DiagnosticoPage from "./DiagnosticoPage";
 import AuditoriasPage from "./AuditoriasPage";
@@ -99,8 +103,41 @@ export default function VisibilidadeIAPage() {
     setSearchParams(next, { replace: true });
   };
 
+  const displayName = settings?.brand_name || "sua marca";
+
+  // Estado vazio ÚNICO da página inteira: sem nenhuma análise, nenhuma aba
+  // tem o que mostrar (nunca números fabricados).
+  if (hasDiagnostic === false && !diagnosticLoading) {
+    return (
+      <EmptyStatePage
+        icon={<Brain className="w-10 h-10" />}
+        title="Visibilidade IA"
+        subtitle="Como as IAs percebem e recomendam sua marca"
+        message="Rode seu primeiro diagnóstico"
+        description="Ainda não existe nenhuma análise da sua marca. Assim que o diagnóstico for executado, o score dos 5 pilares, a evolução no tempo e o histórico aparecem aqui."
+        hasBrand={!!settings?.brand_name}
+        cta={{ label: "Rodar meu diagnóstico", to: "/onboarding/diagnostico" }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Cabeçalho único — o botão de nova análise fica visível nas 3 abas */}
+      <div className="flex items-start gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm shrink-0">
+          <Brain className="w-5 h-5 text-primary-foreground" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold font-display text-foreground">Visibilidade IA</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Score, evolução e histórico de como as IAs percebem e recomendam {displayName}.
+          </p>
+        </div>
+      </div>
+
+      <ReanalyzeCard />
+
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="score">Score</TabsTrigger>
@@ -109,15 +146,15 @@ export default function VisibilidadeIAPage() {
         </TabsList>
 
         <TabsContent value="score" className="mt-6">
-          <DiagnosticoPage />
+          <DiagnosticoPage embedded />
         </TabsContent>
 
         <TabsContent value="evolucao" className="mt-6">
-          {evolucaoAvailable ? <PilaresPage /> : <EvolucaoLockedOverlay />}
+          {evolucaoAvailable ? <PilaresPage embedded /> : <EvolucaoLockedOverlay />}
         </TabsContent>
 
         <TabsContent value="historico" className="mt-6">
-          <AuditoriasPage />
+          <AuditoriasPage embedded />
         </TabsContent>
       </Tabs>
     </div>
