@@ -50,8 +50,8 @@ export function clearSessionSnapshot() {
 }
 
 /** Existe um diagnóstico válido na aba atual (vindo do /preview)? */
-export function hasSessionDiagnostic(): boolean {
-  return readSessionSnapshot() !== null;
+export function hasSessionDiagnostic(currentUserId?: string | null): boolean {
+  return readSessionSnapshot(currentUserId) !== null;
 }
 
 export type AdoptResult =
