@@ -22,7 +22,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
-import { BrandCoverageInlineCard } from "@/components/dashboard/BrandCoverageInlineCard";
+
 
 /* ── Sub-criterion type (mirrors PreviewPage payload saved in sessionStorage) ── */
 interface PillarCriterion {
@@ -321,12 +321,9 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
         {/* Plan status removed — clients accessing dashboard already have a plan */}
       </motion.div>
 
-      {/* Abrangência Geográfica (editável) */}
-      {!readOnly && (
-        <motion.div {...fade} transition={{ delay: 0.02 }}>
-          <BrandCoverageInlineCard />
-        </motion.div>
-      )}
+      {/* Abrangência Geográfica: editável só em Configurações (fonte de verdade) */}
+
+
 
       {/* Re-analysis button */}
       {!readOnly && (
