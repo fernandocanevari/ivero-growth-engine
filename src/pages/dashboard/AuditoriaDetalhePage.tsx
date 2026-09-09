@@ -97,7 +97,7 @@ export default function AuditoriaDetalhePage() {
       queryClient.invalidateQueries({ queryKey: ["audit-reports"] });
       queryClient.invalidateQueries({ queryKey: ["analysis-history"] });
       toast.success("Snapshot restaurado como relatório ativo!");
-      navigate("/dashboard/diagnostico");
+      navigate("/dashboard/visibilidade-ia");
     } catch (e) {
       console.error(e);
       toast.error("Falha ao restaurar snapshot.");
@@ -121,7 +121,7 @@ export default function AuditoriaDetalhePage() {
           <CardContent className="p-8 text-center space-y-4">
             <p className="text-muted-foreground">Relatório não encontrado ou você não tem acesso a ele.</p>
             <Button asChild variant="outline">
-              <Link to="/dashboard/auditorias">Voltar ao histórico</Link>
+              <Link to="/dashboard/visibilidade-ia?aba=historico">Voltar ao histórico</Link>
             </Button>
           </CardContent>
         </Card>
@@ -145,7 +145,7 @@ export default function AuditoriaDetalhePage() {
       >
         <div className="flex items-center gap-2 text-sm flex-wrap">
           <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2">
-            <Link to="/dashboard/auditorias">
+            <Link to="/dashboard/visibilidade-ia?aba=historico">
               <ArrowLeft className="w-4 h-4" />
               Voltar ao histórico
             </Link>

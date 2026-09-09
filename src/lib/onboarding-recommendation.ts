@@ -91,7 +91,7 @@ const TOOLS: Record<string, RecommendedTool> = {
   diagnostico: {
     key: "diagnostico",
     name: "Diagnóstico IA",
-    path: "/dashboard/diagnostico",
+    path: "/dashboard/visibilidade-ia",
     description:
       "Rode um novo diagnóstico para atualizar sua leitura de presença nas IAs.",
   },

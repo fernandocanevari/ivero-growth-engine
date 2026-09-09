@@ -37,12 +37,9 @@ import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
 
-import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
-import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
-import AuditoriasPage from "./pages/dashboard/AuditoriasPage";
 import VisibilidadeIAPage from "./pages/dashboard/VisibilidadeIAPage";
 import AuditoriaDetalhePage from "./pages/dashboard/AuditoriaDetalhePage";
 import LlmsTxtPage from "./pages/dashboard/LlmsTxtPage";

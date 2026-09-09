@@ -217,7 +217,7 @@ export default function AuditoriasPage() {
         hasBrand={hasBrand}
         cta={{
           label: "Fazer meu diagnóstico",
-          to: "/dashboard/diagnostico",
+          to: "/dashboard/visibilidade-ia",
           icon: <Brain className="h-4 w-4 mr-2" />,
         }}
       />

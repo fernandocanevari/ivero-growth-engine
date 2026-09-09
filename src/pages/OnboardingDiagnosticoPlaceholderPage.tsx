@@ -252,7 +252,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
 
         <Button
           size="lg"
-          onClick={() => navigate("/dashboard/diagnostico")}
+          onClick={() => navigate("/dashboard/visibilidade-ia")}
           className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
         >
           Concluir e ver meu diagnóstico <ArrowRight className="w-4 h-4 ml-1.5" />
