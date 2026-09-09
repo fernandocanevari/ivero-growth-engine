@@ -171,7 +171,7 @@ function CompareDialog({
   );
 }
 
-export default function AuditoriasPage() {
+export default function AuditoriasPage({ embedded }: { embedded?: boolean } = {}) {
   const { reports, isLoading, remove } = useAuditReports();
   const { data: settings } = useBrandSettings();
   const hasBrand = !!settings?.brand_name;
@@ -208,6 +208,7 @@ export default function AuditoriasPage() {
   if (isLoading && reports.length === 0) return <AuditoriasListSkeleton />;
 
   if (reports.length === 0) {
+    if (embedded) return null;
     return (
       <EmptyStatePage
         icon={<History className="h-12 w-12" />}
@@ -266,11 +267,15 @@ export default function AuditoriasPage() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 mb-1">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm">
-              <History className="w-5 h-5 text-primary-foreground" />
-            </div>
+            {!embedded && (
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm">
+                <History className="w-5 h-5 text-primary-foreground" />
+              </div>
+            )}
             <div>
-              <h1 className="text-2xl font-bold font-display text-foreground">Análise de Resultados</h1>
+              {!embedded && (
+                <h1 className="text-2xl font-bold font-display text-foreground">Análise de Resultados</h1>
+              )}
               <p className="text-sm text-muted-foreground mt-0.5">
                 {reports.length} {reports.length === 1 ? "análise salva" : "análises salvas"}
                 {filtersActive && ` · ${filtered.length} após filtro`}

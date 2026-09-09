@@ -323,7 +323,7 @@ const PILLAR_DB_COLUMN: Record<string, keyof import("@/hooks/useAnalysisHistory"
   Relevância: "experience_score",
 };
 
-export default function PilaresPage() {
+export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
   const { data: settings, isLoading: brandLoading } = useBrandSettings();
   const { reports, isLoading: reportsLoading } = useAuditReports();
   const { history, isLoading: historyLoading } = useAnalysisHistory();
@@ -397,6 +397,7 @@ export default function PilaresPage() {
 
   // EMPTY STATE — no audits AND no analysis yet
   if (!latestReport && history.length === 0) {
+    if (embedded) return null;
     return (
       <EmptyStatePage
         icon={<LineChartIcon className="h-12 w-12" />}
@@ -416,7 +417,8 @@ export default function PilaresPage() {
 
   return (
     <div className="space-y-8 max-w-5xl">
-      {/* Header */}
+      {/* Header (oculto quando embutido em Visibilidade IA) */}
+      {!embedded && (
       <motion.div {...fade}>
         <h1 className="text-2xl font-bold font-display text-foreground">
           📈 Evolução Estratégica
@@ -426,6 +428,7 @@ export default function PilaresPage() {
           Métricas detalhadas e evolução temporal de cada pilar que determina se a IA recomenda {displayName}.
         </p>
       </motion.div>
+      )}
 
       {/* Radar Overview */}
       {radarData.length > 0 && (

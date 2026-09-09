@@ -128,9 +128,11 @@ interface DiagnosticoPageProps {
   };
   /** Esconde botão de re-análise + comparativo — usado nas páginas de auditoria histórica. */
   readOnly?: boolean;
+  /** Renderizado dentro de Visibilidade IA: cabeçalho, re-análise e empty state ficam na página-mãe. */
+  embedded?: boolean;
 }
 
-export default function DiagnosticoPage({ snapshotOverride, readOnly }: DiagnosticoPageProps = {}) {
+export default function DiagnosticoPage({ snapshotOverride, readOnly, embedded }: DiagnosticoPageProps = {}) {
   const { data: settings, isLoading } = useBrandSettings();
   const displayName = settings?.brand_name || "sua marca";
   const { history, canReanalyze, daysRemaining, daysSinceLast } = useAnalysisHistory();
@@ -261,7 +263,9 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
     return <DiagnosticoSkeleton />;
 
   // Sem nenhuma análise real: empty state honesto, sem números inventados.
+  // Embutido em Visibilidade IA o empty state é único, na página-mãe.
   if (!hasDiagnostic) {
+    if (embedded) return null;
     return (
       <EmptyStatePage
         icon={<Brain className="w-10 h-10" />}
@@ -306,7 +310,8 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
 
   return (
     <div id="diagnostico-report-root" className="space-y-8 max-w-4xl">
-      {/* Header */}
+      {/* Header (oculto quando embutido em Visibilidade IA) */}
+      {!embedded && (
       <motion.div {...fade}>
         <div className="flex items-center gap-3 mb-1">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient shadow-sm">
@@ -325,13 +330,14 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
 
         {/* Plan status removed — clients accessing dashboard already have a plan */}
       </motion.div>
+      )}
 
       {/* Abrangência Geográfica: editável só em Configurações (fonte de verdade) */}
 
 
 
-      {/* Re-analysis button */}
-      {!readOnly && (
+      {/* Re-analysis button — em Visibilidade IA ele vive no cabeçalho da página */}
+      {!readOnly && !embedded && (
         <motion.div {...fade} transition={{ delay: 0.03 }}>
           <Card>
             <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
