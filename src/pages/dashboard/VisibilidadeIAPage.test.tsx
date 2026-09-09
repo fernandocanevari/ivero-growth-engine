@@ -27,6 +27,15 @@ const subStatus = {
   isAdmin: false,
   isLoading: false,
 };
+vi.mock("@/hooks/useBrandSettings", () => ({
+  useBrandSettings: () => ({ data: { brand_name: "Marca Teste" }, isLoading: false }),
+}));
+vi.mock("@/hooks/useHasDiagnostic", () => ({
+  useHasDiagnostic: () => ({ hasDiagnostic: true, isLoading: false }),
+}));
+vi.mock("@/components/dashboard/ReanalyzeCard", () => ({
+  ReanalyzeCard: () => <button type="button">Realizar nova análise</button>,
+}));
 vi.mock("@/hooks/useSubscriptionStatus", () => ({
   useSubscriptionStatus: () => subStatus,
 }));
@@ -59,6 +68,12 @@ describe("VisibilidadeIAPage", () => {
     renderAt("/dashboard/visibilidade-ia?aba=evolucao");
     expect(screen.getByTestId("tab-evolucao")).toBeInTheDocument();
     expect(screen.queryByText(/Fazer upgrade/i)).not.toBeInTheDocument();
+  });
+
+  it("mostra o botão de nova análise no cabeçalho, independente da aba", () => {
+    subStatus.plano = "presenca";
+    renderAt("/dashboard/visibilidade-ia?aba=historico");
+    expect(screen.getByRole("button", { name: /Realizar nova análise/i })).toBeInTheDocument();
   });
 
   it("Presença vê a Evolução travada, mas as abas Score e Histórico continuam disponíveis", () => {
