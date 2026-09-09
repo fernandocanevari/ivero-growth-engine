@@ -34,25 +34,11 @@ const SECTIONS: LibrarySection[] = [
         when: "No início do dia ou da semana, para checar como sua marca está sendo percebida pelas IAs.",
       },
       {
-        name: "Diagnóstico IA",
-        url: "/dashboard/diagnostico",
-        what: "Auditoria completa de como sua marca aparece em múltiplas IAs.",
-        purpose: "Mostra os pontos fortes, fracos e oportunidades por pilar estratégico.",
+        name: "Visibilidade IA",
+        url: "/dashboard/visibilidade-ia",
+        what: "Score atual, evolução dos 5 pilares e histórico das análises, em três abas.",
+        purpose: "Mostra como as IAs percebem sua marca hoje, o que mudou e o que já foi analisado.",
         when: "No primeiro acesso e sempre que quiser uma fotografia atualizada da sua influência.",
-      },
-      {
-        name: "Relatórios",
-        url: "/dashboard/auditorias",
-        what: "Histórico de todas as auditorias e diagnósticos realizados.",
-        purpose: "Compara evolução ao longo do tempo e recupera análises antigas.",
-        when: "Quando quiser revisar o que mudou desde a última auditoria.",
-      },
-      {
-        name: "Evolução Estratégica",
-        url: "/dashboard/pilares",
-        what: "Visão de longo prazo dos seus 5 pilares de marca.",
-        purpose: "Mostra crescimento ou retração em cada dimensão estratégica.",
-        when: "Em revisões mensais ou trimestrais de performance.",
       },
     ],
   },
@@ -197,7 +183,7 @@ export function LibrarySheet() {
   const pendingUrls = useMemo(() => {
     const set = new Set<string>();
     if (!progress) return set;
-    if (!progress.visited_diagnostico) set.add("/dashboard/diagnostico");
+    if (!progress.visited_diagnostico) set.add("/dashboard/visibilidade-ia");
     if (!progress.visited_score) set.add("/dashboard/score");
     if (!progress.visited_acoes) set.add("/dashboard/acoes");
     const hasCompetitor = (competitors?.length ?? 0) > 0;
