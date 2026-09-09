@@ -69,9 +69,7 @@ function EvolucaoLockedOverlay() {
         </Card>
       </div>
 
-      {modalOpen && (
-        <UpgradeModal open={modalOpen} onClose={() => setModalOpen(false)} intent="contratar" />
-      )}
+      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} intent="contratar" />
     </div>
   );
 }
