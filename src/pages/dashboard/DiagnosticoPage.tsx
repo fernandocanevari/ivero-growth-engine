@@ -150,22 +150,24 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
       setLiveScore(snapshotOverride.overallScore ?? null);
       return;
     }
-    try {
-      const raw = sessionStorage.getItem("ivero:lastDiagnostic");
-      if (raw) {
-        const payload = JSON.parse(raw);
-        const hasPillars = Array.isArray(payload.pillarDetails) && payload.pillarDetails.length > 0;
-        const hasRadar = Array.isArray(payload.radar) && payload.radar.length > 0;
-        if (hasPillars) setLivePillars(payload.pillarDetails);
-        if (hasRadar) setLiveRadar(payload.radar);
+    const latest = reports[0];
+    // Snapshot da aba: só vale se for do usuário logado e mais novo que o
+    // último relatório do banco (evita resquício de outra conta / dado velho).
+    const payload = readSessionSnapshot(userId);
+    if (payload) {
+      const savedAt = typeof payload.savedAt === "string" ? Date.parse(payload.savedAt) : NaN;
+      const latestAt = latest?.created_at ? Date.parse(latest.created_at) : NaN;
+      const dbIsNewer = !Number.isNaN(latestAt) && (Number.isNaN(savedAt) || latestAt > savedAt);
+      if (!dbIsNewer) {
+        const hasPillars = Array.isArray(payload.pillarDetails) && (payload.pillarDetails as unknown[]).length > 0;
+        const hasRadar = Array.isArray(payload.radar) && (payload.radar as unknown[]).length > 0;
+        if (hasPillars) setLivePillars(payload.pillarDetails as PillarPayload[]);
+        if (hasRadar) setLiveRadar(payload.radar as { subject: string; value: number; fullMark: number }[]);
         if (typeof payload.geoScore === "number") setLiveScore(payload.geoScore);
         if (hasPillars || hasRadar) return;
       }
-    } catch {
-      /* sessionStorage indisponível */
     }
     // Fallback de banco: último relatório salvo (caminho 2 e sessões novas).
-    const latest = reports[0];
     if (!latest) return;
     if (Array.isArray(latest.pillar_details) && latest.pillar_details.length > 0) {
       setLivePillars(latest.pillar_details as unknown as PillarPayload[]);
