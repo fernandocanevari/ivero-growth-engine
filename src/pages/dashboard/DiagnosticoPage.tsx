@@ -179,7 +179,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
       setLiveRadar(latest.radar_data);
     }
     if (typeof latest.overall_score === "number") setLiveScore(latest.overall_score);
-  }, [snapshotOverride, reports]);
+  }, [snapshotOverride, reports, userId]);
 
   const hasDiagnostic = !!(liveRadar && liveRadar.length > 0);
   const effectiveRadar = liveRadar ?? [];
