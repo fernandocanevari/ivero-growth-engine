@@ -12,6 +12,8 @@ import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { runDiagnostic, persistDiagnostic, extractBrandFromUrl } from "@/lib/diagnostic-engine";
 import { useAuditReports } from "@/hooks/useAuditReports";
+import { readSessionSnapshot } from "@/lib/existing-diagnostic";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import { DiagnosticoSkeleton } from "@/components/dashboard/LoadingStates";
 
