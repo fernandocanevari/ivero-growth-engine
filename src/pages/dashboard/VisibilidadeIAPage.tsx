@@ -75,6 +75,8 @@ function EvolucaoLockedOverlay() {
 }
 
 export default function VisibilidadeIAPage() {
+  const { data: settings } = useBrandSettings();
+  const { hasDiagnostic, isLoading: diagnosticLoading } = useHasDiagnostic();
   const [searchParams, setSearchParams] = useSearchParams();
   const raw = searchParams.get("aba");
   const activeTab: TabValue = (TAB_VALUES as readonly string[]).includes(raw ?? "")
