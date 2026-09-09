@@ -142,6 +142,7 @@ export default function DiagnosticoPage({ snapshotOverride, readOnly }: Diagnost
   // Fonte de verdade: sessionStorage (análise recém-rodada) e, na ausência
   // dela, o audit_report mais recente do banco. Nunca dados mockados.
   const { reports, isLoading: reportsLoading } = useAuditReports();
+  const { userId } = useAuthUserId();
   const [livePillars, setLivePillars] = useState<PillarPayload[] | null>(null);
   const [liveRadar, setLiveRadar] = useState<{ subject: string; value: number; fullMark: number }[] | null>(null);
   const [liveScore, setLiveScore] = useState<number | null>(null);
