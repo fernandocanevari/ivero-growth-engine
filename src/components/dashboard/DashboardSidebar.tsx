@@ -49,9 +49,7 @@ const menuGroups: MenuGroup[] = [
     label: "Visão Geral",
     items: [
       { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Diagnóstico IA", url: "/dashboard/diagnostico", icon: Brain, beta: true },
-      { title: "Análise de Resultados", url: "/dashboard/auditorias", icon: FileText },
-      { title: "Evolução Estratégica", url: "/dashboard/pilares", icon: TrendingUp },
+      { title: "Visibilidade IA", url: "/dashboard/visibilidade-ia", icon: Brain, beta: true },
     ],
   },
   {

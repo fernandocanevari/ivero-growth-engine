@@ -100,7 +100,7 @@ export default function DashboardOverview() {
               </div>
               <Button
                 size="lg"
-                onClick={() => navigate("/dashboard/diagnostico")}
+                onClick={() => navigate("/dashboard/visibilidade-ia")}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
               >
                 Iniciar Diagnóstico

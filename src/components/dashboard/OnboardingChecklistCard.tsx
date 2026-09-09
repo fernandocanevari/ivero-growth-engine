@@ -53,7 +53,7 @@ export function OnboardingChecklistCard() {
     {
       key: "diagnostico",
       label: "Faça seu primeiro Diagnóstico IA",
-      to: "/dashboard/diagnostico",
+      to: "/dashboard/visibilidade-ia",
       done: progress.visited_diagnostico,
     },
     {

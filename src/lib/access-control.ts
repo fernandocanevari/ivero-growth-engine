@@ -15,6 +15,7 @@
 
 export const TRIAL_ALLOWED_ROUTES: readonly string[] = [
   "/dashboard",
+  "/dashboard/visibilidade-ia",
   "/dashboard/diagnostico",
   "/dashboard/auditorias",
   "/dashboard/score",
@@ -174,6 +175,7 @@ const TIER_INDEX: Record<PlanoTier, number> = {
 
 export const ALWAYS_ALLOWED: readonly string[] = [
   "/dashboard",
+  "/dashboard/visibilidade-ia",
   "/dashboard/diagnostico",
   "/dashboard/configuracoes",
   "/dashboard/assinatura",

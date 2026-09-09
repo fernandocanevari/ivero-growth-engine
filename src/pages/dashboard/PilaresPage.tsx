@@ -405,7 +405,7 @@ export default function PilaresPage() {
         message="Rode seu primeiro diagnóstico para ver sua Evolução Estratégica"
         description="Assim que sua primeira análise for concluída, o radar, os scores por pilar e a evolução temporal aparecerão aqui."
         hasBrand={!!settings?.brand_name}
-        cta={{ label: "Rodar diagnóstico", to: "/dashboard/diagnostico" }}
+        cta={{ label: "Rodar diagnóstico", to: "/dashboard/visibilidade-ia" }}
       />
     );
   }

@@ -14,7 +14,7 @@ export interface DashboardOnboardingProgress {
 type StepKey = "visited_diagnostico" | "visited_score" | "visited_acoes";
 
 const ROUTE_TO_STEP: Record<string, StepKey> = {
-  "/dashboard/diagnostico": "visited_diagnostico",
+  "/dashboard/visibilidade-ia": "visited_diagnostico",
   "/dashboard/score": "visited_score",
   "/dashboard/acoes": "visited_acoes",
 };

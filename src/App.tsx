@@ -37,12 +37,10 @@ import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminClientesPage from "./pages/dashboard/AdminClientesPage";
 
-import DiagnosticoPage from "./pages/dashboard/DiagnosticoPage";
-import PilaresPage from "./pages/dashboard/PilaresPage";
 import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
-import AuditoriasPage from "./pages/dashboard/AuditoriasPage";
+import VisibilidadeIAPage from "./pages/dashboard/VisibilidadeIAPage";
 import AuditoriaDetalhePage from "./pages/dashboard/AuditoriaDetalhePage";
 import LlmsTxtPage from "./pages/dashboard/LlmsTxtPage";
 import AdminPropostasPage from "./pages/dashboard/AdminPropostasPage";
@@ -121,10 +119,13 @@ const App = () => (
 
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardOverview />} />
-            <Route path="diagnostico" element={<DiagnosticoPage />} />
-            <Route path="auditorias" element={<FeatureGate><AuditoriasPage /></FeatureGate>} />
+            {/* Visibilidade IA — tela única com abas Score / Evolução / Histórico.
+                As rotas antigas continuam vivas como redirect para não quebrar links. */}
+            <Route path="visibilidade-ia" element={<VisibilidadeIAPage />} />
+            <Route path="diagnostico" element={<Navigate to="/dashboard/visibilidade-ia" replace />} />
+            <Route path="auditorias" element={<Navigate to="/dashboard/visibilidade-ia?aba=historico" replace />} />
             <Route path="auditorias/:id" element={<FeatureGate><AuditoriaDetalhePage /></FeatureGate>} />
-            <Route path="pilares" element={<FeatureGate><PilaresPage /></FeatureGate>} />
+            <Route path="pilares" element={<Navigate to="/dashboard/visibilidade-ia?aba=evolucao" replace />} />
             <Route path="monitoramento" element={<FeatureGate><MonitoramentoPage /></FeatureGate>} />
             <Route path="comparativo" element={<FeatureGate><ComparativoPage /></FeatureGate>} />
             <Route path="score" element={<FeatureGate><ScorePage /></FeatureGate>} />
