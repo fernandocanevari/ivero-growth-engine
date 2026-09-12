@@ -114,6 +114,7 @@ export type Database = {
           overall_score: number
           perception_snapshot: Json
           positioning_score: number
+          source: string
           user_id: string
         }
         Insert: {
@@ -128,6 +129,7 @@ export type Database = {
           overall_score?: number
           perception_snapshot?: Json
           positioning_score?: number
+          source?: string
           user_id: string
         }
         Update: {
@@ -142,6 +144,7 @@ export type Database = {
           overall_score?: number
           perception_snapshot?: Json
           positioning_score?: number
+          source?: string
           user_id?: string
         }
         Relationships: []
