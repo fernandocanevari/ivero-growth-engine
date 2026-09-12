@@ -388,26 +388,61 @@ export async function persistDiagnostic(opts: {
   if (auditError) console.warn("audit_reports insert failed:", auditError.message);
 
   if (opts.writeAnalysisHistory) {
-    const clarity = pillarScore(result.radar, "Clareza") ?? 0;
-    const authority = pillarScore(result.radar, "Autoridade") ?? 0;
-    const conversion = pillarScore(result.radar, "Conversão") ?? 0;
-    const positioning = pillarScore(result.radar, "Posicionamento") ?? 0;
-    const experience = pillarScore(result.radar, "Relevância") ?? 0;
-
-    const { error: historyError } = await supabase.from("analysis_history").insert({
-      user_id: userId,
-      overall_score: result.overallScore,
-      clarity_score: clarity,
-      authority_score: authority,
-      conversion_score: conversion,
-      positioning_score: positioning,
-      experience_score: experience,
-      perception_snapshot: buildPerceptionSnapshot({
-        clarity, authority, conversion, positioning, experience,
-      }) as unknown as never,
-      keyword_cloud: result.keywordCloud as never,
-      models_ok: [...result.modelsOk].sort() as never,
-    } as never);
+    const { error: historyError } = await supabase
+      .from("analysis_history")
+      .insert(
+        buildAnalysisHistoryRow({
+          userId,
+          source,
+          overallScore: result.overallScore,
+          radar: result.radar,
+          keywordCloud: result.keywordCloud,
+          modelsOk: result.modelsOk,
+        }) as never,
+      );
     if (historyError) console.warn("analysis_history insert failed:", historyError.message);
   }
+}
+
+/**
+ * Monta a linha de `analysis_history` (série do gráfico de evolução) a partir
+ * do radar da análise. Usado tanto pela persistência normal quanto pela adoção
+ * do snapshot do /preview — assim TODO diagnóstico entra na série, e o campo
+ * `source` distingue o que veio do preview do que foi reanálise no painel
+ * (é o `source` que preserva o intervalo de 30 dias da reanálise).
+ */
+export function buildAnalysisHistoryRow(opts: {
+  userId: string;
+  source: "preview" | "reanalise";
+  overallScore: number;
+  radar: Array<{ subject: string; value: number }>;
+  keywordCloud?: unknown;
+  modelsOk?: string[];
+}) {
+  const radar = (opts.radar ?? []) as RadarPoint[];
+  const clarity = pillarScore(radar, "Clareza") ?? 0;
+  const authority = pillarScore(radar, "Autoridade") ?? 0;
+  const conversion = pillarScore(radar, "Conversão") ?? 0;
+  const positioning = pillarScore(radar, "Posicionamento") ?? 0;
+  const experience = pillarScore(radar, "Relevância") ?? 0;
+
+  return {
+    user_id: opts.userId,
+    source: opts.source,
+    overall_score: opts.overallScore,
+    clarity_score: clarity,
+    authority_score: authority,
+    conversion_score: conversion,
+    positioning_score: positioning,
+    experience_score: experience,
+    perception_snapshot: buildPerceptionSnapshot({
+      clarity,
+      authority,
+      conversion,
+      positioning,
+      experience,
+    }),
+    keyword_cloud: Array.isArray(opts.keywordCloud) ? opts.keywordCloud : [],
+    models_ok: Array.isArray(opts.modelsOk) ? [...opts.modelsOk].sort() : [],
+  };
 }
