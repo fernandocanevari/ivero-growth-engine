@@ -679,6 +679,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
               <PillarDetailCard
                 pillar={pillar}
                 evolution={evolutionByPillar[pillar.key] ?? []}
+                preferEvolution={embedded}
               />
             </motion.div>
           ))}
