@@ -15,7 +15,7 @@ import { useAuditReports } from "@/hooks/useAuditReports";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, RadarChart, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis, Radar,
 } from "recharts";
@@ -116,9 +116,11 @@ interface ResolvedPillar {
 function PillarDetailCard({
   pillar,
   evolution,
+  preferEvolution,
 }: {
   pillar: ResolvedPillar;
   evolution: { month: string; score: number }[];
+  preferEvolution?: boolean;
 }) {
   const PillarIcon = pillar.icon;
   const color = getScoreColor(pillar.score);
@@ -140,7 +142,8 @@ function PillarDetailCard({
   if (hasCriterios) tabs.push({ value: "metrics", label: "Métricas" });
   if (hasEvolution) tabs.push({ value: "evolution", label: "Evolução" });
   if (hasAnalysis) tabs.push({ value: "analysis", label: "Análise" });
-  const defaultTab = tabs[0]?.value;
+  const defaultTab =
+    preferEvolution && hasEvolution ? "evolution" : tabs[0]?.value;
 
   return (
     <Card className="overflow-hidden">
@@ -323,11 +326,37 @@ const PILLAR_DB_COLUMN: Record<string, keyof import("@/hooks/useAnalysisHistory"
   Relevância: "experience_score",
 };
 
+const PILLAR_ORDER = Object.keys(PILLAR_DB_COLUMN);
+
+const PILLAR_COLOR: Record<string, string> = {
+  Clareza: "hsl(var(--chart-1))",
+  Autoridade: "hsl(var(--chart-2))",
+  Conversão: "hsl(var(--chart-3))",
+  Posicionamento: "hsl(var(--chart-4))",
+  Relevância: "hsl(var(--chart-5))",
+};
+
+/* Rótulo do eixo de tempo: dia/mês, com hora quando há mais de uma
+   análise no mesmo dia (evita rótulos colapsados como "ago / ago / ago"). */
+function buildTimeLabels(dates: string[]) {
+  const day = dates.map((iso) =>
+    new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")
+  );
+  const needsTime = new Set(day).size !== day.length;
+  if (!needsTime) return day;
+  return dates.map((iso, i) => {
+    const t = new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return `${day[i]} ${t}`;
+  });
+}
+
+
 export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
   const { data: settings, isLoading: brandLoading } = useBrandSettings();
   const { reports, isLoading: reportsLoading } = useAuditReports();
   const { history, isLoading: historyLoading } = useAnalysisHistory();
   const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
+  const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
   const displayName = settings?.brand_name || "sua marca";
 
   const latestReport = reports[0]; // sorted DESC in hook
@@ -365,21 +394,50 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
     });
   }, [latestReport, previousAnalysis]);
 
+  const timeLabels = useMemo(
+    () => buildTimeLabels(history.map((h) => h.created_at)),
+    [history]
+  );
+
   const evolutionByPillar = useMemo(() => {
     const map: Record<string, { month: string; score: number }[]> = {};
     if (history.length < 2) return map;
-    const fmt = (iso: string) => {
-      const d = new Date(iso);
-      return d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-    };
     for (const [pillarKey, col] of Object.entries(PILLAR_DB_COLUMN)) {
-      map[pillarKey] = history.map((h) => ({
-        month: fmt(h.created_at),
+      map[pillarKey] = history.map((h, i) => ({
+        month: timeLabels[i],
         score: (h[col] as number) ?? 0,
       }));
     }
     return map;
+  }, [history, timeLabels]);
+
+  /* Série única com todos os pilares + score geral ao longo do tempo. */
+  const trendSeries = useMemo(
+    () =>
+      history.map((h, i) => {
+        const row: Record<string, string | number> = { label: timeLabels[i] };
+        for (const [pillarKey, col] of Object.entries(PILLAR_DB_COLUMN)) {
+          row[pillarKey] = (h[col] as number) ?? 0;
+        }
+        row.Geral = h.overall_score ?? 0;
+        return row;
+      }),
+    [history, timeLabels]
+  );
+
+  /* Variação entre a primeira e a última análise, por pilar. */
+  const trendDeltas = useMemo(() => {
+    if (history.length < 2) return [];
+    const first = history[0];
+    const last = history[history.length - 1];
+    return PILLAR_ORDER.map((key) => {
+      const col = PILLAR_DB_COLUMN[key];
+      const from = (first[col] as number) ?? 0;
+      const to = (last[col] as number) ?? 0;
+      return { key, from, to, delta: to - from };
+    });
   }, [history]);
+
 
   const radarData = useMemo(() => {
     if (latestReport?.radar_data?.length) return latestReport.radar_data;
@@ -430,13 +488,116 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
       </motion.div>
       )}
 
-      {/* Radar Overview */}
+      {/* Tendência ao longo do tempo (topo da aba Evolução) */}
+      {trendSeries.length > 0 && (
+        <motion.div {...fade} transition={{ delay: 0.04 }}>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Tendência dos pilares ao longo do tempo
+                  <InfoTooltip text="Cada linha é um pilar. Compare as análises para ver se sua presença nas IAs está subindo ou caindo." />
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Clique nos nomes da legenda para isolar ou esconder um pilar.
+                </p>
+              </div>
+
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={30} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px", cursor: "pointer" }}
+                      onClick={(e) => {
+                        const key = String((e as { dataKey?: string }).dataKey ?? "");
+                        if (!key) return;
+                        setHiddenSeries((prev) => {
+                          const next = new Set(prev);
+                          next.has(key) ? next.delete(key) : next.add(key);
+                          return next;
+                        });
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Geral"
+                      name="Score geral"
+                      stroke="hsl(var(--chart-overall))"
+                      strokeWidth={2.5}
+                      strokeDasharray="5 4"
+                      dot={{ r: 3 }}
+                      hide={hiddenSeries.has("Geral")}
+                    />
+                    {PILLAR_ORDER.map((key) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        name={key}
+                        stroke={PILLAR_COLOR[key]}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        hide={hiddenSeries.has(key)}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {history.length < 2 ? (
+                <div className="rounded-xl border border-dashed border-border/70 bg-muted/30 p-4">
+                  <p className="text-sm font-medium text-foreground">Sua linha de evolução começa aqui</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Você tem apenas a primeira análise registrada. A partir da segunda, as linhas mostram
+                    se cada pilar está subindo ou caindo ao longo do tempo.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {trendDeltas.map((d) => (
+                    <div key={d.key} className="rounded-xl border border-border/60 p-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: PILLAR_COLOR[d.key] }} />
+                        <span className="text-xs font-medium text-foreground truncate">{d.key}</span>
+                      </div>
+                      <p className="text-lg font-display font-bold text-foreground mt-1">{d.to}</p>
+                      <p className={`text-xs font-medium flex items-center gap-1 ${
+                        d.delta > 0 ? "text-emerald-600" : d.delta < 0 ? "text-red-500" : "text-muted-foreground"
+                      }`}>
+                        {d.delta > 0 ? <TrendingUp className="w-3 h-3" /> : d.delta < 0 ? <TrendingDown className="w-3 h-3" /> : null}
+                        {d.delta > 0 ? "+" : ""}{d.delta} desde {d.from}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Radar do snapshot atual (oculto na aba Evolução, onde a leitura é temporal)
+          + resumo clicável por pilar */}
       {radarData.length > 0 && (
         <motion.div {...fade} transition={{ delay: 0.05 }}>
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
+                {!embedded && (
                 <div className="flex-1">
+
                   <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-4">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     Visão Geral dos Pilares
@@ -459,6 +620,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
                     </ResponsiveContainer>
                   </div>
                 </div>
+                )}
 
                 {/* Quick stats */}
                 {resolvedPillars.length > 0 && (
@@ -517,6 +679,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
               <PillarDetailCard
                 pillar={pillar}
                 evolution={evolutionByPillar[pillar.key] ?? []}
+                preferEvolution={embedded}
               />
             </motion.div>
           ))}
