@@ -425,6 +425,40 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
     [history, timeLabels]
   );
 
+  /* Amplia visualmente as diferenças sem abandonar a escala válida de 0–100.
+     A legenda também recalcula o domínio usando apenas as séries visíveis. */
+  const trendYDomain = useMemo<[number, number]>(() => {
+    const visibleKeys = ["Geral", ...PILLAR_ORDER].filter((key) => !hiddenSeries.has(key));
+    const values = trendSeries.flatMap((row) =>
+      visibleKeys.flatMap((key) => {
+        const value = row[key];
+        return typeof value === "number" && Number.isFinite(value) ? [value] : [];
+      })
+    );
+
+    if (values.length === 0) return [0, 100];
+
+    const minimumSpan = 20;
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const dataSpan = maxValue - minValue;
+    const paddedSpan = Math.max(minimumSpan, dataSpan + Math.max(8, Math.ceil(dataSpan * 0.3)));
+    const center = (minValue + maxValue) / 2;
+    let lower = Math.floor(center - paddedSpan / 2);
+    let upper = Math.ceil(center + paddedSpan / 2);
+
+    if (lower < 0) {
+      upper = Math.min(100, upper - lower);
+      lower = 0;
+    }
+    if (upper > 100) {
+      lower = Math.max(0, lower - (upper - 100));
+      upper = 100;
+    }
+
+    return [lower, upper];
+  }, [hiddenSeries, trendSeries]);
+
   /* Variação entre a primeira e a última análise, por pilar. */
   const trendDeltas = useMemo(() => {
     if (history.length < 2) return [];
@@ -504,12 +538,12 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
                 </p>
               </div>
 
-              <div className="h-80">
+              <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={30} />
+                    <YAxis domain={trendYDomain} allowDataOverflow tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={30} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
