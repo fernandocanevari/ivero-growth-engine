@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { buildAnalysisHistoryRow } from "@/lib/diagnostic-engine";
 
 /**
  * Sinal único de "esse cliente já tem diagnóstico".
