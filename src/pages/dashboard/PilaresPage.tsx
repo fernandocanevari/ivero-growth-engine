@@ -142,7 +142,8 @@ function PillarDetailCard({
   if (hasCriterios) tabs.push({ value: "metrics", label: "Métricas" });
   if (hasEvolution) tabs.push({ value: "evolution", label: "Evolução" });
   if (hasAnalysis) tabs.push({ value: "analysis", label: "Análise" });
-  const defaultTab = tabs[0]?.value;
+  const defaultTab =
+    preferEvolution && hasEvolution ? "evolution" : tabs[0]?.value;
 
   return (
     <Card className="overflow-hidden">
