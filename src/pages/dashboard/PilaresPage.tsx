@@ -116,9 +116,11 @@ interface ResolvedPillar {
 function PillarDetailCard({
   pillar,
   evolution,
+  preferEvolution,
 }: {
   pillar: ResolvedPillar;
   evolution: { month: string; score: number }[];
+  preferEvolution?: boolean;
 }) {
   const PillarIcon = pillar.icon;
   const color = getScoreColor(pillar.score);
