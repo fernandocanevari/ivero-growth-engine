@@ -15,6 +15,8 @@ export interface AnalysisRecord {
   positioning_score: number;
   experience_score: number;
   created_at: string;
+  /** 'preview' = diagnóstico feito antes de virar cliente; 'reanalise' = rodado no painel. */
+  source?: "preview" | "reanalise";
   perception_snapshot?: PerceptionSnapshot | Record<string, never>;
   keyword_cloud?: KeywordCloud;
   /** Modelos de IA que responderam nessa análise. Deltas só comparam bases iguais. */
@@ -50,8 +52,15 @@ export function useAnalysisHistory() {
 
   const lastAnalysis = history.data?.length ? history.data[history.data.length - 1] : null;
 
-  const daysSinceLast = lastAnalysis
-    ? Math.floor((Date.now() - new Date(lastAnalysis.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  // O intervalo de 30 dias conta apenas as reanálises feitas no painel. O
+  // diagnóstico trazido do /preview aparece na série de evolução, mas não pode
+  // bloquear a primeira reanálise de quem acabou de se cadastrar.
+  const lastReanalysis = [...(history.data ?? [])]
+    .reverse()
+    .find((r) => (r.source ?? "reanalise") === "reanalise") ?? null;
+
+  const daysSinceLast = lastReanalysis
+    ? Math.floor((Date.now() - new Date(lastReanalysis.created_at).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
   const canReanalyze = daysSinceLast === null || daysSinceLast >= 30;

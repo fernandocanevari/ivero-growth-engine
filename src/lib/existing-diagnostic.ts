@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { buildAnalysisHistoryRow } from "@/lib/diagnostic-engine";
 
 /**
  * Sinal único de "esse cliente já tem diagnóstico".
@@ -101,8 +102,54 @@ export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult>
     console.error("[existing-diagnostic] adoção falhou:", error.message);
     return { status: "failed", message: error.message };
   }
+
+  // O diagnóstico do /preview é o marco zero da história do cliente: precisa
+  // entrar TAMBÉM na série de evolução, senão a aba Evolução mostra menos
+  // pontos que as abas Score e Histórico. `source: "preview"` mantém o
+  // intervalo de 30 dias da reanálise intacto.
+  await mirrorAdoptedSnapshotToHistory(userId, payload);
+
   markAdopted();
   return { status: "adopted" };
+}
+
+/**
+ * Espelha o snapshot adotado em `analysis_history` (série do gráfico de
+ * evolução). Idempotente por consequência: só é chamado dentro da adoção, que
+ * já roda uma única vez por conta. Falha aqui não invalida a adoção — o
+ * relatório principal já está salvo.
+ */
+async function mirrorAdoptedSnapshotToHistory(
+  userId: string,
+  payload: Record<string, unknown>,
+) {
+  try {
+    const { count } = await supabase
+      .from("analysis_history")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if ((count ?? 0) > 0) return;
+
+    const radar = Array.isArray(payload.radar)
+      ? (payload.radar as Array<{ subject: string; value: number }>)
+      : [];
+
+    const { error } = await supabase.from("analysis_history").insert(
+      buildAnalysisHistoryRow({
+        userId,
+        source: "preview",
+        overallScore: payload.geoScore as number,
+        radar,
+        keywordCloud: payload.keyword_cloud,
+        modelsOk: Array.isArray(payload.models_ok) ? (payload.models_ok as string[]) : [],
+      }) as never,
+    );
+    if (error) {
+      console.warn("[existing-diagnostic] espelho em analysis_history falhou:", error.message);
+    }
+  } catch (e) {
+    console.warn("[existing-diagnostic] espelho em analysis_history falhou:", e);
+  }
 }
 
 function markAdopted() {
