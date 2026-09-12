@@ -588,13 +588,16 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
         </motion.div>
       )}
 
-      {/* Radar Overview (snapshot atual — só na página independente) */}
-      {!embedded && radarData.length > 0 && (
+      {/* Radar do snapshot atual (oculto na aba Evolução, onde a leitura é temporal)
+          + resumo clicável por pilar */}
+      {radarData.length > 0 && (
         <motion.div {...fade} transition={{ delay: 0.05 }}>
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
+                {!embedded && (
                 <div className="flex-1">
+
                   <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-4">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     Visão Geral dos Pilares
