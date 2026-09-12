@@ -101,6 +101,13 @@ export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult>
     console.error("[existing-diagnostic] adoção falhou:", error.message);
     return { status: "failed", message: error.message };
   }
+
+  // O diagnóstico do /preview é o marco zero da história do cliente: precisa
+  // entrar TAMBÉM na série de evolução, senão a aba Evolução mostra menos
+  // pontos que as abas Score e Histórico. `source: "preview"` mantém o
+  // intervalo de 30 dias da reanálise intacto.
+  await mirrorAdoptedSnapshotToHistory(userId, payload);
+
   markAdopted();
   return { status: "adopted" };
 }
