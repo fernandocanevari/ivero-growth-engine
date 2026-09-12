@@ -620,7 +620,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
                     </ResponsiveContainer>
                   </div>
                 </div>
-
+                )}
 
                 {/* Quick stats */}
                 {resolvedPillars.length > 0 && (
