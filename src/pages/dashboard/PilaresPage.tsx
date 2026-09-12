@@ -487,8 +487,108 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
       </motion.div>
       )}
 
-      {/* Radar Overview */}
-      {radarData.length > 0 && (
+      {/* Tendência ao longo do tempo (topo da aba Evolução) */}
+      {trendSeries.length > 0 && (
+        <motion.div {...fade} transition={{ delay: 0.04 }}>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Tendência dos pilares ao longo do tempo
+                  <InfoTooltip text="Cada linha é um pilar. Compare as análises para ver se sua presença nas IAs está subindo ou caindo." />
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Clique nos nomes da legenda para isolar ou esconder um pilar.
+                </p>
+              </div>
+
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={30} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px", cursor: "pointer" }}
+                      onClick={(e) => {
+                        const key = String((e as { dataKey?: string }).dataKey ?? "");
+                        if (!key) return;
+                        setHiddenSeries((prev) => {
+                          const next = new Set(prev);
+                          next.has(key) ? next.delete(key) : next.add(key);
+                          return next;
+                        });
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Geral"
+                      name="Score geral"
+                      stroke="hsl(var(--chart-overall))"
+                      strokeWidth={2.5}
+                      strokeDasharray="5 4"
+                      dot={{ r: 3 }}
+                      hide={hiddenSeries.has("Geral")}
+                    />
+                    {PILLAR_ORDER.map((key) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        name={key}
+                        stroke={PILLAR_COLOR[key]}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        hide={hiddenSeries.has(key)}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {history.length < 2 ? (
+                <div className="rounded-xl border border-dashed border-border/70 bg-muted/30 p-4">
+                  <p className="text-sm font-medium text-foreground">Sua linha de evolução começa aqui</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Você tem apenas a primeira análise registrada. A partir da segunda, as linhas mostram
+                    se cada pilar está subindo ou caindo ao longo do tempo.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {trendDeltas.map((d) => (
+                    <div key={d.key} className="rounded-xl border border-border/60 p-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: PILLAR_COLOR[d.key] }} />
+                        <span className="text-xs font-medium text-foreground truncate">{d.key}</span>
+                      </div>
+                      <p className="text-lg font-display font-bold text-foreground mt-1">{d.to}</p>
+                      <p className={`text-xs font-medium flex items-center gap-1 ${
+                        d.delta > 0 ? "text-emerald-600" : d.delta < 0 ? "text-red-500" : "text-muted-foreground"
+                      }`}>
+                        {d.delta > 0 ? <TrendingUp className="w-3 h-3" /> : d.delta < 0 ? <TrendingDown className="w-3 h-3" /> : null}
+                        {d.delta > 0 ? "+" : ""}{d.delta} desde {d.from}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Radar Overview (snapshot atual — só na página independente) */}
+      {!embedded && radarData.length > 0 && (
         <motion.div {...fade} transition={{ delay: 0.05 }}>
           <Card>
             <CardContent className="p-6">
@@ -516,6 +616,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
                     </ResponsiveContainer>
                   </div>
                 </div>
+
 
                 {/* Quick stats */}
                 {resolvedPillars.length > 0 && (
