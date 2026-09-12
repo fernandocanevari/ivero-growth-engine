@@ -52,8 +52,15 @@ export function useAnalysisHistory() {
 
   const lastAnalysis = history.data?.length ? history.data[history.data.length - 1] : null;
 
-  const daysSinceLast = lastAnalysis
-    ? Math.floor((Date.now() - new Date(lastAnalysis.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  // O intervalo de 30 dias conta apenas as reanálises feitas no painel. O
+  // diagnóstico trazido do /preview aparece na série de evolução, mas não pode
+  // bloquear a primeira reanálise de quem acabou de se cadastrar.
+  const lastReanalysis = [...(history.data ?? [])]
+    .reverse()
+    .find((r) => (r.source ?? "reanalise") === "reanalise") ?? null;
+
+  const daysSinceLast = lastReanalysis
+    ? Math.floor((Date.now() - new Date(lastReanalysis.created_at).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
   const canReanalyze = daysSinceLast === null || daysSinceLast >= 30;
