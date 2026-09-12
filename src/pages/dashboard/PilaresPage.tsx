@@ -326,6 +326,31 @@ const PILLAR_DB_COLUMN: Record<string, keyof import("@/hooks/useAnalysisHistory"
   Relevância: "experience_score",
 };
 
+const PILLAR_ORDER = Object.keys(PILLAR_DB_COLUMN);
+
+const PILLAR_COLOR: Record<string, string> = {
+  Clareza: "hsl(var(--chart-1))",
+  Autoridade: "hsl(var(--chart-2))",
+  Conversão: "hsl(var(--chart-3))",
+  Posicionamento: "hsl(var(--chart-4))",
+  Relevância: "hsl(var(--chart-5))",
+};
+
+/* Rótulo do eixo de tempo: dia/mês, com hora quando há mais de uma
+   análise no mesmo dia (evita rótulos colapsados como "ago / ago / ago"). */
+function buildTimeLabels(dates: string[]) {
+  const day = dates.map((iso) =>
+    new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")
+  );
+  const needsTime = new Set(day).size !== day.length;
+  if (!needsTime) return day;
+  return dates.map((iso, i) => {
+    const t = new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return `${day[i]} ${t}`;
+  });
+}
+
+
 export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
   const { data: settings, isLoading: brandLoading } = useBrandSettings();
   const { reports, isLoading: reportsLoading } = useAuditReports();
