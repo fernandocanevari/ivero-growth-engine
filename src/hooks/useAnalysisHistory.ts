@@ -15,6 +15,8 @@ export interface AnalysisRecord {
   positioning_score: number;
   experience_score: number;
   created_at: string;
+  /** 'preview' = diagnóstico feito antes de virar cliente; 'reanalise' = rodado no painel. */
+  source?: "preview" | "reanalise";
   perception_snapshot?: PerceptionSnapshot | Record<string, never>;
   keyword_cloud?: KeywordCloud;
   /** Modelos de IA que responderam nessa análise. Deltas só comparam bases iguais. */
