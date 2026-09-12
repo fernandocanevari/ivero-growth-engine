@@ -15,7 +15,7 @@ import { useAuditReports } from "@/hooks/useAuditReports";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, RadarChart, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis, Radar,
 } from "recharts";
@@ -356,6 +356,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
   const { reports, isLoading: reportsLoading } = useAuditReports();
   const { history, isLoading: historyLoading } = useAnalysisHistory();
   const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
+  const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
   const displayName = settings?.brand_name || "sua marca";
 
   const latestReport = reports[0]; // sorted DESC in hook
