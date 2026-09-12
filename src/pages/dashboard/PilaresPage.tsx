@@ -393,21 +393,50 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
     });
   }, [latestReport, previousAnalysis]);
 
+  const timeLabels = useMemo(
+    () => buildTimeLabels(history.map((h) => h.created_at)),
+    [history]
+  );
+
   const evolutionByPillar = useMemo(() => {
     const map: Record<string, { month: string; score: number }[]> = {};
     if (history.length < 2) return map;
-    const fmt = (iso: string) => {
-      const d = new Date(iso);
-      return d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-    };
     for (const [pillarKey, col] of Object.entries(PILLAR_DB_COLUMN)) {
-      map[pillarKey] = history.map((h) => ({
-        month: fmt(h.created_at),
+      map[pillarKey] = history.map((h, i) => ({
+        month: timeLabels[i],
         score: (h[col] as number) ?? 0,
       }));
     }
     return map;
+  }, [history, timeLabels]);
+
+  /* Série única com todos os pilares + score geral ao longo do tempo. */
+  const trendSeries = useMemo(
+    () =>
+      history.map((h, i) => {
+        const row: Record<string, string | number> = { label: timeLabels[i] };
+        for (const [pillarKey, col] of Object.entries(PILLAR_DB_COLUMN)) {
+          row[pillarKey] = (h[col] as number) ?? 0;
+        }
+        row.Geral = h.overall_score ?? 0;
+        return row;
+      }),
+    [history, timeLabels]
+  );
+
+  /* Variação entre a primeira e a última análise, por pilar. */
+  const trendDeltas = useMemo(() => {
+    if (history.length < 2) return [];
+    const first = history[0];
+    const last = history[history.length - 1];
+    return PILLAR_ORDER.map((key) => {
+      const col = PILLAR_DB_COLUMN[key];
+      const from = (first[col] as number) ?? 0;
+      const to = (last[col] as number) ?? 0;
+      return { key, from, to, delta: to - from };
+    });
   }, [history]);
+
 
   const radarData = useMemo(() => {
     if (latestReport?.radar_data?.length) return latestReport.radar_data;
