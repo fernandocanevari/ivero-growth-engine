@@ -46,6 +46,13 @@ html {
     --ivero-pink: 330 85% 55%;
     --ivero-pink-light: 330 80% 65%;
     --ivero-slate: 220 15% 40%;
+    /* Série de cores para gráficos de evolução (5 pilares + geral) */
+    --chart-1: 265 70% 38%;
+    --chart-2: 330 85% 55%;
+    --chart-3: 200 85% 42%;
+    --chart-4: 35 90% 48%;
+    --chart-5: 160 65% 38%;
+    --chart-overall: 230 15% 35%;
     --ivero-slate-light: 220 10% 65%;
     --ivero-dark: 230 25% 8%;
     --ivero-dark-surface: 230 20% 12%;
@@ -98,6 +105,12 @@ html {
     --border: 230 20% 18%;
     --input: 230 20% 18%;
     --ring: 265 60% 55%;
+    --chart-1: 265 70% 65%;
+    --chart-2: 330 85% 65%;
+    --chart-3: 200 85% 60%;
+    --chart-4: 35 90% 60%;
+    --chart-5: 160 65% 55%;
+    --chart-overall: 230 15% 75%;
   }
 }
 
