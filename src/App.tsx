@@ -41,6 +41,7 @@ import GeradorConteudoPage from "./pages/dashboard/GeradorConteudoPage";
 import TagsPercepcaoPage from "./pages/dashboard/TagsPercepcaoPage";
 import AjudaPage from "./pages/dashboard/AjudaPage";
 import VisibilidadeIAPage from "./pages/dashboard/VisibilidadeIAPage";
+import VitrinePage from "./pages/dashboard/VitrinePage";
 import AuditoriaDetalhePage from "./pages/dashboard/AuditoriaDetalhePage";
 import LlmsTxtPage from "./pages/dashboard/LlmsTxtPage";
 import AdminPropostasPage from "./pages/dashboard/AdminPropostasPage";
@@ -138,6 +139,7 @@ const App = () => (
             <Route path="dominancia" element={<FeatureGate><DominanciaPage /></FeatureGate>} />
             <Route path="simulador" element={<FeatureGate><SimuladorPage /></FeatureGate>} />
             <Route path="llms-txt" element={<FeatureGate><LlmsTxtPage /></FeatureGate>} />
+            <Route path="vitrine" element={<FeatureGate><VitrinePage /></FeatureGate>} />
             <Route path="campanhas" element={<FeatureGate><CampanhasPage /></FeatureGate>} />
             <Route path="campanhas/nova" element={<FeatureGate><NovaCampanhaPage /></FeatureGate>} />
             <Route path="prompt-tester" element={<FeatureGate><PromptTesterPage /></FeatureGate>} />

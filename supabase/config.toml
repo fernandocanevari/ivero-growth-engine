@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.ivero-onboarding-analyze]
 verify_jwt = false
+
+[functions.vitrine-run]
+verify_jwt = false
+
+[functions.vitrine-schedule]
+verify_jwt = false
