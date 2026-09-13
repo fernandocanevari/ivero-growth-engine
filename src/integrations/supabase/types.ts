@@ -968,6 +968,176 @@ export type Database = {
         }
         Relationships: []
       }
+      vitrine_citations: {
+        Row: {
+          created_at: string
+          dominio: string
+          engine: Database["public"]["Enums"]["vitrine_engine"]
+          id: string
+          is_marca_do_cliente: boolean
+          loja_nome: string | null
+          posicao: number | null
+          preco_texto: string | null
+          produto_nome: string | null
+          query_id: string
+          run_id: string
+          tipo_fonte: Database["public"]["Enums"]["vitrine_source_type"]
+          url: string | null
+          url_mascarada: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dominio: string
+          engine: Database["public"]["Enums"]["vitrine_engine"]
+          id?: string
+          is_marca_do_cliente?: boolean
+          loja_nome?: string | null
+          posicao?: number | null
+          preco_texto?: string | null
+          produto_nome?: string | null
+          query_id: string
+          run_id: string
+          tipo_fonte?: Database["public"]["Enums"]["vitrine_source_type"]
+          url?: string | null
+          url_mascarada?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dominio?: string
+          engine?: Database["public"]["Enums"]["vitrine_engine"]
+          id?: string
+          is_marca_do_cliente?: boolean
+          loja_nome?: string | null
+          posicao?: number | null
+          preco_texto?: string | null
+          produto_nome?: string | null
+          query_id?: string
+          run_id?: string
+          tipo_fonte?: Database["public"]["Enums"]["vitrine_source_type"]
+          url?: string | null
+          url_mascarada?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vitrine_citations_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "vitrine_queries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vitrine_citations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "vitrine_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vitrine_queries: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          frequencia: Database["public"]["Enums"]["vitrine_frequency"]
+          id: string
+          idioma: string
+          last_run_at: string | null
+          next_run_at: string
+          pais: string
+          pergunta: string
+          regiao: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          frequencia?: Database["public"]["Enums"]["vitrine_frequency"]
+          id?: string
+          idioma?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          pais?: string
+          pergunta: string
+          regiao?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          frequencia?: Database["public"]["Enums"]["vitrine_frequency"]
+          id?: string
+          idioma?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          pais?: string
+          pergunta?: string
+          regiao?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vitrine_runs: {
+        Row: {
+          created_at: string
+          custo_usd: number
+          dominios: Json
+          duracao_ms: number
+          engine: Database["public"]["Enums"]["vitrine_engine"]
+          erro_msg: string | null
+          executado_em: string
+          id: string
+          marca_citada: boolean
+          query_id: string
+          resposta_texto: string
+          status: Database["public"]["Enums"]["vitrine_run_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custo_usd?: number
+          dominios?: Json
+          duracao_ms?: number
+          engine: Database["public"]["Enums"]["vitrine_engine"]
+          erro_msg?: string | null
+          executado_em?: string
+          id?: string
+          marca_citada?: boolean
+          query_id: string
+          resposta_texto?: string
+          status?: Database["public"]["Enums"]["vitrine_run_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custo_usd?: number
+          dominios?: Json
+          duracao_ms?: number
+          engine?: Database["public"]["Enums"]["vitrine_engine"]
+          erro_msg?: string | null
+          executado_em?: string
+          id?: string
+          marca_citada?: boolean
+          query_id?: string
+          resposta_texto?: string
+          status?: Database["public"]["Enums"]["vitrine_run_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vitrine_runs_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "vitrine_queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1030,6 +1200,10 @@ export type Database = {
         | "aceita"
         | "recusada"
         | "expirada"
+      vitrine_engine: "chatgpt" | "google_ai" | "claude"
+      vitrine_frequency: "semanal" | "mensal"
+      vitrine_run_status: "ok" | "erro"
+      vitrine_source_type: "loja" | "marketplace" | "review" | "outro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1199,6 +1373,10 @@ export const Constants = {
         "recusada",
         "expirada",
       ],
+      vitrine_engine: ["chatgpt", "google_ai", "claude"],
+      vitrine_frequency: ["semanal", "mensal"],
+      vitrine_run_status: ["ok", "erro"],
+      vitrine_source_type: ["loja", "marketplace", "review", "outro"],
     },
   },
 } as const
