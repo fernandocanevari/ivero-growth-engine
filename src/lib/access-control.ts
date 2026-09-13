@@ -121,6 +121,11 @@ export const LOCKED_ROUTE_INFO: Record<
     description:
       "Receba avisos no momento em que uma IA muda como recomenda sua marca — antes do concorrente reagir.",
   },
+  "/dashboard/vitrine": {
+    title: "Vitrine IA",
+    description:
+      "Descubra quais lojas e páginas as IAs citam quando alguém pergunta onde comprar — e com que frequência a sua marca aparece nessa lista.",
+  },
   "/dashboard/campanhas": {
     title: "Campanhas",
     description:
@@ -203,6 +208,7 @@ export const ROUTE_MIN_TIER: Record<string, PlanoTier> = {
   "/dashboard/relatorios": "autoridade",
   "/dashboard/llms-txt": "autoridade",
   "/dashboard/campanhas": "autoridade",
+  "/dashboard/vitrine": "influencia",
 };
 
 function normalizePath(pathname: string): string {
