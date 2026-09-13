@@ -97,14 +97,37 @@ export function isDomainAllowedForRegion(dominio: string, pais: string): boolean
   return ALLOWED_TLD_SUFFIXES.some((s) => dominio.endsWith(s));
 }
 
+/** Padrão de URL de página de produto — sinal forte de vitrine, não de review. */
+const PRODUCT_PATH_RE = /\/(produto|produtos|p\/|dp\/|item|tenis-|sapato)|skuid=|\/p\?|\/p$/i;
+
 export function classifySource(dominio: string, url: string | null): SourceType {
   if (MARKETPLACE_DOMAINS.some((d) => dominio === d || dominio.endsWith("." + d))) {
+    // Blog do marketplace ainda é conteúdo editorial.
+    if ((url ?? "").toLowerCase().includes("/blog")) return "review";
     return "marketplace";
   }
   const haystack = `${dominio} ${url ?? ""}`.toLowerCase();
   if (REVIEW_HINTS.some((h) => haystack.includes(h))) return "review";
+  if (url && PRODUCT_PATH_RE.test(url)) return "loja";
   if (/loja|shop|store|comprar/.test(haystack)) return "loja";
   return "outro";
+}
+
+/**
+ * Preço citado no mesmo trecho em que a loja/produto aparece. Evita colar o
+ * primeiro preço da resposta em todas as lojas — o que seria informação falsa.
+ */
+export function priceNear(texto: string, termos: string[]): string | null {
+  if (!texto) return null;
+  const blocos = texto.split(/\n{1,}|(?<=\.)\s{2,}/);
+  const alvos = termos.map((t) => t.toLowerCase()).filter((t) => t.length >= 3);
+  for (const bloco of blocos) {
+    const lower = bloco.toLowerCase();
+    if (!alvos.some((t) => lower.includes(t))) continue;
+    const p = extractPrices(bloco);
+    if (p.length > 0) return p[0];
+  }
+  return null;
 }
 
 export function storeNameFromDomain(dominio: string): string {
@@ -142,7 +165,7 @@ export function buildPrompt(ctx: QueryContext): string {
     .join("\n");
 }
 
-function dedupeCitations(items: VitrineCitation[], pais: string): VitrineCitation[] {
+function dedupeCitations(items: VitrineCitation[], pais: string, texto = ""): VitrineCitation[] {
   const seen = new Set<string>();
   const out: VitrineCitation[] = [];
   for (const c of items) {
@@ -152,7 +175,13 @@ function dedupeCitations(items: VitrineCitation[], pais: string): VitrineCitatio
     if (!c.url_mascarada && !isDomainAllowedForRegion(c.dominio, pais)) continue;
     if (seen.has(c.dominio)) continue;
     seen.add(c.dominio);
-    out.push({ ...c, posicao: out.length + 1 });
+    out.push({
+      ...c,
+      // O preço só é preenchido quando aparece no mesmo trecho da loja/produto.
+      preco_texto:
+        c.preco_texto ?? priceNear(texto, [c.loja_nome ?? "", c.dominio, c.produto_nome ?? ""]),
+      posicao: out.length + 1,
+    });
   }
   return out;
 }
@@ -161,12 +190,11 @@ function citationFrom(url: string, texto: string, produto: string | null): Vitri
   const dominio = normalizeDomain(url);
   if (!dominio) return null;
   const mascarada = isMaskedUrl(url);
-  const precos = extractPrices(texto);
   return {
-    dominio: mascarada ? dominio : dominio,
+    dominio,
     loja_nome: storeNameFromDomain(dominio),
     produto_nome: produto,
-    preco_texto: precos[0] ?? null,
+    preco_texto: priceNear(texto, [storeNameFromDomain(dominio), dominio, produto ?? ""]),
     url,
     url_mascarada: mascarada,
     tipo_fonte: classifySource(dominio, url),
