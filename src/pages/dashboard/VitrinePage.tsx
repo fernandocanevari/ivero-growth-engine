@@ -288,7 +288,7 @@ export default function VitrinePage() {
               onChange={(e) => setNovaPergunta(e.target.value)}
               placeholder="Ex.: melhor tênis para maratona custo-benefício"
               maxLength={300}
-              disabled={queries.length >= MAX_QUERIES}
+              disabled={queries.length >= maxPerguntas}
             />
             <Button
               onClick={() => {
@@ -296,7 +296,7 @@ export default function VitrinePage() {
                 createQuery.mutate({ pergunta: novaPergunta }, { onSuccess: () => setNovaPergunta("") });
               }}
               disabled={
-                createQuery.isPending || novaPergunta.trim().length < 3 || queries.length >= MAX_QUERIES
+                createQuery.isPending || novaPergunta.trim().length < 3 || queries.length >= maxPerguntas
               }
               className="shrink-0"
             >
@@ -304,18 +304,39 @@ export default function VitrinePage() {
               Adicionar
             </Button>
           </div>
-          {queries.length >= MAX_QUERIES && (
-            <p className="text-xs text-muted-foreground">
-              Limite de {MAX_QUERIES} perguntas por conta. Remova uma para adicionar outra.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            {queries.length} de {maxPerguntas} perguntas no seu plano · {rodadas30d} consultas nos últimos
+            30 dias (teto de {quota.maxRodadasMes})
+          </p>
 
           {loadingQueries ? (
             <p className="text-sm text-muted-foreground">Carregando…</p>
           ) : queries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma pergunta ainda. Comece com a pergunta que um cliente faria antes de comprar de você.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma pergunta ainda. Comece com a pergunta que um cliente faria antes de comprar de você.
+              </p>
+              {sugestoes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground">Sugestões para a sua marca:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sugestoes.map((s) => (
+                      <Button
+                        key={s}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        disabled={createQuery.isPending}
+                        onClick={() => createQuery.mutate({ pergunta: s })}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {s}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border">
               {queries.map((q) => {
