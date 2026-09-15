@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { executeVitrineQuery, type VitrineQueryRow } from "../_shared/vitrine-execute.ts";
+import { resolveVitrineQuota } from "../_shared/vitrine-quota.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,8 +19,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Teto de segurança de custo: consultas por conta por dia.
-const MAX_RUNS_PER_DAY = 30;
+// Tetos de custo: agora vêm da cota do plano (ver _shared/vitrine-quota.ts).
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
