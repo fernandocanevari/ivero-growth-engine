@@ -40,12 +40,17 @@ import {
   useRunVitrineQuery,
   computeFrequency,
   computeBrandTrend,
+  computeEngineHealth,
   ENGINE_LABEL,
   MIN_RUNS_FOR_FREQUENCY,
-  MAX_QUERIES,
   type VitrineEngine,
+  type DomainFrequency,
 } from "@/hooks/useVitrine";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useAuditReports } from "@/hooks/useAuditReports";
+import { vitrineQuotaFor } from "@/lib/vitrine-quota";
+import { buildVitrineSuggestions } from "@/lib/vitrine-suggestions";
 import { cn } from "@/lib/utils";
 
 const TIPO_LABEL: Record<string, string> = {
@@ -61,6 +66,8 @@ function pct(v: number) {
 
 export default function VitrinePage() {
   const { data: brand } = useBrandSettings();
+  const { isAdmin, isTrial, plano } = useSubscriptionStatus();
+  const { reports = [] } = useAuditReports() as unknown as { reports?: Array<{ keyword_cloud?: unknown }> };
   const { data: queries = [], isLoading: loadingQueries } = useVitrineQueries();
   const { data: runs = [] } = useVitrineRuns();
   const { data: citations = [] } = useVitrineCitations();
@@ -73,17 +80,63 @@ export default function VitrinePage() {
   const [queryFiltro, setQueryFiltro] = useState<string>("todas");
   const [rodando, setRodando] = useState<string | null>(null);
 
+  const { quota } = useMemo(
+    () => vitrineQuotaFor({ isAdmin, isTrial, plano }),
+    [isAdmin, isTrial, plano],
+  );
+  const maxPerguntas = quota.maxPerguntas;
+
   const { totalRuns, ranking } = useMemo(
     () => computeFrequency(runs, citations, { engine: engineFiltro, queryId: queryFiltro }),
     [runs, citations, engineFiltro, queryFiltro],
   );
 
+  // Ranking de LOJAS em primeiro plano; conteúdo editorial em bloco separado,
+  // para o ranking não ser poluído por blog e comparativo.
+  const lojas = useMemo<DomainFrequency[]>(
+    () => ranking.filter((r) => r.tipo_fonte === "loja" || r.tipo_fonte === "marketplace"),
+    [ranking],
+  );
+  const conteudos = useMemo<DomainFrequency[]>(
+    () => ranking.filter((r) => r.tipo_fonte === "review" || r.tipo_fonte === "outro"),
+    [ranking],
+  );
+
   const trend = useMemo(() => computeBrandTrend(runs), [runs]);
+  const engineHealth = useMemo(() => computeEngineHealth(runs), [runs]);
+
+  const keywords = useMemo(() => {
+    const cloud = reports?.[0]?.keyword_cloud;
+    if (!Array.isArray(cloud)) return [];
+    return cloud
+      .map((k) => (typeof k === "object" && k && "term" in k ? String((k as { term: string }).term) : ""))
+      .filter(Boolean)
+      .slice(0, 6);
+  }, [reports]);
+
+  const sugestoes = useMemo(
+    () =>
+      buildVitrineSuggestions({
+        sector: brand?.sector,
+        brandName: brand?.brand_name,
+        keywords,
+        regiao:
+          brand?.coverage_type === "regional" && brand?.coverage_city
+            ? `${brand.coverage_city}${brand.coverage_state ? `/${brand.coverage_state}` : ""}`
+            : null,
+        jaCadastradas: queries.map((q) => q.pergunta),
+        limite: 4,
+      }),
+    [brand, keywords, queries],
+  );
 
   const marcaNoRanking = ranking.find((r) => r.is_marca_do_cliente);
   const posicaoMarca = marcaNoRanking ? ranking.indexOf(marcaNoRanking) + 1 : null;
   const custoTotal = runs.reduce((acc, r) => acc + Number(r.custo_usd || 0), 0);
   const poucasRodadas = totalRuns < MIN_RUNS_FOR_FREQUENCY;
+  const rodadas30d = runs.filter(
+    (r) => new Date(r.executado_em).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000,
+  ).length;
 
   const handleRun = async (id: string) => {
     setRodando(id);
@@ -93,6 +146,57 @@ export default function VitrinePage() {
       setRodando(null);
     }
   };
+
+  const renderLinha = (r: DomainFrequency) => (
+    <li
+      key={r.dominio}
+      className={cn(
+        "rounded-md border p-3",
+        r.is_marca_do_cliente ? "border-primary/40 bg-primary/[0.04]" : "border-border",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-foreground">{r.loja_nome}</span>
+        <span className="text-xs text-muted-foreground">{r.dominio}</span>
+        <Badge variant="secondary" className="text-[10px]">
+          {TIPO_LABEL[r.tipo_fonte] ?? r.tipo_fonte}
+        </Badge>
+        {r.is_marca_do_cliente && (
+          <Badge className="text-[10px] bg-primary text-primary-foreground">Sua marca</Badge>
+        )}
+        <span className="ml-auto text-sm font-semibold text-foreground">
+          {poucasRodadas
+            ? `${r.rodadas_com_citacao} de ${r.total_rodadas}`
+            : `${pct(r.taxa)} · ${r.rodadas_com_citacao} de ${r.total_rodadas}`}
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
+        <div
+          className="h-1.5 rounded-full bg-primary"
+          style={{ width: `${Math.max(4, Math.round(r.taxa * 100))}%` }}
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span>{r.motores.map((m) => ENGINE_LABEL[m]).join(", ")}</span>
+        {r.ultimo_produto && <span>· {r.ultimo_produto}</span>}
+        {r.ultimo_preco && <span>· {r.ultimo_preco}</span>}
+        {r.ultimo_url && !r.ultimo_url.includes("vertexaisearch") ? (
+          <a
+            href={r.ultimo_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            Abrir página <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <Link2Off className="h-3 w-3" /> link mascarado pelo motor
+          </span>
+        )}
+      </div>
+    </li>
+  );
 
   return (
     <div className="space-y-6">
@@ -184,7 +288,7 @@ export default function VitrinePage() {
               onChange={(e) => setNovaPergunta(e.target.value)}
               placeholder="Ex.: melhor tênis para maratona custo-benefício"
               maxLength={300}
-              disabled={queries.length >= MAX_QUERIES}
+              disabled={queries.length >= maxPerguntas}
             />
             <Button
               onClick={() => {
@@ -192,7 +296,7 @@ export default function VitrinePage() {
                 createQuery.mutate({ pergunta: novaPergunta }, { onSuccess: () => setNovaPergunta("") });
               }}
               disabled={
-                createQuery.isPending || novaPergunta.trim().length < 3 || queries.length >= MAX_QUERIES
+                createQuery.isPending || novaPergunta.trim().length < 3 || queries.length >= maxPerguntas
               }
               className="shrink-0"
             >
@@ -200,18 +304,39 @@ export default function VitrinePage() {
               Adicionar
             </Button>
           </div>
-          {queries.length >= MAX_QUERIES && (
-            <p className="text-xs text-muted-foreground">
-              Limite de {MAX_QUERIES} perguntas por conta. Remova uma para adicionar outra.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            {queries.length} de {maxPerguntas} perguntas no seu plano · {rodadas30d} consultas nos últimos
+            30 dias (teto de {quota.maxRodadasMes})
+          </p>
 
           {loadingQueries ? (
             <p className="text-sm text-muted-foreground">Carregando…</p>
           ) : queries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma pergunta ainda. Comece com a pergunta que um cliente faria antes de comprar de você.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma pergunta ainda. Comece com a pergunta que um cliente faria antes de comprar de você.
+              </p>
+              {sugestoes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground">Sugestões para a sua marca:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sugestoes.map((s) => (
+                      <Button
+                        key={s}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        disabled={createQuery.isPending}
+                        onClick={() => createQuery.mutate({ pergunta: s })}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {s}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border">
               {queries.map((q) => {
@@ -292,65 +417,75 @@ export default function VitrinePage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
           {ranking.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma citação registrada com esses filtros. Rode uma consulta para começar.
             </p>
           ) : (
-            <ul className="space-y-2">
-              {ranking.slice(0, 25).map((r) => (
-                <li
-                  key={r.dominio}
-                  className={cn(
-                    "rounded-md border p-3",
-                    r.is_marca_do_cliente ? "border-primary/40 bg-primary/[0.04]" : "border-border",
-                  )}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{r.loja_nome}</span>
-                    <span className="text-xs text-muted-foreground">{r.dominio}</span>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {TIPO_LABEL[r.tipo_fonte] ?? r.tipo_fonte}
-                    </Badge>
-                    {r.is_marca_do_cliente && (
-                      <Badge className="text-[10px] bg-primary text-primary-foreground">Sua marca</Badge>
-                    )}
-                    <span className="ml-auto text-sm font-semibold text-foreground">
-                      {poucasRodadas
-                        ? `${r.rodadas_com_citacao} de ${r.total_rodadas}`
-                        : `${pct(r.taxa)} · ${r.rodadas_com_citacao} de ${r.total_rodadas}`}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-                    <div
-                      className="h-1.5 rounded-full bg-primary"
-                      style={{ width: `${Math.max(4, Math.round(r.taxa * 100))}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span>{r.motores.map((m) => ENGINE_LABEL[m]).join(", ")}</span>
-                    {r.ultimo_produto && <span>· {r.ultimo_produto}</span>}
-                    {r.ultimo_preco && <span>· {r.ultimo_preco}</span>}
-                    {r.ultimo_url && !r.ultimo_url.includes("vertexaisearch") ? (
-                      <a
-                        href={r.ultimo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
-                      >
-                        Abrir página <ExternalLink className="h-3 w-3" />
-                      </a>
-                    ) : (
-                      <span className="inline-flex items-center gap-1">
-                        <Link2Off className="h-3 w-3" /> link mascarado pelo motor
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Onde dá para comprar (lojas e marketplaces)
+                </p>
+                {lojas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nesta seleção as IAs citaram só conteúdo editorial, nenhuma página de compra.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">{lojas.slice(0, 25).map(renderLinha)}</ul>
+                )}
+              </div>
+
+              {conteudos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Conteúdo que influencia a recomendação (blogs, reviews, comparativos)
+                  </p>
+                  <ul className="space-y-2">{conteudos.slice(0, 15).map(renderLinha)}</ul>
+                </div>
+              )}
+            </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Saúde dos motores — quando um falha, a rodada segue com os outros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Motores consultados
+            <InfoTooltip text="Se um motor falhar, a consulta continua nos outros. Aqui você vê o que respondeu na última rodada." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="grid gap-2 sm:grid-cols-3">
+            {engineHealth.map((h) => (
+              <li key={h.engine} className="rounded-md border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-foreground">{ENGINE_LABEL[h.engine]}</span>
+                  <Badge
+                    variant={h.status === "ok" ? "secondary" : "outline"}
+                    className={cn(
+                      "text-[10px]",
+                      h.status === "erro" && "border-destructive/40 text-destructive",
+                    )}
+                  >
+                    {h.status === "ok" ? "respondendo" : h.status === "erro" ? "falhou" : "sem dados"}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {h.rodadas_ok} ok · {h.rodadas_erro} com erro
+                  {h.ultima_em
+                    ? ` · última em ${new Date(h.ultima_em).toLocaleDateString("pt-BR")}`
+                    : ""}
+                </p>
+                {h.status === "erro" && h.erro_msg && (
+                  <p className="mt-1 text-xs text-destructive line-clamp-2">{h.erro_msg}</p>
+                )}
+              </li>
+            ))}
+          </ul>
         </CardContent>
       </Card>
 

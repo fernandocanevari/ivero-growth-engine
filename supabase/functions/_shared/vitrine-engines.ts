@@ -161,10 +161,24 @@ export function extractPrices(text: string): string[] {
   return [...new Set(matches)];
 }
 
-export function buildPrompt(ctx: QueryContext): string {
+export function buildPrompt(ctx: QueryContext, engine?: VitrineEngine): string {
   const regiaoLinha = ctx.regiao?.trim()
     ? `Foque em lojas que atendem ${ctx.regiao.trim()}.`
     : "";
+
+  // O Claude tende ao editorial: sem instrução explícita ele cita comparativo,
+  // blog e "melhores de 2026" em vez de página de compra com preço.
+  const foco =
+    engine === "claude"
+      ? [
+          `IMPORTANTE: cite a PÁGINA DE COMPRA de cada produto (a página da loja onde se`,
+          `clica em comprar/adicionar ao carrinho), não artigos, blogs, comparativos ou`,
+          `listas do tipo "melhores de 2026".`,
+          `Se você só encontrar um artigo, busque de novo pela loja que vende o produto.`,
+          `Cada item da lista deve ter preço em reais lido na própria página da loja.`,
+        ].join("\n")
+      : "";
+
   return [
     `Você é um consumidor brasileiro pesquisando uma compra online.`,
     `Responda SEMPRE em português do Brasil.`,
@@ -176,8 +190,9 @@ export function buildPrompt(ctx: QueryContext): string {
     ``,
     `Use a busca na web e responda listando de 5 a 10 opções. Para cada uma informe:`,
     `- nome do produto`,
-    `- loja onde comprar`,
+    `- loja onde comprar (com o link da página do produto)`,
     `- preço aproximado em reais`,
+    foco,
     `Cite as fontes.`,
   ]
     .filter(Boolean)
@@ -246,7 +261,7 @@ async function runChatGpt(ctx: QueryContext): Promise<EngineResult> {
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        input: buildPrompt(ctx),
+        input: buildPrompt(ctx, "chatgpt"),
         tools: [
           {
             type: "web_search",
@@ -334,7 +349,7 @@ async function runGoogleAi(ctx: QueryContext): Promise<EngineResult> {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: buildPrompt(ctx) }] }],
+          contents: [{ role: "user", parts: [{ text: buildPrompt(ctx, "google_ai") }] }],
           tools: [{ google_search: {} }],
           generationConfig: { maxOutputTokens: 1500 },
         }),
@@ -416,7 +431,7 @@ async function runClaude(ctx: QueryContext): Promise<EngineResult> {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1500,
-        messages: [{ role: "user", content: buildPrompt(ctx) }],
+        messages: [{ role: "user", content: buildPrompt(ctx, "claude") }],
         tools: [
           {
             type: "web_search_20250305",

@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { executeVitrineQuery, type VitrineQueryRow } from "../_shared/vitrine-execute.ts";
+import { resolveVitrineQuota } from "../_shared/vitrine-quota.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,8 +19,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Teto de segurança de custo: consultas por conta por dia.
-const MAX_RUNS_PER_DAY = 30;
+// Tetos de custo: agora vêm da cota do plano (ver _shared/vitrine-quota.ts).
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -54,22 +54,69 @@ serve(async (req) => {
     if (qErr) return json({ error: qErr.message }, 500);
     if (!query) return json({ error: "Pergunta não encontrada" }, 404);
 
-    // Teto diário por conta.
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("vitrine_runs")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("executado_em", since);
-    if ((count ?? 0) >= MAX_RUNS_PER_DAY) {
+    // Cota do plano: rodadas nas últimas 24h e nos últimos 30 dias.
+    const { tier, quota } = await resolveVitrineQuota(admin, user.id);
+    if (quota.maxRodadasMes === 0) {
       return json(
-        { error: "limite_diario", message: "Limite diário de consultas atingido. Tente novamente amanhã." },
+        {
+          error: "plano_sem_acesso",
+          message: "A Vitrine IA está disponível a partir do plano Influência.",
+        },
+        403,
+      );
+    }
+
+    const desde24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const desde30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [{ count: dia }, { count: mes }] = await Promise.all([
+      admin
+        .from("vitrine_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("executado_em", desde24h),
+      admin
+        .from("vitrine_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("executado_em", desde30d),
+    ]);
+
+    if ((dia ?? 0) >= quota.maxRodadasDia) {
+      return json(
+        {
+          error: "limite_diario",
+          message: `Limite de ${quota.maxRodadasDia} consultas por dia atingido no seu plano. Tente amanhã.`,
+        },
+        429,
+      );
+    }
+    if ((mes ?? 0) >= quota.maxRodadasMes) {
+      return json(
+        {
+          error: "limite_mensal",
+          message: `Limite de ${quota.maxRodadasMes} consultas nos últimos 30 dias atingido no seu plano.`,
+        },
         429,
       );
     }
 
     const resultados = await executeVitrineQuery(admin, query as VitrineQueryRow);
-    return json({ ok: true, resultados });
+    const okCount = resultados.filter((r) => r.status === "ok").length;
+    // Resiliência: a rodada só falha quando NENHUM motor respondeu.
+    return json({
+      ok: okCount > 0,
+      tier,
+      quota,
+      motores_ok: okCount,
+      resultados,
+      ...(okCount === 0
+        ? {
+            error: "todos_os_motores_falharam",
+            message: "Nenhum motor respondeu nesta rodada. Veja o detalhe por motor.",
+          }
+        : {}),
+    });
   } catch (e) {
     console.error("vitrine-run erro:", e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

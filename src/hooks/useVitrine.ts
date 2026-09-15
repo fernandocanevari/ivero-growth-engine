@@ -261,3 +261,34 @@ export function computeBrandTrend(runs: VitrineRun[]): Array<{ data: string; tax
       rodadas: v.total,
     }));
 }
+
+/**
+ * Saúde por motor — resiliência. Quando um motor falha, a rodada continua com
+ * os outros; a tela precisa dizer qual falhou e por quê.
+ */
+export interface EngineHealth {
+  engine: VitrineEngine;
+  ultima_em: string | null;
+  status: "ok" | "erro" | "sem_dados";
+  erro_msg: string | null;
+  rodadas_ok: number;
+  rodadas_erro: number;
+}
+
+export function computeEngineHealth(runs: VitrineRun[]): EngineHealth[] {
+  const engines: VitrineEngine[] = ["claude", "google_ai", "chatgpt"];
+  return engines.map((engine) => {
+    const doMotor = runs
+      .filter((r) => r.engine === engine)
+      .sort((a, b) => b.executado_em.localeCompare(a.executado_em));
+    const ultima = doMotor[0];
+    return {
+      engine,
+      ultima_em: ultima?.executado_em ?? null,
+      status: ultima ? ultima.status : "sem_dados",
+      erro_msg: ultima?.erro_msg ?? null,
+      rodadas_ok: doMotor.filter((r) => r.status === "ok").length,
+      rodadas_erro: doMotor.filter((r) => r.status === "erro").length,
+    };
+  });
+}
