@@ -69,11 +69,24 @@ const REVIEW_HINTS = [
   "uol.com.br", "globo.com", "terra.com.br", "g1.globo.com",
 ];
 
+// Subdomínios técnicos que representam a MESMA loja — sem isso
+// "secure.decathlon.com.br" contaria como uma segunda loja.
+const STRIP_SUBDOMAINS = ["www.", "secure.", "loja.", "lojas.", "shop.", "m.", "br.", "pt.", "en."];
+
 export function normalizeDomain(rawUrl: string): string | null {
   try {
     const u = new URL(rawUrl);
     let host = u.hostname.toLowerCase();
-    if (host.startsWith("www.")) host = host.slice(4);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const p of STRIP_SUBDOMAINS) {
+        if (host.startsWith(p) && host.slice(p.length).includes(".")) {
+          host = host.slice(p.length);
+          changed = true;
+        }
+      }
+    }
     return host || null;
   } catch {
     return null;
@@ -119,8 +132,14 @@ export function classifySource(dominio: string, url: string | null): SourceType 
  */
 export function priceNear(texto: string, termos: string[]): string | null {
   if (!texto) return null;
-  const blocos = texto.split(/\n{1,}|(?<=\.)\s{2,}/);
-  const alvos = termos.map((t) => t.toLowerCase()).filter((t) => t.length >= 3);
+  // Blocos = itens de lista (1., -, ###) ou parágrafos. O preço quase sempre
+  // está na MESMA entrada da lista em que a loja aparece.
+  const blocos = texto
+    .split(/\n(?=\s*(?:\d+[.)]\s|[-*•]\s|#{1,4}\s))|\n\s*\n/)
+    .filter((b) => b.trim().length > 0);
+  const alvos = termos
+    .map((t) => t.toLowerCase().trim())
+    .filter((t) => t.length >= 3);
   for (const bloco of blocos) {
     const lower = bloco.toLowerCase();
     if (!alvos.some((t) => lower.includes(t))) continue;
