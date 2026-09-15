@@ -132,8 +132,14 @@ export function classifySource(dominio: string, url: string | null): SourceType 
  */
 export function priceNear(texto: string, termos: string[]): string | null {
   if (!texto) return null;
-  const blocos = texto.split(/\n{1,}|(?<=\.)\s{2,}/);
-  const alvos = termos.map((t) => t.toLowerCase()).filter((t) => t.length >= 3);
+  // Blocos = itens de lista (1., -, ###) ou parágrafos. O preço quase sempre
+  // está na MESMA entrada da lista em que a loja aparece.
+  const blocos = texto
+    .split(/\n(?=\s*(?:\d+[.)]\s|[-*•]\s|#{1,4}\s))|\n\s*\n/)
+    .filter((b) => b.trim().length > 0);
+  const alvos = termos
+    .map((t) => t.toLowerCase().trim())
+    .filter((t) => t.length >= 3);
   for (const bloco of blocos) {
     const lower = bloco.toLowerCase();
     if (!alvos.some((t) => lower.includes(t))) continue;
