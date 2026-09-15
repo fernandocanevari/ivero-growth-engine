@@ -261,7 +261,7 @@ async function runChatGpt(ctx: QueryContext): Promise<EngineResult> {
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        input: buildPrompt(ctx),
+        input: buildPrompt(ctx, "chatgpt"),
         tools: [
           {
             type: "web_search",
@@ -349,7 +349,7 @@ async function runGoogleAi(ctx: QueryContext): Promise<EngineResult> {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: buildPrompt(ctx) }] }],
+          contents: [{ role: "user", parts: [{ text: buildPrompt(ctx, "google_ai") }] }],
           tools: [{ google_search: {} }],
           generationConfig: { maxOutputTokens: 1500 },
         }),
@@ -431,7 +431,7 @@ async function runClaude(ctx: QueryContext): Promise<EngineResult> {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1500,
-        messages: [{ role: "user", content: buildPrompt(ctx) }],
+        messages: [{ role: "user", content: buildPrompt(ctx, "claude") }],
         tools: [
           {
             type: "web_search_20250305",
