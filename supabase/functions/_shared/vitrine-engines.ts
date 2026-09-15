@@ -69,11 +69,24 @@ const REVIEW_HINTS = [
   "uol.com.br", "globo.com", "terra.com.br", "g1.globo.com",
 ];
 
+// Subdomínios técnicos que representam a MESMA loja — sem isso
+// "secure.decathlon.com.br" contaria como uma segunda loja.
+const STRIP_SUBDOMAINS = ["www.", "secure.", "loja.", "lojas.", "shop.", "m.", "br.", "pt.", "en."];
+
 export function normalizeDomain(rawUrl: string): string | null {
   try {
     const u = new URL(rawUrl);
     let host = u.hostname.toLowerCase();
-    if (host.startsWith("www.")) host = host.slice(4);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const p of STRIP_SUBDOMAINS) {
+        if (host.startsWith(p) && host.slice(p.length).includes(".")) {
+          host = host.slice(p.length);
+          changed = true;
+        }
+      }
+    }
     return host || null;
   } catch {
     return null;
