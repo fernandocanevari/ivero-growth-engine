@@ -16,6 +16,7 @@ import { useTrackOnboardingVisit } from "@/hooks/useDashboardOnboarding";
 import { LibrarySheet } from "./LibrarySheet";
 import BrandProfileModal from "./BrandProfileModal";
 import BrandProfileReminderBanner from "./BrandProfileReminderBanner";
+import { PendingPaymentBanner } from "./PendingPaymentBanner";
 import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { useSubscriptionGate } from "@/components/ProtectedRoute";
@@ -28,7 +29,7 @@ export default function DashboardLayout() {
   const { isPaid, isAdmin, isTrial, plano, trialEndsAt, isTrialExpired, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isInGracePeriod, carenciaAte } = useSubscriptionGate();
+  const { isInGracePeriod, carenciaAte, isPendingCheckout } = useSubscriptionGate();
   const [userId, setUserId] = useState<string | null>(null);
   const [brandModalDismissed, setBrandModalDismissed] = useState(false);
   const [brandModalForceOpen, setBrandModalForceOpen] = useState(false);
