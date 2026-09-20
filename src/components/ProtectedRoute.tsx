@@ -15,7 +15,7 @@ type SubscriptionGateContextValue = {
   status: string | null;
   carenciaAte: string | null;
   /** Pagamento recém-contratado, ainda sem confirmação do provedor. */
-  isPendingCheckout: boolean;
+  isPendingCheckout?: boolean;
 };
 
 const SubscriptionGateContext = createContext<SubscriptionGateContextValue>({
@@ -96,6 +96,8 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
             carencia_ate: string | null;
             trial_ends_at: string | null;
             updated_at: string | null;
+            asaas_checkout_id?: string | null;
+            asaas_checkout_created_at?: string | null;
           }
         | undefined;
       let status: string | null = null;
