@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { resolveEffectiveStatus } from "@/lib/subscription-status";
+import { resolveEffectiveStatus, isRecentPendingCheckout } from "@/lib/subscription-status";
 
 import {
   PLANOS,
@@ -95,8 +95,18 @@ const EscolherPlanoPage = () => {
       const subs = (allSubs ?? []).filter((r) =>
         ["ativo", "trial", "inadimplente", "pendente"].includes(r.status ?? ""),
       );
-      const effective = subs?.[0] ? resolveEffectiveStatus(subs[0]) : null;
-      if (effective && effective !== "trial_expirado") {
+      const atual = subs?.[0] ?? null;
+      const effective = atual ? resolveEffectiveStatus(atual) : null;
+
+      if (effective === "pendente") {
+        // Checkout recém-concluído → o cliente já tem acesso; leva ao app.
+        // Pendente antigo/abandonado → fica aqui para contratar de novo
+        // (antes havia ping-pong: /escolher-plano ↔ /dashboard/assinatura).
+        if (isRecentPendingCheckout(atual)) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+      } else if (effective && effective !== "trial_expirado") {
         navigate(
           effective === "ativo" || effective === "trial" ? "/dashboard" : "/dashboard/assinatura",
           { replace: true },
