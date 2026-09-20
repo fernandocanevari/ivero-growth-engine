@@ -107,7 +107,10 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       while (true) {
         const { data: subs } = await supabase
           .from("assinaturas")
-          .select("status, carencia_ate, trial_ends_at, data_vencimento, updated_at")
+          .select(
+            "status, carencia_ate, trial_ends_at, data_vencimento, updated_at, " +
+              "asaas_checkout_id, asaas_checkout_created_at",
+          )
           .eq("user_id", session.user.id)
           .order("updated_at", { ascending: false })
           .limit(1);
