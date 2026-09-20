@@ -137,7 +137,9 @@ Deno.serve(async (req) => {
         await supabase
           .from("assinaturas")
           .update({
-            status: "trial_expirado",
+            // 'expirado' é o valor aceito pelo constraint do banco; a leitura
+            // deriva isso para "trial_expirado" (resolveEffectiveStatus).
+            status: "expirado",
             plano_pretendido: null,
             ciclo_pretendido: null,
             asaas_checkout_id: null,
