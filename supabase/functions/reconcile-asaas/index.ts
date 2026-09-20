@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
-        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_subscription_id, asaas_customer_id",
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
