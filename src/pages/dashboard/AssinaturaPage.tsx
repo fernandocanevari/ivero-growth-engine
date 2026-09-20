@@ -364,6 +364,16 @@ export default function AssinaturaPage() {
                 Estamos aguardando a confirmação do seu pagamento. Assim que ele for
                 confirmado, a cobrança recorrente aparece aqui.
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => void runReconcile(true)}
+                disabled={checkingPayment}
+              >
+                {checkingPayment && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+                Verificar pagamento agora
+              </Button>
             </>
           ) : effectiveStatus === "cancelado" ? (
             <>
