@@ -74,7 +74,7 @@ const EscolherPlanoPage = () => {
       // Trial vencido NÃO conta como viva (senão viraria loop de redirect).
       const { data: allSubs } = await supabase
         .from("assinaturas")
-        .select("status, trial_ends_at, ciclo_contratado")
+        .select("status, trial_ends_at, ciclo_contratado, asaas_checkout_id, asaas_checkout_created_at")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
       if (cancelled) return;
