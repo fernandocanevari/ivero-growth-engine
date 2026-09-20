@@ -126,11 +126,17 @@ export default function AssinaturaPage() {
     }
   };
 
-  const autoReconciledRef = useRef(false);
+  // Enquanto o pagamento estiver pendente, revalidamos em segundo plano: o card
+  // sai de "pendente" para "ativo" sozinho, sem o cliente precisar recarregar.
   useEffect(() => {
-    if (statusLoading || effectiveStatus !== "pendente" || autoReconciledRef.current) return;
-    autoReconciledRef.current = true;
+    if (statusLoading || effectiveStatus !== "pendente") return;
     void runReconcile(false);
+    const id = setInterval(() => {
+      void refreshRef.current();
+      void reloadRef.current();
+      void runReconcile(false);
+    }, 30_000);
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusLoading, effectiveStatus]);
 
