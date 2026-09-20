@@ -1,19 +1,28 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { cancelAccessUntil, resolveEffectiveStatus, isAccountRoute } from "@/lib/subscription-status";
+import {
+  cancelAccessUntil,
+  resolveEffectiveStatus,
+  isAccountRoute,
+  isRecentPendingCheckout,
+} from "@/lib/subscription-status";
+import { reconcilePendingPayment } from "@/lib/reconcile-pending";
 
 
 type SubscriptionGateContextValue = {
   isInGracePeriod: boolean;
   status: string | null;
   carenciaAte: string | null;
+  /** Pagamento recém-contratado, ainda sem confirmação do provedor. */
+  isPendingCheckout: boolean;
 };
 
 const SubscriptionGateContext = createContext<SubscriptionGateContextValue>({
   isInGracePeriod: false,
   status: null,
   carenciaAte: null,
+  isPendingCheckout: false,
 });
 
 export function useSubscriptionGate() {
