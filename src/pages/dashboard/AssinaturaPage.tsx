@@ -390,6 +390,9 @@ export default function AssinaturaPage() {
               <p className="text-sm text-muted-foreground">
                 Contrate um plano para ativar a cobrança recorrente e recuperar o acesso.
               </p>
+              <Button size="sm" className="mt-4" onClick={handleChangePlan}>
+                Contratar novamente
+              </Button>
             </>
           ) : (
             <>
