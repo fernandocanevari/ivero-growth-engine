@@ -1,19 +1,28 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { cancelAccessUntil, resolveEffectiveStatus, isAccountRoute } from "@/lib/subscription-status";
+import {
+  cancelAccessUntil,
+  resolveEffectiveStatus,
+  isAccountRoute,
+  isRecentPendingCheckout,
+} from "@/lib/subscription-status";
+import { reconcilePendingPayment } from "@/lib/reconcile-pending";
 
 
 type SubscriptionGateContextValue = {
   isInGracePeriod: boolean;
   status: string | null;
   carenciaAte: string | null;
+  /** Pagamento recém-contratado, ainda sem confirmação do provedor. */
+  isPendingCheckout?: boolean;
 };
 
 const SubscriptionGateContext = createContext<SubscriptionGateContextValue>({
   isInGracePeriod: false,
   status: null,
   carenciaAte: null,
+  isPendingCheckout: false,
 });
 
 export function useSubscriptionGate() {
@@ -87,6 +96,8 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
             carencia_ate: string | null;
             trial_ends_at: string | null;
             updated_at: string | null;
+            asaas_checkout_id?: string | null;
+            asaas_checkout_created_at?: string | null;
           }
         | undefined;
       let status: string | null = null;
@@ -96,7 +107,7 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
       while (true) {
         const { data: subs } = await supabase
           .from("assinaturas")
-          .select("status, carencia_ate, trial_ends_at, data_vencimento, updated_at")
+          .select("status, carencia_ate, trial_ends_at, data_vencimento, updated_at, asaas_checkout_id, asaas_checkout_created_at")
           .eq("user_id", session.user.id)
           .order("updated_at", { ascending: false })
           .limit(1);
@@ -142,6 +153,14 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
 
       if (cancelled) return;
 
+      // Checkout recém-concluído: o pagamento existe, só falta a confirmação do
+      // provedor. Bloquear aqui criava ping-pong com /escolher-plano.
+      const pendingRecente = isRecentPendingCheckout(sub ?? null);
+      if (pendingRecente) {
+        // Rede de segurança: tenta confirmar em background (sem travar a tela).
+        void reconcilePendingPayment();
+      }
+
       // Rotas de conta (assinatura / configurações / ajuda) continuam acessíveis
       // mesmo sem assinatura viva — o usuário precisa poder pagar e pedir ajuda.
       if (sub && isAccountRoute(location.pathname)) {
@@ -149,6 +168,19 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
           isInGracePeriod: status === "inadimplente",
           status,
           carenciaAte,
+          isPendingCheckout: pendingRecente,
+        });
+        setAuthorized(true);
+        setLoading(false);
+        return;
+      }
+
+      if (pendingRecente) {
+        setGate({
+          isInGracePeriod: false,
+          status,
+          carenciaAte,
+          isPendingCheckout: true,
         });
         setAuthorized(true);
         setLoading(false);

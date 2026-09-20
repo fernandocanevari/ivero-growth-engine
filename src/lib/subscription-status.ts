@@ -27,7 +27,47 @@ export type SubscriptionLike = {
   trial_ends_at?: string | null;
   carencia_ate?: string | null;
   data_vencimento?: string | null;
+  asaas_checkout_id?: string | null;
+  asaas_checkout_created_at?: string | null;
 } | null;
+
+/**
+ * Janela de tolerância pós-checkout.
+ *
+ * Quem acabou de fechar o checkout fica em `pendente` até o webhook do Asaas
+ * confirmar. Expulsar essa pessoa para /escolher-plano criava ping-pong de
+ * redirect. Dentro da janela liberamos o acesso e reconciliamos em background.
+ */
+export const PENDING_CHECKOUT_GRACE_MS = 30 * 60 * 1000;
+
+/** Tentativa de pagamento abandonada: checkout sem confirmação há mais de 1h. */
+export const PENDING_CHECKOUT_EXPIRY_MS = 60 * 60 * 1000;
+
+/** `pendente` com checkout criado há menos de 30 min → acesso liberado. */
+export function isRecentPendingCheckout(
+  row: SubscriptionLike,
+  now: Date = new Date(),
+): boolean {
+  if (!row) return false;
+  if (resolveEffectiveStatus(row, now) !== "pendente") return false;
+  if (!row.asaas_checkout_id || !row.asaas_checkout_created_at) return false;
+  const ts = new Date(row.asaas_checkout_created_at).getTime();
+  if (Number.isNaN(ts)) return false;
+  return now.getTime() - ts < PENDING_CHECKOUT_GRACE_MS;
+}
+
+/** `pendente` cuja tentativa de pagamento já passou do prazo de confirmação. */
+export function isStalePendingCheckout(
+  row: SubscriptionLike,
+  now: Date = new Date(),
+): boolean {
+  if (!row) return false;
+  if (resolveEffectiveStatus(row, now) !== "pendente") return false;
+  if (!row.asaas_checkout_created_at) return true;
+  const ts = new Date(row.asaas_checkout_created_at).getTime();
+  if (Number.isNaN(ts)) return true;
+  return now.getTime() - ts > PENDING_CHECKOUT_EXPIRY_MS;
+}
 
 /**
  * Cancelamento não corta o acesso na hora: o cliente mantém o que já pagou.

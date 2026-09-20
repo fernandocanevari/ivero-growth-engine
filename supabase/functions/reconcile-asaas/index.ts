@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
-        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_subscription_id, asaas_customer_id",
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -121,6 +121,40 @@ Deno.serve(async (req) => {
     }
 
     if (!paid) {
+      // Tentativa de pagamento abandonada: checkout expirado/cancelado no Asaas
+      // ou criado há mais de 1h sem confirmação. Normaliza para trial_expirado
+      // em vez de deixar a conta presa em "pendente" para sempre.
+      const CHECKOUT_EXPIRY_MS = 60 * 60 * 1000;
+      const createdAt = row.asaas_checkout_created_at
+        ? new Date(row.asaas_checkout_created_at as string).getTime()
+        : NaN;
+      const tooOld = Number.isNaN(createdAt)
+        ? false
+        : Date.now() - createdAt > CHECKOUT_EXPIRY_MS;
+      const asaasExpired = ["EXPIRED", "CANCELLED", "CANCELED"].includes(checkoutStatus);
+
+      if (row.status === "pendente" && (tooOld || asaasExpired)) {
+        await supabase
+          .from("assinaturas")
+          .update({
+            status: "trial_expirado",
+            plano_pretendido: null,
+            ciclo_pretendido: null,
+            asaas_checkout_id: null,
+            ...(subscriptionId ? { asaas_subscription_id: subscriptionId } : {}),
+            ...(customerId ? { asaas_customer_id: customerId } : {}),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", row.id);
+        console.log("[reconcile-asaas] checkout expirado, assinatura normalizada:", row.id);
+        return json(200, {
+          reconciled: false,
+          expired: true,
+          status: "trial_expirado",
+          checkoutStatus,
+        });
+      }
+
       // Mesmo sem pagamento, aproveitamos para gravar os IDs já conhecidos.
       if (subscriptionId || customerId) {
         await supabase

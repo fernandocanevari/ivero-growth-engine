@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useBillingInvoices, INVOICE_STATUS_LABEL } from "@/hooks/useBillingInvoices";
 import { PLANOS, formatBRL } from "@/lib/pricing-rules";
+import { reconcilePendingPayment } from "@/lib/reconcile-pending";
 
 /**
  * AssinaturaPage — área financeira do cliente, ligada ao Asaas de verdade.
@@ -91,6 +92,47 @@ export default function AssinaturaPage() {
     void refreshStatus();
     void reload();
   };
+
+  // Pagamento pendente: o webhook do Asaas pode não ter chegado. Consultamos o
+  // provedor direto ao abrir a tela (e sob demanda no botão), então o card
+  // "Próxima cobrança" sai de "pendente" sozinho, sem F5.
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const runReconcile = async (force: boolean) => {
+    if (force) setCheckingPayment(true);
+    const result = await reconcilePendingPayment({ force });
+    if (force) setCheckingPayment(false);
+    if (!result) return;
+    if (result.reconciled || result.expired) {
+      void refreshStatus();
+      void reload();
+    }
+    if (force) {
+      if (result.reconciled) {
+        toast({
+          title: "Pagamento confirmado",
+          description: "Sua assinatura está ativa.",
+        });
+      } else if (result.expired) {
+        toast({
+          title: "Tentativa de pagamento não concluída",
+          description: "Você pode contratar novamente quando quiser.",
+        });
+      } else {
+        toast({
+          title: "Ainda sem confirmação",
+          description: "O banco não confirmou o pagamento. Tente novamente em alguns minutos.",
+        });
+      }
+    }
+  };
+
+  const autoReconciledRef = useRef(false);
+  useEffect(() => {
+    if (statusLoading || effectiveStatus !== "pendente" || autoReconciledRef.current) return;
+    autoReconciledRef.current = true;
+    void runReconcile(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusLoading, effectiveStatus]);
 
 
   const handleChangePlan = () => {
@@ -322,6 +364,16 @@ export default function AssinaturaPage() {
                 Estamos aguardando a confirmação do seu pagamento. Assim que ele for
                 confirmado, a cobrança recorrente aparece aqui.
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => void runReconcile(true)}
+                disabled={checkingPayment}
+              >
+                {checkingPayment && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+                Verificar pagamento agora
+              </Button>
             </>
           ) : effectiveStatus === "cancelado" ? (
             <>
@@ -338,6 +390,9 @@ export default function AssinaturaPage() {
               <p className="text-sm text-muted-foreground">
                 Contrate um plano para ativar a cobrança recorrente e recuperar o acesso.
               </p>
+              <Button size="sm" className="mt-4" onClick={handleChangePlan}>
+                Contratar novamente
+              </Button>
             </>
           ) : (
             <>
