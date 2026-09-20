@@ -32,7 +32,7 @@ describe("janela de tolerância pós-checkout", () => {
   });
 
   it("status pago/trial nunca entra na janela", () => {
-    expect(isRecentPendingCheckout({ status: "ativo", ...pendente(5) }, NOW)).toBe(false);
+    expect(isRecentPendingCheckout({ ...pendente(5), status: "ativo" }, NOW)).toBe(false);
     expect(
       isRecentPendingCheckout({ status: "trial", trial_ends_at: minutesAgo(-100) }, NOW),
     ).toBe(false);
