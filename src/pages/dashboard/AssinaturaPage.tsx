@@ -128,17 +128,29 @@ export default function AssinaturaPage() {
 
   // Enquanto o pagamento estiver pendente, revalidamos em segundo plano: o card
   // sai de "pendente" para "ativo" sozinho, sem o cliente precisar recarregar.
+  // O intervalo é criado UMA vez e lê o status por ref — se dependesse do
+  // status/loading, cada revalidação recriava o timer e ele nunca disparava.
+  const pendingRef = useRef(false);
+  pendingRef.current = !statusLoading && effectiveStatus === "pendente";
+  const runReconcileRef = useRef(runReconcile);
+  runReconcileRef.current = runReconcile;
+
+  const autoReconciledRef = useRef(false);
   useEffect(() => {
-    if (statusLoading || effectiveStatus !== "pendente") return;
-    void runReconcile(false);
+    if (!pendingRef.current || autoReconciledRef.current) return;
+    autoReconciledRef.current = true;
+    void runReconcileRef.current(false);
+  }, [statusLoading, effectiveStatus]);
+
+  useEffect(() => {
     const id = setInterval(() => {
+      if (!pendingRef.current) return;
       void refreshRef.current();
       void reloadRef.current();
-      void runReconcile(false);
-    }, 30_000);
+      void runReconcileRef.current(false);
+    }, 20_000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusLoading, effectiveStatus]);
+  }, []);
 
 
   const handleChangePlan = () => {
