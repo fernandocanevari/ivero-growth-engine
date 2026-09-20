@@ -153,6 +153,14 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
 
       if (cancelled) return;
 
+      // Checkout recém-concluído: o pagamento existe, só falta a confirmação do
+      // provedor. Bloquear aqui criava ping-pong com /escolher-plano.
+      const pendingRecente = isRecentPendingCheckout(sub ?? null);
+      if (pendingRecente) {
+        // Rede de segurança: tenta confirmar em background (sem travar a tela).
+        void reconcilePendingPayment();
+      }
+
       // Rotas de conta (assinatura / configurações / ajuda) continuam acessíveis
       // mesmo sem assinatura viva — o usuário precisa poder pagar e pedir ajuda.
       if (sub && isAccountRoute(location.pathname)) {
@@ -160,6 +168,19 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
           isInGracePeriod: status === "inadimplente",
           status,
           carenciaAte,
+          isPendingCheckout: pendingRecente,
+        });
+        setAuthorized(true);
+        setLoading(false);
+        return;
+      }
+
+      if (pendingRecente) {
+        setGate({
+          isInGracePeriod: false,
+          status,
+          carenciaAte,
+          isPendingCheckout: true,
         });
         setAuthorized(true);
         setLoading(false);
