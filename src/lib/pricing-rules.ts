@@ -65,6 +65,7 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       "Tags de Percepção da IA",
       "Evolução Estratégica dos 5 pilares",
       "Gerador de Conteúdo Estratégico",
+      "Vitrine IA",
     ],
     metrics: [
       { label: "IAs monitoradas", value: "3" },
@@ -89,6 +90,7 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
       "LLMs.txt",
       "Campanhas direcionadas",
       "Relatórios executivos em PDF e XLSX",
+      "Vitrine IA",
     ],
     metrics: [
       { label: "IAs monitoradas", value: "4" },
