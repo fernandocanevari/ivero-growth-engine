@@ -309,6 +309,7 @@ const mockupComponents: Record<string, React.FC> = {
   prompts: PromptsMockup,
   dominance: DominanceMockup,
   simulator: SimulatorMockup,
+  vitrine: VitrineMockup,
 };
 
 const FeaturesSection = () => {
