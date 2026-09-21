@@ -49,6 +49,7 @@ A Ivero gera planos de ação estratégicos para melhorar o posicionamento da su
 - **Mapa de Prompts Estratégicos** — Descubra quais perguntas fazem sua marca aparecer — e quais não fazem.
 - **Dominância por Modelo de IA** — Compare sua visibilidade no ChatGPT, Gemini e Google Modo IA — lado a lado com seus concorrentes.
 - **Simulador de Influência em IA** — Teste perguntas reais e veja como cada modelo responde sobre sua marca — em tempo real.
+- **Vitrine IA** — Acompanhe se sua marca aparece quando a IA recomenda onde comprar — loja citada, produto e evolução da frequência ao longo do tempo.
 
 ## Sua marca será lembrada ou esquecida?
 
@@ -102,6 +103,7 @@ Tudo do plano Presença e mais:
 - Tags de Percepção da IA
 - Evolução Estratégica dos 5 pilares
 - Gerador de Conteúdo Estratégico
+- Vitrine IA
 
 Chamada para ação: **Quero superar meus concorrentes →**
 
@@ -121,6 +123,7 @@ Tudo do plano Influência e mais:
 - LLMs.txt
 - Campanhas direcionadas
 - Relatórios executivos em PDF e XLSX
+- Vitrine IA
 
 Chamada para ação: **Quero dominar meu setor nas IAs →**
 
