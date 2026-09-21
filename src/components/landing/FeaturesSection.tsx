@@ -277,6 +277,28 @@ const SimulatorMockup = () => (
   </div>
 );
 
+const VitrineMockup = () => (
+  <div className="w-full space-y-2.5">
+    <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/60 bg-background text-xs text-foreground">
+      <ShoppingBag className="w-4 h-4 text-accent shrink-0" />
+      <span className="italic text-muted-foreground">"Onde compro tênis de corrida?"</span>
+    </div>
+    {[
+      { loja: "Loja citada", dot: "bg-emerald-500", text: "Marca X em destaque, com preço e link" },
+      { loja: "Produto citado", dot: "bg-emerald-500", text: "Modelo recomendado em 2 de 3 respostas" },
+      { loja: "Concorrente", dot: "bg-amber-400", text: "Citado com mais frequência esta semana" },
+    ].map((item) => (
+      <div key={item.loja} className="p-2.5 rounded-lg bg-ivero-card-inner text-xs space-y-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-foreground">{item.loja}</span>
+          <div className={`w-2 h-2 rounded-full ${item.dot}`} />
+        </div>
+        <p className="text-muted-foreground">{item.text}</p>
+      </div>
+    ))}
+  </div>
+);
+
 const mockupComponents: Record<string, React.FC> = {
   monitoring: MonitoringMockup,
   compare: CompareMockup,
