@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight, Map, BarChart3, FlaskConical, Search } from "lucide-react";
+import { Bot, GitCompare, TrendingUp, Shield, FileText, Bell, ChevronLeft, ChevronRight, Map, BarChart3, FlaskConical, Search, ShoppingBag } from "lucide-react";
 import { FEATURES } from "@/content/landing";
 
 const AUTOPLAY_INTERVAL = 6000;
@@ -16,6 +16,7 @@ const FEATURE_ICONS: Record<string, typeof Bot> = {
   prompts: Map,
   dominance: BarChart3,
   simulator: FlaskConical,
+  vitrine: ShoppingBag,
 };
 
 const features = FEATURES.items.map((item) => ({

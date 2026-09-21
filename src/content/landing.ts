@@ -158,6 +158,12 @@ export const FEATURES = {
       description:
         "Teste perguntas reais e veja como cada modelo responde sobre sua marca — em tempo real.",
     },
+    {
+      key: "vitrine",
+      title: "Vitrine IA",
+      description:
+        "Acompanhe se sua marca aparece quando a IA recomenda onde comprar — loja citada, produto e evolução da frequência ao longo do tempo.",
+    },
   ],
 } as const;
 
