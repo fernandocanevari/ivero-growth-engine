@@ -449,30 +449,32 @@ const InvestSection = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mt-6 sm:mt-8 max-w-7xl mx-auto"
         >
-          <div className="rounded-2xl border border-ivero-purple/20 bg-white/70 shadow-sm p-5 sm:p-7">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
+          <div className="relative overflow-hidden rounded-2xl border border-accent/40 bg-ivero-gradient shadow-xl shadow-ivero-purple/30 p-5 sm:p-7">
+            {/* Glow interno, mesmo padrão dos cards de plano */}
+            <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/15 blur-3xl pointer-events-none" />
+            <div className="relative flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
               <div className="flex-1">
-                <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.14em] font-bold px-2.5 py-1 rounded-full bg-ivero-purple/10 text-ivero-purple">
+                <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.14em] font-bold px-2.5 py-1 rounded-full bg-white/15 text-white">
                   <Building2 className="w-3.5 h-3.5" strokeWidth={2.5} />
                   {AGENCY_COPY.badge}
                 </span>
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-3">
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-white mt-3">
                   {AGENCY_COPY.title}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+                <p className="text-sm text-white/80 mt-2 max-w-2xl">
                   {AGENCY_COPY.description}
                 </p>
                 <ul className="mt-4 grid sm:grid-cols-3 gap-2.5">
                   {AGENCY_COPY.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-xs sm:text-[13px] text-foreground/85">
-                      <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" strokeWidth={2.5} />
+                    <li key={b} className="flex items-start gap-2 text-xs sm:text-[13px] text-white/90">
+                      <Check className="w-4 h-4 text-white shrink-0 mt-0.5" strokeWidth={2.5} />
                       {b}
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="flex flex-col gap-2.5 lg:w-64 lg:shrink-0">
-                <Button variant="hero" asChild className="w-full">
+                <Button variant="accent" asChild className="w-full">
                   <a
                     href={getAgencyWhatsappUrl(AGENCY_COPY.whatsappMessage)}
                     target="_blank"
