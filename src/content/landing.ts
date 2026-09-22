@@ -254,6 +254,27 @@ export const PRICING_COPY = {
   },
 } as const;
 
+/* ── Agências e consultorias ── */
+
+export const AGENCY_COPY = {
+  badge: "Para agências e consultorias",
+  title: "Atende várias marcas?",
+  description:
+    "Se você cuida da presença digital de mais de uma marca, a Ivero trabalha junto com a sua operação: condições por volume, acompanhamento dedicado e relatórios prontos para levar ao seu cliente.",
+  bullets: [
+    "Condições por volume de marcas atendidas",
+    "Relatórios executivos com a leitura pronta para o cliente",
+    "Especialista Ivero acompanhando sua carteira",
+  ],
+  whatsappLabel: "Falar com a equipe no WhatsApp",
+  emailLabel: "Enviar e-mail",
+  whatsappMessage:
+    "Olá! Sou de uma agência e quero entender as condições da Ivero para atender várias marcas.",
+  emailSubject: "Ivero para agências — atendimento de múltiplas marcas",
+  emailBody:
+    "Olá, equipe Ivero!\n\nSou de uma agência e atendo múltiplas marcas. Gostaria de entender as condições para usar a Ivero com meus clientes.\n\nAgência:\nQuantidade de marcas:\n\n",
+} as const;
+
 /* ── FAQ ── */
 
 export const FAQ = {
