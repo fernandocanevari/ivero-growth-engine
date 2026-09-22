@@ -449,8 +449,9 @@ const InvestSection = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mt-6 sm:mt-8 max-w-7xl mx-auto"
         >
-          {/* Borda em gradiente: wrapper colorido de 2px com interior claro */}
-          <div className="relative rounded-2xl bg-ivero-gradient p-[2px] shadow-lg shadow-ivero-purple/20">
+          {/* Borda em gradiente: wrapper colorido de 3px com interior claro + glow suave */}
+          <div className="relative rounded-2xl bg-ivero-gradient p-[3px] shadow-xl shadow-ivero-purple/25">
+            <div className="pointer-events-none absolute -inset-1 rounded-2xl bg-ivero-gradient opacity-20 blur-lg -z-10" />
             <div className="relative overflow-hidden rounded-[14px] bg-white p-5 sm:p-7">
               <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
                 <div className="flex-1">
