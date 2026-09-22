@@ -484,7 +484,7 @@ const InvestSection = () => {
                       {AGENCY_COPY.whatsappLabel} →
                     </a>
                   </Button>
-                  <Button variant="outline" asChild className="w-full">
+                  <Button variant="outline" asChild className="w-full border-2 border-ivero-purple/50 text-ivero-purple bg-ivero-purple/5 hover:bg-ivero-purple/15 hover:text-ivero-purple font-semibold">
                     <a href={getAgencyMailtoUrl(AGENCY_COPY.emailSubject, AGENCY_COPY.emailBody)}>
                       <Mail className="w-4 h-4 mr-2" />
                       {AGENCY_COPY.emailLabel}
