@@ -449,9 +449,10 @@ const InvestSection = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mt-6 sm:mt-8 max-w-7xl mx-auto"
         >
-          {/* Borda em gradiente: wrapper colorido de 2px com interior claro */}
-          <div className="relative rounded-2xl bg-ivero-gradient p-[2px] shadow-lg shadow-ivero-purple/20">
-            <div className="relative overflow-hidden rounded-[14px] bg-white p-5 sm:p-7">
+          {/* Borda em gradiente: wrapper colorido de 3px com interior claro + glow suave */}
+          <div className="relative rounded-2xl bg-ivero-gradient p-[3px] shadow-xl shadow-ivero-purple/25">
+            <div className="pointer-events-none absolute -inset-1 rounded-2xl bg-ivero-gradient opacity-20 blur-lg -z-10" />
+            <div className="relative overflow-hidden rounded-[13px] bg-white p-5 sm:p-7">
               <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
                 <div className="flex-1">
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.14em] font-bold px-2.5 py-1 rounded-full bg-ivero-purple/10 text-ivero-purple">
@@ -483,7 +484,7 @@ const InvestSection = () => {
                       {AGENCY_COPY.whatsappLabel} →
                     </a>
                   </Button>
-                  <Button variant="outline" asChild className="w-full">
+                  <Button variant="outline" asChild className="w-full border-2 border-ivero-purple/50 text-ivero-purple bg-ivero-purple/5 hover:bg-ivero-purple/15 hover:text-ivero-purple font-semibold">
                     <a href={getAgencyMailtoUrl(AGENCY_COPY.emailSubject, AGENCY_COPY.emailBody)}>
                       <Mail className="w-4 h-4 mr-2" />
                       {AGENCY_COPY.emailLabel}
