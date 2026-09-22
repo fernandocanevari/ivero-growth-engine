@@ -28,3 +28,11 @@ export function getMailtoUrl(brandName?: string | null): string {
   const body = "Olá, equipe Ivero!\n\nPreciso de ajuda com:\n\n";
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+export function getAgencyWhatsappUrl(message: string): string {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+export function getAgencyMailtoUrl(subject: string, body: string): string {
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
