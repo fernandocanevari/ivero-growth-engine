@@ -138,6 +138,14 @@ Chamada para ação: **Quero dominar meu setor nas IAs →**
 
 Sem fidelidade • Cancele quando quiser • Evolua conforme sua operação cresce
 
+### Para agências e consultorias: Atende várias marcas?
+
+Se você cuida da presença digital de mais de uma marca, a Ivero trabalha junto com a sua operação: condições por volume, acompanhamento dedicado e relatórios prontos para levar ao seu cliente.
+
+- Condições por volume de marcas atendidas
+- Relatórios executivos com a leitura pronta para o cliente
+- Especialista Ivero acompanhando sua carteira
+
 ## Perguntas Frequentes
 
 ### O que é GEO (Generative Engine Optimization)?

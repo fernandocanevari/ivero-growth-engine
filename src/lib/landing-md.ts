@@ -16,6 +16,7 @@ import {
   HERO,
   LANDING_META,
   PRICING_COPY,
+  AGENCY_COPY,
   PROBLEM,
   STEPS,
   plainHeadline,
@@ -139,6 +140,15 @@ export function buildLandingMarkdown(): string {
   }
   L.push("");
   L.push(PRICING_COPY.guarantee.footnoteParts.join(" • "));
+  L.push("");
+
+  L.push(`### ${AGENCY_COPY.badge}: ${AGENCY_COPY.title}`);
+  L.push("");
+  L.push(AGENCY_COPY.description);
+  L.push("");
+  for (const bullet of AGENCY_COPY.bullets) {
+    L.push(`- ${bullet}`);
+  }
   L.push("");
 
   // FAQ
