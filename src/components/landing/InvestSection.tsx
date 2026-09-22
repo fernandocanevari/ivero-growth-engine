@@ -452,7 +452,7 @@ const InvestSection = () => {
           {/* Borda em gradiente: wrapper colorido de 3px com interior claro + glow suave */}
           <div className="relative rounded-2xl bg-ivero-gradient p-[3px] shadow-xl shadow-ivero-purple/25">
             <div className="pointer-events-none absolute -inset-1 rounded-2xl bg-ivero-gradient opacity-20 blur-lg -z-10" />
-            <div className="relative overflow-hidden rounded-[14px] bg-white p-5 sm:p-7">
+            <div className="relative overflow-hidden rounded-[13px] bg-white p-5 sm:p-7">
               <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
                 <div className="flex-1">
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.14em] font-bold px-2.5 py-1 rounded-full bg-ivero-purple/10 text-ivero-purple">
