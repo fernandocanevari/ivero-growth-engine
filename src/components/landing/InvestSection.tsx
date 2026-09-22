@@ -14,7 +14,8 @@ import {
   annualSavingBRL,
   type PlanoSugerido,
 } from "@/lib/pricing-rules";
-import { PRICING_COPY } from "@/content/landing";
+import { PRICING_COPY, AGENCY_COPY } from "@/content/landing";
+import { getAgencyWhatsappUrl, getAgencyMailtoUrl } from "@/lib/support";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 // O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
