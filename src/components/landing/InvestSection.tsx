@@ -474,7 +474,7 @@ const InvestSection = () => {
                 </ul>
               </div>
               <div className="flex flex-col gap-2.5 lg:w-64 lg:shrink-0">
-                <Button variant="hero" asChild className="w-full">
+                <Button variant="accent" asChild className="w-full">
                   <a
                     href={getAgencyWhatsappUrl(AGENCY_COPY.whatsappMessage)}
                     target="_blank"
