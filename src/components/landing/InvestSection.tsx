@@ -462,12 +462,12 @@ const InvestSection = () => {
                   <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-3">
                     {AGENCY_COPY.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+                  <p className="text-base text-muted-foreground mt-3 max-w-2xl">
                     {AGENCY_COPY.description}
                   </p>
                   <ul className="mt-4 grid sm:grid-cols-3 gap-2.5">
                     {AGENCY_COPY.bullets.map((b) => (
-                      <li key={b} className="flex items-start gap-2 text-xs sm:text-[13px] text-foreground/80">
+                      <li key={b} className="flex items-start gap-2 text-sm sm:text-base text-foreground/80">
                         <Check className="w-4 h-4 text-ivero-pink shrink-0 mt-0.5" strokeWidth={2.5} />
                         {b}
                       </li>

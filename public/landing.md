@@ -140,7 +140,7 @@ Sem fidelidade • Cancele quando quiser • Evolua conforme sua operação cres
 
 ### Para agências e consultorias: Atende várias marcas?
 
-Se você cuida da presença digital de mais de uma marca, a Ivero trabalha junto com a sua operação: condições por volume, acompanhamento dedicado e relatórios prontos para levar ao seu cliente.
+Se você cuida da presença digital de mais de uma marca, a Ivero trabalha junto com a sua operação:
 
 - Condições por volume de marcas atendidas
 - Relatórios executivos com a leitura pronta para o cliente
