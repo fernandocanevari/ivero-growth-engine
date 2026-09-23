@@ -462,7 +462,7 @@ const InvestSection = () => {
                   <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-3">
                     {AGENCY_COPY.title}
                   </h3>
-                  <p className="text-base text-muted-foreground mt-3 max-w-2xl">
+                  <p className="text-base text-muted-foreground mt-3 max-w-none lg:whitespace-nowrap">
                     {AGENCY_COPY.description}
                   </p>
                   <ul className="mt-4 grid sm:grid-cols-3 gap-2.5">
