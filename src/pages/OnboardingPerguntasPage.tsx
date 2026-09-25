@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useAccountType } from "@/hooks/useAccountType";
 
 type QuestionDef = {
   column: "p1_maturidade_ia" | "p2_criterio_mercado" | "p3_maior_risco";
@@ -51,6 +52,7 @@ const QUESTIONS: QuestionDef[] = [
 
 export default function OnboardingPerguntasPage() {
   const navigate = useNavigate();
+  const { isAgency } = useAccountType();
   const [brandId, setBrandId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
