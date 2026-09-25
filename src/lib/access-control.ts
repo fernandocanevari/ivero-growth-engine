@@ -186,6 +186,7 @@ export const ALWAYS_ALLOWED: readonly string[] = [
   "/dashboard/assinatura",
   "/dashboard/ajuda",
   "/dashboard/alertas",
+  "/dashboard/marcas",
 ];
 
 export const ROUTE_MIN_TIER: Record<string, PlanoTier> = {

@@ -176,10 +176,14 @@ export default function OnboardingPerguntasPage() {
             className="text-center mb-4 sm:mb-6"
           >
             <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-[#1A1A2E] leading-tight mb-2">
-              Antes de eu te dar qualquer recomendação, preciso te conhecer melhor.
+              {isAgency
+                ? "Antes de qualquer recomendação, preciso conhecer a marca do seu cliente."
+                : "Antes de eu te dar qualquer recomendação, preciso te conhecer melhor."}
             </h1>
             <p className="text-sm sm:text-base text-ivero-purple font-medium">
-              São só 3 perguntas. Vamos juntos nessa.
+              {isAgency
+                ? "São só 3 perguntas — responda pensando na marca do cliente."
+                : "São só 3 perguntas. Vamos juntos nessa."}
             </p>
           </motion.div>
         )}

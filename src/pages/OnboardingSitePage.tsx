@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { SearchScan } from "@/components/ui/search-scan";
 import { readBrandPrefetch, clearBrandPrefetch } from "@/lib/brand-prefetch";
 import { resolveExistingDiagnostic } from "@/lib/existing-diagnostic";
+import { useAccountType, linkBrandToAgencyIfNeeded } from "@/hooks/useAccountType";
 
 type Phase = "url" | "loading" | "confirm" | "objectives";
 
@@ -51,6 +52,7 @@ const OBJECTIVES = [
 
 export default function OnboardingSitePage() {
   const navigate = useNavigate();
+  const { isAgency } = useAccountType();
   const [phase, setPhase] = useState<Phase>("url");
   const [url, setUrl] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
@@ -325,6 +327,9 @@ export default function OnboardingSitePage() {
         brandId = data.id;
       }
 
+      // Conta de agência: vincula a marca do cliente à carteira da agência.
+      const linkedToAgency = await linkBrandToAgencyIfNeeded(userId, brandId);
+
       // 2) Replace competitors for this brand
       await supabase.from("competitors").delete().eq("brand_id", brandId);
       if (competitors.length > 0) {
@@ -346,7 +351,7 @@ export default function OnboardingSitePage() {
           .from("profiles")
           .update({ is_first_login: false } as never)
           .eq("user_id", userId);
-        navigate("/dashboard", { replace: true });
+        navigate(linkedToAgency ? "/dashboard/marcas" : "/dashboard", { replace: true });
         return;
       }
 
@@ -381,7 +386,7 @@ export default function OnboardingSitePage() {
             >
               <div className="text-center mb-8">
                 <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1A2E] leading-tight mb-3">
-                  Qual é o site da sua marca?
+                  {isAgency ? "Qual é o site da marca do cliente?" : "Qual é o site da sua marca?"}
                 </h1>
                 <p className="text-base text-muted-foreground">
                   Vou dar uma olhada nele e já voltar com o que entendi sobre você.
@@ -490,7 +495,7 @@ export default function OnboardingSitePage() {
             >
               <div className="text-center mb-8">
                 <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#1A1A2E] leading-tight mb-2">
-                  Foi isso que eu entendi sobre a sua marca.
+                  {isAgency ? "Foi isso que eu entendi sobre a marca do cliente." : "Foi isso que eu entendi sobre a sua marca."}
                 </h1>
                 <p className="text-base text-muted-foreground">
                   Confira e ajuste o que precisar antes de continuar.
