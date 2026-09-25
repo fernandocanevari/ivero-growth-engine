@@ -1,35 +1,45 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuthUserId } from "@/hooks/useAuthUserId";
 
 export type AccountType = "individual" | "agency";
 
-/** Tipo da conta logada (profiles.account_type). Padrão: individual. */
+/**
+ * Tipo da conta logada (profiles.account_type). Padrão: individual.
+ * Sem React Query de propósito: é usado nas telas de onboarding, que
+ * rodam fora do provider em alguns testes.
+ */
 export function useAccountType() {
-  const { userId } = useAuthUserId();
-  const q = useQuery({
-    queryKey: ["account-type", userId],
-    enabled: !!userId,
-    staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("account_type, nome_empresa")
-        .eq("user_id", userId!)
-        .maybeSingle();
-      const row = data as { account_type?: string; nome_empresa?: string | null } | null;
-      return {
-        accountType: (row?.account_type === "agency" ? "agency" : "individual") as AccountType,
-        agencyName: row?.nome_empresa ?? null,
-      };
-    },
-  });
-  return {
-    accountType: q.data?.accountType ?? "individual",
-    agencyName: q.data?.agencyName ?? null,
-    isAgency: q.data?.accountType === "agency",
-    isLoading: q.isLoading,
-  };
+  const [state, setState] = useState<{ accountType: AccountType; agencyName: string | null; isLoading: boolean }>(
+    { accountType: "individual", agencyName: null, isLoading: true },
+  );
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return active && setState((s) => ({ ...s, isLoading: false }));
+        const { data } = await supabase
+          .from("profiles")
+          .select("account_type, nome_empresa")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const row = data as { account_type?: string; nome_empresa?: string | null } | null;
+        if (active) {
+          setState({
+            accountType: row?.account_type === "agency" ? "agency" : "individual",
+            agencyName: row?.nome_empresa ?? null,
+            isLoading: false,
+          });
+        }
+      } catch {
+        if (active) setState((s) => ({ ...s, isLoading: false }));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+  return { ...state, isAgency: state.accountType === "agency" };
 }
 
 /** Vincula a marca à agência logada (idempotente). Ignora contas individuais. */
