@@ -150,7 +150,7 @@ export default function DashboardLayout() {
               />
             ) : (
               <>
-                {!brandLoading && shouldRemind && !showBrandModal && (
+                {!brandLoading && shouldRemind && !showBrandModal && location.pathname !== "/dashboard/marcas" && (
                   <BrandProfileReminderBanner
                     onOpenModal={() => {
                       setBrandModalDismissed(false);
