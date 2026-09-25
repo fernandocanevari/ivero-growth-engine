@@ -8,6 +8,7 @@ import { useOnboardingResponses } from "@/hooks/useOnboardingResponses";
 import { getOpeningPhrase } from "@/lib/onboarding-recommendation";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveExistingDiagnostic } from "@/lib/existing-diagnostic";
+import { useAccountType } from "@/hooks/useAccountType";
 import {
   runDiagnostic,
   persistDiagnostic,
@@ -41,6 +42,9 @@ function bandFor(score: number) {
  */
 export default function OnboardingDiagnosticoPlaceholderPage() {
   const navigate = useNavigate();
+  const { isAgency } = useAccountType();
+  const homeRef = useRef("/dashboard");
+  homeRef.current = isAgency ? "/dashboard/marcas" : "/dashboard";
   const { data: responses, isLoading } = useOnboardingResponses();
 
   const [phase, setPhase] = useState<"loading" | "done" | "error">("loading");
@@ -54,7 +58,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
   // acessou direto sem passar pelas perguntas), redireciona pro dashboard.
   useEffect(() => {
     if (!isLoading && !responses) {
-      navigate("/dashboard", { replace: true });
+      navigate(homeRef.current, { replace: true });
     }
   }, [isLoading, responses, navigate]);
 
@@ -98,7 +102,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
       // para o dashboard. Cobre também acesso direto por link/refresh.
       const existing = await resolveExistingDiagnostic(user.id);
       if (existing) {
-        navigate("/dashboard", { replace: true });
+        navigate(homeRef.current, { replace: true });
         return;
       }
 
@@ -185,7 +189,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
           </p>
           <Button
             size="lg"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate(homeRef.current)}
             className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
           >
             Ir para meu dashboard <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -252,7 +256,7 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
 
         <Button
           size="lg"
-          onClick={() => navigate("/dashboard/visibilidade-ia")}
+          onClick={() => navigate(isAgency ? "/dashboard/marcas" : "/dashboard/visibilidade-ia")}
           className="bg-[#6C5CE7] hover:bg-[#5b4ddb] text-white"
         >
           Concluir e ver meu diagnóstico <ArrowRight className="w-4 h-4 ml-1.5" />

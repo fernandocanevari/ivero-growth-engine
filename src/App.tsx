@@ -32,6 +32,7 @@ import NovaCampanhaPage from "./pages/dashboard/NovaCampanhaPage";
 import PromptTesterPage from "./pages/dashboard/PromptTesterPage";
 import RelatoriosPage from "./pages/dashboard/RelatoriosPage";
 import ConfiguracoesPage from "./pages/dashboard/ConfiguracoesPage";
+import MarcasPage from "./pages/dashboard/MarcasPage";
 import AssinaturaPage from "./pages/dashboard/AssinaturaPage";
 import AdminRespostasPage from "./pages/dashboard/AdminRespostasPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
@@ -146,6 +147,7 @@ const App = () => (
             <Route path="relatorios" element={<FeatureGate><RelatoriosPage /></FeatureGate>} />
             <Route path="assinatura" element={<AssinaturaPage />} />
             <Route path="configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="marcas" element={<MarcasPage />} />
             <Route path="ajuda" element={<AjudaPage />} />
             <Route path="admin/respostas" element={<AdminRespostasPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />

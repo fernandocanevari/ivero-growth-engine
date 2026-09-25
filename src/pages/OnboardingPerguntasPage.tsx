@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useAccountType } from "@/hooks/useAccountType";
 
 type QuestionDef = {
   column: "p1_maturidade_ia" | "p2_criterio_mercado" | "p3_maior_risco";
@@ -51,6 +52,7 @@ const QUESTIONS: QuestionDef[] = [
 
 export default function OnboardingPerguntasPage() {
   const navigate = useNavigate();
+  const { isAgency } = useAccountType();
   const [brandId, setBrandId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
@@ -176,10 +178,14 @@ export default function OnboardingPerguntasPage() {
             className="text-center mb-4 sm:mb-6"
           >
             <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-[#1A1A2E] leading-tight mb-2">
-              Antes de eu te dar qualquer recomendação, preciso te conhecer melhor.
+              {isAgency
+                ? "Antes de qualquer recomendação, preciso conhecer a marca do seu cliente."
+                : "Antes de eu te dar qualquer recomendação, preciso te conhecer melhor."}
             </h1>
             <p className="text-sm sm:text-base text-ivero-purple font-medium">
-              São só 3 perguntas. Vamos juntos nessa.
+              {isAgency
+                ? "São só 3 perguntas — responda pensando na marca do cliente."
+                : "São só 3 perguntas. Vamos juntos nessa."}
             </p>
           </motion.div>
         )}
@@ -212,7 +218,12 @@ export default function OnboardingPerguntasPage() {
             className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-4 sm:p-6"
           >
             <h2 className="text-base sm:text-lg font-semibold text-[#1A1A2E] leading-snug mb-2">
-              {current.text}
+              {isAgency
+                ? current.text
+                    .replace("seu tipo de produto/serviço", "o tipo de produto/serviço do seu cliente")
+                    .replace("você acha que sua marca aparece", "você acha que a marca dele aparece")
+                    .replace("da sua marca", "da marca do cliente")
+                : current.text}
             </h2>
             {current.subtitle && (
               <p className="text-sm text-muted-foreground mb-3">{current.subtitle}</p>

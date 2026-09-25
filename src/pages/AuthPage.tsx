@@ -41,6 +41,12 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [nomeCompleto, setNomeCompleto] = useState(prefName);
   const [celular, setCelular] = useState(prefPhone ? formatPhoneBR(prefPhone) : "");
+  // Tipo de conta no cadastro: empresa (padrão, fluxo de sempre) ou agência.
+  const [tipoConta, setTipoConta] = useState<"individual" | "agency">(
+    searchParams.get("tipo") === "agencia" ? "agency" : "individual"
+  );
+  const [nomeAgencia, setNomeAgencia] = useState("");
+  const isAgencySignup = tipoConta === "agency";
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -127,6 +133,18 @@ export default function AuthPage() {
         return;
       }
 
+      // Conta de agência: a entrada é sempre a Visão Geral das Marcas —
+      // nunca o onboarding pessoal.
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("account_type")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if ((prof as { account_type?: string } | null)?.account_type === "agency") {
+        navigate("/dashboard/marcas", { replace: true });
+        return;
+      }
+
       const { data: brand } = await supabase
         .from("brand_settings")
         .select("id, brand_name, onboarding_completed_at")
@@ -184,7 +202,7 @@ export default function AuthPage() {
     // route computed from an account that is about to be logged out.
     let staleSessionCheckDone = false;
     // Extras collected at signup time, persisted to profiles once the session arrives
-    let pendingSignupExtras: { nome_completo: string; celular: string } | null = null;
+    let pendingSignupExtras: { nome_completo: string; celular: string; agency?: boolean } | null = null;
 
 
     // If a lead arrives via /auth?email=...&name=... but the browser already
@@ -213,12 +231,13 @@ export default function AuthPage() {
         }, 0);
       }
       if (isPendingSignup) {
+        const signupWasAgency = Boolean(pendingSignupExtras?.agency);
         pendingSignupForUserId = null;
         pendingSignupExtras = null;
         signupInFlight = false;
         // After signup the user goes to the onboarding questions step —
         // never /bem-vindo, which is reserved for real Asaas payment returns.
-        navigate("/onboarding/perguntas", { replace: true });
+        navigate(signupWasAgency ? "/dashboard/marcas" : "/onboarding/perguntas", { replace: true });
         return;
       }
       // Never redirect based on a session that the mount-time stale-session
@@ -233,7 +252,7 @@ export default function AuthPage() {
 
     // Expose setters so handleSubmit can mark a pending signup with its extras
     (window as any).__iveroPendingSignup = (id: string) => { pendingSignupForUserId = id; };
-    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; celular: string }) => {
+    (window as any).__iveroPendingSignupExtras = (extras: { nome_completo: string; celular: string; agency?: boolean }) => {
       pendingSignupExtras = extras;
     };
     // Called BEFORE supabase.auth.signUp so the listener treats the next
@@ -294,9 +313,15 @@ export default function AuthPage() {
         });
         return;
       }
+      if (isAgencySignup && !nomeAgencia.trim()) {
+        setLoading(false);
+        toast({ title: "Informe o nome da agência", variant: "destructive" });
+        return;
+      }
       const extras = {
         nome_completo: nomeCompleto.trim(),
         celular: celular.trim(),
+        agency: isAgencySignup,
       };
       // Read chosen plan from landing-page CTA (localStorage) and pass it as
       // signup metadata so the DB trigger creates the trial with the right plan
@@ -341,13 +366,16 @@ export default function AuthPage() {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin + "/onboarding/perguntas",
+          emailRedirectTo: window.location.origin + (isAgencySignup ? "/dashboard/marcas" : "/onboarding/perguntas"),
           data: {
             display_name: extras.nome_completo || prefName || email.split("@")[0],
             nome_completo: extras.nome_completo,
             celular: extras.celular,
             plano_escolhido: planoEscolhido,
             ciclo_escolhido: cicloEscolhido,
+            ...(isAgencySignup
+              ? { account_type: "agency", nome_empresa: nomeAgencia.trim() }
+              : {}),
             // Mantém o vínculo com a proposta aceita.
             ...(propostaSlug ? { proposta_slug: propostaSlug } : {}),
           },
@@ -404,7 +432,7 @@ export default function AuthPage() {
           localStorage.removeItem("ivero_selected_ciclo");
         } catch {}
         if (userId && data.session) {
-          navigate("/onboarding/perguntas", { replace: true });
+          navigate(isAgencySignup ? "/dashboard/marcas" : "/onboarding/perguntas", { replace: true });
         }
       }
     }
@@ -526,15 +554,43 @@ export default function AuthPage() {
                   {isLogin ? "Bem-vindo de volta" : (hasPrefilledLead ? `Olá${prefName ? `, ${prefName.split(" ")[0]}` : ""}!` : "Crie sua conta")}
                 </h2>
                 <p className="text-muted-foreground">
-                  {isLogin ? "Entre para acessar seu painel de inteligência." : "Comece a monitorar sua marca em IA agora."}
+                  {isLogin
+                    ? "Entre para acessar seu painel de inteligência."
+                    : isAgencySignup
+                      ? "Monitore as marcas dos seus clientes em IA num só painel."
+                      : "Comece a monitorar sua marca em IA agora."}
                 </p>
               </div>
+
+              {!isLogin && (
+                <div role="tablist" aria-label="Tipo de conta" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-secondary/60">
+                  {([
+                    ["individual", "Para minha empresa"],
+                    ["agency", "Sou uma agência"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="tab"
+                      aria-selected={tipoConta === value}
+                      onClick={() => setTipoConta(value)}
+                      className={`h-9 rounded-lg text-sm font-medium transition-colors ${
+                        tipoConta === value
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
                   <>
                     <div className="space-y-2">
-                      <Label className="text-foreground">Nome completo</Label>
+                      <Label className="text-foreground">{isAgencySignup ? "Nome do responsável" : "Nome completo"}</Label>
                       <Input
                         type="text"
                         required
@@ -545,6 +601,20 @@ export default function AuthPage() {
                         className="h-11 bg-secondary/50 border-border focus:border-primary"
                       />
                     </div>
+                    {isAgencySignup && (
+                      <div className="space-y-2">
+                        <Label className="text-foreground">Nome da agência</Label>
+                        <Input
+                          type="text"
+                          required
+                          maxLength={120}
+                          value={nomeAgencia}
+                          onChange={(e) => setNomeAgencia(e.target.value)}
+                          placeholder="Ex.: Agência Norte"
+                          className="h-11 bg-secondary/50 border-border focus:border-primary"
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="text-foreground">Celular</Label>
                       <Input

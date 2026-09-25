@@ -266,6 +266,7 @@ export const AGENCY_COPY = {
     "Relatórios executivos com a leitura pronta para o cliente",
     "Especialista Ivero acompanhando sua carteira",
   ],
+  signupLabel: "Criar conta de agência",
   whatsappLabel: "Falar com a equipe no WhatsApp",
   emailLabel: "Enviar e-mail",
   whatsappMessage:
