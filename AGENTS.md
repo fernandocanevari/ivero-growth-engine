@@ -1,0 +1,1 @@
+- Contas de agência: tipo em profiles.account_type (gravado pelo trigger de cadastro via metadata); marcas ligadas por agency_brands ao fim do onboarding — por que: mantém o fluxo individual 1:1 intacto.
