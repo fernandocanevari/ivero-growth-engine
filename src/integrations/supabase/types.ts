@@ -17,6 +17,7 @@ export type Database = {
       action_plans: {
         Row: {
           audit_report_id: string | null
+          brand_id: string | null
           catalog_id: string | null
           categoria: Database["public"]["Enums"]["action_category"]
           completed_at: string | null
@@ -40,6 +41,7 @@ export type Database = {
         }
         Insert: {
           audit_report_id?: string | null
+          brand_id?: string | null
           catalog_id?: string | null
           categoria: Database["public"]["Enums"]["action_category"]
           completed_at?: string | null
@@ -63,6 +65,7 @@ export type Database = {
         }
         Update: {
           audit_report_id?: string | null
+          brand_id?: string | null
           catalog_id?: string | null
           categoria?: Database["public"]["Enums"]["action_category"]
           completed_at?: string | null
@@ -93,6 +96,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "action_plans_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "action_plans_catalog_id_fkey"
             columns: ["catalog_id"]
             isOneToOne: false
@@ -101,9 +111,51 @@ export type Database = {
           },
         ]
       }
+      agency_brands: {
+        Row: {
+          added_at: string
+          agency_user_id: string
+          brand_id: string
+          created_at: string
+          id: string
+          removed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          added_at?: string
+          agency_user_id: string
+          brand_id: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          added_at?: string
+          agency_user_id?: string
+          brand_id?: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_brands_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_history: {
         Row: {
           authority_score: number
+          brand_id: string | null
           clarity_score: number
           conversion_score: number
           created_at: string
@@ -119,6 +171,7 @@ export type Database = {
         }
         Insert: {
           authority_score?: number
+          brand_id?: string | null
           clarity_score?: number
           conversion_score?: number
           created_at?: string
@@ -134,6 +187,7 @@ export type Database = {
         }
         Update: {
           authority_score?: number
+          brand_id?: string | null
           clarity_score?: number
           conversion_score?: number
           created_at?: string
@@ -147,7 +201,15 @@ export type Database = {
           source?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "analysis_history_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assinaturas: {
         Row: {
@@ -224,6 +286,7 @@ export type Database = {
       audit_reports: {
         Row: {
           ai_engines: Json
+          brand_id: string | null
           created_at: string
           id: string
           keyword_cloud: Json
@@ -237,6 +300,7 @@ export type Database = {
         }
         Insert: {
           ai_engines?: Json
+          brand_id?: string | null
           created_at?: string
           id?: string
           keyword_cloud?: Json
@@ -250,6 +314,7 @@ export type Database = {
         }
         Update: {
           ai_engines?: Json
+          brand_id?: string | null
           created_at?: string
           id?: string
           keyword_cloud?: Json
@@ -261,7 +326,15 @@ export type Database = {
           status_label?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_reports_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       autoridade_externa_catalog: {
         Row: {
@@ -757,6 +830,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string
           celular: string | null
           created_at: string
           display_name: string | null
@@ -770,6 +844,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_type?: string
           celular?: string | null
           created_at?: string
           display_name?: string | null
@@ -783,6 +858,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_type?: string
           celular?: string | null
           created_at?: string
           display_name?: string | null
@@ -1040,6 +1116,7 @@ export type Database = {
       vitrine_queries: {
         Row: {
           ativo: boolean
+          brand_id: string | null
           created_at: string
           frequencia: Database["public"]["Enums"]["vitrine_frequency"]
           id: string
@@ -1054,6 +1131,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          brand_id?: string | null
           created_at?: string
           frequencia?: Database["public"]["Enums"]["vitrine_frequency"]
           id?: string
@@ -1068,6 +1146,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          brand_id?: string | null
           created_at?: string
           frequencia?: Database["public"]["Enums"]["vitrine_frequency"]
           id?: string
@@ -1080,7 +1159,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vitrine_queries_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vitrine_runs: {
         Row: {
@@ -1152,6 +1239,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_brand_access: { Args: { _brand_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
