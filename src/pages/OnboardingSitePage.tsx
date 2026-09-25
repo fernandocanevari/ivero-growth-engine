@@ -389,7 +389,9 @@ export default function OnboardingSitePage() {
                   {isAgency ? "Qual é o site da marca do cliente?" : "Qual é o site da sua marca?"}
                 </h1>
                 <p className="text-base text-muted-foreground">
-                  Vou dar uma olhada nele e já voltar com o que entendi sobre você.
+                  {isAgency
+                    ? "Vou dar uma olhada nele e já voltar com o que entendi sobre essa marca."
+                    : "Vou dar uma olhada nele e já voltar com o que entendi sobre você."}
                 </p>
               </div>
               <form

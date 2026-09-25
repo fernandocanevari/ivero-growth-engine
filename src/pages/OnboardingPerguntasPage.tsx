@@ -218,7 +218,12 @@ export default function OnboardingPerguntasPage() {
             className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-ivero-purple/10 p-4 sm:p-6"
           >
             <h2 className="text-base sm:text-lg font-semibold text-[#1A1A2E] leading-snug mb-2">
-              {current.text}
+              {isAgency
+                ? current.text
+                    .replace("seu tipo de produto/serviço", "o tipo de produto/serviço do seu cliente")
+                    .replace("você acha que sua marca aparece", "você acha que a marca dele aparece")
+                    .replace("da sua marca", "da marca do cliente")
+                : current.text}
             </h2>
             {current.subtitle && (
               <p className="text-sm text-muted-foreground mb-3">{current.subtitle}</p>
