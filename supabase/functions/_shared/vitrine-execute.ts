@@ -11,6 +11,7 @@ import {
 export interface VitrineQueryRow {
   id: string;
   user_id: string;
+  brand_id?: string | null;
   pergunta: string;
   pais: string;
   idioma: string;
@@ -22,11 +23,14 @@ export interface VitrineQueryRow {
 type Admin = any;
 
 export async function executeVitrineQuery(admin: Admin, query: VitrineQueryRow) {
-  const { data: brand } = await admin
+  // Pergunta de agência aponta para a marca do cliente; individual segue por user_id.
+  const brandBase = admin
     .from("brand_settings")
-    .select("brand_name, website, coverage_city, coverage_state, coverage_type")
-    .eq("user_id", query.user_id)
-    .maybeSingle();
+    .select("brand_name, website, coverage_city, coverage_state, coverage_type");
+  const { data: brand } = await (query.brand_id
+    ? brandBase.eq("id", query.brand_id)
+    : brandBase.eq("user_id", query.user_id)
+  ).maybeSingle();
 
   const marcaDominio = brand?.website
     ? normalizeDomain(brand.website.startsWith("http") ? brand.website : `https://${brand.website}`)
