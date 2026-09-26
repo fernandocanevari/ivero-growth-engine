@@ -122,7 +122,9 @@ Deno.serve(async (req) => {
 
 
 
-      if (externalReference) {
+      // Cobranças avulsas usam "prorata:..." / "fidelidade:..." — não são user_id.
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (externalReference && UUID_RE.test(externalReference)) {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
         const { data: row, error: selError } = await supabase
           .from("assinaturas")
@@ -150,13 +152,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.error(
+      console.warn(
         "[asaas-webhook] No assinatura matched for",
         event,
         JSON.stringify({ subscriptionId, externalReference }),
       );
-      return { error: "No matching assinatura" };
+      // Sem correspondência não é erro do nosso lado: responder 500 faz o
+      // Asaas interromper a fila inteira de webhooks.
+      return { ignored: true } as { ok?: boolean; matched?: string; row?: MatchedRow; error?: string };
     };
+
+    const isAvulsaPayment = /^(prorata|fidelidade):/.test(body?.payment?.externalReference ?? "");
 
     /**
      * Promove a INTENÇÃO gravada em create-checkout (plano_pretendido /
@@ -232,6 +238,8 @@ Deno.serve(async (req) => {
       }
 
       case "PAYMENT_OVERDUE": {
+        // Cobrança avulsa vencida (pró-rata/multa) não afeta a mensalidade.
+        if (isAvulsaPayment) { console.log("[asaas-webhook] avulsa overdue ignorada"); break; }
         const carencia = new Date();
         carencia.setDate(carencia.getDate() + 7);
         const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
@@ -243,6 +251,7 @@ Deno.serve(async (req) => {
       }
 
       case "PAYMENT_DELETED": {
+        if (isAvulsaPayment) { console.log("[asaas-webhook] avulsa deleted ignorada"); break; }
         const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
           status: "cancelado",
           carencia_ate: null,
