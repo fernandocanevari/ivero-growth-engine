@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { buildAnalysisHistoryRow } from "@/lib/diagnostic-engine";
+import { getBrandScope, applyBrandFilter, brandWriteFields } from "@/lib/brand-scope";
 
 /**
  * Sinal único de "esse cliente já tem diagnóstico".
@@ -76,10 +77,11 @@ export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult>
     /* ignora */
   }
 
-  const { count, error: countError } = await supabase
-    .from("audit_reports")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
+  const scope = await getBrandScope();
+  const { count, error: countError } = await applyBrandFilter(
+    supabase.from("audit_reports").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    scope,
+  );
   if (countError) return { status: "failed", message: countError.message };
   if ((count ?? 0) > 0) {
     markAdopted();
@@ -88,6 +90,7 @@ export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult>
 
   const { error } = await supabase.from("audit_reports").insert({
     user_id: userId,
+    ...brandWriteFields(scope),
     source: "preview",
     site_url: (payload.siteUrl as string) ?? "",
     overall_score: payload.geoScore as number,
@@ -124,10 +127,11 @@ async function mirrorAdoptedSnapshotToHistory(
   payload: Record<string, unknown>,
 ) {
   try {
-    const { count } = await supabase
-      .from("analysis_history")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId);
+    const scope = await getBrandScope();
+    const { count } = await applyBrandFilter(
+      supabase.from("analysis_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      scope,
+    );
     if ((count ?? 0) > 0) return;
 
     const radar = Array.isArray(payload.radar)
@@ -135,14 +139,17 @@ async function mirrorAdoptedSnapshotToHistory(
       : [];
 
     const { error } = await supabase.from("analysis_history").insert(
-      buildAnalysisHistoryRow({
+      {
+        ...buildAnalysisHistoryRow({
         userId,
         source: "preview",
         overallScore: payload.geoScore as number,
         radar,
         keywordCloud: payload.keyword_cloud,
         modelsOk: Array.isArray(payload.models_ok) ? (payload.models_ok as string[]) : [],
-      }) as never,
+        }),
+        ...brandWriteFields(scope),
+      } as never,
     );
     if (error) {
       console.warn("[existing-diagnostic] espelho em analysis_history falhou:", error.message);
@@ -163,10 +170,11 @@ function markAdopted() {
 export async function resolveExistingDiagnostic(
   userId: string,
 ): Promise<ExistingDiagnostic | null> {
-  const { data: lastAudit } = await supabase
-    .from("audit_reports")
-    .select("overall_score, pillar_details")
-    .eq("user_id", userId)
+  const scope = await getBrandScope();
+  const { data: lastAudit } = await applyBrandFilter(
+    supabase.from("audit_reports").select("overall_score, pillar_details").eq("user_id", userId),
+    scope,
+  )
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

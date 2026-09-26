@@ -50,6 +50,14 @@ export async function linkBrandToAgencyIfNeeded(userId: string, brandId: string)
     .eq("user_id", userId)
     .maybeSingle();
   if ((data as { account_type?: string } | null)?.account_type !== "agency") return false;
+  // Marca criada pela agência (create_agency_brand) já nasce vinculada.
+  const { data: link } = await supabase
+    .from("agency_brands")
+    .select("id")
+    .eq("agency_user_id", userId)
+    .eq("brand_id", brandId)
+    .maybeSingle();
+  if (link) return true;
   const { error } = await supabase
     .from("agency_brands")
     .upsert(

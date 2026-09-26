@@ -47,7 +47,7 @@ serve(async (req) => {
 
     const { data: query, error: qErr } = await admin
       .from("vitrine_queries")
-      .select("id, user_id, pergunta, pais, idioma, regiao, frequencia")
+      .select("id, user_id, brand_id, pergunta, pais, idioma, regiao, frequencia")
       .eq("id", queryId)
       .eq("user_id", user.id)
       .maybeSingle();

@@ -1,3 +1,4 @@
+import { getBrandScope, applyBrandFilter, brandWriteFields } from "@/lib/brand-scope";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -20,7 +21,7 @@ export function useActionPlans(filters: Filters = {}) {
   return useQuery({
     queryKey: ["action-plans", filters],
     queryFn: async () => {
-      let q = supabase.from("action_plans").select("*");
+      let q = applyBrandFilter(supabase.from("action_plans").select("*"), await getBrandScope());
       if (filters.categoria) q = q.eq("categoria", filters.categoria);
       if (filters.status) q = q.eq("status", filters.status);
       if (filters.origem) q = q.eq("origem", filters.origem);
@@ -50,6 +51,7 @@ export function useCreateActionPlan() {
         .from("action_plans")
         .insert({
           user_id,
+          ...brandWriteFields(await getBrandScope()),
           titulo: input.titulo.trim(),
           categoria: input.categoria,
           prioridade: input.prioridade ?? "media",

@@ -32,7 +32,7 @@ serve(async (req) => {
   try {
     const { data: due, error } = await admin
       .from("vitrine_queries")
-      .select("id, user_id, pergunta, pais, idioma, regiao, frequencia")
+      .select("id, user_id, brand_id, pergunta, pais, idioma, regiao, frequencia")
       .eq("ativo", true)
       .lte("next_run_at", new Date().toISOString())
       .order("next_run_at", { ascending: true })

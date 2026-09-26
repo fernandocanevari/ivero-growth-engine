@@ -1,3 +1,4 @@
+import { getBrandScope, applyBrandFilter } from "@/lib/brand-scope";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { hasSessionDiagnostic } from "@/lib/existing-diagnostic";
@@ -20,15 +21,16 @@ export function useHasDiagnostic() {
     queryFn: async () => {
       if (!userId) return false;
       try {
+        const scope = await getBrandScope();
         const [audits, history] = await Promise.all([
-          supabase
-            .from("audit_reports")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId),
-          supabase
-            .from("analysis_history")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId),
+          applyBrandFilter(
+            supabase.from("audit_reports").select("id", { count: "exact", head: true }).eq("user_id", userId),
+            scope,
+          ),
+          applyBrandFilter(
+            supabase.from("analysis_history").select("id", { count: "exact", head: true }).eq("user_id", userId),
+            scope,
+          ),
         ]);
         const total = (audits.count ?? 0) + (history.count ?? 0);
         // Snapshot do preview conta como diagnóstico: o cliente JÁ viu o

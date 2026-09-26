@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getBrandScope } from "@/lib/brand-scope";
 
 export interface BrandSettings {
   id: string;
@@ -21,12 +22,23 @@ export function useBrandSettings() {
   return useQuery({
     queryKey: ["brand_settings"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const scope = await getBrandScope();
+      const uid = scope?.userId ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      if (scope?.isAgency) {
+        if (!scope.brandId) return null;
+        const { data, error } = await supabase
+          .from("brand_settings")
+          .select("*")
+          .eq("id", scope.brandId)
+          .maybeSingle();
+        if (error) throw error;
+        return data as BrandSettings | null;
+      }
       const { data, error } = await supabase
         .from("brand_settings")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", uid)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -46,9 +58,12 @@ export function useUpdateBrandSettings() {
   return useMutation({
     mutationFn: async (values: Partial<BrandSettings> & { id: string }) => {
       const { id, ...rest } = values;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase.from("brand_settings").update(rest).eq("id", id).eq("user_id", user.id);
+      const scope = await getBrandScope();
+      const uid = scope?.userId ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      let q = supabase.from("brand_settings").update(rest).eq("id", id);
+      if (!scope?.isAgency) q = q.eq("user_id", uid);
+      const { error } = await q;
       if (error) throw error;
     },
     onSuccess: () => {

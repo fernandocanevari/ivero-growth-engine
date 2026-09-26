@@ -1,3 +1,4 @@
+import { getBrandScope, setActiveBrand } from "@/lib/brand-scope";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -69,6 +70,21 @@ export default function OnboardingPerguntasPage() {
       // Idempotent single-shot: resolve the brand row in one round-trip,
       // avoiding the read-after-write race with AuthPage's own upsert.
       let resolvedBrandId: string | null = null;
+      const scope = await getBrandScope();
+      if (scope?.isAgency) {
+        // Agência: marca do cliente ativa (criada em "+ Nova marca"); cria se ainda não houver.
+        let agencyBrand = scope.brandId;
+        if (!agencyBrand) {
+          const { data: created, error: rpcErr } = await supabase.rpc("create_agency_brand" as never);
+          if (rpcErr || !created) {
+            toast({ title: "Erro ao iniciar onboarding", description: rpcErr?.message, variant: "destructive" });
+            return;
+          }
+          agencyBrand = created as unknown as string;
+          setActiveBrand(scope.userId, agencyBrand);
+        }
+        resolvedBrandId = agencyBrand;
+      } else {
       const { data: bs, error } = await supabase
         .from("brand_settings")
         .upsert({ user_id: user.id } as never, {
@@ -95,6 +111,7 @@ export default function OnboardingPerguntasPage() {
         resolvedBrandId = retry.id;
       } else {
         resolvedBrandId = bs.id;
+      }
       }
       setBrandId(resolvedBrandId);
 

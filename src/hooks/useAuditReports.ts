@@ -1,3 +1,4 @@
+import { getBrandScope, applyBrandFilter, brandWriteFields } from "@/lib/brand-scope";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
@@ -39,11 +40,11 @@ export function useAuditReports() {
     queryKey: ["audit-reports", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_reports")
-        .select("*")
-        .eq("user_id", userId!)
-        .order("created_at", { ascending: false });
+      const scope = await getBrandScope();
+      const { data, error } = await applyBrandFilter(
+        supabase.from("audit_reports").select("*").eq("user_id", userId!),
+        scope,
+      ).order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as AuditReport[];
     },
@@ -61,7 +62,7 @@ export function useAuditReports() {
       if (!userId) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("audit_reports")
-        .insert({ user_id: userId, ...payload } as never)
+        .insert({ user_id: userId, ...brandWriteFields(await getBrandScope()), ...payload } as never)
         .select()
         .single();
       if (error) throw error;
