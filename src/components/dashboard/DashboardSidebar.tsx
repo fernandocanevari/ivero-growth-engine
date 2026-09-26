@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Radar, GitCompare, BarChart3, TrendingUp, Shield,
   FileText, Map, Bell, FlaskConical, Megaphone, PenLine,
-  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck, FileCode, ShoppingBag,
+  Download, Settings, LogOut, Crown, Users, Mail, Send, FileSignature, Gauge, HelpCircle, Brain, CreditCard, Lock, Tags, History, MessageSquare, TestTube, PanelLeft, ChevronRight, Info, ShieldCheck, FileCode, ShoppingBag, Building2,
 } from "lucide-react";
+import { useAccountType } from "@/hooks/useAccountType";
+import { BrandSwitcher } from "@/components/dashboard/BrandSwitcher";
 import { NavLink } from "@/components/NavLink";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { usePerceptionAlerts } from "@/hooks/usePerceptionAlerts";
@@ -120,7 +122,16 @@ export function DashboardSidebar() {
   // Não mostra cadeados enquanto a primeira validação de role/assinatura roda.
   const showLockState = !isAdmin && !validating;
 
-  const allGroups = isAdmin ? [...menuGroups, adminGroup] : menuGroups;
+  const { isAgency } = useAccountType();
+  // Agência: "Todas as marcas" no topo do menu (clientes individuais não veem).
+  const baseGroups = isAgency
+    ? menuGroups.map((g) =>
+        g.label === "Visão Geral"
+          ? { ...g, items: [{ title: "Todas as marcas", url: "/dashboard/marcas", icon: Building2 }, ...g.items] }
+          : g,
+      )
+    : menuGroups;
+  const allGroups = isAdmin ? [...baseGroups, adminGroup] : baseGroups;
 
   const STORAGE_KEY = "ivero_sidebar_sections";
 
@@ -278,6 +289,11 @@ export function DashboardSidebar() {
             <PanelLeft className="h-4 w-4" />
           </button>
         </div>
+        {isAgency && !collapsed && (
+          <div className="mt-3">
+            <BrandSwitcher />
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-2 overflow-y-auto [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-[#D0CEFE] [scrollbar-width:thin]">
