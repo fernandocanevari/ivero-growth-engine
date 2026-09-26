@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
     const subscriptionCustomerId: string = body?.subscription?.customer ?? "";
     // Eventos de Checkout Session (CHECKOUT_PAID etc.)
     const checkout = body?.checkout ?? {};
-    const checkoutId: string = checkout?.id ?? "";
+    // Pagamentos gerados por Checkout Session trazem `payment.checkoutSession`.
+    const checkoutId: string = checkout?.id ?? body?.payment?.checkoutSession ?? body?.subscription?.checkoutSession ?? "";
     const checkoutSubId: string =
       (typeof checkout?.subscription === "string"
         ? checkout.subscription
