@@ -1239,6 +1239,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_agency_brand: { Args: never; Returns: string }
       has_brand_access: { Args: { _brand_id: string }; Returns: boolean }
       has_role: {
         Args: {
