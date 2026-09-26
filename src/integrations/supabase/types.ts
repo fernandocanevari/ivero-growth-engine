@@ -118,6 +118,8 @@ export type Database = {
           brand_id: string
           created_at: string
           id: string
+          plano: string | null
+          plano_pretendido: string | null
           removed_at: string | null
           status: string
           updated_at: string
@@ -128,6 +130,8 @@ export type Database = {
           brand_id: string
           created_at?: string
           id?: string
+          plano?: string | null
+          plano_pretendido?: string | null
           removed_at?: string | null
           status?: string
           updated_at?: string
@@ -138,6 +142,8 @@ export type Database = {
           brand_id?: string
           created_at?: string
           id?: string
+          plano?: string | null
+          plano_pretendido?: string | null
           removed_at?: string | null
           status?: string
           updated_at?: string
@@ -227,6 +233,7 @@ export type Database = {
           created_at: string
           data_inicio: string
           data_vencimento: string | null
+          desconto_volume_pct: number | null
           id: string
           plano: string
           plano_pretendido: string | null
@@ -234,6 +241,7 @@ export type Database = {
           trial_ends_at: string | null
           updated_at: string
           user_id: string
+          valor_consolidado: number | null
         }
         Insert: {
           asaas_checkout_created_at?: string | null
@@ -250,6 +258,7 @@ export type Database = {
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
+          desconto_volume_pct?: number | null
           id?: string
           plano: string
           plano_pretendido?: string | null
@@ -257,6 +266,7 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string
           user_id: string
+          valor_consolidado?: number | null
         }
         Update: {
           asaas_checkout_created_at?: string | null
@@ -273,6 +283,7 @@ export type Database = {
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
+          desconto_volume_pct?: number | null
           id?: string
           plano?: string
           plano_pretendido?: string | null
@@ -280,6 +291,7 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
+          valor_consolidado?: number | null
         }
         Relationships: []
       }
