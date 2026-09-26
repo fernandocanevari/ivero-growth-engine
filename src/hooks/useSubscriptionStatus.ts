@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
 import { cancelAccessUntil, resolveEffectiveStatus } from "@/lib/subscription-status";
+import { getBrandScope, subscribeBrandScope } from "@/lib/brand-scope";
 
 type Plano = "presenca" | "influencia" | "autoridade" | null;
 
@@ -24,6 +25,10 @@ export function useSubscriptionStatus() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [assinaturaLoading, setAssinaturaLoading] = useState(true);
   const [assinatura, setAssinatura] = useState<AssinaturaRow | null>(null);
+  // undefined = conta individual (usa o plano da assinatura, como sempre).
+  const [brandPlan, setBrandPlan] = useState<
+    { plano: string | null; pretendido: string | null } | undefined
+  >(undefined);
   const [userId, setUserId] = useState<string | null>(null);
   // Enquanto a sessão não resolve, userId === null não significa "sem usuário".
   const [authResolved, setAuthResolved] = useState(false);
@@ -89,6 +94,27 @@ export function useSubscriptionStatus() {
     } else {
       setAssinatura((data as unknown as AssinaturaRow | null) ?? null);
     }
+
+    // Agência: o gating segue o plano da MARCA ATIVA, não o da conta.
+    const scope = await getBrandScope();
+    if (scope?.isAgency) {
+      if (scope.brandId) {
+        const { data: link } = await supabase
+          .from("agency_brands")
+          .select("plano, plano_pretendido")
+          .eq("agency_user_id", userId)
+          .eq("brand_id", scope.brandId)
+          .maybeSingle();
+        setBrandPlan({
+          plano: (link?.plano as string | null) ?? null,
+          pretendido: (link?.plano_pretendido as string | null) ?? null,
+        });
+      } else {
+        setBrandPlan({ plano: null, pretendido: null });
+      }
+    } else {
+      setBrandPlan(undefined);
+    }
     hasLoadedRef.current = true;
     setAssinaturaLoading(false);
   }, [userId, authResolved]);
@@ -104,6 +130,10 @@ export function useSubscriptionStatus() {
   useEffect(() => {
     void fetchAssinatura();
   }, [fetchAssinatura]);
+
+  // Troca de marca no seletor recalcula o plano da marca ativa.
+  useEffect(() => subscribeBrandScope(() => void fetchAssinatura()), [fetchAssinatura]);
+
 
 
   const isLoading = roleLoading || !authResolved || assinaturaLoading;
@@ -167,6 +197,16 @@ export function useSubscriptionStatus() {
       isTrial = true;
       isPaid = false;
     }
+  }
+
+  // Agência: cada marca é liberada pelo próprio plano. Marca paga usa o plano
+  // confirmado; em trial/pendente vale o plano escolhido para ela, e na falta
+  // dele o plano da conta (1ª marca do trial). Marca sem plano fica bloqueada.
+  if (brandPlan !== undefined) {
+    const own = (brandPlan.plano as Plano) ?? null;
+    plano = isPaid && !isTrial
+      ? own
+      : own ?? ((brandPlan.pretendido as Plano) ?? null) ?? plano;
   }
 
   // Admin override
