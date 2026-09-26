@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -203,6 +204,7 @@ Deno.serve(async (req) => {
       return json(500, { error: error.message });
     }
 
+    await promoteAgencyIntent(supabase, userId, row.id as string);
     console.log("[reconcile-asaas] assinatura liberada via reconciliação:", row.id);
     return json(200, { reconciled: true, status: "ativo" });
   } catch (err) {

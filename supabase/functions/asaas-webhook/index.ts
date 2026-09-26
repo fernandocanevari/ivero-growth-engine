@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -207,6 +208,10 @@ Deno.serve(async (req) => {
         const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
         // Pagamento de mensalidade confirmado → promove o plano pretendido.
         if (!isAvulsa) res.row = await promoverIntencao(res.row);
+        if (!isAvulsa && res.row) {
+          const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", res.row.id).maybeSingle();
+          if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, res.row.id);
+        }
         if (event === "PAYMENT_CONFIRMED" && !isAvulsa && res.row) {
           const ciclos = (res.row.ciclos_pagos ?? 0) + 1;
           const inicio =
