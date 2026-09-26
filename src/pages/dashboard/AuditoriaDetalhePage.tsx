@@ -1,3 +1,4 @@
+import { getBrandScope, brandWriteFields } from "@/lib/brand-scope";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { motion } from "framer-motion";

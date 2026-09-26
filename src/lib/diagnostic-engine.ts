@@ -1,3 +1,4 @@
+import { getBrandScope, brandWriteFields } from "@/lib/brand-scope";
 /**
  * Diagnostic engine — motor compartilhado do Diagnóstico de Influência em IA.
  *
