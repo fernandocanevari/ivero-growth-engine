@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Plus, Globe, CheckCircle2, Clock, TrendingUp, TrendingDown, ShoppingBag, Loader2 } from "lucide-react";
+import { Building2, Plus, CreditCard, Globe, CheckCircle2, Clock, TrendingUp, TrendingDown, ShoppingBag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -75,10 +75,23 @@ export default function MarcasPage() {
             {agencyName ? ` · ${agencyName}` : ""}
           </p>
         </div>
-        <Button variant="hero" onClick={startNewBrand} disabled={creating} className="gap-2">
-          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Nova Marca
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/dashboard/marcas/assinatura")} className="gap-2">
+            <CreditCard className="h-4 w-4" /> Assinatura
+          </Button>
+          <Button variant="hero" onClick={startNewBrand} disabled={creating} className="gap-2">
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Nova Marca
+          </Button>
+        </div>
       </div>
+      {(brands.length >= 2 && brands.some((b) => !b.plano)) && (
+        <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-foreground">
+            Para gerenciar várias marcas com desconto por volume, escolha o plano de cada uma e ative a assinatura da agência.
+          </p>
+          <Button variant="hero" size="sm" onClick={() => navigate("/dashboard/marcas/assinatura")}>Escolher planos</Button>
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {brands.map((b) => {
           const done = !!b.onboarding_completed_at;
@@ -108,7 +121,7 @@ export default function MarcasPage() {
               <dl className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg bg-muted/50 p-2">
                   <dt className="text-[11px] text-muted-foreground">Plano</dt>
-                  <dd className="text-sm font-semibold text-foreground">{planLabel}</dd>
+                  <dd className="text-sm font-semibold text-foreground">{b.plano ? PLAN_LABEL[b.plano] : planLabel}</dd>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-2">
                   <dt className="text-[11px] text-muted-foreground">Score</dt>
