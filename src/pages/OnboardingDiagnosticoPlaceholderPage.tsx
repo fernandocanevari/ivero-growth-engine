@@ -1,3 +1,4 @@
+import { getBrandScope } from "@/lib/brand-scope";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, AlertTriangle } from "lucide-react";
@@ -86,11 +87,12 @@ export default function OnboardingDiagnosticoPlaceholderPage() {
         .eq("user_id", user.id);
 
       // Site/marca vindos da etapa 2 (perfil da marca).
-      const { data: brand } = await supabase
-        .from("brand_settings")
-        .select("brand_name, website")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const scope = await getBrandScope();
+      const brandBase = supabase.from("brand_settings").select("brand_name, website");
+      const { data: brand } = await (scope?.isAgency
+        ? brandBase.eq("id", scope.brandId ?? "00000000-0000-0000-0000-000000000000")
+        : brandBase.eq("user_id", user.id)
+      ).maybeSingle();
 
       const siteUrl = (brand as { website?: string } | null)?.website ?? "";
       const brandName =

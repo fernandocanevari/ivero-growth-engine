@@ -1,3 +1,4 @@
+import { getBrandScope } from "@/lib/brand-scope";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,10 +91,12 @@ export default function OnboardingSitePage() {
       /* storage indisponível ou JSON inválido: segue para o fallback */
     }
     try {
-      const { data } = await supabase
-        .from("brand_settings")
-        .select("website")
-        .eq("user_id", uid)
+      const scope = await getBrandScope();
+      const base = supabase.from("brand_settings").select("website");
+      const { data } = await (scope?.isAgency
+        ? base.eq("id", scope.brandId ?? "00000000-0000-0000-0000-000000000000")
+        : base.eq("user_id", uid)
+      )
         .limit(1)
         .maybeSingle();
       const website = (data as { website?: string } | null)?.website;
@@ -278,11 +281,15 @@ export default function OnboardingSitePage() {
     setSaving(true);
     try {
       // 1) Upsert brand_settings
-      const { data: existing } = await supabase
+      const scope = await getBrandScope();
+      const isAgencyBrand = !!scope?.isAgency && !!scope.brandId;
+      const existingBase = supabase
         .from("brand_settings")
-        .select("id, contact_name, contact_email, contact_phone")
-        .eq("user_id", userId)
-        .maybeSingle();
+        .select("id, contact_name, contact_email, contact_phone");
+      const { data: existing } = await (isAgencyBrand
+        ? existingBase.eq("id", scope!.brandId!)
+        : existingBase.eq("user_id", userId)
+      ).maybeSingle();
 
       // Dados de contato: no cadastro direto (caminho 2) o lead não existe, então
       // buscamos em profiles para brand_settings nunca ficar sem contato.
@@ -296,7 +303,8 @@ export default function OnboardingSitePage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
       const brandPayload = {
-        user_id: userId,
+        // Marca de agência não tem dono individual (user_id fica nulo).
+        ...(isAgencyBrand ? {} : { user_id: userId }),
         brand_name: brandName.trim(),
         description: description.trim(),
         sector: sector.trim(),
