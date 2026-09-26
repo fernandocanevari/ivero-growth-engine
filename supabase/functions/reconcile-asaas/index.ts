@@ -48,6 +48,39 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // Ação administrativa: conferir/configurar o webhook do Asaas (só admin).
+    let body: Record<string, any> = {};
+    try { body = await req.json(); } catch { /* sem corpo */ }
+    if (body?.action === "webhook_status" || body?.action === "webhook_fix") {
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) return json(403, { error: "forbidden" });
+      const expectedUrl = `${supabaseUrl}/functions/v1/asaas-webhook`;
+      const listRes = await fetch(`${ASAAS_BASE_URL}/webhooks`, { headers: asaasHeaders });
+      const list = await listRes.json().catch(() => null);
+      const hooks = (list?.data ?? []).map((h: Record<string, any>) => ({
+        id: h.id, name: h.name, url: h.url, enabled: h.enabled, interrupted: h.interrupted,
+        events: h.events, sendType: h.sendType, hasAuthToken: !!h.authToken,
+      }));
+      if (body.action === "webhook_status") return json(200, { expectedUrl, hooks });
+      const token = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
+      const payload = {
+        name: "Ivero", url: expectedUrl, email: "contato@ivero.com.br", enabled: true,
+        interrupted: false, apiVersion: 3, authToken: token, sendType: "SEQUENTIALLY",
+        events: [
+          "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED", "PAYMENT_OVERDUE", "PAYMENT_DELETED",
+          "CHECKOUT_PAID", "CHECKOUT_CANCELED", "CHECKOUT_EXPIRED",
+          "SUBSCRIPTION_CREATED", "SUBSCRIPTION_UPDATED", "SUBSCRIPTION_DELETED", "SUBSCRIPTION_INACTIVATED",
+        ],
+      };
+      const existing = (list?.data ?? []).find((h: Record<string, any>) => h.url === expectedUrl);
+      const res = await fetch(`${ASAAS_BASE_URL}/webhooks${existing ? `/${existing.id}` : ""}`, {
+        method: existing ? "PUT" : "POST", headers: asaasHeaders, body: JSON.stringify(payload),
+      });
+      const out = await res.json().catch(() => null);
+      return json(res.status, { updated: !!existing, id: out?.id, enabled: out?.enabled, interrupted: out?.interrupted, errors: out?.errors });
+    }
+
+
     const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
     const { data: row } = await supabase
       .from("assinaturas")
@@ -68,24 +101,61 @@ Deno.serve(async (req) => {
     let customerId: string = (row.asaas_customer_id as string) ?? "";
     let checkoutStatus = "";
 
-    // 1) Checkout Session
-    if (row.asaas_checkout_id) {
-      const res = await fetch(`${ASAAS_BASE_URL}/checkouts/${row.asaas_checkout_id}`, {
-        headers: asaasHeaders,
-      });
+    const PAID_PAYMENT = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
+    const getJson = async (path: string) => {
+      const res = await fetch(`${ASAAS_BASE_URL}${path}`, { headers: asaasHeaders });
       const text = await res.text();
       let data: Record<string, any> | null = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch { /* ignore */ }
+      try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+      return { status: res.status, data, text };
+    };
+
+    // 1) Checkout Session
+    if (row.asaas_checkout_id) {
+      const ck = await getJson(`/checkouts/${row.asaas_checkout_id}`);
+      const data = ck.data;
       checkoutStatus = data?.status ?? "";
-      console.log("[reconcile-asaas] checkout", row.asaas_checkout_id, res.status, checkoutStatus);
+      console.log("[reconcile-asaas] checkout", row.asaas_checkout_id, ck.status, checkoutStatus, ck.text.slice(0, 500));
       if (["PAID", "ACTIVE", "RECEIVED", "CONFIRMED"].includes(checkoutStatus)) paid = true;
       const sub = data?.subscription;
       subscriptionId = (typeof sub === "string" ? sub : sub?.id) || subscriptionId;
       const cus = data?.customer;
       customerId = (typeof cus === "string" ? cus : cus?.id) || customerId;
+
+      // 1b) Busca pela SESSÃO DE CHECKOUT: o Asaas grava `checkoutSession` em
+      // cada pagamento/assinatura gerado pelo checkout. O externalReference
+      // (user_id) fica só na sessão e não é herdado — por isso a busca por
+      // externalReference nunca encontrava nada.
+      if (!paid) {
+        const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=20`);
+        const list: Record<string, any>[] = pays.data?.data ?? [];
+        console.log("[reconcile-asaas] payments by checkoutSession", pays.status, list.length);
+        for (const p of list) {
+          if (p?.checkoutSession && p.checkoutSession !== row.asaas_checkout_id) continue;
+          if (p?.subscription) subscriptionId = subscriptionId || p.subscription;
+          if (p?.customer) customerId = customerId || p.customer;
+          if (PAID_PAYMENT.includes(p?.status)) paid = true;
+        }
+      }
+      if (!paid && !subscriptionId) {
+        const subs = await getJson(`/subscriptions?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=10`);
+        const s = (subs.data?.data ?? []).find((x: Record<string, any>) =>
+          !x?.checkoutSession || x.checkoutSession === row.asaas_checkout_id
+        );
+        console.log("[reconcile-asaas] subscriptions by checkoutSession", subs.status, s?.id, s?.status);
+        if (s?.id) {
+          subscriptionId = s.id;
+          customerId = customerId || s.customer;
+        }
+      }
+      // Assinatura descoberta pela sessão → confere pagamentos dela.
+      if (!paid && subscriptionId) {
+        const pays = await getJson(`/payments?subscription=${subscriptionId}&limit=10`);
+        paid = (pays.data?.data ?? []).some((p: Record<string, any>) => PAID_PAYMENT.includes(p?.status));
+        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays.status, paid, JSON.stringify((pays.data?.data ?? []).map((p: Record<string, any>) => [p.status, p.dueDate, p.value, p.billingType])));
+      }
     }
+
 
     // 2) Reforço: assinaturas do Asaas por externalReference (user_id)
     if (!paid) {
