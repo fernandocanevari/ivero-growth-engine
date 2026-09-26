@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       if (!paid && subscriptionId) {
         const pays = await getJson(`/payments?subscription=${subscriptionId}&limit=10`);
         paid = (pays.data?.data ?? []).some((p: Record<string, any>) => PAID_PAYMENT.includes(p?.status));
-        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays.status, paid);
+        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays.status, paid, JSON.stringify((pays.data?.data ?? []).map((p: Record<string, any>) => [p.status, p.dueDate, p.value, p.billingType])));
       }
     }
 
