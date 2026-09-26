@@ -1,3 +1,4 @@
+import { getBrandScope, applyBrandFilter } from "@/lib/brand-scope";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
@@ -35,11 +36,11 @@ export function useAnalysisHistory() {
     queryKey: ["analysis-history", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("analysis_history")
-        .select("*")
-        .eq("user_id", userId!)
-        .order("created_at", { ascending: true });
+      const scope = await getBrandScope();
+      const { data, error } = await applyBrandFilter(
+        supabase.from("analysis_history").select("*").eq("user_id", userId!),
+        scope,
+      ).order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as AnalysisRecord[];
     },

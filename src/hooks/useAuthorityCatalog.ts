@@ -1,3 +1,4 @@
+import { getBrandScope, brandWriteFields } from "@/lib/brand-scope";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -69,6 +70,7 @@ export function useAdoptCatalogAction() {
         .from("action_plans")
         .insert({
           user_id,
+          ...brandWriteFields(await getBrandScope()),
           titulo: item.titulo,
           descricao: item.descricao,
           objetivo: item.objetivo,

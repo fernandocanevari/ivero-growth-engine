@@ -1,3 +1,4 @@
+import { getBrandScope } from "@/lib/brand-scope";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,11 +24,14 @@ export function useOnboardingResponses() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data: brand } = await supabase
-        .from("brand_settings")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const scope = await getBrandScope();
+      const { data: brand } = scope?.isAgency
+        ? { data: scope.brandId ? { id: scope.brandId } : null }
+        : await supabase
+            .from("brand_settings")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
       if (!brand) return null;
 
       const { data, error } = await supabase

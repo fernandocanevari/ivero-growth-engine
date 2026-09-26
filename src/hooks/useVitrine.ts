@@ -1,3 +1,4 @@
+import { getBrandScope, applyBrandFilter, brandWriteFields } from "@/lib/brand-scope";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -56,14 +57,22 @@ export interface VitrineCitation {
   created_at: string;
 }
 
+/** Agência: ids das perguntas da marca ativa (runs/citações não têm brand_id). */
+async function agencyQueryIds(): Promise<string[] | null> {
+  const scope = await getBrandScope();
+  if (!scope?.isAgency) return null;
+  const { data } = await applyBrandFilter(supabase.from("vitrine_queries").select("id"), scope);
+  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+}
+
 export function useVitrineQueries() {
   return useQuery({
     queryKey: ["vitrine_queries"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vitrine_queries")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const { data, error } = await applyBrandFilter(
+        supabase.from("vitrine_queries").select("*"),
+        await getBrandScope(),
+      ).order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as VitrineQuery[];
     },
@@ -77,9 +86,10 @@ export function useVitrineRuns() {
   return useQuery({
     queryKey: ["vitrine_runs"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vitrine_runs")
-        .select("id, query_id, engine, status, marca_citada, custo_usd, erro_msg, executado_em")
+      const ids = await agencyQueryIds();
+      let base = supabase.from("vitrine_runs").select("id, query_id, engine, status, marca_citada, custo_usd, erro_msg, executado_em");
+      if (ids) base = base.in("query_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+      const { data, error } = await base
         .order("executado_em", { ascending: false })
         .limit(1000);
       if (error) throw error;
@@ -95,9 +105,10 @@ export function useVitrineCitations() {
   return useQuery({
     queryKey: ["vitrine_citations"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vitrine_citations")
-        .select("*")
+      const ids = await agencyQueryIds();
+      let base = supabase.from("vitrine_citations").select("*");
+      if (ids) base = base.in("query_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+      const { data, error } = await base
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;
@@ -117,6 +128,7 @@ export function useCreateVitrineQuery() {
       if (!user) throw new Error("Não autenticado");
       const { error } = await supabase.from("vitrine_queries").insert({
         user_id: user.id,
+        ...brandWriteFields(await getBrandScope()),
         pergunta: input.pergunta.trim(),
         regiao: input.regiao?.trim() || null,
         frequencia: input.frequencia ?? "semanal",
