@@ -13,6 +13,8 @@ export interface AgencyBrandRow {
   score: number | null;
   delta: number | null;
   vitrineTerms: number;
+  plano: string | null;
+  plano_pretendido: string | null;
 }
 
 /** Carteira da agência: marcas vinculadas + score, variação e termos da Vitrine. */
@@ -28,7 +30,7 @@ export function useAgencyBrands(enabled = true) {
     queryFn: async (): Promise<AgencyBrandRow[]> => {
       const { data: links, error } = await supabase
         .from("agency_brands")
-        .select("brand_id, added_at")
+        .select("brand_id, added_at, plano, plano_pretendido")
         .eq("agency_user_id", userId!)
         .eq("status", "ativo")
         .order("added_at", { ascending: true });
@@ -51,6 +53,7 @@ export function useAgencyBrands(enabled = true) {
       for (const v of (vitrineRes.data ?? []) as { brand_id: string }[]) {
         terms.set(v.brand_id, (terms.get(v.brand_id) ?? 0) + 1);
       }
+      const planById = new Map((links ?? []).map((l) => [l.brand_id as string, l as { plano: string | null; plano_pretendido: string | null }]));
       const byId = new Map((brandsRes.data ?? []).map((b) => [b.id as string, b]));
       return ids
         .map((id) => byId.get(id))
@@ -58,10 +61,12 @@ export function useAgencyBrands(enabled = true) {
         .map((b) => {
           const s = scores.get(b!.id as string) ?? [];
           return {
-            ...(b as Omit<AgencyBrandRow, "score" | "delta" | "vitrineTerms">),
+            ...(b as Omit<AgencyBrandRow, "score" | "delta" | "vitrineTerms" | "plano" | "plano_pretendido">),
             score: s[0] ?? null,
             delta: s.length === 2 ? s[0] - s[1] : null,
             vitrineTerms: terms.get(b!.id as string) ?? 0,
+            plano: planById.get(b!.id as string)?.plano ?? null,
+            plano_pretendido: planById.get(b!.id as string)?.plano_pretendido ?? null,
           };
         });
     },
