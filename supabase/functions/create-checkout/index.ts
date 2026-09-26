@@ -1,7 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
-import { normalizeCiclo, planValue, COMPROMISSO_MESES } from "../_shared/pricing.ts";
+import { normalizeCiclo, planValue, COMPROMISSO_MESES, type PlanoKey } from "../_shared/pricing.ts";
+import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 
 const ASAAS_BASE_URL = asaasBaseUrl();
 
@@ -29,6 +30,8 @@ interface CheckoutBody {
   billing_cycle?: string;
   /** "trocar_plano" = cliente já assinante trocando (servidor decide a rota). */
   intent?: "contratar" | "trocar_plano";
+  /** Modo agência: plano de cada marca ativa → 1 assinatura-mãe consolidada. */
+  agency?: { brands: { brand_id: string; plano: PlanoKey }[] };
 }
 
 Deno.serve(async (req) => {
@@ -67,8 +70,39 @@ Deno.serve(async (req) => {
 
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
-    const { plano, nome, email, tipo } = body || ({} as CheckoutBody);
+    const { nome, email, tipo } = body || ({} as CheckoutBody);
+    let plano = body?.plano;
     const ciclo = normalizeCiclo(body?.ciclo ?? body?.billing_cycle);
+
+    // Modo agência: valida que TODAS as marcas ativas da conta vieram com plano
+    // e calcula o valor consolidado com desconto de volume no servidor.
+    let agencyQuote: AgencyQuote | null = null;
+    if (body?.agency) {
+      const adm = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: prof } = await adm.from("profiles").select("account_type").eq("user_id", userId).maybeSingle();
+      if (prof?.account_type !== "agency") {
+        return new Response(JSON.stringify({ error: "Conta não é de agência." }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: links } = await adm.from("agency_brands").select("brand_id")
+        .eq("agency_user_id", userId).eq("status", "ativo");
+      const activeIds = new Set((links ?? []).map((l) => l.brand_id as string));
+      const chosen = (body.agency.brands ?? []).filter((b) => PLANOS_VALIDOS.includes(b?.plano));
+      const chosenIds = new Set(chosen.map((b) => b.brand_id));
+      if (activeIds.size === 0 || chosen.length !== activeIds.size || [...activeIds].some((id) => !chosenIds.has(id))) {
+        return new Response(JSON.stringify({ error: "Escolha um plano para cada marca ativa da agência." }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      agencyQuote = quoteAgency(chosen, ciclo);
+      plano = highestPlan(chosen.map((b) => b.plano));
+      // Intenção por marca: só vira plano vigente no pagamento confirmado.
+      for (const b of chosen) {
+        await adm.from("agency_brands").update({ plano_pretendido: b.plano })
+          .eq("agency_user_id", userId).eq("brand_id", b.brand_id);
+      }
+    }
     console.log("create-checkout body:", JSON.stringify({ plano, nome, email, tipo, ciclo }));
 
     if (!plano || !PLANOS_VALIDOS.includes(plano)) {
@@ -236,7 +270,7 @@ Deno.serve(async (req) => {
       ? new Date(trialEmCursoMs ?? today.getTime() + 7 * 24 * 60 * 60 * 1000)
       : null;
     const nextDueDate = (trialEndsAt ?? today).toISOString().slice(0, 10);
-    const value = planValue(plano, ciclo);
+    const value = agencyQuote ? agencyQuote.total : planValue(plano, ciclo);
 
     // 5. URLs de callback. O Asaas só aceita domínio público https cadastrado
     // na conta — localhost/http são rejeitados, então caímos pra produção.
@@ -276,9 +310,12 @@ Deno.serve(async (req) => {
       callback: { successUrl, cancelUrl, expiredUrl, autoRedirect: true },
       items: [
         {
-          name: PLAN_LABELS[plano] ?? `Ivero — Plano ${plano}`,
-          description:
-            ciclo === "anual"
+          name: agencyQuote
+            ? `Ivero — Agência (${agencyQuote.items.length} marcas)`
+            : PLAN_LABELS[plano] ?? `Ivero — Plano ${plano}`,
+          description: agencyQuote
+            ? `${agencyQuote.items.length} marcas${agencyQuote.discountPct ? ` com ${agencyQuote.discountPct}% de desconto por volume` : ""}`
+            : ciclo === "anual"
               ? `Plano ${plano} — mensalidade promocional com compromisso de ${COMPROMISSO_MESES} meses`
               : `Plano ${plano} — mensalidade sem compromisso`,
           quantity: 1,
@@ -459,7 +496,7 @@ Deno.serve(async (req) => {
 
     // 8. Return checkout URL
     return new Response(
-      JSON.stringify({ success: true, trialConcedido, checkoutUrl, asaasCheckoutId }),
+      JSON.stringify({ success: true, trialConcedido, checkoutUrl, asaasCheckoutId, agencyQuote }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
