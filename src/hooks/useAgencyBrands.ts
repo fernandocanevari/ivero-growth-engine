@@ -21,7 +21,10 @@ export function useAgencyBrands(enabled = true) {
   return useQuery({
     queryKey: ["agency-brands", userId],
     enabled: enabled && !!userId,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
+    // Volta do onboarding com marca nova: sempre revalida a carteira.
+    refetchOnMount: "always",
+    placeholderData: (prev) => prev,
     queryFn: async (): Promise<AgencyBrandRow[]> => {
       const { data: links, error } = await supabase
         .from("agency_brands")
@@ -91,5 +94,6 @@ export function useSwitchBrand() {
     if (!userId) return;
     setActiveBrand(userId, brandId);
     qc.removeQueries({ predicate: (q) => !KEEP_KEYS.has(String(q.queryKey[0])) });
+    qc.invalidateQueries({ queryKey: ["agency-brands"] });
   };
 }
