@@ -23,8 +23,9 @@ export function useBrandSettings() {
     queryKey: ["brand_settings"],
     queryFn: async () => {
       const scope = await getBrandScope();
-      if (!scope) throw new Error("Not authenticated");
-      if (scope.isAgency) {
+      const uid = scope?.userId ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      if (scope?.isAgency) {
         if (!scope.brandId) return null;
         const { data, error } = await supabase
           .from("brand_settings")
@@ -37,7 +38,7 @@ export function useBrandSettings() {
       const { data, error } = await supabase
         .from("brand_settings")
         .select("*")
-        .eq("user_id", scope.userId)
+        .eq("user_id", uid)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -58,9 +59,10 @@ export function useUpdateBrandSettings() {
     mutationFn: async (values: Partial<BrandSettings> & { id: string }) => {
       const { id, ...rest } = values;
       const scope = await getBrandScope();
-      if (!scope) throw new Error("Not authenticated");
+      const uid = scope?.userId ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!uid) throw new Error("Not authenticated");
       let q = supabase.from("brand_settings").update(rest).eq("id", id);
-      if (!scope.isAgency) q = q.eq("user_id", scope.userId);
+      if (!scope?.isAgency) q = q.eq("user_id", uid);
       const { error } = await q;
       if (error) throw error;
     },
