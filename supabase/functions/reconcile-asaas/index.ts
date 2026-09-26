@@ -68,24 +68,61 @@ Deno.serve(async (req) => {
     let customerId: string = (row.asaas_customer_id as string) ?? "";
     let checkoutStatus = "";
 
-    // 1) Checkout Session
-    if (row.asaas_checkout_id) {
-      const res = await fetch(`${ASAAS_BASE_URL}/checkouts/${row.asaas_checkout_id}`, {
-        headers: asaasHeaders,
-      });
+    const PAID_PAYMENT = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
+    const getJson = async (path: string) => {
+      const res = await fetch(`${ASAAS_BASE_URL}${path}`, { headers: asaasHeaders });
       const text = await res.text();
       let data: Record<string, any> | null = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch { /* ignore */ }
+      try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+      return { status: res.status, data, text };
+    };
+
+    // 1) Checkout Session
+    if (row.asaas_checkout_id) {
+      const ck = await getJson(`/checkouts/${row.asaas_checkout_id}`);
+      const data = ck.data;
       checkoutStatus = data?.status ?? "";
-      console.log("[reconcile-asaas] checkout", row.asaas_checkout_id, res.status, checkoutStatus);
+      console.log("[reconcile-asaas] checkout", row.asaas_checkout_id, ck.status, checkoutStatus, ck.text.slice(0, 500));
       if (["PAID", "ACTIVE", "RECEIVED", "CONFIRMED"].includes(checkoutStatus)) paid = true;
       const sub = data?.subscription;
       subscriptionId = (typeof sub === "string" ? sub : sub?.id) || subscriptionId;
       const cus = data?.customer;
       customerId = (typeof cus === "string" ? cus : cus?.id) || customerId;
+
+      // 1b) Busca pela SESSÃO DE CHECKOUT: o Asaas grava `checkoutSession` em
+      // cada pagamento/assinatura gerado pelo checkout. O externalReference
+      // (user_id) fica só na sessão e não é herdado — por isso a busca por
+      // externalReference nunca encontrava nada.
+      if (!paid) {
+        const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=20`);
+        const list: Record<string, any>[] = pays.data?.data ?? [];
+        console.log("[reconcile-asaas] payments by checkoutSession", pays.status, list.length);
+        for (const p of list) {
+          if (p?.checkoutSession && p.checkoutSession !== row.asaas_checkout_id) continue;
+          if (p?.subscription) subscriptionId = subscriptionId || p.subscription;
+          if (p?.customer) customerId = customerId || p.customer;
+          if (PAID_PAYMENT.includes(p?.status)) paid = true;
+        }
+      }
+      if (!paid && !subscriptionId) {
+        const subs = await getJson(`/subscriptions?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=10`);
+        const s = (subs.data?.data ?? []).find((x: Record<string, any>) =>
+          !x?.checkoutSession || x.checkoutSession === row.asaas_checkout_id
+        );
+        console.log("[reconcile-asaas] subscriptions by checkoutSession", subs.status, s?.id, s?.status);
+        if (s?.id) {
+          subscriptionId = s.id;
+          customerId = customerId || s.customer;
+        }
+      }
+      // Assinatura descoberta pela sessão → confere pagamentos dela.
+      if (!paid && subscriptionId) {
+        const pays = await getJson(`/payments?subscription=${subscriptionId}&limit=10`);
+        paid = (pays.data?.data ?? []).some((p: Record<string, any>) => PAID_PAYMENT.includes(p?.status));
+        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays.status, paid);
+      }
     }
+
 
     // 2) Reforço: assinaturas do Asaas por externalReference (user_id)
     if (!paid) {
