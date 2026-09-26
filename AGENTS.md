@@ -1,1 +1,2 @@
 - Contas de agência: tipo em profiles.account_type (gravado pelo trigger de cadastro via metadata); marcas ligadas por agency_brands ao fim do onboarding — por que: mantém o fluxo individual 1:1 intacto.
+- Marcas de agência: brand_settings.user_id NULL, criadas só via RPC create_agency_brand; marca ativa em src/lib/brand-scope.ts (brand_id filtra leituras/gravações só para agências) — por que: mantém UNIQUE(user_id) e o fluxo individual 1:1 intactos.
