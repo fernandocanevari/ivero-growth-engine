@@ -257,6 +257,12 @@ Deno.serve(async (req) => {
 
 
     if (action === "change_plan") {
+      // Agência: o valor é consolidado por marca (agency-manage-brand). Trocar
+      // o plano da conta inteira aqui desalinharia a assinatura-mãe.
+      const { data: prof } = await supabaseAdmin.from("profiles").select("account_type").eq("user_id", userId).maybeSingle();
+      if (prof?.account_type === "agency") {
+        return json(409, { error: "agencia_usa_faturamento_consolidado" });
+      }
       const plano = body.plano;
       if (!plano || !PLANOS_VALIDOS.includes(plano)) {
         return json(400, { error: "Plano inválido. Use: presenca, influencia ou autoridade." });
