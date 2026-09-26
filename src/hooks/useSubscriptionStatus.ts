@@ -132,7 +132,12 @@ export function useSubscriptionStatus() {
   }, [fetchAssinatura]);
 
   // Troca de marca no seletor recalcula o plano da marca ativa.
-  useEffect(() => subscribeBrandScope(() => void fetchAssinatura()), [fetchAssinatura]);
+  useEffect(() => {
+    const unsub = subscribeBrandScope(() => void fetchAssinatura());
+    return () => {
+      unsub();
+    };
+  }, [fetchAssinatura]);
 
 
 
@@ -206,7 +211,7 @@ export function useSubscriptionStatus() {
     const own = (brandPlan.plano as Plano) ?? null;
     plano = isPaid && !isTrial
       ? own
-      : own ?? ((brandPlan.pretendido as Plano) ?? null) ?? plano;
+      : own ?? (brandPlan.pretendido as Plano) ?? plano;
   }
 
   // Admin override
