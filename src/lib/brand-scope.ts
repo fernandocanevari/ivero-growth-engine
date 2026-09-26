@@ -38,6 +38,15 @@ export function invalidateBrandScope() {
 }
 
 async function load(): Promise<BrandScope | null> {
+  try {
+    return await loadUnsafe();
+  } catch {
+    // Sem contexto resolvível: comportamento individual (original).
+    return null;
+  }
+}
+
+async function loadUnsafe(): Promise<BrandScope | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   if (!cache || cache.userId !== user.id) {
@@ -89,9 +98,9 @@ export function setActiveBrand(userId: string, brandId: string) {
 }
 
 /** Filtro de leitura: só restringe por brand_id em contas de agência. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function applyBrandFilter<Q extends { eq: (c: string, v: string) => any }>(q: Q, scope: BrandScope | null): Q {
-  if (scope?.isAgency) return q.eq("brand_id", scope.brandId ?? NONE) as Q;
+export function applyBrandFilter<Q>(q: Q, scope: BrandScope | null): Q {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (scope?.isAgency) return (q as any).eq("brand_id", scope.brandId ?? NONE) as Q;
   return q;
 }
 
