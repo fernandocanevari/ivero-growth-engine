@@ -48,6 +48,39 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // Ação administrativa: conferir/configurar o webhook do Asaas (só admin).
+    let body: Record<string, any> = {};
+    try { body = await req.json(); } catch { /* sem corpo */ }
+    if (body?.action === "webhook_status" || body?.action === "webhook_fix") {
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) return json(403, { error: "forbidden" });
+      const expectedUrl = `${supabaseUrl}/functions/v1/asaas-webhook`;
+      const listRes = await fetch(`${ASAAS_BASE_URL}/webhooks`, { headers: asaasHeaders });
+      const list = await listRes.json().catch(() => null);
+      const hooks = (list?.data ?? []).map((h: Record<string, any>) => ({
+        id: h.id, name: h.name, url: h.url, enabled: h.enabled, interrupted: h.interrupted,
+        events: h.events, sendType: h.sendType, hasAuthToken: !!h.authToken,
+      }));
+      if (body.action === "webhook_status") return json(200, { expectedUrl, hooks });
+      const token = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
+      const payload = {
+        name: "Ivero", url: expectedUrl, email: "contato@ivero.com.br", enabled: true,
+        interrupted: false, apiVersion: 3, authToken: token, sendType: "SEQUENTIALLY",
+        events: [
+          "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED", "PAYMENT_OVERDUE", "PAYMENT_DELETED",
+          "CHECKOUT_PAID", "CHECKOUT_CANCELED", "CHECKOUT_EXPIRED",
+          "SUBSCRIPTION_CREATED", "SUBSCRIPTION_UPDATED", "SUBSCRIPTION_DELETED", "SUBSCRIPTION_INACTIVATED",
+        ],
+      };
+      const existing = (list?.data ?? []).find((h: Record<string, any>) => h.url === expectedUrl);
+      const res = await fetch(`${ASAAS_BASE_URL}/webhooks${existing ? `/${existing.id}` : ""}`, {
+        method: existing ? "PUT" : "POST", headers: asaasHeaders, body: JSON.stringify(payload),
+      });
+      const out = await res.json().catch(() => null);
+      return json(res.status, { updated: !!existing, id: out?.id, enabled: out?.enabled, interrupted: out?.interrupted, errors: out?.errors });
+    }
+
+
     const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
     const { data: row } = await supabase
       .from("assinaturas")
