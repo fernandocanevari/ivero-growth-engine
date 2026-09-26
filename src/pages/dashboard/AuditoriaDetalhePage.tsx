@@ -67,8 +67,10 @@ export default function AuditoriaDetalhePage() {
 
       // 2. Salvar uma nova entrada em audit_reports preservando o snapshot
       // (mantém o original intacto e marca um novo "ativo" no topo do histórico).
+      const scope = await getBrandScope();
       const { error: arErr } = await supabase.from("audit_reports").insert({
         user_id: userId,
+        ...brandWriteFields(scope),
         source: "reanalise",
         site_url: report.site_url,
         overall_score: report.overall_score,
@@ -85,6 +87,7 @@ export default function AuditoriaDetalhePage() {
       const byName = (n: string) => radar.find((r) => r.subject === n)?.value ?? 0;
       await supabase.from("analysis_history").insert({
         user_id: userId,
+        ...brandWriteFields(scope),
         overall_score: report.overall_score,
         clarity_score: byName("Clareza"),
         authority_score: byName("Autoridade"),

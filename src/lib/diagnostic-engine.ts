@@ -374,8 +374,10 @@ export async function persistDiagnostic(opts: {
     /* storage indisponível (modo privado) */
   }
 
+  const scope = await getBrandScope();
   const { error: auditError } = await supabase.from("audit_reports").insert({
     user_id: userId,
+    ...brandWriteFields(scope),
     source,
     site_url: siteUrl,
     overall_score: result.overallScore,
@@ -390,16 +392,17 @@ export async function persistDiagnostic(opts: {
   if (opts.writeAnalysisHistory) {
     const { error: historyError } = await supabase
       .from("analysis_history")
-      .insert(
-        buildAnalysisHistoryRow({
+      .insert({
+        ...buildAnalysisHistoryRow({
           userId,
           source,
           overallScore: result.overallScore,
           radar: result.radar,
           keywordCloud: result.keywordCloud,
           modelsOk: result.modelsOk,
-        }) as never,
-      );
+        }),
+        ...brandWriteFields(scope),
+      } as never);
     if (historyError) console.warn("analysis_history insert failed:", historyError.message);
   }
 }
