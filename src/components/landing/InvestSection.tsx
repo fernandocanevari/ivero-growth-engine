@@ -474,23 +474,17 @@ const InvestSection = () => {
                     ))}
                   </ul>
                 </div>
-                <div className="flex flex-col gap-2.5 lg:w-64 lg:shrink-0">
-                  <Button variant="hero" asChild className="w-full">
-                    <a href="/auth?mode=signup&tipo=agencia">{AGENCY_COPY.signupLabel} →</a>
+                <div className="flex flex-col gap-3 lg:w-72 lg:shrink-0">
+                  <Button variant="hero" asChild className="w-full h-auto min-h-12 py-3 px-4 whitespace-normal text-center leading-snug text-sm sm:text-base">
+                    <a href="/auth?mode=signup&tipo=agencia">{AGENCY_COPY.signupLabel}</a>
                   </Button>
-                  <Button variant="outline" asChild className="w-full border-2 border-ivero-purple/50 text-ivero-purple bg-ivero-purple/5 hover:bg-ivero-purple/15 hover:text-ivero-purple font-semibold">
+                  <Button variant="outline" asChild className="w-full h-auto min-h-12 py-3 px-4 whitespace-normal text-center leading-snug text-sm sm:text-base border-2 border-ivero-purple/50 text-ivero-purple bg-ivero-purple/5 hover:bg-ivero-purple/15 hover:text-ivero-purple font-semibold">
                     <a
                       href={getAgencyWhatsappUrl(AGENCY_COPY.whatsappMessage)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {AGENCY_COPY.whatsappLabel} →
-                    </a>
-                  </Button>
-                  <Button variant="outline" asChild className="w-full border-2 border-ivero-purple/50 text-ivero-purple bg-ivero-purple/5 hover:bg-ivero-purple/15 hover:text-ivero-purple font-semibold">
-                    <a href={getAgencyMailtoUrl(AGENCY_COPY.emailSubject, AGENCY_COPY.emailBody)}>
-                      <Mail className="w-4 h-4 mr-2" />
-                      {AGENCY_COPY.emailLabel}
+                      {AGENCY_COPY.whatsappLabel}
                     </a>
                   </Button>
                 </div>
