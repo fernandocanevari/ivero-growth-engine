@@ -267,7 +267,7 @@ export const AGENCY_COPY = {
     "Especialista Ivero acompanhando sua carteira",
   ],
   signupLabel: "Criar conta da minha agência",
-  whatsappLabel: "Falar com a equipe no WhatsApp",
+  whatsappLabel: "Chamar a equipe no WhatsApp",
   emailLabel: "Enviar e-mail para a equipe Ivero",
   whatsappMessage:
     "Olá! Sou de uma agência e quero entender as condições da Ivero para atender várias marcas.",
