@@ -119,6 +119,7 @@ export default function VitrinePage() {
       buildVitrineSuggestions({
         sector: brand?.sector,
         brandName: brand?.brand_name,
+        description: (brand as { description?: string | null } | null | undefined)?.description,
         keywords,
         regiao:
           brand?.coverage_type === "regional" && brand?.coverage_city

@@ -141,12 +141,21 @@ export function trialHoursLeft(
   return Math.max(0, (ts - now.getTime()) / 3_600_000);
 }
 
+/** Data civil (YYYY-MM-DD) no fuso de São Paulo, como número de dia. */
+function spCivilDay(d: Date): number {
+  const s = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+  return Math.round(Date.parse(`${s}T00:00:00Z`) / 86_400_000);
+}
+
 /**
- * Dias inteiros restantes (mín. 1 enquanto houver tempo).
- *
- * Usa `floor`: o dia em curso é parcial e não deve ser contado como cheio —
- * com `ceil`, 6 d 4 h aparecia como "7 de 7" durante quase 24 h e o contador
- * parecia travado no primeiro dia.
+ * Dias restantes por DIA DE CALENDÁRIO (America/Sao_Paulo).
+ * Dia da criação de um trial de 7 dias → 7; decrementa 1 por virada de dia
+ * civil. Mínimo 1 enquanto o trial não expirou; 0 quando expirou.
  */
 export function trialDaysLeft(
   trialEndsAt: string | null | undefined,
@@ -155,7 +164,8 @@ export function trialDaysLeft(
   const hours = trialHoursLeft(trialEndsAt, now);
   if (hours === null) return null;
   if (hours <= 0) return 0;
-  return Math.max(1, Math.floor(hours / 24));
+  const diff = spCivilDay(new Date(trialEndsAt!)) - spCivilDay(now);
+  return Math.max(1, diff);
 }
 
 /** Últimas 48h do trial → estado de urgência (âmbar). */
