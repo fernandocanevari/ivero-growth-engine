@@ -267,8 +267,12 @@ export function UpgradeModal({
               const saving = annualSavingBRL(plan.key);
               const highlighted = highlightKey === plan.key;
               const badge = badgeFor(plan.key);
-              // Densidade do modal: só os 2 highlights principais por plano.
-              const shortHighlights = plan.highlights.slice(0, 2);
+              // Densidade do modal: 3 destaques por plano. Nos planos com
+              // Vitrine IA, ela fica fixa como 3º item (está no fim da lista).
+              const hasVitrine = plan.highlights.includes("Vitrine IA");
+              const shortHighlights = hasVitrine
+                ? [...plan.highlights.filter((h) => h !== "Vitrine IA").slice(0, 2), "Vitrine IA"]
+                : plan.highlights.slice(0, 3);
 
               return (
                 <motion.div

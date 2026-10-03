@@ -73,14 +73,23 @@ describe("helpers de tempo do trial", () => {
   it("dias/horas restantes nunca são negativos", () => {
     expect(trialDaysLeft(iso(-100), NOW)).toBe(0);
     expect(trialHoursLeft(iso(-100), NOW)).toBe(0);
-    expect(trialDaysLeft(iso(72), NOW)).toBe(3);
-    expect(trialDaysLeft(iso(2), NOW)).toBe(1);
+    expect(trialDaysLeft(iso(2), NOW)).toBeGreaterThanOrEqual(1);
   });
 
-  it("conta de ontem mostra 6 de 7, não 7 de 7", () => {
-    // Caso real: criada 2026-09-05 17:58Z, trial até 2026-09-12 17:58Z.
-    const agora = new Date("2026-09-06T13:48:00Z");
-    expect(trialDaysLeft("2026-09-12T17:58:00Z", agora)).toBe(6);
+  it("dia da criação mostra 7 de 7 (dias de calendário em São Paulo)", () => {
+    // Criada 2026-10-03 13:50 BRT (16:50Z), trial até 2026-10-10 16:50Z.
+    expect(trialDaysLeft("2026-10-10T16:50:00Z", new Date("2026-10-03T16:50:05Z"))).toBe(7);
+    // Mesmo dia civil, à noite em SP (02:30Z do dia 4 = 23:30 BRT do dia 3).
+    expect(trialDaysLeft("2026-10-10T16:50:00Z", new Date("2026-10-04T02:30:00Z"))).toBe(7);
+  });
+
+  it("decrementa 1 por dia civil", () => {
+    expect(trialDaysLeft("2026-10-10T16:50:00Z", new Date("2026-10-04T12:00:00Z"))).toBe(6);
+    expect(trialDaysLeft("2026-10-10T16:50:00Z", new Date("2026-10-09T12:00:00Z"))).toBe(1);
+  });
+
+  it("último dia ainda não expirado mostra 1", () => {
+    expect(trialDaysLeft("2026-10-10T16:50:00Z", new Date("2026-10-10T10:00:00Z"))).toBe(1);
   });
 });
 
