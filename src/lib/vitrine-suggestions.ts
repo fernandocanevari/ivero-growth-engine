@@ -40,13 +40,9 @@ const RUIDO = new Set([
 export function extractProductTerms(description?: string | null): string[] {
   if (!description) return [];
   const text = description.toLowerCase();
-  const re = /\b(?:como|incluindo|de)\s+([a-zà-ú]+(?:\s[a-zà-ú]+)?(?:,\s*[a-zà-ú]+(?:\s[a-zà-ú]+)?)+\s+e\s+[a-zà-ú]+(?:\s[a-zà-ú]+)?)(?=\s+(?:para|com|que|em|no|na|do|da|ao)\b|[.;,]|$)/gi;
-  // Pega a enumeração mais longa (lista real de produtos).
-  let m: RegExpExecArray | null = null;
-  for (const cur of text.matchAll(re)) {
-    if (!m || cur[1].length > m[1].length) m = cur as RegExpExecArray;
-  }
-  if (!m) return [];
+  // Enumeração logo após "como"/"incluindo"/"tais como", até a próxima preposição.
+  const m = text.match(/(?:^|\s)(?:como|incluindo)\s+(.+?)(?=\s(?:para|com|que|no|na|em|ao)\s|[.;]|$)/);
+  if (!m || !/,|\se\s/.test(m[1])) return [];
   return m[1]
     .split(/,|\s+e\s+/)
     .map((t) => limpaTermo(t))
