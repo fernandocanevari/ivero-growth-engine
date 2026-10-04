@@ -88,7 +88,7 @@ export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult>
     return { status: "already" };
   }
 
-  const { error } = await supabase.from("audit_reports").insert({
+  const { data: adoptedRow, error } = await supabase.from("audit_reports").insert({
     user_id: userId,
     ...brandWriteFields(scope),
     source: "preview",
@@ -99,12 +99,13 @@ export async function adoptPreviewSnapshot(userId: string): Promise<AdoptResult>
     pillar_details: payload.pillarDetails ?? [],
     keyword_cloud: payload.keyword_cloud ?? [],
     ai_engines: payload.aiEngines ?? [],
-  } as never);
+  } as never).select("id").maybeSingle();
 
   if (error) {
     console.error("[existing-diagnostic] adoção falhou:", error.message);
     return { status: "failed", message: error.message };
   }
+  triggerActionPlanGeneration((adoptedRow as { id?: string } | null)?.id, scope?.brandId ?? null);
 
   // O diagnóstico do /preview é o marco zero da história do cliente: precisa
   // entrar TAMBÉM na série de evolução, senão a aba Evolução mostra menos
