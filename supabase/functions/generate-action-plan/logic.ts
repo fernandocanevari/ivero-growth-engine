@@ -31,7 +31,7 @@ export const REC_GOOD: Record<string, string> = {
   Autoridade: "Continue investindo em conteúdo de autoridade e backlinks de qualidade.",
   "Conversão": "Otimize as landing pages para visitantes vindos de respostas de IA.",
   Posicionamento: "Mantenha o storytelling e adicione mais elementos de diferenciação.",
-  "Relevância": "Mantenha a produção de conteúdo relevante ao nico e amplie a presença em discussões do setor.".replace("nico", "nicho"),
+  "Relevância": "Mantenha a produção de conteúdo relevante ao nicho e amplie a presença em discussões do setor.",
 };
 
 export interface Criterio { nome: string; score: number; justificativa?: string }

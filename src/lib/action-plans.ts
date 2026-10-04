@@ -28,7 +28,7 @@ export const ACTION_STATUS_LABELS: Record<ActionStatus, string> = {
 };
 
 export const ACTION_ORIGIN_LABELS: Record<ActionOrigin, string> = {
-  automatico: "Sugerido pela IA",
+  automatico: "Sugerido pelo diagnóstico",
   manual: "Manual",
 };
 
