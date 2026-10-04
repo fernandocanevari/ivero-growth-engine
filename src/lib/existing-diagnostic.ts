@@ -1,3 +1,4 @@
+import { triggerActionPlanGeneration } from "@/lib/action-plan-trigger";
 import { supabase } from "@/integrations/supabase/client";
 import { buildAnalysisHistoryRow } from "@/lib/diagnostic-engine";
 import { getBrandScope, applyBrandFilter, brandWriteFields } from "@/lib/brand-scope";
