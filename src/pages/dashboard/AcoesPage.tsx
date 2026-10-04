@@ -429,7 +429,7 @@ export default function AcoesPage() {
                             className="text-[10px] border-primary/40 text-primary gap-1"
                           >
                             <Sparkles className="h-2.5 w-2.5" />
-                            Sugerida
+                            Sugerido pelo diagnóstico
                           </Badge>
                         )}
                       </div>

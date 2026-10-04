@@ -1,3 +1,4 @@
+import { triggerActionPlanGeneration } from "@/lib/action-plan-trigger";
 import { getBrandScope, brandWriteFields } from "@/lib/brand-scope";
 /**
  * Diagnostic engine — motor compartilhado do Diagnóstico de Influência em IA.
@@ -376,7 +377,7 @@ export async function persistDiagnostic(opts: {
   }
 
   const scope = await getBrandScope();
-  const { error: auditError } = await supabase.from("audit_reports").insert({
+  const { data: auditRow, error: auditError } = await supabase.from("audit_reports").insert({
     user_id: userId,
     ...brandWriteFields(scope),
     source,
@@ -387,8 +388,9 @@ export async function persistDiagnostic(opts: {
     pillar_details: result.pillarDetails as never,
     keyword_cloud: result.keywordCloud as never,
     ai_engines: [] as never,
-  } as never);
+  } as never).select("id").maybeSingle();
   if (auditError) console.warn("audit_reports insert failed:", auditError.message);
+  else triggerActionPlanGeneration((auditRow as { id?: string } | null)?.id, scope?.brandId ?? null);
 
   if (opts.writeAnalysisHistory) {
     const { error: historyError } = await supabase

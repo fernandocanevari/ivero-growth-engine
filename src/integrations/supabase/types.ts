@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_plan_generations: {
+        Row: {
+          acoes_criadas: number
+          audit_report_id: string
+          brand_id: string | null
+          caminho: string | null
+          created_at: string
+          detalhe: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acoes_criadas?: number
+          audit_report_id: string
+          brand_id?: string | null
+          caminho?: string | null
+          created_at?: string
+          detalhe?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acoes_criadas?: number
+          audit_report_id?: string
+          brand_id?: string | null
+          caminho?: string | null
+          created_at?: string
+          detalhe?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_generations_audit_report_id_fkey"
+            columns: ["audit_report_id"]
+            isOneToOne: true
+            referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_plan_generations_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_plans: {
         Row: {
           audit_report_id: string | null
@@ -24,6 +75,7 @@ export type Database = {
           created_at: string
           descricao: string | null
           dificuldade: Database["public"]["Enums"]["action_difficulty"] | null
+          geracao: string | null
           id: string
           impacto_estimado: string | null
           objetivo: string | null
@@ -48,6 +100,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           dificuldade?: Database["public"]["Enums"]["action_difficulty"] | null
+          geracao?: string | null
           id?: string
           impacto_estimado?: string | null
           objetivo?: string | null
@@ -72,6 +125,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           dificuldade?: Database["public"]["Enums"]["action_difficulty"] | null
+          geracao?: string | null
           id?: string
           impacto_estimado?: string | null
           objetivo?: string | null
