@@ -82,7 +82,7 @@ export function fallbackAction(t: Target): ActionDraft {
     descricao,
     impacto_estimado: t.consolidacao
       ? `Ajuda a manter o pilar ${t.pillar} forte nas respostas das IAs.`
-      : `Tende a fortalecer o pilar ${t.pillar}, hoje o ponto que mais limita a marca nas respostas das IAs.`,
+      : `Tende a fortalecer o pilar ${t.pillar}, hoje o pilar que mais limita a marca nas respostas das IAs.`,
   };
 }
 
