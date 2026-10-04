@@ -78,7 +78,7 @@ export function fallbackAction(t: Target): ActionDraft {
   const pontos = t.weak.map((c) => c.nome).filter(Boolean);
   const descricao = pontos.length ? `${base} Pontos a reforçar: ${pontos.join("; ")}.` : base;
   return {
-    titulo: t.consolidacao ? `Consolidar ${t.pillar.toLowerCase()}: ${PILLAR_ACTION_TITLE[t.pillar].toLowerCase()}` : PILLAR_ACTION_TITLE[t.pillar],
+    titulo: t.consolidacao ? `${PILLAR_ACTION_TITLE[t.pillar]} (consolidação)` : PILLAR_ACTION_TITLE[t.pillar],
     descricao,
     impacto_estimado: t.consolidacao
       ? `Ajuda a manter o pilar ${t.pillar} forte nas respostas das IAs.`
