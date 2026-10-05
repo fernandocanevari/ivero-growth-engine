@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export function TrialBanner({
     dismissKey ? sessionStorage.getItem(dismissKey) === "1" : false,
   );
   const [modalOpen, setModalOpen] = useState(false);
+  const { openUpgrade } = useUpgradeEntry(useCallback(() => setModalOpen(true), []));
 
   const expired = expiredProp ?? isTrialExpired(trialEndsAt);
   const endingSoon = isTrialEndingSoon(trialEndsAt);
@@ -130,7 +132,7 @@ export function TrialBanner({
               <Button
                 size="sm"
                 variant={expired ? "destructive" : "default"}
-                onClick={() => setModalOpen(true)}
+                onClick={() => openUpgrade()}
                 className="text-xs h-7 px-3 shrink-0"
               >
                 {expired ? "Assinar agora" : endingSoon ? "Assinar agora" : "Ver planos"}

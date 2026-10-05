@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
+import { useMemo, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { marked } from "marked";
 import {
@@ -78,6 +79,7 @@ export default function GeradorConteudoPage() {
   const [contextSelections, setContextSelections] = useState<Record<string, boolean>>({});
   const [activeContent, setActiveContent] = useState<GeneratedContentRow | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { openUpgrade } = useUpgradeEntry(useCallback(() => setUpgradeOpen(true), []));
 
   const pillars = useMemo<PillarInfo[]>(() => {
     const last = lastAnalysis;
@@ -163,7 +165,7 @@ export default function GeradorConteudoPage() {
         used: quota.used,
         limit: quota.limit,
       });
-      setUpgradeOpen(true);
+      openUpgrade();
       return;
     }
     const result = await generate.mutateAsync({
