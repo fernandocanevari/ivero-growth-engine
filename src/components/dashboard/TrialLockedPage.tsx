@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Sparkles, Check } from "lucide-react";
@@ -34,6 +35,7 @@ const TRIAL_AVAILABLE = [
 export function TrialLockedPage({ title, description, requiredTier }: TrialLockedPageProps) {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const { openUpgrade } = useUpgradeEntry(useCallback(() => setModalOpen(true), []));
   const tierName = requiredTier ? tierLabel(requiredTier) : null;
   const badgeLabel = tierName ? `Disponível no plano ${tierName}` : "Recurso premium";
   const ctaLabel = tierName ? `Fazer upgrade para ${tierName}` : "Ver planos";
@@ -105,7 +107,7 @@ export function TrialLockedPage({ title, description, requiredTier }: TrialLocke
               <Button
                 size="lg"
                 className="w-full sm:flex-1"
-                onClick={() => setModalOpen(true)}
+                onClick={() => openUpgrade()}
               >
                 {ctaLabel}
                 <ArrowRight className="w-4 h-4 ml-1.5" />

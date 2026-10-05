@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
+import { useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Lock, Brain } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,6 +37,7 @@ const EVOLUCAO_FEATURE_PATH = "/dashboard/pilares";
 
 function EvolucaoLockedOverlay() {
   const [modalOpen, setModalOpen] = useState(false);
+  const { openUpgrade } = useUpgradeEntry(useCallback(() => setModalOpen(true), []));
   const requiredTier = getRequiredTier(EVOLUCAO_FEATURE_PATH);
   const tierName = requiredTier ? tierLabel(requiredTier) : null;
 
@@ -66,7 +68,7 @@ function EvolucaoLockedOverlay() {
                 Disponível no plano {tierName}
               </p>
             )}
-            <Button onClick={() => setModalOpen(true)} className="w-full">
+            <Button onClick={() => openUpgrade()} className="w-full">
               {tierName ? `Fazer upgrade para ${tierName}` : "Ver planos"}
             </Button>
           </CardContent>

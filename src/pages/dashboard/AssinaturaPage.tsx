@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -50,6 +51,7 @@ export default function AssinaturaPage() {
   const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
   const [searchParams] = useSearchParams();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { openUpgrade } = useUpgradeEntry(useCallback(() => setUpgradeOpen(true), []));
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [busy, setBusy] = useState<"cancel" | "card" | null>(null);
@@ -158,7 +160,7 @@ export default function AssinaturaPage() {
       plan: "open_modal",
       surface: "assinatura_page_change_plan",
     });
-    setUpgradeOpen(true);
+    openUpgrade();
   };
 
   const handleUpdateCard = async () => {

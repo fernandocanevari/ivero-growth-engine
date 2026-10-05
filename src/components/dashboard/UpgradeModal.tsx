@@ -20,6 +20,8 @@ import {
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAccountType } from "@/hooks/useAccountType";
+import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -70,6 +72,9 @@ export function UpgradeModal({
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription, cicloContratado } =
     useSubscriptionStatus();
+  // Defesa: agência usa faturamento consolidado — nunca troca plano por aqui.
+  const { isAgency, isLoading: accountLoading } = useAccountType();
+  const go = useSafeNavigate();
   // Default do toggle segue o ciclo real do cliente — nunca assume "anual".
   const [isAnnual, setIsAnnual] = useState(false);
   // Escolha manual do cliente nunca é sobrescrita pela sincronização tardia.
@@ -141,7 +146,7 @@ export function UpgradeModal({
   const handleSelectPlan = async (planKey: PlanoSugerido, planName: string) => {
     // Estado da assinatura ainda não resolvido: não decidir rota com dado
     // incompleto (era o caminho que levava um trial pra tela de pagamento).
-    if (isLoading) return;
+    if (isLoading || accountLoading || isAgency) return;
     // Funil de conversão: descobrir quais planos são clicados e onde param.
     track("upgrade_plan_clicked", {
       plan: planName,
@@ -210,6 +215,33 @@ export function UpgradeModal({
       setPendingPlan(null);
     }
   };
+
+  if (isAgency) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold">
+              Planos da agência são definidos por marca
+            </DialogTitle>
+            <DialogDescription>
+              Na sua conta de agência, o plano de cada marca é escolhido na página de faturamento
+              consolidado, com uma cobrança única para todas as marcas.
+            </DialogDescription>
+          </DialogHeader>
+          <Button
+            className="w-full"
+            onClick={() => {
+              onOpenChange(false);
+              go(AGENCY_BILLING_PATH);
+            }}
+          >
+            Ir para planos das marcas
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
