@@ -31,6 +31,9 @@ vi.mock("@/hooks/use-toast", () => ({
 }));
 
 vi.mock("@/lib/analytics", () => ({ track: () => {} }));
+vi.mock("@/hooks/useAccountType", () => ({
+  useAccountType: () => ({ accountType: "individual", agencyName: null, isLoading: false, isAgency: false }),
+}));
 
 import { UpgradeModal } from "./UpgradeModal";
 
