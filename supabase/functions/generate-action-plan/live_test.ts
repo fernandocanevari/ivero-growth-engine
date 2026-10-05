@@ -1,7 +1,7 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { fallbackAction, selectTargets } from "./logic.ts";
-import { generateWithLlm } from "./llm.ts";
+import { generateWithLlm, lastUsage } from "./llm.ts";
 
 // Dados reais da Sadia (brand_settings + audit_reports); todos os pilares >= 60 → consolidação.
 const SADIA = {
@@ -28,8 +28,11 @@ Deno.test({
     const map = await generateWithLlm(SADIA, targets);
     const a = map.get("Conversão");
     console.log("IA →", JSON.stringify(a, null, 2));
+    console.log("uso", JSON.stringify(lastUsage));
     assert(a, "IA não retornou ação válida para Conversão");
     assert(!/bebida/i.test(a.titulo + a.descricao));
+    assert(a.titulo.length <= 70 && a.descricao.length <= 220 && a.impacto_estimado.length <= 120);
+    console.log("tamanhos", a.titulo.length, a.descricao.length, a.impacto_estimado.length);
   },
 });
 
