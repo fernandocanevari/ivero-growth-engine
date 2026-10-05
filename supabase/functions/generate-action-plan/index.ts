@@ -12,8 +12,10 @@ const json = (b: unknown, status = 200) =>
 
 const Body = z.object({ auditReportId: z.string().uuid(), brandId: z.string().uuid().nullable().optional() });
 
+// Gera para todos os planos (inclusive teste grátis). A tela continua
+// bloqueada para quem não tem Autoridade — o acesso é decidido no app.
 function planAllows(plano: string | null | undefined) {
-  return plano === "autoridade";
+  return plano === "presenca" || plano === "influencia" || plano === "autoridade";
 }
 
 Deno.serve(async (req) => {
