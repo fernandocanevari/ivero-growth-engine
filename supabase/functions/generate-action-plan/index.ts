@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
 import {
   type ActionDraft, type Pillar,
-  fallbackAction, isDuplicate, selectTargets,
+  eligiblePlan, fallbackAction, isDuplicate, selectTargets,
 } from "./logic.ts";
 import { generateWithLlm } from "./llm.ts";
 
@@ -12,11 +12,6 @@ const json = (b: unknown, status = 200) =>
 
 const Body = z.object({ auditReportId: z.string().uuid(), brandId: z.string().uuid().nullable().optional() });
 
-// Gera para todos os planos (inclusive teste grátis). A tela continua
-// bloqueada para quem não tem Autoridade — o acesso é decidido no app.
-function planAllows(plano: string | null | undefined) {
-  return plano === "presenca" || plano === "influencia" || plano === "autoridade";
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -53,17 +48,18 @@ Deno.serve(async (req) => {
 
   try {
     // Plano: individual → assinatura da conta; agência → plano da marca.
-    let plano: string | null = null;
+    // Assinatura da conta (individual) ou assinatura-mãe (agência) define status/teste grátis.
+    const { data: sub } = await admin.from("assinaturas")
+      .select("plano, status, trial_ends_at").eq("user_id", report.user_id).maybeSingle();
+    let planoBruto: string | null = (sub?.plano as string | null) ?? null;
     if (brandId) {
       const { data: link } = await admin.from("agency_brands")
         .select("plano, plano_pretendido").eq("brand_id", brandId).eq("status", "ativo").maybeSingle();
-      plano = (link?.plano as string | null) ?? (link?.plano_pretendido as string | null) ?? null;
-    } else {
-      const { data: sub } = await admin.from("assinaturas").select("plano, status").eq("user_id", report.user_id).maybeSingle();
-      plano = sub && !["cancelado", "expirado"].includes(sub.status as string) ? (sub.plano as string) : null;
+      planoBruto = (link?.plano as string | null) ?? (link?.plano_pretendido as string | null) ?? null;
     }
-    if (!planAllows(plano)) {
-      await finish({ status: "sem_plano", detalhe: plano ?? "sem plano" });
+    const plano = eligiblePlan(planoBruto, sub ?? null);
+    if (!plano) {
+      await finish({ status: "sem_plano", detalhe: `${planoBruto ?? "sem plano"} / ${sub?.status ?? "sem assinatura"}` });
       return json({ status: "skipped_plan" });
     }
 

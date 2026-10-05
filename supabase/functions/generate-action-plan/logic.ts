@@ -11,28 +11,34 @@ export const PILLAR_CATEGORY: Record<string, Categoria> = {
   "Relevância": "relevancia",
 };
 
-// Espelho de PILLAR_ACTION_TITLE (PreviewPage) e recBad/recGood (diagnostic-engine).
+// Textos padrão (fallback), curtos e sem jargão — respeitam os mesmos limites da IA.
 export const PILLAR_ACTION_TITLE: Record<string, string> = {
-  Clareza: "Reescrever headline e proposta de valor",
-  Autoridade: "Estruturar página de autoridade técnica",
-  "Conversão": "Criar landing pages para tráfego de IA",
-  Posicionamento: "Definir e declarar o território de mercado",
-  "Relevância": "Produzir conteúdo de cobertura semântica do nicho",
+  Clareza: "Reescrever o título e a proposta de valor do site",
+  Autoridade: "Mostrar provas de experiência e reconhecimento",
+  "Conversão": "Criar páginas para quem chega pelas IAs",
+  Posicionamento: "Deixar claro em que mercado a marca atua",
+  "Relevância": "Publicar conteúdo sobre os temas do seu nicho",
 };
 export const REC_BAD: Record<string, string> = {
-  Clareza: "Reforce a proposta única de valor e a diferenciação competitiva para maximizar o impacto em respostas de IA.",
-  Autoridade: "Invista em backlinks de alta qualidade, menções em mídia especializada e conteúdo técnico aprofundado.",
-  "Conversão": "Crie landing pages específicas para visitantes vindos de respostas de IA, com contexto personalizado e prova social.",
-  Posicionamento: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas.",
-  "Relevância": "Produza conteúdo altamente relevante ao seu nicho e participe ativamente de discussões e publicações do setor.",
+  Clareza: "Diga em uma frase o que a marca faz e por que ela é diferente das concorrentes.",
+  Autoridade: "Publique depoimentos, menções na imprensa e conteúdos que mostrem a experiência da marca.",
+  "Conversão": "Crie páginas com o próximo passo claro e provas de clientes para quem chega pelas IAs.",
+  Posicionamento: "Conte a história da marca e diga para quem ela é, com exemplos concretos.",
+  "Relevância": "Publique conteúdos úteis sobre os assuntos do seu nicho e participe de debates do setor.",
 };
 export const REC_GOOD: Record<string, string> = {
-  Clareza: "Mantenha a comunicação clara e reforce a diferenciação competitiva.",
-  Autoridade: "Continue investindo em conteúdo de autoridade e backlinks de qualidade.",
-  "Conversão": "Otimize as landing pages para visitantes vindos de respostas de IA.",
-  Posicionamento: "Mantenha o storytelling e adicione mais elementos de diferenciação.",
-  "Relevância": "Mantenha a produção de conteúdo relevante ao nicho e amplie a presença em discussões do setor.",
+  Clareza: "Mantenha a comunicação clara e reforce o que diferencia a marca.",
+  Autoridade: "Continue publicando provas de experiência e menções de terceiros.",
+  "Conversão": "Revise as páginas de entrada para deixar o próximo passo ainda mais claro.",
+  Posicionamento: "Mantenha a história da marca e reforce o que a torna única.",
+  "Relevância": "Mantenha conteúdos do nicho em dia e amplie a presença em debates do setor.",
 };
+
+// Limites de texto (cliente leigo).
+export const LIMITS = { titulo: 70, descricao: 220, descricaoFrases: 2, impacto: 120, impactoFrases: 1 } as const;
+export function countSentences(s: string) {
+  return s.split(/[.!?]+(?:\s+|$)/).map((x) => x.trim()).filter(Boolean).length;
+}
 
 export interface Criterio { nome: string; score: number; justificativa?: string }
 export interface Pillar { name: string; score: number | null; hasData?: boolean; criterios?: Criterio[] }
@@ -75,25 +81,30 @@ export interface ActionDraft { titulo: string; descricao: string; impacto_estima
 
 export function fallbackAction(t: Target): ActionDraft {
   const base = t.consolidacao ? REC_GOOD[t.pillar] : REC_BAD[t.pillar];
-  const pontos = t.weak.map((c) => c.nome).filter(Boolean);
-  const descricao = pontos.length ? `${base} Pontos a reforçar: ${pontos.join("; ")}.` : base;
+  // Acrescenta o sub-critério mais fraco só se couber inteiro no limite (nunca corta texto).
+  const ponto = t.weak.map((c) => c.nome).find(Boolean);
+  const comPonto = ponto ? `${base} Comece por: ${ponto}.` : base;
+  const descricao = comPonto.length <= LIMITS.descricao ? comPonto : base;
+  const titulo = PILLAR_ACTION_TITLE[t.pillar];
   return {
-    titulo: t.consolidacao ? `${PILLAR_ACTION_TITLE[t.pillar]} (consolidação)` : PILLAR_ACTION_TITLE[t.pillar],
+    titulo: t.consolidacao && titulo.length + 15 <= LIMITS.titulo ? `${titulo} (consolidação)` : titulo,
     descricao,
     impacto_estimado: t.consolidacao
       ? `Ajuda a manter o pilar ${t.pillar} forte nas respostas das IAs.`
-      : `Tende a fortalecer o pilar ${t.pillar}, hoje o pilar que mais limita a marca nas respostas das IAs.`,
+      : `Tende a fortalecer o pilar ${t.pillar}, o que mais limita a marca nas IAs.`,
   };
 }
 
-/** Validação do schema da IA: textos não vazios, tamanhos razoáveis, impacto sem promessa numérica. */
+/** Validação do schema da IA: textos não vazios, dentro dos LIMITS, impacto sem promessa numérica. */
 export function validateDraft(d: unknown): ActionDraft | null {
   if (!d || typeof d !== "object") return null;
   const o = d as Record<string, unknown>;
   const t = typeof o.titulo === "string" ? o.titulo.trim() : "";
   const desc = typeof o.descricao === "string" ? o.descricao.trim() : "";
   const imp = typeof o.impacto_estimado === "string" ? o.impacto_estimado.trim() : "";
-  if (t.length < 5 || t.length > 120 || desc.length < 20 || desc.length > 700 || imp.length < 5 || imp.length > 240) return null;
+  if (t.length < 5 || t.length > LIMITS.titulo) return null;
+  if (desc.length < 20 || desc.length > LIMITS.descricao || countSentences(desc) > LIMITS.descricaoFrases) return null;
+  if (imp.length < 5 || imp.length > LIMITS.impacto || countSentences(imp) > LIMITS.impactoFrases) return null;
   if (/\d/.test(imp) || /\bpontos?\b|%/i.test(imp)) return null;
   return { titulo: t, descricao: desc, impacto_estimado: imp };
 }
@@ -117,4 +128,17 @@ export function isDuplicate(cat: string, titulo: string, existing: ExistingActio
   return existing.some(
     (e) => e.categoria === cat && e.status !== "concluido" && (e.origem === "automatico" || similar(e.titulo, titulo)),
   );
+}
+
+// Elegibilidade para gerar: todos os planos (inclusive teste grátis). Excluídos:
+// cancelado, teste grátis vencido (status ou trial_ends_at no passado) e sem plano.
+export interface SubInfo { plano?: string | null; status?: string | null; trial_ends_at?: string | null }
+const PLANOS = ["presenca", "influencia", "autoridade"];
+export function eligiblePlan(plano: string | null | undefined, sub: SubInfo | null, now = new Date()): string | null {
+  if (!plano || !PLANOS.includes(plano)) return null;
+  if (!sub) return null;
+  const st = sub.status ?? "";
+  if (["cancelado", "expirado", "trial_expirado"].includes(st)) return null;
+  if (st === "trial" && sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() <= now.getTime()) return null;
+  return plano;
 }
