@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
 import {
   type ActionDraft, type Pillar,
-  eligiblePlan, fallbackAction, isDuplicate, selectTargets,
+  candidateTargets, eligiblePlan, fallbackAction, honestForOptimization, isDuplicate, pickTargets, resolvePlanoBruto,
 } from "./logic.ts";
 import { generateWithLlm } from "./llm.ts";
 
@@ -51,19 +51,23 @@ Deno.serve(async (req) => {
     // Assinatura da conta (individual) ou assinatura-mãe (agência) define status/teste grátis.
     const { data: sub } = await admin.from("assinaturas")
       .select("plano, status, trial_ends_at").eq("user_id", report.user_id).maybeSingle();
-    let planoBruto: string | null = (sub?.plano as string | null) ?? null;
+    let link: { plano: string | null; plano_pretendido: string | null } | null = null;
     if (brandId) {
-      const { data: link } = await admin.from("agency_brands")
+      const { data } = await admin.from("agency_brands")
         .select("plano, plano_pretendido").eq("brand_id", brandId).eq("status", "ativo").maybeSingle();
-      planoBruto = (link?.plano as string | null) ?? (link?.plano_pretendido as string | null) ?? null;
+      link = data as typeof link;
     }
+    const planoBruto = resolvePlanoBruto(!!brandId, link, sub ?? null);
     const plano = eligiblePlan(planoBruto, sub ?? null);
     if (!plano) {
       await finish({ status: "sem_plano", detalhe: `${planoBruto ?? "sem plano"} / ${sub?.status ?? "sem assinatura"}` });
       return json({ status: "skipped_plan" });
     }
 
-    const targets = selectTargets((report.pillar_details ?? []) as Pillar[]);
+    const pillars = (report.pillar_details ?? []) as Pillar[];
+    const cand = candidateTargets(pillars);
+    // Pedido à IA cobre os principais + até 4 de otimização (o que for usado depende da deduplicação).
+    const targets = [...cand.principais, ...cand.otimizacao.slice(0, 4)];
     if (!targets.length) {
       await finish({ status: "sem_dados" });
       return json({ status: "no_data" });
@@ -92,14 +96,19 @@ Deno.serve(async (req) => {
       ? await exQ.eq("brand_id", brandId)
       : await exQ.eq("user_id", report.user_id).is("brand_id", null);
 
-    const rows: Record<string, unknown>[] = [];
-    const known = [...(existing ?? [])] as { titulo: string; categoria: string; status: string; origem: string }[];
-    for (const t of targets) {
+    const draftFor = (t: (typeof targets)[number]) => {
       const ai = llm.get(t.pillar);
-      const draft = ai ?? fallbackAction(t);
-      if (isDuplicate(t.categoria, draft.titulo, known)) continue;
-      known.push({ titulo: draft.titulo, categoria: t.categoria, status: "pendente", origem: "automatico" });
-      rows.push({
+      const ok = ai && (!t.otimizacao || honestForOptimization(ai));
+      return { draft: ok ? ai! : fallbackAction(t), geracao: ok ? "ia" : "fallback" };
+    };
+    const chosen = pickTargets(
+      pillars,
+      (existing ?? []) as { titulo: string; categoria: string; status: string; origem: string }[],
+      (t) => draftFor(t).draft.titulo,
+    );
+    const rows: Record<string, unknown>[] = chosen.map((t) => {
+      const { draft, geracao } = draftFor(t);
+      return {
         user_id: report.user_id,
         brand_id: brandId,
         audit_report_id: auditReportId,
@@ -110,9 +119,9 @@ Deno.serve(async (req) => {
         titulo: draft.titulo,
         descricao: draft.descricao,
         impacto_estimado: draft.impacto_estimado,
-        geracao: ai ? "ia" : "fallback",
-      });
-    }
+        geracao,
+      };
+    });
     if (rows.length) {
       const { error } = await admin.from("action_plans").insert(rows);
       if (error) throw error;

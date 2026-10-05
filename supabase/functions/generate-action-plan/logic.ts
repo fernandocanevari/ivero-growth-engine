@@ -26,6 +26,13 @@ export const REC_BAD: Record<string, string> = {
   Posicionamento: "Conte a história da marca e diga para quem ela é, com exemplos concretos.",
   "Relevância": "Publique conteúdos úteis sobre os assuntos do seu nicho e participe de debates do setor.",
 };
+export const OPT_TITLE: Record<string, string> = {
+  Clareza: "Ampliar a clareza da proposta de valor",
+  Autoridade: "Ampliar as provas de experiência da marca",
+  "Conversão": "Consolidar o próximo passo nas páginas",
+  Posicionamento: "Manter e ampliar a história da marca",
+  "Relevância": "Ampliar conteúdos sobre os temas do nicho",
+};
 export const REC_GOOD: Record<string, string> = {
   Clareza: "Mantenha a comunicação clara e reforce o que diferencia a marca.",
   Autoridade: "Continue publicando provas de experiência e menções de terceiros.",
@@ -48,51 +55,91 @@ export interface Target {
   categoria: Categoria;
   score: number;
   prioridade: Prioridade;
-  consolidacao: boolean;
+  otimizacao: boolean;
   weak: Criterio[];
 }
 
 export const MAX_ACTIONS = 4;
+export const MIN_ACTIONS = 3;
 
-/** Pilar fraco = score < 60 (alta < 40, média 40-59), 1 por pilar, teto 4. Sem fracos: 1 consolidação (baixa) no mais baixo. */
-export function selectTargets(pillars: Pillar[]): Target[] {
+/**
+ * Candidatos: pilares < 60 (alta < 40, média 40-59), mais baixos primeiro, até 4;
+ * depois os demais (>= 60) em ordem crescente como "otimização" (prioridade baixa).
+ */
+export function candidateTargets(pillars: Pillar[]): { principais: Target[]; otimizacao: Target[] } {
   const valid = (pillars ?? []).filter(
     (p) => p && PILLAR_CATEGORY[p.name] && p.hasData !== false && typeof p.score === "number",
   ) as (Pillar & { score: number })[];
-  if (valid.length === 0) return [];
   const sorted = [...valid].sort((a, b) => a.score - b.score);
   const weakCrit = (p: Pillar) => {
     const c = [...(p.criterios ?? [])].filter((x) => typeof x?.score === "number").sort((a, b) => a.score - b.score);
     const below = c.filter((x) => x.score < 60);
     return (below.length ? below : c.slice(0, 2)).slice(0, 3);
   };
-  const weak = sorted.filter((p) => p.score < 60).slice(0, MAX_ACTIONS);
-  if (weak.length) {
-    return weak.map((p) => ({
-      pillar: p.name, categoria: PILLAR_CATEGORY[p.name], score: p.score,
-      prioridade: p.score < 40 ? "alta" : "media", consolidacao: false, weak: weakCrit(p),
-    }));
+  const mk = (p: Pillar & { score: number }, otimizacao: boolean): Target => ({
+    pillar: p.name, categoria: PILLAR_CATEGORY[p.name], score: p.score,
+    prioridade: otimizacao ? "baixa" : p.score < 40 ? "alta" : "media", otimizacao, weak: weakCrit(p),
+  });
+  return {
+    principais: sorted.filter((p) => p.score < 60).slice(0, MAX_ACTIONS).map((p) => mk(p, false)),
+    otimizacao: sorted.filter((p) => p.score >= 60).map((p) => mk(p, true)),
+  };
+}
+
+/**
+ * Escolhe o que criar: todos os principais (sem duplicar) e, se as ações automáticas
+ * ABERTAS da marca ficarem abaixo de 3, completa com otimização (1 pilar por ação). Teto 4 por geração.
+ */
+export function pickTargets(
+  pillars: Pillar[],
+  existing: ExistingAction[] = [],
+  titleFor: (t: Target) => string = (t) => fallbackAction(t).titulo,
+): Target[] {
+  const { principais, otimizacao } = candidateTargets(pillars);
+  const known = [...existing];
+  const out: Target[] = [];
+  const openAuto = () => known.filter((e) => e.origem === "automatico" && e.status !== "concluido").length;
+  const tryAdd = (t: Target) => {
+    if (out.length >= MAX_ACTIONS) return;
+    const titulo = titleFor(t);
+    if (isDuplicate(t.categoria, titulo, known)) return;
+    out.push(t);
+    known.push({ titulo, categoria: t.categoria, status: "pendente", origem: "automatico" });
+  };
+  principais.forEach(tryAdd);
+  for (const t of otimizacao) {
+    if (openAuto() >= MIN_ACTIONS) break;
+    tryAdd(t);
   }
-  const low = sorted[0];
-  return [{ pillar: low.name, categoria: PILLAR_CATEGORY[low.name], score: low.score, prioridade: "baixa", consolidacao: true, weak: weakCrit(low) }];
+  return out;
+}
+
+/** Sem ações existentes (atalho usado nos testes e para montar o pedido à IA). */
+export function selectTargets(pillars: Pillar[]): Target[] {
+  return pickTargets(pillars, []);
 }
 
 export interface ActionDraft { titulo: string; descricao: string; impacto_estimado: string }
 
 export function fallbackAction(t: Target): ActionDraft {
-  const base = t.consolidacao ? REC_GOOD[t.pillar] : REC_BAD[t.pillar];
+  const base = t.otimizacao ? REC_GOOD[t.pillar] : REC_BAD[t.pillar];
   // Acrescenta o sub-critério mais fraco só se couber inteiro no limite (nunca corta texto).
   const ponto = t.weak.map((c) => c.nome).find(Boolean);
-  const comPonto = ponto ? `${base} Comece por: ${ponto}.` : base;
+  const comPonto = ponto ? `${base} ${t.otimizacao ? "Dê atenção a" : "Comece por"}: ${ponto}.` : base;
   const descricao = comPonto.length <= LIMITS.descricao ? comPonto : base;
-  const titulo = PILLAR_ACTION_TITLE[t.pillar];
   return {
-    titulo: t.consolidacao && titulo.length + 15 <= LIMITS.titulo ? `${titulo} (consolidação)` : titulo,
+    titulo: t.otimizacao ? OPT_TITLE[t.pillar] : PILLAR_ACTION_TITLE[t.pillar],
     descricao,
-    impacto_estimado: t.consolidacao
+    impacto_estimado: t.otimizacao
       ? `Ajuda a manter o pilar ${t.pillar} forte nas respostas das IAs.`
       : `Tende a fortalecer o pilar ${t.pillar}, o que mais limita a marca nas IAs.`,
   };
+}
+
+/** Ações de otimização não podem afirmar problema onde não existe. */
+export const NEGATIVE_WORDS = /\b(fracos?|fracas?|cr[ií]tic[oa]s?|falhas?)\b/i;
+export function honestForOptimization(d: ActionDraft) {
+  return !NEGATIVE_WORDS.test(`${d.titulo} ${d.descricao} ${d.impacto_estimado}`);
 }
 
 /** Validação do schema da IA: textos não vazios, dentro dos LIMITS, impacto sem promessa numérica. */
@@ -141,4 +188,14 @@ export function eligiblePlan(plano: string | null | undefined, sub: SubInfo | nu
   if (["cancelado", "expirado", "trial_expirado"].includes(st)) return null;
   if (st === "trial" && sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() <= now.getTime()) return null;
   return plano;
+}
+
+/** Plano usado na geração. Agência: plano da marca → plano pretendido → plano da conta (teste grátis). */
+export function resolvePlanoBruto(
+  isAgencyBrand: boolean,
+  link: { plano?: string | null; plano_pretendido?: string | null } | null,
+  sub: SubInfo | null,
+): string | null {
+  if (isAgencyBrand) return link?.plano ?? link?.plano_pretendido ?? sub?.plano ?? null;
+  return sub?.plano ?? null;
 }

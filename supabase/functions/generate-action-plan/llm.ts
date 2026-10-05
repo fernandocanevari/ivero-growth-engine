@@ -1,4 +1,4 @@
-import { type ActionDraft, LIMITS, type Target, validateDraft } from "./logic.ts";
+import { type ActionDraft, honestForOptimization, LIMITS, type Target, validateDraft } from "./logic.ts";
 
 export const MODEL = "openai/gpt-6-astra";
 const LLM_TIMEOUT_MS = 25_000;
@@ -29,7 +29,7 @@ type Brand = { nome: string; setor: string; descricao: string };
 
 export function buildPrompt(brand: Brand, targets: Target[], retry = false) {
   const pilares = targets.map((t) => ({
-    pilar: t.pillar, score: t.score, tipo: t.consolidacao ? "consolidacao" : "correcao",
+    pilar: t.pillar, score: t.score, tipo: t.otimizacao ? "otimizacao" : "correcao",
     subcriterios_fracos: t.weak.map((c) => ({ nome: c.nome, score: c.score, justificativa: c.justificativa ?? "" })),
   }));
   const limites = retry
@@ -42,7 +42,7 @@ Descrição: ${brand.descricao || "não informada"}
 
 Para CADA pilar abaixo gere exatamente 1 ação prática e específica para esta marca, baseada nos sub-critérios fracos e nas justificativas reais.
 ${limites}
-Tom direto, orientado a ação, sem jargão técnico (evite termos como SEO, backlinks, schema, semântica). Português do Brasil. "impacto_estimado" é orientação qualitativa, SEM números, porcentagens ou promessa de pontos. Não invente fatos, números, prêmios, clientes ou produtos que não estejam nos dados. Tipo "consolidacao" = manter e reforçar um pilar que já está bom. Use em "pilar" exatamente o nome recebido.
+Tom direto, orientado a ação, sem jargão técnico (evite termos como SEO, backlinks, schema, semântica). Português do Brasil. "impacto_estimado" é orientação qualitativa, SEM números, porcentagens ou promessa de pontos. Não invente fatos, números, prêmios, clientes ou produtos que não estejam nos dados. Tipo "otimizacao" = pilar que JÁ ESTÁ BOM: use a linguagem de consolidar, ampliar e manter, apoiada nas justificativas reais; NUNCA afirme problema e nunca use as palavras "fraco", "crítico" ou "falha". Use em "pilar" exatamente o nome recebido.
 
 Pilares: ${JSON.stringify(pilares)}`;
 }
@@ -108,7 +108,8 @@ export async function generateWithLlm(
   const collect = (acoes: Array<Record<string, unknown>>, allowed: Target[]) => {
     for (const a of acoes) {
       const d = validateDraft(a);
-      if (d && typeof a.pilar === "string" && allowed.some((t) => t.pillar === a.pilar)) map.set(a.pilar, d);
+      const t = allowed.find((x) => x.pillar === a.pilar);
+      if (d && t && (!t.otimizacao || honestForOptimization(d))) map.set(t.pillar, d);
     }
   };
   collect(await call(buildPrompt(brand, targets), key), targets);
