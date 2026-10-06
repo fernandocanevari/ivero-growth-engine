@@ -9,6 +9,7 @@ import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useCompetitors } from "@/hooks/useCompetitors";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getCachedAccess } from "@/lib/access-cache";
 
 interface Step {
   key: "diagnostico" | "competitor" | "score" | "acoes";
@@ -20,32 +21,44 @@ interface Step {
 const SNOOZE_PREFIX = "ivero_dashboard_checklist_snoozed_until:";
 const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+function readSnooze(uid: string | null): number {
+  if (!uid) return 0;
+  try {
+    return Number(localStorage.getItem(SNOOZE_PREFIX + uid) || 0);
+  } catch {
+    return 0;
+  }
+}
+
 export function OnboardingChecklistCard() {
   const navigate = useNavigate();
   const { data: progress, isLoading } = useDashboardOnboarding();
   const { data: settings } = useBrandSettings();
   const { data: competitors } = useCompetitors(settings?.id);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [snoozedUntil, setSnoozedUntil] = useState<number>(0);
-  const [snoozeChecked, setSnoozeChecked] = useState(false);
+  // Leitura síncrona: o usuário já está em memória (guarda de acesso) — o
+  // snooze é conhecido na primeira pintura, sem o card "nascer nulo".
+  const initialUserId = getCachedAccess()?.userId ?? null;
+  const [userId, setUserId] = useState<string | null>(initialUserId);
+  const [snoozedUntil, setSnoozedUntil] = useState<number>(() => readSnooze(initialUserId));
 
   useEffect(() => {
+    if (userId) return;
     let active = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!active) return;
-      if (user) {
-        setUserId(user.id);
-        const until = Number(localStorage.getItem(SNOOZE_PREFIX + user.id) || 0);
-        setSnoozedUntil(until);
-      }
-      setSnoozeChecked(true);
+      if (!active || !user) return;
+      setUserId(user.id);
+      setSnoozedUntil(readSnooze(user.id));
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
-  if (isLoading || !progress || !snoozeChecked) return null;
+  if (isLoading || !progress) {
+    // Reserva o espaço do card enquanto o progresso carrega (sem empurrar o layout).
+    if (Date.now() < snoozedUntil) return <div className="h-9" aria-hidden />;
+    return <div data-testid="checklist-skeleton" className="h-[330px] rounded-lg border border-border bg-muted/40 animate-pulse" aria-hidden />;
+  }
 
   const hasCompetitor = (competitors?.length ?? 0) > 0;
 
