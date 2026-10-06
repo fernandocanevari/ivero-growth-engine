@@ -12,15 +12,19 @@ vi.mock("@/hooks/useDashboardOnboarding", () => ({ useDashboardOnboarding: () =>
 vi.mock("@/hooks/useBrandSettings", () => ({ useBrandSettings: () => ({ data: null }) }));
 vi.mock("@/hooks/useCompetitors", () => ({ useCompetitors: () => ({ data: [] }) }));
 vi.mock("@/integrations/supabase/client", () => {
-  const q: Record<string, unknown> = {};
-  for (const m of ["select", "eq", "order", "limit"]) q[m] = () => q;
-  q.maybeSingle = async () => ({ data: hasBrandRow ? { id: "b1" } : null, error: null });
+  const mk = (t: string) => {
+    const q: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "order", "limit"]) q[m] = () => q;
+    q.maybeSingle = async () => ({
+      data: t === "brand_settings" && hasBrandRow ? { id: "b1" } : null,
+      error: null,
+    });
+    return q;
+  };
   return {
     supabase: {
       auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) },
-      from: (t: string) => (t === "onboarding_responses"
-        ? { ...q, maybeSingle: async () => ({ data: null, error: null }) }
-        : q),
+      from: (t: string) => mk(t),
     },
   };
 });
