@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -76,6 +77,7 @@ export default function AgencyBillingPage() {
           agency: { brands: brands.map((b) => ({ brand_id: b.id, plano: choice[b.id] })) },
         },
       });
+      invalidateAccessCache();
       if (error || !data?.checkoutUrl) throw new Error(data?.error || error?.message || "Não foi possível abrir o pagamento.");
       window.location.href = data.checkoutUrl;
     } catch (e) {

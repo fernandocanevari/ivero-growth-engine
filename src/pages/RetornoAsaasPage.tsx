@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
+import { invalidateAccessCache } from "@/lib/access-cache";
 
 type Outcome = "success" | "upgrade" | "cancelado" | "expirado";
 
@@ -18,6 +19,7 @@ const RetornoAsaasPage = ({ outcome }: { outcome: Outcome }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    invalidateAccessCache();
     if (outcome === "success") {
       navigate("/bem-vindo?from=asaas", { replace: true });
     } else if (outcome === "upgrade") {

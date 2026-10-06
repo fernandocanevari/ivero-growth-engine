@@ -36,6 +36,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/lib/reconcile-pending", () => ({ reconcilePendingPayment: async () => {} }));
 
 import { ProtectedRoute } from "./ProtectedRoute";
+import { invalidateAccessCache } from "@/lib/access-cache";
 
 const past = new Date(Date.now() - 864e5).toISOString();
 
@@ -51,6 +52,7 @@ function renderAt(path: string) {
 }
 
 beforeEach(() => {
+  invalidateAccessCache();
   subRow = { status: "trial", trial_ends_at: past, carencia_ate: null, updated_at: past };
 });
 

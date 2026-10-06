@@ -22,6 +22,8 @@ export interface BrandProfileAnswers {
 interface BrandProfileState extends BrandProfileAnswers {
   brand_id: string;
   hasRow: boolean;
+  /** Agência sem marca ativa: não há perfil a lembrar. */
+  agencyWithoutBrand?: boolean;
 }
 
 const SKIP_STORAGE_PREFIX = "ivero_brand_profile_skip:";
@@ -54,6 +56,9 @@ export function useBrandProfile() {
       if (!user) return null;
 
       const scope = await getBrandScope();
+      if (scope?.isAgency && !scope.brandId) {
+        return { brand_id: "", hasRow: false, agencyWithoutBrand: true, p1_maturidade_ia: "", p2_criterio_mercado: "", p3_maior_risco: "" };
+      }
       const { data: brand } = scope?.isAgency
         ? { data: scope.brandId ? { id: scope.brandId } : null }
         : await supabase
@@ -137,7 +142,8 @@ export function useBrandProfile() {
     skippedRecently = ts > 0 && Date.now() - ts < THREE_DAYS_MS;
   }
 
-  const shouldRemind = !hasCompletedBrandProfile && !skippedRecently;
+  const agencyWithoutBrand = !!data?.agencyWithoutBrand;
+  const shouldRemind = !agencyWithoutBrand && !hasCompletedBrandProfile && !skippedRecently;
 
   return {
     data,
@@ -145,6 +151,7 @@ export function useBrandProfile() {
     hasCompletedBrandProfile,
     skippedRecently,
     shouldRemind,
+    agencyWithoutBrand,
     save,
     skip,
   };

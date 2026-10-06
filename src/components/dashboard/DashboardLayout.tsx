@@ -37,7 +37,7 @@ export default function DashboardLayout() {
   const [brandModalDismissed, setBrandModalDismissed] = useState(false);
   const [brandModalForceOpen, setBrandModalForceOpen] = useState(false);
   const { hasDiagnostic } = useHasDiagnostic();
-  const { hasCompletedBrandProfile, skippedRecently, shouldRemind, isLoading: brandLoading } =
+  const { hasCompletedBrandProfile, skippedRecently, shouldRemind, agencyWithoutBrand, isLoading: brandLoading } =
     useBrandProfile();
 
 
@@ -89,6 +89,7 @@ export default function DashboardLayout() {
     (!brandLoading &&
       hasDiagnostic === true &&
       !hasCompletedBrandProfile &&
+      !agencyWithoutBrand &&
       !skippedRecently &&
       !brandModalDismissed);
 

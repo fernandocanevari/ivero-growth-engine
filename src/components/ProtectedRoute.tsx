@@ -1,16 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  cancelAccessUntil,
-  resolveEffectiveStatus,
-  isAccountRoute,
-  isAgencyAccountRoute,
-  blockedRedirectFor,
-  isRecentPendingCheckout,
-} from "@/lib/subscription-status";
 import { reconcilePendingPayment } from "@/lib/reconcile-pending";
-
+import { fetchAccess, getCachedAccess, resetAccessForUser } from "@/lib/access-cache";
+import { decideAccess, type AccessDecision } from "@/lib/access-decision";
 
 type SubscriptionGateContextValue = {
   isInGracePeriod: boolean;
@@ -37,253 +30,78 @@ type ProtectedRouteProps = {
   requireSubscription?: boolean;
 };
 
+const Loading = () => (
+  <div className="min-h-screen flex items-center justify-center text-muted-foreground">Carregando...</div>
+);
+
+/**
+ * Guarda de acesso. A página protegida só é renderizada quando existe uma
+ * decisão "liberar" para a rota ATUAL — tomada agora com dados frescos, ou
+ * derivada do cache (linha de assinatura + data atual). Bloqueio nunca vem do
+ * cache: sem decisão fresca, mostra-se um carregando neutro.
+ */
 export function ProtectedRoute({ children, requireSubscription = true }: ProtectedRouteProps) {
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [gate, setGate] = useState<SubscriptionGateContextValue>({
-    isInGracePeriod: false,
-    status: null,
-    carenciaAte: null,
-  });
   const navigate = useNavigate();
   const location = useLocation();
+  const routeKey = `${location.pathname}${location.search}`;
+  const [resolved, setResolved] = useState<{ key: string; decision: AccessDecision } | null>(null);
+  const [authOk, setAuthOk] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const evaluate = async (session: { user: { id: string } } | null) => {
       if (!session) {
+        resetAccessForUser(null);
         if (!cancelled) {
-          setAuthorized(false);
-          setLoading(false);
-          const redirectTo = `${location.pathname}${location.search}`;
-          navigate(`/auth?redirect=${encodeURIComponent(redirectTo)}`, { replace: true });
+          setAuthOk(false);
+          navigate(`/auth?redirect=${encodeURIComponent(routeKey)}`, { replace: true });
         }
         return;
       }
-
+      resetAccessForUser(session.user.id);
       if (!requireSubscription) {
-        if (!cancelled) {
-          setAuthorized(true);
-          setLoading(false);
-        }
+        if (!cancelled) setAuthOk(true);
         return;
       }
-
-      // Admin bypass — always allow
-      try {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id);
-        const isAdmin = (roles ?? []).some((r) => r.role === "admin");
-        if (isAdmin) {
-          if (!cancelled) {
-            setGate({ isInGracePeriod: false, status: "admin", carenciaAte: null });
-            setAuthorized(true);
-            setLoading(false);
-          }
-          return;
-        }
-      } catch {
-        // ignore — fall through to subscription check
-      }
-
-      // Tipo de conta: agência nunca cai no /escolher-plano individual.
-      let isAgency = false;
-      try {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("account_type")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        isAgency = (prof as { account_type?: string } | null)?.account_type === "agency";
-      } catch {
-        isAgency = false;
-      }
-      if (cancelled) return;
-      const block = (individualTarget: string) => {
-        setAuthorized(false);
-        setLoading(false);
-        navigate(blockedRedirectFor(isAgency, individualTarget), { replace: true });
-      };
-
-      // Subscription check with retry to tolerate read-after-write race
-      // (newly-created trial row may not be visible on the very first query).
-      const RETRY_DELAYS_MS = [400, 800, 1200];
-      let sub:
-        | {
-            status: string | null;
-            carencia_ate: string | null;
-            trial_ends_at: string | null;
-            updated_at: string | null;
-            asaas_checkout_id?: string | null;
-            asaas_checkout_created_at?: string | null;
-          }
-        | undefined;
-      let status: string | null = null;
-      let carenciaAte: string | null = null;
-      let attempt = 0;
-
-      while (true) {
-        const { data: subs } = await supabase
-          .from("assinaturas")
-          .select("status, carencia_ate, trial_ends_at, data_vencimento, updated_at, asaas_checkout_id, asaas_checkout_created_at")
-          .eq("user_id", session.user.id)
-          .order("updated_at", { ascending: false })
-          .limit(1);
-
-        if (cancelled) return;
-
-        sub = subs?.[0];
-        // Status efetivo: trial vencido deixa de valer como trial.
-        status = sub ? resolveEffectiveStatus(sub) : null;
-        carenciaAte = sub?.carencia_ate ?? null;
-
-        const isValidNow =
-          sub &&
-          (status === "ativo" ||
-            status === "trial" ||
-            (status === "inadimplente" &&
-              carenciaAte &&
-              new Date(carenciaAte).getTime() > Date.now()));
-
-        if (isValidNow) {
-          if (attempt > 0) {
-            console.log(`[ProtectedRoute] Subscription found after ${attempt} retry attempt(s).`);
-          }
-          break;
-        }
-
-        if (attempt >= RETRY_DELAYS_MS.length) {
-          if (attempt > 0) {
-            console.log(
-              `[ProtectedRoute] No valid subscription after ${attempt} retries (status=${status ?? "null"}). Proceeding to redirect logic.`,
-            );
-          }
-          break;
-        }
-
-        console.log(
-          `[ProtectedRoute] Subscription not yet valid (status=${status ?? "null"}). Retrying in ${RETRY_DELAYS_MS[attempt]}ms (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length})...`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
-        attempt++;
-        if (cancelled) return;
-      }
-
-      if (cancelled) return;
-
-      // Checkout recém-concluído: o pagamento existe, só falta a confirmação do
-      // provedor. Bloquear aqui criava ping-pong com /escolher-plano.
-      const pendingRecente = isRecentPendingCheckout(sub ?? null);
-      if (pendingRecente) {
-        // Rede de segurança: tenta confirmar em background (sem travar a tela).
-        void reconcilePendingPayment();
-      }
-
-      // Rotas de conta (assinatura / configurações / ajuda) continuam acessíveis
-      // mesmo sem assinatura viva — o usuário precisa poder pagar e pedir ajuda.
-      const accountRoute = isAgency
-        ? isAgencyAccountRoute(location.pathname)
-        : !!sub && isAccountRoute(location.pathname);
-      if (accountRoute) {
-        setGate({
-          isInGracePeriod: status === "inadimplente",
-          status,
-          carenciaAte,
-          isPendingCheckout: pendingRecente,
-        });
-        setAuthorized(true);
-        setLoading(false);
-        return;
-      }
-
-      if (pendingRecente) {
-        setGate({
-          isInGracePeriod: false,
-          status,
-          carenciaAte,
-          isPendingCheckout: true,
-        });
-        setAuthorized(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!sub || status === "pendente") {
-
-        block("/escolher-plano");
-        return;
-      }
-
-      // Trial expirado: mesmo caminho de pendente/cancelado.
-      if (status === "trial_expirado") {
-        block("/escolher-plano?motivo=trial_expirado");
-        return;
-      }
-
-      if (status === "ativo" || status === "trial") {
-
-        setGate({ isInGracePeriod: false, status, carenciaAte });
-        setAuthorized(true);
-        setLoading(false);
-        return;
-      }
-
-      if (status === "inadimplente") {
-        const inGrace = carenciaAte ? new Date(carenciaAte).getTime() > Date.now() : false;
-        if (inGrace) {
-          setGate({ isInGracePeriod: true, status, carenciaAte });
-          setAuthorized(true);
-          setLoading(false);
-        } else {
-          block("/escolher-plano?motivo=inadimplente");
-        }
-        return;
-      }
-
-      if (status === "cancelado") {
-        // Cancelou, mas o período já pago ainda está em aberto → mantém acesso.
-        if (cancelAccessUntil(sub)) {
-          setGate({ isInGracePeriod: false, status, carenciaAte });
-          setAuthorized(true);
-          setLoading(false);
-          return;
-        }
-        block("/escolher-plano?motivo=cancelado");
-        return;
-      }
-
-      // Unknown status — treat as needing to choose a plan
-      block("/escolher-plano");
+      // Revalidação (em segundo plano quando o cache já liberou a rota).
+      const fresh = await fetchAccess(session.user.id, { isCancelled: () => cancelled });
+      if (cancelled || !fresh) return;
+      const decision = decideAccess(fresh, location.pathname);
+      setResolved({ key: routeKey, decision });
+      if (decision.kind === "allow" && decision.reconcile) void reconcilePendingPayment();
+      if (decision.kind === "block") navigate(decision.to, { replace: true });
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => evaluate(session));
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       evaluate(session);
     });
-
     return () => {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [location.pathname, location.search, navigate, requireSubscription]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeKey, navigate, requireSubscription]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Carregando...
-      </div>
-    );
+  if (!requireSubscription) {
+    return authOk ? <>{children}</> : <Loading />;
   }
 
-  if (!authorized) return null;
+  // 1) Decisão fresca para esta rota.
+  let decision: AccessDecision | null = resolved?.key === routeKey ? resolved.decision : null;
+  // 2) Sem decisão fresca: o cache só serve para LIBERAR (status derivado agora).
+  if (!decision) {
+    const cached = getCachedAccess();
+    if (cached && cached.sub !== undefined) {
+      const d = decideAccess(cached, location.pathname);
+      if (d.kind === "allow") decision = d;
+    }
+  }
+  if (!decision) return <Loading />;
+  if (decision.kind === "block") return null;
 
   return (
-    <SubscriptionGateContext.Provider value={gate}>
-      {children}
-    </SubscriptionGateContext.Provider>
+    <SubscriptionGateContext.Provider value={decision.gate}>{children}</SubscriptionGateContext.Provider>
   );
 }
