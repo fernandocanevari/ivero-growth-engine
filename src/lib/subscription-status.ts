@@ -98,6 +98,26 @@ export function isAccountRoute(pathname: string): boolean {
   return ACCOUNT_ROUTES.includes(path);
 }
 
+/** Destino de agência sem assinatura viva: o faturamento consolidado. */
+export const AGENCY_BILLING_ROUTE = "/dashboard/marcas/assinatura";
+
+/** Agência: rotas de conta + Visão Geral das Marcas + faturamento consolidado. */
+export const AGENCY_ACCOUNT_ROUTES: readonly string[] = [
+  ...ACCOUNT_ROUTES,
+  "/dashboard/marcas",
+  AGENCY_BILLING_ROUTE,
+];
+
+export function isAgencyAccountRoute(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
+  return AGENCY_ACCOUNT_ROUTES.includes(path);
+}
+
+/** Destino do bloqueio: agência nunca vai ao /escolher-plano individual. */
+export function blockedRedirectFor(isAgency: boolean, individualTarget: string): string {
+  return isAgency ? AGENCY_BILLING_ROUTE : individualTarget;
+}
+
 export function isTrialExpired(
   trialEndsAt: string | null | undefined,
   now: Date = new Date(),

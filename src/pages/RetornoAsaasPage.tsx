@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 
 type Outcome = "success" | "upgrade" | "cancelado" | "expirado";
 
@@ -21,7 +23,18 @@ const RetornoAsaasPage = ({ outcome }: { outcome: Outcome }) => {
     } else if (outcome === "upgrade") {
       navigate("/bem-vindo?from=asaas&tipo=upgrade", { replace: true });
     } else {
-      navigate("/escolher-plano?motivo=checkout_cancelado", { replace: true });
+      // Agência volta ao faturamento consolidado, nunca aos planos individuais.
+      (async () => {
+        let isAgency = false;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data } = await supabase.from("profiles").select("account_type").eq("user_id", user.id).maybeSingle();
+            isAgency = (data as { account_type?: string } | null)?.account_type === "agency";
+          }
+        } catch { /* segue como individual */ }
+        navigate(isAgency ? AGENCY_BILLING_ROUTE : "/escolher-plano?motivo=checkout_cancelado", { replace: true });
+      })();
     }
   }, [navigate, outcome]);
 

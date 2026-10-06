@@ -5,6 +5,8 @@ import {
   cancelAccessUntil,
   resolveEffectiveStatus,
   isAccountRoute,
+  isAgencyAccountRoute,
+  blockedRedirectFor,
   isRecentPendingCheckout,
 } from "@/lib/subscription-status";
 import { reconcilePendingPayment } from "@/lib/reconcile-pending";
@@ -87,6 +89,25 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
         // ignore — fall through to subscription check
       }
 
+      // Tipo de conta: agência nunca cai no /escolher-plano individual.
+      let isAgency = false;
+      try {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("account_type")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        isAgency = (prof as { account_type?: string } | null)?.account_type === "agency";
+      } catch {
+        isAgency = false;
+      }
+      if (cancelled) return;
+      const block = (individualTarget: string) => {
+        setAuthorized(false);
+        setLoading(false);
+        navigate(blockedRedirectFor(isAgency, individualTarget), { replace: true });
+      };
+
       // Subscription check with retry to tolerate read-after-write race
       // (newly-created trial row may not be visible on the very first query).
       const RETRY_DELAYS_MS = [400, 800, 1200];
@@ -163,7 +184,10 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
 
       // Rotas de conta (assinatura / configurações / ajuda) continuam acessíveis
       // mesmo sem assinatura viva — o usuário precisa poder pagar e pedir ajuda.
-      if (sub && isAccountRoute(location.pathname)) {
+      const accountRoute = isAgency
+        ? isAgencyAccountRoute(location.pathname)
+        : !!sub && isAccountRoute(location.pathname);
+      if (accountRoute) {
         setGate({
           isInGracePeriod: status === "inadimplente",
           status,
@@ -189,17 +213,13 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
 
       if (!sub || status === "pendente") {
 
-        setAuthorized(false);
-        setLoading(false);
-        navigate("/escolher-plano", { replace: true });
+        block("/escolher-plano");
         return;
       }
 
       // Trial expirado: mesmo caminho de pendente/cancelado.
       if (status === "trial_expirado") {
-        setAuthorized(false);
-        setLoading(false);
-        navigate("/escolher-plano?motivo=trial_expirado", { replace: true });
+        block("/escolher-plano?motivo=trial_expirado");
         return;
       }
 
@@ -218,9 +238,7 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
           setAuthorized(true);
           setLoading(false);
         } else {
-          setAuthorized(false);
-          setLoading(false);
-          navigate("/escolher-plano?motivo=inadimplente", { replace: true });
+          block("/escolher-plano?motivo=inadimplente");
         }
         return;
       }
@@ -233,16 +251,12 @@ export function ProtectedRoute({ children, requireSubscription = true }: Protect
           setLoading(false);
           return;
         }
-        setAuthorized(false);
-        setLoading(false);
-        navigate("/escolher-plano?motivo=cancelado", { replace: true });
+        block("/escolher-plano?motivo=cancelado");
         return;
       }
 
       // Unknown status — treat as needing to choose a plan
-      setAuthorized(false);
-      setLoading(false);
-      navigate("/escolher-plano", { replace: true });
+      block("/escolher-plano");
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => evaluate(session));

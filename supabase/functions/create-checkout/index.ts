@@ -77,10 +77,19 @@ Deno.serve(async (req) => {
     // Modo agência: valida que TODAS as marcas ativas da conta vieram com plano
     // e calcula o valor consolidado com desconto de volume no servidor.
     let agencyQuote: AgencyQuote | null = null;
+    // Tipo de conta vale para TODA chamada: agência só contrata pelo
+    // faturamento consolidado (body.agency), nunca por checkout individual.
+    const adm = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: prof } = await adm.from("profiles").select("account_type").eq("user_id", userId).maybeSingle();
+    const isAgencyAccount = prof?.account_type === "agency";
+    if (isAgencyAccount && !body?.agency) {
+      return new Response(JSON.stringify({
+        error: "agencia_usa_faturamento_consolidado",
+        message: "Contas de agência contratam pelo faturamento consolidado das marcas.",
+      }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     if (body?.agency) {
-      const adm = createClient(supabaseUrl, supabaseServiceKey);
-      const { data: prof } = await adm.from("profiles").select("account_type").eq("user_id", userId).maybeSingle();
-      if (prof?.account_type !== "agency") {
+      if (!isAgencyAccount) {
         return new Response(JSON.stringify({ error: "Conta não é de agência." }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

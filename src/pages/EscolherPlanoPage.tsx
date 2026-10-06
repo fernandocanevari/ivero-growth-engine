@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { resolveEffectiveStatus, isRecentPendingCheckout } from "@/lib/subscription-status";
+import { resolveEffectiveStatus, isRecentPendingCheckout, AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 
 import {
   PLANOS,
@@ -67,6 +67,17 @@ const EscolherPlanoPage = () => {
       if (cancelled) return;
       if (!session) {
         navigate("/auth", { replace: true });
+        return;
+      }
+      // Agência contrata só pelo faturamento consolidado.
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("account_type")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if ((prof as { account_type?: string } | null)?.account_type === "agency") {
+        navigate(AGENCY_BILLING_ROUTE, { replace: true });
         return;
       }
       // Se já existe assinatura viva (inclusive pendente/inadimplente), não
