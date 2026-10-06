@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -33,6 +34,7 @@ export async function reconcilePendingPayment(
   inFlight = (async () => {
     try {
       const { data, error } = await supabase.functions.invoke("reconcile-asaas");
+      invalidateAccessCache();
       if (error) return { error: error.message };
       return (data as ReconcileResult) ?? null;
     } catch (err) {

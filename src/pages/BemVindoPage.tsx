@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -134,6 +135,7 @@ const BemVindoPage = () => {
         if (attempts >= 5 && attempts % 5 === 0) {
           try {
             const { data: rec } = await supabase.functions.invoke("reconcile-asaas");
+            invalidateAccessCache();
             if (rec?.reconciled) {
               if (!cancelled) setStatus("active");
               try {

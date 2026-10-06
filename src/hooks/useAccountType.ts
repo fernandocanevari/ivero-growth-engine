@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AccountType = "individual" | "agency";
@@ -83,7 +83,6 @@ export function useAccountType() {
   };
 }
 
-import { useCallback, useState } from "react";
 function useStateFlag(): [boolean, () => void] {
   const [v, setV] = useState(false);
   const set = useCallback(() => setV(true), []);

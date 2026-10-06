@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -76,6 +77,7 @@ export function useBillingInvoices() {
     const { data, error: fnError } = await supabase.functions.invoke("manage-subscription", {
       body: { action: "list_invoices" },
     });
+    invalidateAccessCache();
     if (fnError || data?.error) {
       setError(fnError?.message ?? data?.error ?? "Erro ao carregar faturas.");
       if (!hasLoadedRef.current) {

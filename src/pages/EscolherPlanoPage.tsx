@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -188,6 +189,7 @@ const EscolherPlanoPage = () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { plano: selectedPlano, nome, email, ciclo: isAnnual ? "anual" : "mensal" },
       });
+      invalidateAccessCache();
       if (error) {
         toast.error(error.message || "Erro ao criar assinatura.");
         return;

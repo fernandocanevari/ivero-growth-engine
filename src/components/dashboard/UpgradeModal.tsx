@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2 } from "lucide-react";
@@ -121,6 +122,7 @@ export function UpgradeModal({
     const { data, error } = await supabase.functions.invoke("manage-subscription", {
       body: { action: "change_plan", plano: planKey, ciclo: isAnnual ? "anual" : "mensal" },
     });
+    invalidateAccessCache();
     if (error || data?.error) throw new Error(error?.message ?? data?.error);
     if (data?.ok === false) {
       // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
@@ -194,6 +196,7 @@ export function UpgradeModal({
           ciclo: isAnnual ? "anual" : "mensal",
         },
       });
+      invalidateAccessCache();
       if (error || data?.error) throw new Error(error?.message ?? data?.error);
       // Servidor mandou fazer localmente (trial em curso sem cobrança).
       if (data?.ok === false && data?.reason === "trial_troca_local") {

@@ -1,3 +1,4 @@
+import { invalidateAccessCache } from "@/lib/access-cache";
 import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -168,6 +169,7 @@ export default function AssinaturaPage() {
     const { data, error } = await supabase.functions.invoke("manage-subscription", {
       body: { action: "update_card" },
     });
+    invalidateAccessCache();
     setBusy(null);
     if (data?.ok && data?.url) {
       window.open(data.url as string, "_blank", "noopener");
@@ -197,6 +199,7 @@ export default function AssinaturaPage() {
     const { data, error } = await supabase.functions.invoke("manage-subscription", {
       body: { action: "cancel", motivo: cancelMotivo },
     });
+    invalidateAccessCache();
     setBusy(null);
     if (error || data?.error) {
       toast({
