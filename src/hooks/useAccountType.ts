@@ -1,45 +1,93 @@
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AccountType = "individual" | "agency";
 
+type Known = { userId: string; accountType: AccountType; agencyName: string | null };
+
 /**
- * Tipo da conta logada (profiles.account_type). Padrão: individual.
- * Sem React Query de propósito: é usado nas telas de onboarding, que
- * rodam fora do provider em alguns testes.
+ * Tipo da conta logada (profiles.account_type), em cache compartilhado em
+ * memória. O ProtectedRoute já preenche este cache antes de liberar o
+ * dashboard, então o menu nasce com o tipo certo (sem "salto").
+ * Store de módulo (não React Query): é usado em telas de onboarding que rodam
+ * fora do QueryClientProvider em alguns testes.
  */
+let known: Known | null = null;
+let inflight: { userId: string; p: Promise<void> } | null = null;
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
+
+export function primeAccountType(userId: string, accountType: AccountType, agencyName: string | null) {
+  if (known && known.userId === userId && known.accountType === accountType && known.agencyName === agencyName) return;
+  known = { userId, accountType, agencyName };
+  emit();
+}
+
+/** Logout / troca de usuário. */
+export function clearAccountType() {
+  if (!known && !inflight) return;
+  known = null;
+  inflight = null;
+  emit();
+}
+
+export function getKnownAccountType(): Known | null {
+  return known;
+}
+
+function subscribe(fn: () => void) {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+
+async function load() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  if (known?.userId === user.id) return;
+  if (inflight?.userId === user.id) return inflight.p;
+  const p = (async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("account_type, nome_empresa")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const row = data as { account_type?: string; nome_empresa?: string | null } | null;
+    primeAccountType(user.id, row?.account_type === "agency" ? "agency" : "individual", row?.nome_empresa ?? null);
+  })().finally(() => {
+    inflight = null;
+  });
+  inflight = { userId: user.id, p };
+  return p;
+}
+
 export function useAccountType() {
-  const [state, setState] = useState<{ accountType: AccountType; agencyName: string | null; isLoading: boolean }>(
-    { accountType: "individual", agencyName: null, isLoading: true },
-  );
+  const snap = useSyncExternalStore(subscribe, () => known, () => known);
+  const [loadDone, setLoadDone] = useStateFlag();
   useEffect(() => {
     let active = true;
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return active && setState((s) => ({ ...s, isLoading: false }));
-        const { data } = await supabase
-          .from("profiles")
-          .select("account_type, nome_empresa")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        const row = data as { account_type?: string; nome_empresa?: string | null } | null;
-        if (active) {
-          setState({
-            accountType: row?.account_type === "agency" ? "agency" : "individual",
-            agencyName: row?.nome_empresa ?? null,
-            isLoading: false,
-          });
-        }
-      } catch {
-        if (active) setState((s) => ({ ...s, isLoading: false }));
-      }
-    })();
+    load()
+      .catch(() => {})
+      .finally(() => active && setLoadDone());
     return () => {
       active = false;
     };
-  }, []);
-  return { ...state, isAgency: state.accountType === "agency" };
+  }, [setLoadDone]);
+  const accountType: AccountType = snap?.accountType ?? "individual";
+  return {
+    accountType,
+    agencyName: snap?.agencyName ?? null,
+    isLoading: !snap && !loadDone,
+    isAgency: accountType === "agency",
+  };
+}
+
+import { useCallback, useState } from "react";
+function useStateFlag(): [boolean, () => void] {
+  const [v, setV] = useState(false);
+  const set = useCallback(() => setV(true), []);
+  return [v, set];
 }
 
 /** Vincula a marca à agência logada (idempotente). Ignora contas individuais. */

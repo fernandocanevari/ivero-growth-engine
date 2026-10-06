@@ -122,7 +122,7 @@ export function DashboardSidebar() {
   // Não mostra cadeados enquanto a primeira validação de role/assinatura roda.
   const showLockState = !isAdmin && !validating;
 
-  const { isAgency } = useAccountType();
+  const { isAgency, isLoading: accountTypeLoading } = useAccountType();
   // Agência: "Todas as marcas" no topo do menu (clientes individuais não veem).
   const baseGroups = isAgency
     ? menuGroups.map((g) =>
@@ -293,6 +293,9 @@ export function DashboardSidebar() {
           <div className="mt-3">
             <BrandSwitcher />
           </div>
+        )}
+        {accountTypeLoading && !collapsed && (
+          <div className="mt-3 h-9 rounded-md bg-muted animate-pulse" data-testid="brand-switcher-skeleton" />
         )}
       </SidebarHeader>
 
