@@ -13,6 +13,14 @@ import { quoteAgency, VOLUME_TIERS, type Ciclo } from "@/lib/agency-pricing";
 
 const KEYS: PlanoSugerido[] = ["presenca", "influencia", "autoridade"];
 
+/** Motivo real do botão "Ativar" desabilitado — nunca fica apagado em silêncio. */
+export function activateBlockReason(s: { brandsCount: number; semPlano: number; busy: boolean }): string | null {
+  if (s.busy) return "Abrindo o pagamento…";
+  if (s.brandsCount === 0) return "Cadastre ao menos uma marca para ativar a assinatura.";
+  if (s.semPlano > 0) return s.semPlano === 1 ? "Escolha o plano da marca que está sem plano." : `Escolha o plano das ${s.semPlano} marcas que estão sem plano.`;
+  return null;
+}
+
 export default function AgencyBillingPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -101,6 +109,8 @@ export default function AgencyBillingPage() {
   if (isLoading) return <div className="h-40 rounded-xl bg-muted/40 animate-pulse" />;
 
   const pending = brands.filter((b) => !b.plano);
+  const semPlano = brands.filter((b) => !choice[b.id]);
+  const motivoBloqueio = activateBlockReason({ brandsCount: brands.length, semPlano: semPlano.length, busy: busy === "checkout" });
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -181,9 +191,14 @@ export default function AgencyBillingPage() {
         <div className="flex justify-between text-sm"><span className="text-muted-foreground">Desconto por volume ({quote.discountPct}%)</span><span>− {formatBRL(quote.discount)}</span></div>
         <div className="flex justify-between font-semibold text-foreground pt-2 border-t border-border"><span>Total mensal</span><span>{formatBRL(quote.total)}</span></div>
         {!paid && (
-          <Button variant="hero" className="w-full mt-3" disabled={busy === "checkout" || brands.length === 0} onClick={activate}>
-            {busy === "checkout" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ativar assinatura da agência"}
-          </Button>
+          <>
+            <Button variant="hero" className="w-full mt-3" disabled={!!motivoBloqueio} onClick={activate}>
+              {busy === "checkout" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ativar assinatura da agência"}
+            </Button>
+            {motivoBloqueio && (
+              <p className="text-xs text-muted-foreground pt-1" data-testid="activate-block-reason">{motivoBloqueio}</p>
+            )}
+          </>
         )}
         {paid && pending.length === 0 && (
           <p className="text-xs text-muted-foreground pt-2">Todas as marcas estão na assinatura.</p>

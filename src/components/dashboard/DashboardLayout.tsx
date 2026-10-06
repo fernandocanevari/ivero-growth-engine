@@ -20,6 +20,8 @@ import { PendingPaymentBanner } from "./PendingPaymentBanner";
 import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { useSubscriptionGate } from "@/components/ProtectedRoute";
+import { useAccountType } from "@/hooks/useAccountType";
+import { AGENCY_BILLING_ROUTE, isAgencyAccountRoute } from "@/lib/subscription-status";
 
 
 
@@ -28,6 +30,7 @@ export default function DashboardLayout() {
   
   const { isPaid, isAdmin, isTrial, plano, trialEndsAt, isTrialExpired, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const location = useLocation();
+  const { isAgency } = useAccountType();
   const navigate = useNavigate();
   const { isInGracePeriod, carenciaAte, isPendingCheckout } = useSubscriptionGate();
   const [userId, setUserId] = useState<string | null>(null);
@@ -62,7 +65,8 @@ export default function DashboardLayout() {
 
   // Gating por tier de plano. Trial herda os recursos do plano escolhido
   // (ex.: trial de Presença libera Monitoramento, Tags de Percepção e LLMs.txt).
-  const allowAccess = isFeatureAvailable(
+  // Agência sem assinatura viva ainda precisa ver as marcas e o faturamento.
+  const allowAccess = (isAgency && isAgencyAccountRoute(location.pathname)) || isFeatureAvailable(
     location.pathname,
     plano,
     isPaid,
@@ -110,7 +114,7 @@ export default function DashboardLayout() {
               </p>
             </div>
             <button
-              onClick={() => navigate("/escolher-plano")}
+              onClick={() => navigate(isAgency ? AGENCY_BILLING_ROUTE : "/escolher-plano")}
               className="text-sm font-medium text-amber-900 hover:text-amber-950 underline underline-offset-2 shrink-0 whitespace-nowrap"
             >
               Regularizar agora →
