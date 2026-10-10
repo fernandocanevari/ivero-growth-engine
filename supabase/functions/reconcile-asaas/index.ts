@@ -183,12 +183,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const outcome = decideReconcile({
-      checkoutStatus,
-      paymentStatuses,
-      rowStatus: row.status as string,
-      trialEndsAt: (row.trial_ends_at as string) ?? null,
-    });
+    const outcome = decideReconcile({ checkoutStatus, paymentStatuses });
     console.log("[reconcile-asaas] decisão", row.id, outcome, checkoutStatus, JSON.stringify(paymentStatuses));
 
     if (outcome !== "activate") {
@@ -275,7 +270,7 @@ Deno.serve(async (req) => {
     }
 
     // Único ponto de promoção das marcas aqui: outcome === "activate"
-    // (cobrança confirmada ou sessão PAGA com cobrança imediata).
+    // (cobrança CONFIRMED/RECEIVED no Asaas).
     await promoteAgencyIntent(supabase, userId, row.id as string);
     console.log("[reconcile-asaas] assinatura liberada via reconciliação:", row.id);
     return json(200, { reconciled: true, status: "ativo" });

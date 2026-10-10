@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
+import { decideWebhookEvent } from "../_shared/reconcile-decision.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,8 +215,9 @@ Deno.serve(async (req) => {
         const payExternalRef: string = body?.payment?.externalReference ?? "";
         const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
         // Pagamento de mensalidade confirmado → promove o plano pretendido.
-        if (!isAvulsa) res.row = await promoverIntencao(res.row);
-        if (!isAvulsa && res.row) {
+        const promove = decideWebhookEvent(event, isAvulsa) === "activate";
+        if (promove) res.row = await promoverIntencao(res.row);
+        if (promove && res.row) {
           const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", res.row.id).maybeSingle();
           if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, res.row.id);
         }
@@ -261,17 +263,12 @@ Deno.serve(async (req) => {
       }
 
       case "CHECKOUT_PAID": {
-        // Checkout Session concluída: libera acesso e vincula os IDs do Asaas.
-        const nextDue = new Date();
-        nextDue.setDate(nextDue.getDate() + 30);
-        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {
-          status: "ativo",
-          carencia_ate: null,
-          data_vencimento: nextDue.toISOString(),
-          trial_ends_at: null,
-        });
+        // Sessão concluída NÃO é pagamento confirmado (a 1ª cobrança pode estar
+        // agendada para o fim do trial): só vincula os IDs do Asaas. Status,
+        // planos pretendidos e marcas só mudam em PAYMENT_CONFIRMED/RECEIVED
+        // (decideWebhookEvent → "link").
+        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {});
         if (res.error) return json(500, res);
-        await promoverIntencao(res.row);
         break;
       }
 

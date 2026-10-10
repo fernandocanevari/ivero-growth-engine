@@ -3,7 +3,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, planValue, COMPROMISSO_MESES, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
-import { trialEligibility } from "../_shared/trial-eligibility.ts";
+import { trialEligibility, isUpgradeBlocked } from "../_shared/trial-eligibility.ts";
+
 
 const ASAAS_BASE_URL = asaasBaseUrl();
 
@@ -136,7 +137,7 @@ Deno.serve(async (req) => {
     const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "pendente"];
     const { data: existing } = await supabaseAdmin
       .from("assinaturas")
-      .select("id, plano, status, asaas_subscription_id")
+      .select("id, plano, status, asaas_subscription_id, ciclo_contratado")
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
       .not("asaas_subscription_id", "is", null)
@@ -146,6 +147,19 @@ Deno.serve(async (req) => {
 
     if (existing) {
       console.log("create-checkout: assinatura viva já existe", existing.id, existing.status);
+      // Assinatura PAGA viva (ativo/inadimplente) pedindo outro plano/ciclo:
+      // isso é troca de plano (manage-subscription/change_plan, com pró-rata),
+      // nunca 200 com link vazio. Faturamento consolidado da agência fica fora.
+      if (
+        !body?.agency &&
+        isUpgradeBlocked(existing.status as string, existing.plano as string, existing.ciclo_contratado as string, plano, ciclo)
+      ) {
+        return new Response(JSON.stringify({
+          error: "assinatura_ativa_use_troca_de_plano",
+          message: "Você já tem uma assinatura ativa. A mudança de plano é feita pela troca de plano, com cobrança só da diferença.",
+          plano_atual: existing.plano,
+        }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       // Mesmo plano → devolve o checkout da cobrança pendente existente (se houver).
       let checkoutUrl = "";
       if (existing.asaas_subscription_id) {
