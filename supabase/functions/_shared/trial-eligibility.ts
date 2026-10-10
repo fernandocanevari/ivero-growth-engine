@@ -23,3 +23,8 @@ export function trialEligibility(history: HistoryRow[], nowMs = Date.now()) {
   if (!trialConcedido) trialEmCursoMs = null;
   return { trialConcedido, trialEmCursoMs };
 }
+
+/** Assinatura paga viva + pedido de outro plano ou ciclo → deve ser change_plan. */
+export function isUpgradeBlocked(status: string, planoAtual: string, cicloAtual: string, plano: string, ciclo: string) {
+  return (status === "ativo" || status === "inadimplente") && (planoAtual !== plano || (cicloAtual ?? "mensal") !== ciclo);
+}
