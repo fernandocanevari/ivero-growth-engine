@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
+import { decideReconcile, PAID_PAYMENT_STATUSES } from "../_shared/reconcile-decision.ts";
 
 const ASAAS_BASE_URL = asaasBaseUrl();
 
@@ -81,11 +82,38 @@ Deno.serve(async (req) => {
     }
 
 
+    const getJson = async (path: string) => {
+      const res = await fetch(`${ASAAS_BASE_URL}${path}`, { headers: asaasHeaders });
+      const text = await res.text();
+      let data: Record<string, any> | null = null;
+      try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+      return { status: res.status, data, text };
+    };
+
+    // Ação administrativa SOMENTE LEITURA: estado real no Asaas de uma conta.
+    if (body?.action === "inspect_user") {
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) return json(403, { error: "forbidden" });
+      const { data: r } = await supabase.from("assinaturas")
+        .select("id, status, plano, ciclos_pagos, asaas_checkout_id, asaas_subscription_id")
+        .eq("user_id", body.user_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!r) return json(200, { row: null });
+      const ck = r.asaas_checkout_id ? await getJson(`/checkouts/${r.asaas_checkout_id}`) : null;
+      const sub = r.asaas_subscription_id ? await getJson(`/subscriptions/${r.asaas_subscription_id}`) : null;
+      const pays = r.asaas_subscription_id ? await getJson(`/payments?subscription=${r.asaas_subscription_id}&limit=20`) : null;
+      return json(200, {
+        row: r,
+        checkout: ck && { http: ck.status, status: ck.data?.status, subscription: ck.data?.subscription?.nextDueDate ?? ck.data?.subscription },
+        subscription: sub && { http: sub.status, status: sub.data?.status, value: sub.data?.value, nextDueDate: sub.data?.nextDueDate, billingType: sub.data?.billingType, dateCreated: sub.data?.dateCreated },
+        payments: (pays?.data?.data ?? []).map((p: Record<string, any>) => ({ id: p.id, status: p.status, value: p.value, dueDate: p.dueDate, paymentDate: p.paymentDate, confirmedDate: p.confirmedDate, billingType: p.billingType })),
+      });
+    }
+
     const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
-        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id",
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id, trial_ends_at",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -96,48 +124,35 @@ Deno.serve(async (req) => {
     if (!row) return json(200, { reconciled: false, reason: "no_subscription" });
     if (row.status === "ativo") return json(200, { reconciled: false, status: "ativo" });
 
-    let paid = false;
     let subscriptionId: string = (row.asaas_subscription_id as string) ?? "";
     let customerId: string = (row.asaas_customer_id as string) ?? "";
     let checkoutStatus = "";
+    // Status de TODAS as cobranças encontradas; só RECEIVED/CONFIRMED valem.
+    const paymentStatuses: string[] = [];
+    const hasConfirmed = () => paymentStatuses.some((s) => PAID_PAYMENT_STATUSES.includes(s));
 
-    const PAID_PAYMENT = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
-    const getJson = async (path: string) => {
-      const res = await fetch(`${ASAAS_BASE_URL}${path}`, { headers: asaasHeaders });
-      const text = await res.text();
-      let data: Record<string, any> | null = null;
-      try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
-      return { status: res.status, data, text };
-    };
-
-    // 1) Checkout Session
+    // 1) Checkout Session — o status da sessão sozinho NÃO prova pagamento
+    // (ACTIVE = sessão aberta). Ver _shared/reconcile-decision.ts.
     if (row.asaas_checkout_id) {
       const ck = await getJson(`/checkouts/${row.asaas_checkout_id}`);
       const data = ck.data;
       checkoutStatus = data?.status ?? "";
       console.log("[reconcile-asaas] checkout", row.asaas_checkout_id, ck.status, checkoutStatus, ck.text.slice(0, 500));
-      if (["PAID", "ACTIVE", "RECEIVED", "CONFIRMED"].includes(checkoutStatus)) paid = true;
       const sub = data?.subscription;
       subscriptionId = (typeof sub === "string" ? sub : sub?.id) || subscriptionId;
       const cus = data?.customer;
       customerId = (typeof cus === "string" ? cus : cus?.id) || customerId;
 
-      // 1b) Busca pela SESSÃO DE CHECKOUT: o Asaas grava `checkoutSession` em
-      // cada pagamento/assinatura gerado pelo checkout. O externalReference
-      // (user_id) fica só na sessão e não é herdado — por isso a busca por
-      // externalReference nunca encontrava nada.
-      if (!paid) {
-        const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=20`);
-        const list: Record<string, any>[] = pays.data?.data ?? [];
-        console.log("[reconcile-asaas] payments by checkoutSession", pays.status, list.length);
-        for (const p of list) {
-          if (p?.checkoutSession && p.checkoutSession !== row.asaas_checkout_id) continue;
-          if (p?.subscription) subscriptionId = subscriptionId || p.subscription;
-          if (p?.customer) customerId = customerId || p.customer;
-          if (PAID_PAYMENT.includes(p?.status)) paid = true;
-        }
+      const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=20`);
+      const list: Record<string, any>[] = pays.data?.data ?? [];
+      console.log("[reconcile-asaas] payments by checkoutSession", pays.status, list.length);
+      for (const p of list) {
+        if (p?.checkoutSession && p.checkoutSession !== row.asaas_checkout_id) continue;
+        if (p?.subscription) subscriptionId = subscriptionId || p.subscription;
+        if (p?.customer) customerId = customerId || p.customer;
+        if (p?.status) paymentStatuses.push(p.status);
       }
-      if (!paid && !subscriptionId) {
+      if (!subscriptionId) {
         const subs = await getJson(`/subscriptions?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=10`);
         const s = (subs.data?.data ?? []).find((x: Record<string, any>) =>
           !x?.checkoutSession || x.checkoutSession === row.asaas_checkout_id
@@ -148,50 +163,35 @@ Deno.serve(async (req) => {
           customerId = customerId || s.customer;
         }
       }
-      // Assinatura descoberta pela sessão → confere pagamentos dela.
-      if (!paid && subscriptionId) {
-        const pays = await getJson(`/payments?subscription=${subscriptionId}&limit=10`);
-        paid = (pays.data?.data ?? []).some((p: Record<string, any>) => PAID_PAYMENT.includes(p?.status));
-        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays.status, paid, JSON.stringify((pays.data?.data ?? []).map((p: Record<string, any>) => [p.status, p.dueDate, p.value, p.billingType])));
+      if (!hasConfirmed() && subscriptionId) {
+        const pays2 = await getJson(`/payments?subscription=${subscriptionId}&limit=10`);
+        for (const p of pays2.data?.data ?? []) if (p?.status) paymentStatuses.push(p.status);
+        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays2.status, JSON.stringify((pays2.data?.data ?? []).map((p: Record<string, any>) => [p.status, p.dueDate, p.value, p.billingType])));
       }
     }
 
-
     // 2) Reforço: assinaturas do Asaas por externalReference (user_id)
-    if (!paid) {
-      const res = await fetch(
-        `${ASAAS_BASE_URL}/subscriptions?externalReference=${encodeURIComponent(userId)}`,
-        { headers: asaasHeaders },
-      );
-      const text = await res.text();
-      let data: Record<string, any> | null = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch { /* ignore */ }
-      const sub = data?.data?.[0];
-      console.log("[reconcile-asaas] subscriptions lookup", res.status, sub?.id, sub?.status);
+    if (!hasConfirmed() && !subscriptionId) {
+      const subs = await getJson(`/subscriptions?externalReference=${encodeURIComponent(userId)}`);
+      const sub = subs.data?.data?.[0];
+      console.log("[reconcile-asaas] subscriptions lookup", subs.status, sub?.id, sub?.status);
       if (sub?.id) {
         subscriptionId = sub.id;
         customerId = sub.customer || customerId;
-        if (sub.status === "ACTIVE") {
-          // Confirma se há pagamento efetivamente recebido/confirmado.
-          const payRes = await fetch(
-            `${ASAAS_BASE_URL}/payments?subscription=${sub.id}&limit=10`,
-            { headers: asaasHeaders },
-          );
-          const payText = await payRes.text();
-          let payJson: Record<string, any> | null = null;
-          try {
-            payJson = payText ? JSON.parse(payText) : null;
-          } catch { /* ignore */ }
-          paid = (payJson?.data ?? []).some((p: Record<string, any>) =>
-            ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"].includes(p?.status)
-          );
-        }
+        const pays = await getJson(`/payments?subscription=${sub.id}&limit=10`);
+        for (const p of pays.data?.data ?? []) if (p?.status) paymentStatuses.push(p.status);
       }
     }
 
-    if (!paid) {
+    const outcome = decideReconcile({
+      checkoutStatus,
+      paymentStatuses,
+      rowStatus: row.status as string,
+      trialEndsAt: (row.trial_ends_at as string) ?? null,
+    });
+    console.log("[reconcile-asaas] decisão", row.id, outcome, checkoutStatus, JSON.stringify(paymentStatuses));
+
+    if (outcome !== "activate") {
       // Tentativa de pagamento abandonada: checkout expirado/cancelado no Asaas
       // ou criado há mais de 1h sem confirmação. Normaliza para trial_expirado
       // em vez de deixar a conta presa em "pendente" para sempre.
@@ -202,9 +202,8 @@ Deno.serve(async (req) => {
       const tooOld = Number.isNaN(createdAt)
         ? false
         : Date.now() - createdAt > CHECKOUT_EXPIRY_MS;
-      const asaasExpired = ["EXPIRED", "CANCELLED", "CANCELED"].includes(checkoutStatus);
 
-      if (row.status === "pendente" && (tooOld || asaasExpired)) {
+      if (row.status === "pendente" && (tooOld || outcome === "closed")) {
         await supabase
           .from("assinaturas")
           .update({
@@ -228,7 +227,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Mesmo sem pagamento, aproveitamos para gravar os IDs já conhecidos.
+      // Sem pagamento confirmado: só vincula os IDs (trial elegível com 1ª
+      // cobrança agendada fica 'trial', com os planos pretendidos intactos).
       if (subscriptionId || customerId) {
         await supabase
           .from("assinaturas")
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
           })
           .eq("id", row.id);
       }
-      return json(200, { reconciled: false, status: row.status, checkoutStatus });
+      return json(200, { reconciled: false, status: row.status, checkoutStatus, outcome });
     }
 
     const nextDue = new Date();
@@ -274,6 +274,8 @@ Deno.serve(async (req) => {
       return json(500, { error: error.message });
     }
 
+    // Único ponto de promoção das marcas aqui: outcome === "activate"
+    // (cobrança confirmada ou sessão PAGA com cobrança imediata).
     await promoteAgencyIntent(supabase, userId, row.id as string);
     console.log("[reconcile-asaas] assinatura liberada via reconciliação:", row.id);
     return json(200, { reconciled: true, status: "ativo" });
