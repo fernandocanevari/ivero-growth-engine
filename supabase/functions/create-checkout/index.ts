@@ -221,35 +221,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3c. Elegibilidade ao trial: só quem NUNCA teve histórico de assinatura
-    // ganha os 7 dias grátis. Histórico com trial_ends_at no passado OU status
-    // em expirado/cancelado/ativo/inadimplente = já usou (ou já foi cliente).
-    const HISTORY_STATUSES = ["expirado", "trial_expirado", "cancelado", "ativo", "inadimplente"];
+    // 3c. Elegibilidade ao trial (individual e agência): regra única em
+    // _shared/trial-eligibility.ts — trial já terminado nunca ganha novo período.
     const { data: history } = await supabaseAdmin
       .from("assinaturas")
       .select("id, status, trial_ends_at, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    const nowMs = Date.now();
-    let trialConcedido = true;
-    // Trial em curso: mantemos a data original — escolher o plano durante o
-    // trial não estende o período grátis.
-    let trialEmCursoMs: number | null = null;
-    for (const row of history ?? []) {
-      const trialMs = row.trial_ends_at
-        ? new Date(row.trial_ends_at as string).getTime()
-        : NaN;
-      const trialValido = !Number.isNaN(trialMs);
-      if (trialValido && trialMs > nowMs && trialEmCursoMs === null) {
-        trialEmCursoMs = trialMs;
-      }
-      const usedTrial = trialValido && trialMs <= nowMs;
-      if (usedTrial || HISTORY_STATUSES.includes(row.status ?? "")) {
-        trialConcedido = false;
-        break;
-      }
-    }
+    const { trialConcedido, trialEmCursoMs } = trialEligibility(history ?? []);
+    console.log(
+      "create-checkout: historico =",
+      JSON.stringify((history ?? []).map((r) => [r.status, r.trial_ends_at])),
+    );
     console.log(
       "create-checkout: trialConcedido =",
       trialConcedido,
