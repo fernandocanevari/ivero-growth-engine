@@ -261,17 +261,12 @@ Deno.serve(async (req) => {
       }
 
       case "CHECKOUT_PAID": {
-        // Checkout Session concluída: libera acesso e vincula os IDs do Asaas.
-        const nextDue = new Date();
-        nextDue.setDate(nextDue.getDate() + 30);
-        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {
-          status: "ativo",
-          carencia_ate: null,
-          data_vencimento: nextDue.toISOString(),
-          trial_ends_at: null,
-        });
+        // Sessão concluída NÃO é pagamento confirmado (a 1ª cobrança pode estar
+        // agendada para o fim do trial): só vincula os IDs do Asaas. Status,
+        // planos pretendidos e marcas só mudam em PAYMENT_CONFIRMED/RECEIVED
+        // (decideWebhookEvent → "link").
+        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {});
         if (res.error) return json(500, res);
-        await promoverIntencao(res.row);
         break;
       }
 
