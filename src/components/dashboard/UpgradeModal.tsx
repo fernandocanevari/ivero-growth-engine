@@ -160,17 +160,18 @@ export function UpgradeModal({
 
     try {
       // Troca de plano (change_plan) vale em dois casos:
-      // 1) assinatura VIVA no provedor (ativo/inadimplente com id do Asaas);
-      // 2) TRIAL em curso sem vínculo no provedor — não há cobrança a
-      //    conciliar, então a troca é local e gratuita, sem abrir checkout.
+      // 1) assinatura VIVA no provedor (ativo/inadimplente com id do Asaas) —
+      //    SEMPRE, qualquer que seja o intent: quem já paga faz upgrade com
+      //    pró-rata, nunca um checkout novo;
+      // 2) TRIAL em curso sem vínculo no provedor, quando o intent não é
+      //    "contratar" — troca local e gratuita.
       // Cancelado e trial expirado seguem sendo contratação real → checkout.
-      // Intenção de PAGAR AGORA nunca vira troca local: o cliente quer converter.
+      const hasLivePaidSubscription =
+        hasAsaasSubscription && (effectiveStatus === "ativo" || effectiveStatus === "inadimplente");
       const canChangePlan =
-        intent !== "contratar" &&
         !isAdmin &&
-        ((hasAsaasSubscription &&
-          (effectiveStatus === "ativo" || effectiveStatus === "inadimplente")) ||
-          (effectiveStatus === "trial" && !hasAsaasSubscription));
+        (hasLivePaidSubscription ||
+          (intent !== "contratar" && effectiveStatus === "trial" && !hasAsaasSubscription));
 
       if (canChangePlan) {
         await changePlanLocalOrProvider(planKey, planName);
@@ -197,7 +198,19 @@ export function UpgradeModal({
         },
       });
       invalidateAccessCache();
-      if (error || data?.error) throw new Error(error?.message ?? data?.error);
+      // Servidor recusou (409): já existe assinatura paga → refaz por change_plan.
+      if (error) {
+        let errBody: { error?: string; message?: string } | null = null;
+        try {
+          errBody = await (error as { context?: Response }).context?.json();
+        } catch { /* corpo indisponível */ }
+        if (errBody?.error === "assinatura_ativa_use_troca_de_plano") {
+          await changePlanLocalOrProvider(planKey, planName);
+          return;
+        }
+        throw new Error(errBody?.message ?? error.message);
+      }
+      if (data?.error) throw new Error(data.message ?? data.error);
       // Servidor mandou fazer localmente (trial em curso sem cobrança).
       if (data?.ok === false && data?.reason === "trial_troca_local") {
         await changePlanLocalOrProvider(planKey, planName);

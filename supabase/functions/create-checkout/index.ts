@@ -5,6 +5,11 @@ import { normalizeCiclo, planValue, COMPROMISSO_MESES, type PlanoKey } from "../
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility } from "../_shared/trial-eligibility.ts";
 
+/** Assinatura paga viva + pedido de outro plano ou ciclo → deve ser change_plan. */
+export function isUpgradeBlocked(status: string, planoAtual: string, cicloAtual: string, plano: string, ciclo: string) {
+  return (status === "ativo" || status === "inadimplente") && (planoAtual !== plano || (cicloAtual ?? "mensal") !== ciclo);
+}
+
 const ASAAS_BASE_URL = asaasBaseUrl();
 
 // Valores lidos do módulo compartilhado — fonte canônica: src/lib/pricing-rules.ts.
@@ -136,7 +141,7 @@ Deno.serve(async (req) => {
     const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "pendente"];
     const { data: existing } = await supabaseAdmin
       .from("assinaturas")
-      .select("id, plano, status, asaas_subscription_id")
+      .select("id, plano, status, asaas_subscription_id, ciclo_contratado")
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
       .not("asaas_subscription_id", "is", null)
@@ -146,6 +151,19 @@ Deno.serve(async (req) => {
 
     if (existing) {
       console.log("create-checkout: assinatura viva já existe", existing.id, existing.status);
+      // Assinatura PAGA viva (ativo/inadimplente) pedindo outro plano/ciclo:
+      // isso é troca de plano (manage-subscription/change_plan, com pró-rata),
+      // nunca 200 com link vazio. Faturamento consolidado da agência fica fora.
+      if (
+        !body?.agency &&
+        isUpgradeBlocked(existing.status as string, existing.plano as string, existing.ciclo_contratado as string, plano, ciclo)
+      ) {
+        return new Response(JSON.stringify({
+          error: "assinatura_ativa_use_troca_de_plano",
+          message: "Você já tem uma assinatura ativa. A mudança de plano é feita pela troca de plano, com cobrança só da diferença.",
+          plano_atual: existing.plano,
+        }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       // Mesmo plano → devolve o checkout da cobrança pendente existente (se houver).
       let checkoutUrl = "";
       if (existing.asaas_subscription_id) {
