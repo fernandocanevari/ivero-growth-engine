@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
+import { decideWebhookEvent } from "../_shared/reconcile-decision.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,8 +215,9 @@ Deno.serve(async (req) => {
         const payExternalRef: string = body?.payment?.externalReference ?? "";
         const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
         // Pagamento de mensalidade confirmado → promove o plano pretendido.
-        if (!isAvulsa) res.row = await promoverIntencao(res.row);
-        if (!isAvulsa && res.row) {
+        const promove = decideWebhookEvent(event, isAvulsa) === "activate";
+        if (promove) res.row = await promoverIntencao(res.row);
+        if (promove && res.row) {
           const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", res.row.id).maybeSingle();
           if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, res.row.id);
         }
