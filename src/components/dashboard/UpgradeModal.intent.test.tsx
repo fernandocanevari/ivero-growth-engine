@@ -124,4 +124,42 @@ describe("UpgradeModal — roteamento por intenção", () => {
     expect(arg.description).toContain("123,45");
     expect(arg.description).toContain("12 dia");
   });
+
+  it("pagante ativo + intent=contratar chama change_plan e NÃO chama create-checkout", async () => {
+    statusMock = { ...PAGANTE, plano: "influencia" };
+    invoke.mockResolvedValue({
+      data: { ok: true, mode: "asaas", proRata: { value: 580, days: 29, invoiceUrl: "https://asaas.test/i/1" } },
+      error: null,
+    });
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<UpgradeModal open onOpenChange={() => {}} intent="contratar" />);
+    await clickPlano(/autoridade/i);
+    await waitFor(() => expect(invoke).toHaveBeenCalled());
+    expect(invoke.mock.calls[0][0]).toBe("manage-subscription");
+    expect((invoke.mock.calls[0][1] as { body: Record<string, unknown> }).body.action).toBe("change_plan");
+    expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
+    await waitFor(() => expect(open).toHaveBeenCalledWith("https://asaas.test/i/1", "_blank", "noopener"));
+    open.mockRestore();
+  });
+
+  it("409 assinatura_ativa_use_troca_de_plano refaz o pedido por change_plan, sem toast genérico", async () => {
+    // Estado local ainda sem vínculo (ex.: cache antigo), servidor sabe que é pagante.
+    statusMock = { ...TRIAL, effectiveStatus: "trial_expirado" };
+    invoke.mockImplementation((fn: string) =>
+      fn === "create-checkout"
+        ? Promise.resolve({
+            data: null,
+            error: {
+              message: "non-2xx",
+              context: new Response(JSON.stringify({ error: "assinatura_ativa_use_troca_de_plano", message: "x" }), { status: 409 }),
+            },
+          })
+        : Promise.resolve({ data: { ok: true, mode: "asaas" }, error: null }),
+    );
+    render(<UpgradeModal open onOpenChange={() => {}} intent="contratar" />);
+    await clickPlano(/Ampliar influência/i);
+    await waitFor(() => expect(invoke.mock.calls.some(([n]) => n === "manage-subscription")).toBe(true));
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    expect((toastMock.mock.calls[0][0] as { variant?: string }).variant).not.toBe("destructive");
+  });
 });
