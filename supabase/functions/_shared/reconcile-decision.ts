@@ -50,3 +50,99 @@ export function webhookEventFor(i: ReconcileInput): string {
   if (i.checkoutStatus === "CANCELED") return "CHECKOUT_CANCELED";
   return "";
 }
+
+// ---------------------------------------------------------------------------
+// Regras A–E (vínculo estrito ao checkout atual + validação por DIA).
+// O Asaas devolve datas de cobrança como "YYYY-MM-DD" (horário de Brasília);
+// por isso a comparação com asaas_checkout_created_at é feita por DIA no fuso
+// America/Sao_Paulo — nunca contra o timestamp UTC completo.
+// ---------------------------------------------------------------------------
+
+/** Dia (YYYY-MM-DD) de um timestamp no fuso America/Sao_Paulo. */
+export function brDay(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(d);
+}
+
+/** Parte de data de um campo do Asaas ("YYYY-MM-DD" ou ISO completo). */
+export function asaasDay(v: unknown): string | null {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(v)) return null;
+  // ISO completo com horário → converte para o dia em Brasília.
+  return v.length > 10 ? brDay(v) : v.slice(0, 10);
+}
+
+/** true quando `day` (YYYY-MM-DD) é o mesmo dia ou posterior ao dia do checkout. */
+export function onOrAfterCheckoutDay(day: string | null, checkoutCreatedAt: string | null | undefined): boolean {
+  const ck = brDay(checkoutCreatedAt ?? null);
+  if (!day || !ck) return false;
+  return day >= ck;
+}
+
+export interface AsaasPayment {
+  id?: string;
+  status?: string;
+  subscription?: string | null;
+  checkoutSession?: string | null;
+  customer?: string | null;
+  confirmedDate?: string | null;
+  paymentDate?: string | null;
+  clientPaymentDate?: string | null;
+  dateCreated?: string | null;
+  dueDate?: string | null;
+}
+
+/** Dia que comprova o pagamento (confirmação > pagamento > criação). */
+export function paymentProofDay(p: AsaasPayment): string | null {
+  return asaasDay(p.confirmedDate) ?? asaasDay(p.paymentDate) ?? asaasDay(p.clientPaymentDate) ?? asaasDay(p.dateCreated);
+}
+
+/** Cobrança avulsa: sem assinatura e sem checkout (pró-rata, multa...). */
+export function isOneOffPayment(p: AsaasPayment): boolean {
+  return !p.subscription && !p.checkoutSession;
+}
+
+export type DecidingRule = "A+B" | "A" | "C";
+
+export interface CheckoutEvaluation {
+  outcome: PaymentOutcome; // "activate" | "link" | "none"
+  rule: DecidingRule;
+  subscriptionId: string | null;
+  customerId: string | null;
+  linkedCount: number;
+  checkoutDay: string | null;
+  comparedDays: string[];
+}
+
+/**
+ * Avalia as cobranças devolvidas por GET /payments?checkoutSession={id}.
+ * A: só vale cobrança cujo checkoutSession é o checkout atual (vínculo).
+ * B: só ativa cobrança RECEIVED/CONFIRMED com dia ≥ dia do checkout (Brasília).
+ * C: nenhuma cobrança vinculada → nada muda (sem ativar, promover ou vincular).
+ * Cobrança vinculada mas não paga (ex.: trial com 1ª cobrança futura PENDING)
+ * → "link": grava só o id da assinatura, status/planos intactos.
+ */
+export function evaluateCheckoutPayments(
+  checkoutId: string,
+  checkoutCreatedAt: string | null | undefined,
+  payments: AsaasPayment[],
+): CheckoutEvaluation {
+  const linked = payments.filter((p) => p && p.checkoutSession === checkoutId && !isOneOffPayment(p));
+  const checkoutDay = brDay(checkoutCreatedAt ?? null);
+  const comparedDays = linked.map((p) => `${p.status}:${paymentProofDay(p) ?? "?"}`);
+  const base = {
+    linkedCount: linked.length, checkoutDay, comparedDays,
+    customerId: linked.find((p) => p.customer)?.customer ?? null,
+  };
+  const paid = linked.find((p) =>
+    PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt)
+  );
+  if (paid) return { ...base, outcome: "activate", rule: "A+B", subscriptionId: paid.subscription ?? null };
+  if (linked.length > 0) {
+    return { ...base, outcome: "link", rule: "A", subscriptionId: linked.find((p) => p.subscription)?.subscription ?? null };
+  }
+  return { ...base, outcome: "none", rule: "C", subscriptionId: null };
+}
