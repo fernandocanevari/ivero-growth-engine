@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
       compromisso_inicio?: string | null;
       plano_pretendido?: string | null;
       ciclo_pretendido?: string | null;
+      asaas_checkout_created_at?: string | null;
     };
 
     // Regra E: vínculo estrito. (1) asaas_subscription_id já gravado na linha;

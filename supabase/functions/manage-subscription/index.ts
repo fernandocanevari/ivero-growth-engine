@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
@@ -230,9 +231,15 @@ Deno.serve(async (req) => {
       if (!subId && customerId) {
         const subs = await fetchAsaas(`/subscriptions?customer=${customerId}&limit=10`);
         if (subs.ok && Array.isArray(subs.json?.data)) {
-          const rows = subs.json!.data as any[];
+          // Regra D: só adota assinatura criada no mesmo dia ou depois do
+          // checkout atual (comparação por DIA em Brasília). Assinaturas
+          // antigas do mesmo cliente Asaas nunca são adotadas.
+          const rows = (subs.json!.data as any[]).filter((s) =>
+            onOrAfterCheckoutDay(asaasDay(s?.dateCreated), assinatura.asaas_checkout_created_at as string | null)
+          );
           const pick =
             rows.find((s) => String(s.status ?? "").toUpperCase() === "ACTIVE") ?? rows[0] ?? null;
+          if (!pick) console.log("resolveSubId: nenhuma assinatura do cliente é posterior ao checkout", assinatura.asaas_checkout_created_at ?? null);
           if (pick?.id) subId = String(pick.id);
         } else if (!subs.ok) {
           console.error("resolveSubId subs error:", subs.status, subs.text.slice(0, 300));
