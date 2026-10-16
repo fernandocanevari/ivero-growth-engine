@@ -1,6 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
-import { decideWebhookEvent } from "../_shared/reconcile-decision.ts";
+import {
+  asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, type AsaasPayment,
+} from "../_shared/reconcile-decision.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -84,44 +86,56 @@ Deno.serve(async (req) => {
       ciclo_pretendido?: string | null;
     };
 
+    // Regra E: vínculo estrito. (1) asaas_subscription_id já gravado na linha;
+    // (2) checkoutSession == asaas_checkout_id; (3) externalReference só se o
+    // dia do evento (Brasília) for ≥ dia do checkout atual da linha. Evento de
+    // assinatura antiga do mesmo cliente que não passa em nenhuma é ignorado.
+    const p = (body?.payment ?? {}) as AsaasPayment;
+    const eventDay: string | null = body?.payment
+      ? paymentProofDay(p)
+      : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
+    const SELECT = "id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at";
+
     const updateAssinatura = async (
       subscriptionId: string,
       customerId: string,
       patch: Record<string, unknown>,
-    ): Promise<{ ok?: boolean; matched?: string; row?: MatchedRow; error?: string }> => {
+    ): Promise<{ ok?: boolean; matched?: string; row?: MatchedRow; error?: string; ignored?: boolean }> => {
       const now = new Date().toISOString();
       const bindIds: Record<string, unknown> = {};
       if (subscriptionId) bindIds.asaas_subscription_id = subscriptionId;
       if (customerId) bindIds.asaas_customer_id = customerId;
 
+      const apply = async (row: MatchedRow & { asaas_checkout_created_at?: string | null }, matched: string) => {
+        const { error } = await supabase
+          .from("assinaturas")
+          .update({ ...patch, ...bindIds, updated_at: now })
+          .eq("id", row.id);
+        if (error) {
+          console.error(`[asaas-webhook] DB update error (by ${matched}):`, error);
+          return { error: error.message };
+        }
+        console.log("[asaas-webhook] regra E", matched, row.id, JSON.stringify({ eventDay, checkoutCreatedAt: row.asaas_checkout_created_at ?? null }));
+        return { ok: true, matched, row };
+      };
+
       if (subscriptionId) {
-        const { data, error } = await supabase
-          .from("assinaturas")
-          .update({ ...patch, ...bindIds, updated_at: now })
-          .eq("asaas_subscription_id", subscriptionId)
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido");
-        if (error) {
-          console.error("[asaas-webhook] DB update error (by subscription):", error);
-          return { error: error.message };
-        }
-        if (data && data.length > 0) return { ok: true, matched: "subscription", row: data[0] };
+        const { data, error } = await supabase.from("assinaturas").select(SELECT)
+          .eq("asaas_subscription_id", subscriptionId).limit(1).maybeSingle();
+        if (error) return { error: error.message };
+        if (data) return apply(data, "subscription");
       }
 
-      // Fallback por asaas_checkout_id (gravado em create-checkout).
       if (checkoutId) {
-        const { data, error } = await supabase
-          .from("assinaturas")
-          .update({ ...patch, ...bindIds, updated_at: now })
-          .eq("asaas_checkout_id", checkoutId)
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido");
-        if (error) {
-          console.error("[asaas-webhook] DB update error (by checkout):", error);
-          return { error: error.message };
+        const { data, error } = await supabase.from("assinaturas").select(SELECT)
+          .eq("asaas_checkout_id", checkoutId).limit(1).maybeSingle();
+        if (error) return { error: error.message };
+        // Cobrança deste checkout precisa ter dia ≥ dia do checkout (regra B).
+        if (data && (!body?.payment || onOrAfterCheckoutDay(eventDay, data.asaas_checkout_created_at))) {
+          return apply(data, "checkout");
         }
-        if (data && data.length > 0) return { ok: true, matched: "checkout", row: data[0] };
+        if (data) console.warn("[asaas-webhook] regra B recusou (checkout)", checkoutId, eventDay, data.asaas_checkout_created_at);
       }
-
-
 
       // Cobranças avulsas usam "prorata:..." / "fidelidade:..." — não são user_id.
       const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -129,28 +143,17 @@ Deno.serve(async (req) => {
         const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
         const { data: row, error: selError } = await supabase
           .from("assinaturas")
-          .select("id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido")
+          .select(SELECT)
           .eq("user_id", externalReference)
           .in("status", LIVE_STATUSES)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (selError) {
-          console.error("[asaas-webhook] DB select error (by externalReference):", selError);
-          return { error: selError.message };
+        if (selError) return { error: selError.message };
+        if (row && onOrAfterCheckoutDay(eventDay, row.asaas_checkout_created_at)) {
+          return apply(row, "externalReference");
         }
-        if (row) {
-          const { error } = await supabase
-            .from("assinaturas")
-            .update({ ...patch, ...bindIds, updated_at: now })
-            .eq("id", row.id);
-          if (error) {
-            console.error("[asaas-webhook] DB update error (by externalReference):", error);
-            return { error: error.message };
-          }
-          console.log("[asaas-webhook] matched via externalReference:", externalReference);
-          return { ok: true, matched: "externalReference", row };
-        }
+        if (row) console.warn("[asaas-webhook] regra E recusou externalReference", event, JSON.stringify({ subscriptionId, eventDay, checkoutCreatedAt: row.asaas_checkout_created_at ?? null }));
       }
 
       console.warn(
@@ -160,8 +163,15 @@ Deno.serve(async (req) => {
       );
       // Sem correspondência não é erro do nosso lado: responder 500 faz o
       // Asaas interromper a fila inteira de webhooks.
-      return { ignored: true } as { ok?: boolean; matched?: string; row?: MatchedRow; error?: string };
+      return { ignored: true };
     };
+
+    // Cobrança avulsa (sem assinatura e sem checkout: pró-rata, multa...):
+    // nunca muda status, plano, ciclos_pagos nem promove marcas.
+    if (event.startsWith("PAYMENT_") && body?.payment && isOneOffPayment(p)) {
+      console.log("[asaas-webhook] cobrança avulsa reconhecida e ignorada:", event, p.id ?? "");
+      return json(200, { received: true, ignored: "one_off" });
+    }
 
     const isAvulsaPayment = /^(prorata|fidelidade):/.test(body?.payment?.externalReference ?? "");
 
