@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
-import { decideReconcile, PAID_PAYMENT_STATUSES } from "../_shared/reconcile-decision.ts";
+import { evaluateCheckoutPayments, type AsaasPayment, type CheckoutEvaluation } from "../_shared/reconcile-decision.ts";
 
 const ASAAS_BASE_URL = asaasBaseUrl();
 
@@ -124,67 +124,37 @@ Deno.serve(async (req) => {
     if (!row) return json(200, { reconciled: false, reason: "no_subscription" });
     if (row.status === "ativo") return json(200, { reconciled: false, status: "ativo" });
 
-    let subscriptionId: string = (row.asaas_subscription_id as string) ?? "";
-    let customerId: string = (row.asaas_customer_id as string) ?? "";
-    let checkoutStatus = "";
-    // Status de TODAS as cobranças encontradas; só RECEIVED/CONFIRMED valem.
-    const paymentStatuses: string[] = [];
-    const hasConfirmed = () => paymentStatuses.some((s) => PAID_PAYMENT_STATUSES.includes(s));
-
-    // 1) Checkout Session — o status da sessão sozinho NÃO prova pagamento
-    // (ACTIVE = sessão aberta). Ver _shared/reconcile-decision.ts.
+    // Regra A: a ÚNICA fonte é GET /payments?checkoutSession={id}. Não há
+    // GET /checkouts/{id} no Asaas (404) e /subscriptions não filtra por
+    // checkoutSession (devolve assinaturas antigas do cliente). Regra D: o
+    // asaas_subscription_id só muda se vier de cobrança deste checkout.
+    let subscriptionId = "";
+    let customerId = "";
+    const checkoutStatus = "";
+    let ev: CheckoutEvaluation | null = null;
     if (row.asaas_checkout_id) {
-      const ck = await getJson(`/checkouts/${row.asaas_checkout_id}`);
-      const data = ck.data;
-      checkoutStatus = data?.status ?? "";
-      console.log("[reconcile-asaas] checkout", row.asaas_checkout_id, ck.status, checkoutStatus, ck.text.slice(0, 500));
-      const sub = data?.subscription;
-      subscriptionId = (typeof sub === "string" ? sub : sub?.id) || subscriptionId;
-      const cus = data?.customer;
-      customerId = (typeof cus === "string" ? cus : cus?.id) || customerId;
-
-      const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=20`);
-      const list: Record<string, any>[] = pays.data?.data ?? [];
-      console.log("[reconcile-asaas] payments by checkoutSession", pays.status, list.length);
-      for (const p of list) {
-        if (p?.checkoutSession && p.checkoutSession !== row.asaas_checkout_id) continue;
-        if (p?.subscription) subscriptionId = subscriptionId || p.subscription;
-        if (p?.customer) customerId = customerId || p.customer;
-        if (p?.status) paymentStatuses.push(p.status);
-      }
-      if (!subscriptionId) {
-        const subs = await getJson(`/subscriptions?checkoutSession=${encodeURIComponent(row.asaas_checkout_id as string)}&limit=10`);
-        const s = (subs.data?.data ?? []).find((x: Record<string, any>) =>
-          !x?.checkoutSession || x.checkoutSession === row.asaas_checkout_id
-        );
-        console.log("[reconcile-asaas] subscriptions by checkoutSession", subs.status, s?.id, s?.status);
-        if (s?.id) {
-          subscriptionId = s.id;
-          customerId = customerId || s.customer;
-        }
-      }
-      if (!hasConfirmed() && subscriptionId) {
-        const pays2 = await getJson(`/payments?subscription=${subscriptionId}&limit=10`);
-        for (const p of pays2.data?.data ?? []) if (p?.status) paymentStatuses.push(p.status);
-        console.log("[reconcile-asaas] payments by subscription", subscriptionId, pays2.status, JSON.stringify((pays2.data?.data ?? []).map((p: Record<string, any>) => [p.status, p.dueDate, p.value, p.billingType])));
-      }
+      const ckId = row.asaas_checkout_id as string;
+      const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(ckId)}&limit=20`);
+      // O filtro do Asaas já restringe à sessão; marcamos explicitamente para
+      // a regra A quando o campo não vier no item.
+      const list: AsaasPayment[] = (pays.data?.data ?? []).map((p: AsaasPayment) => ({
+        ...p, checkoutSession: p?.checkoutSession ?? ckId,
+      }));
+      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, list);
+      subscriptionId = ev.subscriptionId ?? "";
+      customerId = ev.customerId ?? "";
     }
-
-    // 2) Reforço: assinaturas do Asaas por externalReference (user_id)
-    if (!hasConfirmed() && !subscriptionId) {
-      const subs = await getJson(`/subscriptions?externalReference=${encodeURIComponent(userId)}`);
-      const sub = subs.data?.data?.[0];
-      console.log("[reconcile-asaas] subscriptions lookup", subs.status, sub?.id, sub?.status);
-      if (sub?.id) {
-        subscriptionId = sub.id;
-        customerId = sub.customer || customerId;
-        const pays = await getJson(`/payments?subscription=${sub.id}&limit=10`);
-        for (const p of pays.data?.data ?? []) if (p?.status) paymentStatuses.push(p.status);
-      }
-    }
-
-    const outcome = decideReconcile({ checkoutStatus, paymentStatuses });
-    console.log("[reconcile-asaas] decisão", row.id, outcome, checkoutStatus, JSON.stringify(paymentStatuses));
+    const outcome = ev?.outcome ?? "none";
+    console.log("[reconcile-asaas] decisão", JSON.stringify({
+      row: row.id,
+      checkout: row.asaas_checkout_id ?? null,
+      pagamentosPorCheckoutSession: ev?.linkedCount ?? 0,
+      regra: ev?.rule ?? "C",
+      outcome,
+      diaCheckoutBRT: ev?.checkoutDay ?? null,
+      checkoutCreatedAt: row.asaas_checkout_created_at ?? null,
+      datasComparadas: ev?.comparedDays ?? [],
+    }));
 
     if (outcome !== "activate") {
       // Tentativa de pagamento abandonada: checkout expirado/cancelado no Asaas
@@ -198,7 +168,7 @@ Deno.serve(async (req) => {
         ? false
         : Date.now() - createdAt > CHECKOUT_EXPIRY_MS;
 
-      if (row.status === "pendente" && (tooOld || outcome === "closed")) {
+      if (row.status === "pendente" && tooOld && (ev?.linkedCount ?? 0) === 0) {
         await supabase
           .from("assinaturas")
           .update({
