@@ -4,7 +4,7 @@ import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, planValue, COMPROMISSO_MESES, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
-import { brDay } from "../_shared/reconcile-decision.ts";
+import { checkoutSchedule, preserveCheckoutState } from "../_shared/checkout-state.ts";
 
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
 
   let lockToken: string | null = null;
   let lockUser: string | null = null;
+  let createdCheckoutId: string | null = null;
+  let persisted = false;
   try {
     console.log("create-checkout started");
     // 1. Validate JWT
@@ -55,9 +57,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -133,11 +135,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // A trava vem ANTES de ler a linha: chamadas concorrentes nunca usam histórico antigo.
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    lockToken = crypto.randomUUID();
+    const { data: locked, error: lockError } = await supabaseAdmin.rpc("claim_checkout_creation", { _user_id: userId, _token: lockToken });
+    if (lockError || !locked) {
+      lockToken = null;
+      return new Response(JSON.stringify({ error: "checkout_em_criacao", message: "Já estamos gerando seu link de pagamento. Tente de novo em instantes." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     // 3. Idempotência: só reaproveita quando a assinatura já está vinculada ao
     // Asaas (asaas_subscription_id preenchido). Uma linha de trial local, sem
     // vínculo, NÃO bloqueia a criação da Checkout Session — é exatamente o caso
     // de quem está no trial e escolhe o plano para pagar.
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "pendente"];
     const { data: existing } = await supabaseAdmin
       .from("assinaturas")
@@ -174,7 +184,7 @@ Deno.serve(async (req) => {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                "access_token": asaasApiKey()!,
+                "access_token": asaasApiKey() ?? "",
               },
             },
           );
@@ -242,12 +252,13 @@ Deno.serve(async (req) => {
 
     // 3c. Elegibilidade ao trial (individual e agência): regra única em
     // _shared/trial-eligibility.ts — trial já terminado nunca ganha novo período.
-    const { data: history } = await supabaseAdmin
+    const { data: history, error: historyError } = await supabaseAdmin
       .from("assinaturas")
-      .select("id, status, trial_ends_at, created_at, ciclos_pagos, compromisso_inicio, checkout_context, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, plano_pretendido, ciclo_pretendido")
+      .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
+    if (historyError) throw historyError;
     const { trialConcedido, trialEmCursoMs } = trialEligibility(history ?? []);
     console.log(
       "create-checkout: historico =",
@@ -274,50 +285,29 @@ Deno.serve(async (req) => {
       "access_token": asaasKey,
     };
 
-    // 4. Datas: elegível (trial válido) → 1ª cobrança no fim do trial em curso
-    // (sem conta nova: legado D+7). Não elegível → cobrança HOJE em Brasília.
-    const today = new Date();
-    const trialEndsAt = trialConcedido
-      ? new Date(trialEmCursoMs ?? today.getTime() + 7 * 24 * 60 * 60 * 1000)
-      : null;
-    const nextDueDate = brDay((trialEndsAt ?? today).toISOString())!;
+    const schedule = checkoutSchedule(history ?? []);
+    const trialEndsAt = schedule.trialEndsAt ? new Date(schedule.trialEndsAt) : null;
+    const nextDueDate = schedule.nextDueDate;
     const value = agencyQuote ? agencyQuote.total : planValue(plano, ciclo);
     console.log("create-checkout: nextDueDate =", nextDueDate, "trialConcedido =", trialConcedido);
-
-    // Contexto preservado para a limpeza de checkout abandonado restaurar o
-    // estado anterior e para o fallback da reconciliação (valor + ciclo pedidos).
-    // deno-lint-ignore no-explicit-any
-    const checkoutContextFor = (r: any) => ({
-      prev: {
-        status: r?.status ?? null,
-        trial_ends_at: effectiveTrialEndsAt(r ?? { status: null, trial_ends_at: null }),
-        plano_pretendido: r?.plano_pretendido ?? null,
-        ciclo_pretendido: r?.ciclo_pretendido ?? null,
-      },
-      requested: { value, cycle: "MONTHLY", plano, ciclo },
-    });
-
-    // 4b. Sem duas sessões pagáveis ao mesmo tempo: trava por usuário e cancela
-    // o checkout anterior ainda aberto (< 60 min) antes de criar um novo.
-    lockToken = crypto.randomUUID();
-    const { data: locked } = await supabaseAdmin.rpc("claim_checkout_creation", { _user_id: userId, _token: lockToken });
-    if (!locked) {
-      lockToken = null;
-      return new Response(JSON.stringify({ error: "checkout_em_criacao", message: "Já estamos gerando seu link de pagamento. Tente de novo em instantes." }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const anterior = (history ?? []).find((r) => r.asaas_checkout_id && !r.asaas_subscription_id);
-    const anteriorMs = anterior?.asaas_checkout_created_at ? new Date(anterior.asaas_checkout_created_at as string).getTime() : NaN;
-    if (anterior && !Number.isNaN(anteriorMs) && Date.now() - anteriorMs < 60 * 60 * 1000) {
-      const cRes = await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(anterior.asaas_checkout_id as string)}/cancel`, {
-        method: "POST", headers: asaasHeaders,
-      });
-      const cText = await cRes.text();
-      console.log("create-checkout: cancelar checkout anterior", anterior.asaas_checkout_id, cRes.status, cText.slice(0, 200));
-      if (!cRes.ok && !/cancel|expir|pago|paid/i.test(cText)) {
-        return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "Há um pagamento em andamento. Tente novamente em alguns minutos." }),
+    const anterior = (history ?? []).find((r) => r.asaas_checkout_id);
+    if (anterior) {
+      const ctx = anterior.checkout_context as { link?: string; requested?: { value?: number; plano?: string; ciclo?: string }; completed?: boolean } | null;
+      const oldTime = anterior.asaas_checkout_created_at ? Date.parse(anterior.asaas_checkout_created_at) : NaN;
+      const fresh = Number.isFinite(oldTime) && Date.now() - oldTime < 60 * 60 * 1000;
+      if (ctx?.completed || anterior.asaas_subscription_id) {
+        return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "A conclusão do pagamento anterior está sendo conferida." }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      if (fresh && ctx?.link && ctx.requested?.value === value && ctx.requested?.plano === plano && ctx.requested?.ciclo === ciclo) {
+        return new Response(JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl: ctx.link, asaasCheckoutId: anterior.asaas_checkout_id, agencyQuote }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // Só uma confirmação HTTP bem-sucedida permite trocar a sessão; erros não são prova de cancelamento.
+      const canceled = await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(anterior.asaas_checkout_id)}/cancel`, { method: "POST", headers: asaasHeaders });
+      console.log("create-checkout: cancelar checkout anterior", anterior.asaas_checkout_id, canceled.status);
+      if (!canceled.ok) return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "Não foi possível confirmar o encerramento do pagamento anterior." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // 5. URLs de callback. O Asaas só aceita domínio público https cadastrado
@@ -329,7 +319,7 @@ Deno.serve(async (req) => {
       (req.headers.get("referer")
         ? (() => {
             try {
-              return new URL(req.headers.get("referer")!).origin;
+              return new URL(req.headers.get("referer") ?? "").origin;
             } catch {
               return "";
             }
@@ -408,6 +398,8 @@ Deno.serve(async (req) => {
       );
     }
     const asaasCheckoutId: string = checkoutJson?.id ?? "";
+    createdCheckoutId = asaasCheckoutId || null;
+    const checkoutContextFor = (row: Record<string, unknown> | null) => preserveCheckoutState(row, { value, cycle: "MONTHLY", plano, ciclo }, checkoutUrl);
     console.log(
       "create-checkout: rota=checkout",
       userId,
@@ -452,7 +444,7 @@ Deno.serve(async (req) => {
     // Não acumular histórico: reaproveitamos a linha viva sem vínculo com o
     // Asaas (trial/pendente local) ou, na falta dela, a linha morta mais
     // recente (expirada OU cancelada — reativação) — sempre update in place —
-    // e cancelamos as demais linhas mortas. Reativação nunca ganha trial novo:
+    // sem alterar as demais linhas do histórico. Reativação nunca ganha trial novo:
     // `trialConcedido` já é false por causa do histórico.
     const DEAD_STATUSES = ["expirado", "trial_expirado", "cancelado"];
     const linhaViva = (history ?? []).find((r) => LIVE_STATUSES.includes(r.status ?? ""));
@@ -476,9 +468,11 @@ Deno.serve(async (req) => {
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
           checkout_context: checkoutContextFor(linhaViva),
+          status: trialConcedido ? "trial" : "pendente",
+          trial_ends_at: effectiveTrialEndsAt(linhaViva),
         })
         .eq("id", linhaViva.id);
-      insertError = updateError as typeof insertError;
+      insertError = updateError;
     } else if (linhaMorta) {
       const { error: updateError } = await supabaseAdmin
         .from("assinaturas")
@@ -494,61 +488,22 @@ Deno.serve(async (req) => {
           checkout_context: checkoutContextFor(linhaMorta),
         })
         .eq("id", linhaMorta.id);
-      insertError = updateError as typeof insertError;
+      insertError = updateError;
 
-      if (!updateError) {
-        const outrasMortas = (history ?? [])
-          .filter((r) => r.id !== linhaMorta.id && DEAD_STATUSES.includes(r.status ?? ""))
-          .map((r) => r.id as string);
-        if (outrasMortas.length > 0) {
-          await supabaseAdmin
-            .from("assinaturas")
-            .update({ status: "cancelado" })
-            .in("id", outrasMortas);
-        }
-      }
     } else {
       const { error } = await supabaseAdmin
         .from("assinaturas")
         .insert({
           user_id: userId,
           ...assinaturaPayload,
+          checkout_context: checkoutContextFor(null),
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
         });
-      insertError = error as typeof insertError;
+      insertError = error;
     }
 
     if (insertError) {
-      // 23505 = unique_violation no índice parcial assinaturas_user_ativa_uniq:
-      // uma assinatura viva foi criada em paralelo (duplo clique / corrida).
-      // Tratamos como sucesso idempotente e atualizamos a linha existente.
-      if ((insertError as { code?: string }).code === "23505") {
-        console.log("create-checkout: corrida detectada (23505), reaproveitando assinatura viva");
-        await supabaseAdmin
-          .from("assinaturas")
-          .update({
-            // Corrida: só grava a intenção; plano vigente e trial_ends_at intactos.
-            asaas_checkout_id: asaasCheckoutId || null,
-            asaas_checkout_created_at: new Date().toISOString(),
-            plano_pretendido: plano,
-            ciclo_pretendido: ciclo,
-          })
-          .eq("user_id", userId)
-          .in("status", LIVE_STATUSES);
-
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            reused: true,
-            trialConcedido,
-            checkoutUrl,
-            asaasCheckoutId,
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
       console.error("create-checkout insert error:", insertError);
       return new Response(
         JSON.stringify({ error: "Falha ao registrar assinatura.", details: insertError.message }),
@@ -556,6 +511,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    persisted = true;
     // 8. Return checkout URL
     return new Response(
       JSON.stringify({ success: true, trialConcedido, checkoutUrl, asaasCheckoutId, agencyQuote }),
@@ -568,8 +524,12 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } finally {
+    if (createdCheckoutId && !persisted) {
+      const key = asaasApiKey();
+      if (key) await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(createdCheckoutId)}/cancel`, { method: "POST", headers: { access_token: key } });
+    }
     if (lockToken && lockUser) {
-      const adm = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const adm = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
       await adm.rpc("release_checkout_creation", { _user_id: lockUser, _token: lockToken });
     }
   }

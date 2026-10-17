@@ -285,6 +285,7 @@ export type Database = {
           ciclos_pagos: number
           compromisso_inicio: string | null
           compromisso_meses: number
+          counted_payment_ids: string[]
           created_at: string
           data_inicio: string
           data_vencimento: string | null
@@ -311,6 +312,7 @@ export type Database = {
           ciclos_pagos?: number
           compromisso_inicio?: string | null
           compromisso_meses?: number
+          counted_payment_ids?: string[]
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
@@ -337,6 +339,7 @@ export type Database = {
           ciclos_pagos?: number
           compromisso_inicio?: string | null
           compromisso_meses?: number
+          counted_payment_ids?: string[]
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
@@ -1340,6 +1343,10 @@ export type Database = {
         Returns: boolean
       }
       normalize_expired_trials: { Args: never; Returns: number }
+      record_checkout_payment: {
+        Args: { _assinatura_id: string; _payment_id: string }
+        Returns: number
+      }
       release_checkout_creation: {
         Args: { _token: string; _user_id: string }
         Returns: undefined

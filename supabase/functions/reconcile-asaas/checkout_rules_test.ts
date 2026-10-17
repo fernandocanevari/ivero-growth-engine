@@ -72,7 +72,7 @@ Deno.test("(d) reconcile: assinatura só pelo fallback validado; promoção só 
   assert(flow.includes("/payments?checkoutSession="));
   // (ajuste aprovado) /subscriptions e /payments?subscription só via candidato único
   assert(flow.includes("selectFallbackSubscription(") && flow.includes("pick.candidate?.id"));
-  assert(flow.indexOf("ev.linkedCount === 0") < flow.indexOf("/subscriptions?externalReference"));
+  assert(flow.indexOf("pays.items.length === 0") < flow.indexOf("/subscriptions?externalReference"));
   assert(flow.includes("pagamentosPorCheckoutSession") && flow.includes("regra:") && flow.includes("datasComparadas"));
   // limpeza do checkout abandonado (60 min) mantida, só sem cobrança vinculada
   assert(flow.includes("60 * 60 * 1000") && flow.includes("(ev?.linkedCount ?? 0) === 0"));
@@ -83,7 +83,8 @@ Deno.test("webhook: avulsa ignorada antes de qualquer gravação; externalRefere
   const oneOff = src.indexOf("isOneOffPayment(p)");
   const sw = src.indexOf("switch (event)");
   assert(oneOff > 0 && oneOff < sw);
-  assert(src.includes("row && onOrAfterCheckoutDay(eventDay, row.asaas_checkout_created_at)"));
+  const matching = await Deno.readTextFile(new URL("../asaas-webhook/matching.ts", import.meta.url));
+  assert(matching.includes("row && onOrAfterCheckoutDay(eventDay, row.asaas_checkout_created_at)"));
 });
 
 Deno.test("manage-subscription: resolveSubId só adota assinatura criada no dia do checkout ou depois", async () => {

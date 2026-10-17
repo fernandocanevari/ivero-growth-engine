@@ -23,8 +23,8 @@ export function effectiveTrialEndsAt(row: HistoryRow): string | null {
 }
 
 export function trialEligibility(history: HistoryRow[], nowMs = Date.now()) {
-  // Conta sem nenhuma linha (nunca passou pelo cadastro com trial): legado.
-  if (history.length === 0) return { trialConcedido: true, trialEmCursoMs: null as number | null };
+  // Sem data válida não existe elegibilidade, mesmo com histórico vazio.
+  if (history.length === 0) return { trialConcedido: false, trialEmCursoMs: null as number | null };
   const paid = history.some((r) =>
     (r.ciclos_pagos ?? 0) > 0 || PAID_HISTORY_STATUSES.includes(r.status ?? "")
   );

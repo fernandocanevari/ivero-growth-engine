@@ -1,9 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
-  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription,
+  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
 } from "../_shared/reconcile-decision.ts";
 
@@ -34,8 +35,8 @@ Deno.serve(async (req) => {
       return json(401, { error: "Unauthorized" });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
     if (!asaasKey) return json(500, { error: `${asaasKeyName()} não configurada.` });
     const asaasHeaders = { "Content-Type": "application/json", "access_token": asaasKey };
 
-    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
       auth: { persistSession: false },
     });
 
@@ -93,6 +94,16 @@ Deno.serve(async (req) => {
       return { status: res.status, data, text };
     };
 
+    const listAll = async (path: string) => {
+      const items: Record<string, any>[] = [];
+      for (let offset = 0; offset < 10000; offset += 100) {
+        const result = await getJson(`${path}&limit=100&offset=${offset}`);
+        if (result.status !== 200 || !Array.isArray(result.data?.data)) return { items, complete: false };
+        items.push(...result.data.data);
+        if (!result.data.hasMore) return { items, complete: true };
+      }
+      return { items, complete: false };
+    };
     // Ação administrativa SOMENTE LEITURA: estado real no Asaas de uma conta.
     if (body?.action === "inspect_user") {
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
@@ -112,7 +123,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
+    const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"];
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
@@ -127,59 +138,73 @@ Deno.serve(async (req) => {
     if (!row) return json(200, { reconciled: false, reason: "no_subscription" });
     if (row.status === "ativo") return json(200, { reconciled: false, status: "ativo" });
 
-    // Regra A: a ÚNICA fonte é GET /payments?checkoutSession={id}. Não há
+    // Regra A: fonte primária é GET /payments?checkoutSession={id}. Não há
     // GET /checkouts/{id} no Asaas (404) e /subscriptions não filtra por
     // checkoutSession (devolve assinaturas antigas do cliente). Regra D: o
-    // asaas_subscription_id só muda se vier de cobrança deste checkout.
+    // asaas_subscription_id só muda com cobrança deste checkout ou fallback único comprovado.
     let subscriptionId = "";
     let customerId = "";
     const checkoutStatus = "";
+    let confirmedPaymentId: string | null = null;
+    let lookupComplete = true;
+    let fallbackAmbiguous = false;
     let ev: CheckoutEvaluation | null = null;
     if (row.asaas_checkout_id) {
       const ckId = row.asaas_checkout_id as string;
-      const pays = await getJson(`/payments?checkoutSession=${encodeURIComponent(ckId)}&limit=20`);
+      const pays = await listAll(`/payments?checkoutSession=${encodeURIComponent(ckId)}`);
+      lookupComplete = pays.complete;
       // O filtro do Asaas já restringe à sessão; marcamos explicitamente para
       // a regra A quando o campo não vier no item.
-      const list: AsaasPayment[] = (pays.data?.data ?? []).map((p: AsaasPayment) => ({
+      const list: AsaasPayment[] = pays.items.map((p: AsaasPayment) => ({
         ...p, checkoutSession: p?.checkoutSession ?? ckId,
       }));
-      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, list);
+      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : []);
+      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
       subscriptionId = ev.subscriptionId ?? "";
       customerId = ev.customerId ?? "";
 
       // Fallback: cobranças de checkout RECORRENTE podem não trazer
       // checkoutSession. Só quando a consulta deu certo e veio vazia.
-      if (pays.status === 200 && ev.linkedCount === 0) {
-        const ctx = (row.checkout_context ?? {}) as { requested?: { value?: number; cycle?: string } };
-        const requested = ctx.requested
-          ? { value: ctx.requested.value ?? null, cycle: ctx.requested.cycle ?? null }
-          : null;
-        const subs: AsaasSubscription[] = [];
-        const paths = [`/subscriptions?externalReference=${encodeURIComponent(userId)}&limit=100`];
-        if (row.asaas_customer_id) paths.push(`/subscriptions?customer=${encodeURIComponent(row.asaas_customer_id as string)}&limit=100`);
-        let complete = true;
-        for (const path of paths) {
-          const r = await getJson(path);
-          if (r.status !== 200 || r.data?.hasMore) complete = false;
-          subs.push(...((r.data?.data ?? []) as AsaasSubscription[]));
+      if (lookupComplete && pays.items.length === 0) {
+        const ctx = row.checkout_context as CheckoutContext | null;
+        const requested = ctx?.requested ?? null;
+        // Sem cliente conhecido, usa só externalReference para descobrir um cliente
+        // e em seguida examina TODAS as assinaturas desse cliente compartilhado.
+        let knownCustomer = row.asaas_customer_id as string | null;
+        let discoveryComplete = true;
+        if (!knownCustomer) {
+          const refs = await listAll(`/subscriptions?externalReference=${encodeURIComponent(userId)}`);
+          const customers = [...new Set(refs.items.filter((r) => r.externalReference === userId && typeof r.customer === "string").map((r) => r.customer as string))];
+          discoveryComplete = refs.complete && customers.length <= 1;
+          fallbackAmbiguous = customers.length > 1;
+          if (refs.complete && customers.length === 1) knownCustomer = customers[0];
         }
-        const pick = complete
-          ? selectFallbackSubscription(subs, userId, row.asaas_checkout_created_at as string | null, requested)
-          : { candidate: null, candidates: [], reason: "incomplete" as const };
-        console.log("[reconcile-asaas] fallback assinaturas", JSON.stringify({
-          checkout: ckId, lidas: subs.length, candidatos: pick.candidates, motivo: pick.reason,
-        }));
-        if (pick.candidate?.id) {
-          const sp = await getJson(`/payments?subscription=${encodeURIComponent(pick.candidate.id)}&limit=100`);
-          if (sp.status === 200) {
-            ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null,
-              (sp.data?.data ?? []) as AsaasPayment[]);
-            subscriptionId = ev.subscriptionId ?? "";
-            customerId = ev.customerId ?? "";
+        if (knownCustomer) {
+          const subscriptions = await listAll(`/subscriptions?customer=${encodeURIComponent(knownCustomer)}`);
+          lookupComplete = subscriptions.complete;
+          const pick = subscriptions.complete
+            ? selectFallbackSubscription(subscriptions.items.filter((r) => r.customer === knownCustomer), userId, row.asaas_checkout_created_at as string | null, requested)
+            : { candidate: null, candidates: [], reason: "incomplete" };
+          fallbackAmbiguous = pick.reason === "ambiguous";
+          console.log("[reconcile-asaas] fallback assinaturas", JSON.stringify({ checkout: ckId, lidas: subscriptions.items.length, candidatos: pick.candidates, motivo: pick.reason }));
+          if (pick.candidate?.id) {
+            const charges = await listAll(`/payments?subscription=${encodeURIComponent(pick.candidate.id)}`);
+            lookupComplete = charges.complete;
+            if (charges.complete) {
+              ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items);
+              subscriptionId = ev.outcome !== "none" ? ev.subscriptionId ?? "" : "";
+              customerId = ev.outcome !== "none" ? knownCustomer : "";
+              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
+            }
           }
+        } else {
+          // Sem vínculo para descobrir cliente: não adivinha por nome/email.
+          lookupComplete = discoveryComplete;
+          console.log("[reconcile-asaas] fallback assinaturas", JSON.stringify({ checkout: ckId, candidatos: [], motivo: "customer_not_proven" }));
         }
       }
     }
+
     const outcome = (ev as CheckoutEvaluation | null)?.outcome ?? "none";
     console.log("[reconcile-asaas] decisão", JSON.stringify({
       row: row.id,
@@ -204,32 +229,13 @@ Deno.serve(async (req) => {
         ? false
         : Date.now() - createdAt > CHECKOUT_EXPIRY_MS;
 
-      const prev = ((row.checkout_context ?? null) as { prev?: Record<string, string | null> } | null)?.prev ?? null;
-      if (row.status === "pendente" && tooOld && (ev?.linkedCount ?? 0) === 0) {
-        await supabase
-          .from("assinaturas")
-          .update({
-            // Restaura o estado anterior ao checkout (inclusive trial_ends_at)
-            // quando create-checkout o preservou; sem contexto, 'expirado'
-            // (valor aceito pelo constraint; a leitura deriva "trial_expirado").
-            status: prev?.status && prev.status !== "pendente" ? prev.status : "expirado",
-            ...(prev ? { trial_ends_at: prev.trial_ends_at ?? null } : {}),
-            plano_pretendido: prev?.plano_pretendido ?? null,
-            ciclo_pretendido: prev?.ciclo_pretendido ?? null,
-            checkout_context: null,
-            asaas_checkout_id: null,
-            ...(subscriptionId ? { asaas_subscription_id: subscriptionId } : {}),
-            ...(customerId ? { asaas_customer_id: customerId } : {}),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", row.id);
-        console.log("[reconcile-asaas] checkout expirado, assinatura normalizada:", row.id);
-        return json(200, {
-          reconciled: false,
-          expired: true,
-          status: "trial_expirado",
-          checkoutStatus,
-        });
+      if ((row.status === "pendente" || row.status === "trial" || row.status === "expirado") && tooOld && (ev?.linkedCount ?? 0) === 0 && lookupComplete && !fallbackAmbiguous && !(row.checkout_context as CheckoutContext | null)?.completed) {
+        const restored = restoreCheckoutState({ ...row, checkout_context: row.checkout_context as CheckoutContext | null });
+        const { error: restoreError } = await supabase.from("assinaturas").update({ ...restored, updated_at: new Date().toISOString() })
+          .eq("id", row.id).eq("asaas_checkout_id", row.asaas_checkout_id).eq("status", row.status);
+        if (restoreError) return json(500, { error: restoreError.message });
+        console.log("[reconcile-asaas] checkout expirado, assinatura restaurada:", row.id);
+        return json(200, { reconciled: false, expired: true, status: restored.status === "expirado" ? "trial_expirado" : restored.status, checkoutStatus });
       }
 
       // Sem pagamento confirmado: só vincula os IDs (trial elegível com 1ª
@@ -242,7 +248,7 @@ Deno.serve(async (req) => {
             ...(customerId ? { asaas_customer_id: customerId } : {}),
             updated_at: new Date().toISOString(),
           })
-          .eq("id", row.id);
+          .eq("id", row.id).eq("asaas_checkout_id", row.asaas_checkout_id).eq("status", row.status);
       }
       return json(200, { reconciled: false, status: row.status, checkoutStatus, outcome });
     }
@@ -255,6 +261,7 @@ Deno.serve(async (req) => {
         status: "ativo",
         carencia_ate: null,
         trial_ends_at: null,
+        checkout_context: null,
         data_vencimento: nextDue.toISOString(),
         // Pagamento confirmado → a intenção gravada no checkout vale agora.
         ...(row.plano_pretendido
@@ -271,12 +278,17 @@ Deno.serve(async (req) => {
         ...(customerId ? { asaas_customer_id: customerId } : {}),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", row.id);
+      .eq("id", row.id).eq("asaas_checkout_id", row.asaas_checkout_id).eq("status", row.status);
 
 
     if (error) {
       console.error("[reconcile-asaas] update error:", error);
       return json(500, { error: error.message });
+    }
+
+    if (confirmedPaymentId) {
+      const { error: countError } = await supabase.rpc("record_checkout_payment", { _assinatura_id: row.id, _payment_id: confirmedPaymentId });
+      if (countError) return json(500, { error: countError.message });
     }
 
     // Único ponto de promoção das marcas aqui: outcome === "activate"
