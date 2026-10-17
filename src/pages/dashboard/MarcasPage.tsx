@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Plus, CreditCard, Globe, CheckCircle2, Clock, TrendingUp, TrendingDown, ShoppingBag, Loader2 } from "lucide-react";
+import { Building2, Plus, Globe, CheckCircle2, Clock, TrendingUp, TrendingDown, ShoppingBag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -76,9 +76,6 @@ export default function MarcasPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/dashboard/marcas/assinatura")} className="gap-2">
-            <CreditCard className="h-4 w-4" /> Assinatura
-          </Button>
           <Button variant="hero" onClick={startNewBrand} disabled={creating} className="gap-2">
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Nova Marca
           </Button>
