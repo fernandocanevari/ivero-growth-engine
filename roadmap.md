@@ -1,0 +1,4 @@
+- [ ] Preservar histórico do trial e impedir checkouts duplicados.
+- [ ] Corrigir vínculo exato do webhook e fallback único da reconciliação.
+- [ ] Executar testes, publicar três funções e registrar horários/hashes.
+- [ ] Resetar somente agencia01/Bimbo; mostrar antes/depois e limites da verificação.
