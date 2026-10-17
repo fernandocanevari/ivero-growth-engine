@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { matchWebhookRow } from "./matching.ts";
+import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import {
   asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
@@ -43,8 +45,8 @@ Deno.serve(async (req) => {
 
     // 3. Service role client (bypass RLS to update assinaturas)
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } },
     );
 
@@ -85,6 +87,7 @@ Deno.serve(async (req) => {
       plano_pretendido?: string | null;
       ciclo_pretendido?: string | null;
       asaas_checkout_created_at?: string | null;
+      checkout_context?: CheckoutContext | null;
     };
 
     // Regra E: vínculo estrito. (1) asaas_subscription_id já gravado na linha;
@@ -95,7 +98,7 @@ Deno.serve(async (req) => {
     const eventDay: string | null = body?.payment
       ? paymentProofDay(p)
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
-    const SELECT = "id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at";
+    const SELECT = "id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, checkout_context";
 
     const updateAssinatura = async (
       subscriptionId: string,
@@ -110,7 +113,7 @@ Deno.serve(async (req) => {
       const apply = async (row: MatchedRow & { asaas_checkout_created_at?: string | null }, matched: string) => {
         const { error } = await supabase
           .from("assinaturas")
-          .update({ ...patch, ...bindIds, updated_at: now })
+          .update({ ...patch, ...bindIds, ...(event === "CHECKOUT_PAID" ? { checkout_context: { ...row.checkout_context, completed: true } } : {}), updated_at: now })
           .eq("id", row.id);
         if (error) {
           console.error(`[asaas-webhook] DB update error (by ${matched}):`, error);
@@ -120,50 +123,17 @@ Deno.serve(async (req) => {
         return { ok: true, matched, row };
       };
 
-      if (subscriptionId) {
-        const { data, error } = await supabase.from("assinaturas").select(SELECT)
-          .eq("asaas_subscription_id", subscriptionId).limit(1).maybeSingle();
-        if (error) return { error: error.message };
-        if (data) return apply(data, "subscription");
-      }
-
-      if (checkoutId) {
-        const { data, error } = await supabase.from("assinaturas").select(SELECT)
-          .eq("asaas_checkout_id", checkoutId).limit(1).maybeSingle();
-        if (error) return { error: error.message };
-        // Cobrança deste checkout precisa ter dia ≥ dia do checkout (regra B).
-        // CHECKOUT_PAID com id idêntico ao asaas_checkout_id: prova suficiente,
-        // sem checagem de data (o evento não traz data de pagamento).
-        if (data && (event === "CHECKOUT_PAID" || !body?.payment || onOrAfterCheckoutDay(eventDay, data.asaas_checkout_created_at))) {
-          return apply(data, "checkout");
-        }
-        if (data) console.warn("[asaas-webhook] regra B recusou (checkout)", checkoutId, eventDay, data.asaas_checkout_created_at);
-      }
-
-      // CHECKOUT_PAID só vincula por checkout exato; nunca pelo caminho solto.
-      if (event === "CHECKOUT_PAID") {
-        console.warn("[asaas-webhook] CHECKOUT_PAID sem checkout correspondente", checkoutId);
-        return { ignored: true };
-      }
-
-      // Cobranças avulsas usam "prorata:..." / "fidelidade:..." — não são user_id.
-      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (externalReference && UUID_RE.test(externalReference)) {
-        const LIVE_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado"];
-        const { data: row, error: selError } = await supabase
-          .from("assinaturas")
-          .select(SELECT)
-          .eq("user_id", externalReference)
-          .in("status", LIVE_STATUSES)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (selError) return { error: selError.message };
-        if (row && onOrAfterCheckoutDay(eventDay, row.asaas_checkout_created_at)) {
-          return apply(row, "externalReference");
-        }
-        if (row) console.warn("[asaas-webhook] regra E recusou externalReference", event, JSON.stringify({ subscriptionId, eventDay, checkoutCreatedAt: row.asaas_checkout_created_at ?? null }));
-      }
+      const matched = await matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
+        async (path, id) => {
+          let query = supabase.from("assinaturas").select(SELECT);
+          if (path === "subscription") query = query.eq("asaas_subscription_id", id);
+          if (path === "checkout") query = query.eq("asaas_checkout_id", id);
+          if (path === "externalReference") query = query.eq("user_id", id).in("status", ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"]).order("created_at", { ascending: false });
+          const { data, error } = await query.limit(1).maybeSingle();
+          if (error) throw error;
+          return data;
+        });
+      if (matched) return apply(matched.row, matched.matched);
 
       console.warn(
         "[asaas-webhook] No assinatura matched for",
@@ -223,6 +193,7 @@ Deno.serve(async (req) => {
           carencia_ate: null,
           data_vencimento: nextDue.toISOString(),
           trial_ends_at: null,
+          checkout_context: null,
         });
         if (res.error) return json(500, res);
 
@@ -240,20 +211,10 @@ Deno.serve(async (req) => {
           const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", res.row.id).maybeSingle();
           if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, res.row.id);
         }
-        if (event === "PAYMENT_CONFIRMED" && !isAvulsa && res.row) {
-          const ciclos = (res.row.ciclos_pagos ?? 0) + 1;
-          const inicio =
-            res.row.compromisso_inicio ??
-            (res.row.ciclo_contratado === "anual" ? new Date().toISOString() : null);
-          const { error: incError } = await supabase
-            .from("assinaturas")
-            .update({ ciclos_pagos: ciclos, compromisso_inicio: inicio })
-            .eq("id", res.row.id);
-          if (incError) {
-            console.error("[asaas-webhook] ciclos_pagos increment error:", incError);
-          } else {
-            console.log("[asaas-webhook] ciclos_pagos =", ciclos, "assinatura:", res.row.id);
-          }
+        if (!isAvulsa && res.row && p.id) {
+          const { data: ciclos, error: incError } = await supabase.rpc("record_checkout_payment", { _assinatura_id: res.row.id, _payment_id: p.id });
+          if (incError) return json(500, { error: incError.message });
+          console.log("[asaas-webhook] ciclos_pagos =", ciclos, "assinatura:", res.row.id);
         }
         break;
       }
@@ -298,14 +259,15 @@ Deno.serve(async (req) => {
       case "CHECKOUT_CANCELED":
       case "CHECKOUT_EXPIRED": {
         console.log("[asaas-webhook] Checkout não concluído:", event, checkoutId);
-        // Checkout abandonado/expirado: descarta a intenção de plano. O plano
-        // vigente do cliente nunca foi tocado, então não há nada a reverter.
         if (checkoutId) {
-          const { error } = await supabase
-            .from("assinaturas")
-            .update({ plano_pretendido: null, ciclo_pretendido: null })
-            .eq("asaas_checkout_id", checkoutId);
-          if (error) console.error("[asaas-webhook] limpar intenção error:", error);
+          const { data: row, error: readError } = await supabase.from("assinaturas").select("*").eq("asaas_checkout_id", checkoutId).maybeSingle();
+          if (readError) return json(500, { error: readError.message });
+          // Um evento atrasado nunca desfaz pagamento nem checkout já concluído.
+          if (row && row.status !== "ativo" && !(row.checkout_context as CheckoutContext | null)?.completed && !row.asaas_subscription_id) {
+            const { error } = await supabase.from("assinaturas").update(restoreCheckoutState({ ...row, checkout_context: row.checkout_context as CheckoutContext | null }))
+              .eq("id", row.id).eq("asaas_checkout_id", checkoutId).eq("status", row.status);
+            if (error) return json(500, { error: error.message });
+          }
         }
         break;
       }
