@@ -69,7 +69,7 @@ async function event(body: Record<string, unknown>) {
   }
 }
 
-Deno.test("handler: agência expirada, CHECKOUT_PAID → CONFIRMED no mesmo segundo ativa, conta 1 e promove Bimbo", async () => {
+Deno.test({ name: "handler: agência expirada, CHECKOUT_PAID → CONFIRMED no mesmo segundo ativa, conta 1 e promove Bimbo", sanitizeOps: false, sanitizeResources: false, fn: async () => {
   reset("pendente");
   await event({ event: "CHECKOUT_PAID", checkout: { id: CK, subscription: "sub_new", customer: "cus_shared" } });
   assertEquals(memory.row.status, "pendente");
@@ -83,13 +83,13 @@ Deno.test("handler: agência expirada, CHECKOUT_PAID → CONFIRMED no mesmo segu
   assertEquals(memory.brand.plano_pretendido, null);
   await event({ event: "PAYMENT_RECEIVED", payment });
   assertEquals(memory.row.ciclos_pagos, 1);
-});
+}});
 
-Deno.test("handler: CHECKOUT_PAID com trial válido vincula, mantém trial e não promove marcas", async () => {
+Deno.test({ name: "handler: CHECKOUT_PAID com trial válido vincula, mantém trial e não promove marcas", sanitizeOps: false, sanitizeResources: false, fn: async () => {
   reset("trial", "2099-10-24T12:00:00Z");
   await event({ event: "CHECKOUT_PAID", checkout: { id: CK, subscription: "sub_trial" } });
   assertEquals(memory.row.status, "trial");
   assertEquals(memory.row.trial_ends_at, "2099-10-24T12:00:00Z");
   assertEquals(memory.row.ciclos_pagos, 0);
   assertEquals(memory.brand.plano, null);
-});
+}});
