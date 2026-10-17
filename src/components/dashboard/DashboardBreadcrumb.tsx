@@ -59,6 +59,8 @@ const menuGroups: Group[] = [
     items: [
       { title: "Exportar Dados", url: "/dashboard/relatorios", icon: Download },
       { title: "Assinatura", url: "/dashboard/assinatura", icon: CreditCard },
+      // Faturamento consolidado da agência — mesmo rótulo/ícone da Assinatura.
+      { title: "Assinatura", url: "/dashboard/marcas/assinatura", icon: CreditCard },
       { title: "Configurações", url: "/dashboard/configuracoes", icon: Settings },
       { title: "Central de Ajuda", url: "/dashboard/ajuda", icon: HelpCircle },
     ],

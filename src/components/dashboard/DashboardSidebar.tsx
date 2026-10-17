@@ -15,6 +15,7 @@ import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { isRouteAllowedInTrial, isFeatureAvailable, getRequiredTier, tierLabel } from "@/lib/access-control";
+import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 import { resetIdentity } from "@/lib/analytics";
 import {
   Tooltip,
@@ -125,11 +126,14 @@ export function DashboardSidebar() {
   const { isAgency, isLoading: accountTypeLoading } = useAccountType();
   // Agência: "Todas as marcas" no topo do menu (clientes individuais não veem).
   const baseGroups = isAgency
-    ? menuGroups.map((g) =>
-        g.label === "Visão Geral"
-          ? { ...g, items: [{ title: "Todas as marcas", url: "/dashboard/marcas", icon: Building2 }, ...g.items] }
-          : g,
-      )
+    ? menuGroups.map((g) => {
+        if (g.label === "Visão Geral")
+          return { ...g, items: [{ title: "Todas as marcas", url: "/dashboard/marcas", icon: Building2 }, ...g.items] };
+        // Agência: "Assinatura" leva ao faturamento consolidado, nunca à página individual.
+        if (g.label === "Extras")
+          return { ...g, items: g.items.map((it) => (it.url === "/dashboard/assinatura" ? { ...it, url: AGENCY_BILLING_ROUTE } : it)) };
+        return g;
+      })
     : menuGroups;
   const allGroups = isAdmin ? [...baseGroups, adminGroup] : baseGroups;
 

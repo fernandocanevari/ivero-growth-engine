@@ -1,7 +1,7 @@
 import { invalidateAccessCache } from "@/lib/access-cache";
 import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import {
@@ -28,6 +28,8 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useBillingInvoices, INVOICE_STATUS_LABEL } from "@/hooks/useBillingInvoices";
 import { PLANOS, formatBRL } from "@/lib/pricing-rules";
 import { reconcilePendingPayment } from "@/lib/reconcile-pending";
+import { useAccountType } from "@/hooks/useAccountType";
+import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 
 /**
  * AssinaturaPage — área financeira do cliente, ligada ao Asaas de verdade.
@@ -43,7 +45,28 @@ const formatDate = (iso: string | null) =>
 
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 
+/**
+ * Guarda de tipo de conta: agência nunca vê a assinatura individual. O
+ * redirecionamento acontece ANTES de montar o conteúdo — assim nenhuma
+ * chamada de faturas (manage-subscription/list_invoices) é disparada.
+ * Enquanto o tipo da conta ainda carrega, mostramos o skeleton (sem flash).
+ */
 export default function AssinaturaPage() {
+  const { isAgency, isLoading: accountTypeLoading } = useAccountType();
+  if (accountTypeLoading) {
+    return (
+      <div className="space-y-4" data-testid="assinatura-loading">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
+  if (isAgency) return <Navigate to={AGENCY_BILLING_ROUTE} replace />;
+  return <AssinaturaPageContent />;
+}
+
+function AssinaturaPageContent() {
   const {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,

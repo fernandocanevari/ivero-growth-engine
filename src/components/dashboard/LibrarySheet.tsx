@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardOnboarding } from "@/hooks/useDashboardOnboarding";
+import { useAccountType } from "@/hooks/useAccountType";
+import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { useCompetitors } from "@/hooks/useCompetitors";
 
@@ -178,6 +180,7 @@ export function LibrarySheet() {
   const { data: progress } = useDashboardOnboarding();
   const { data: settings } = useBrandSettings();
   const { data: competitors } = useCompetitors(settings?.id);
+  const { isAgency } = useAccountType();
 
   // URLs ligadas a etapas pendentes do onboarding — destacadas na biblioteca.
   const pendingUrls = useMemo(() => {
@@ -202,7 +205,8 @@ export function LibrarySheet() {
 
   const handleGo = (url: string) => {
     setOpen(false);
-    navigate(url);
+    // Agência: "Assinatura" leva ao faturamento consolidado, nunca à página individual.
+    navigate(isAgency && url === "/dashboard/assinatura" ? AGENCY_BILLING_ROUTE : url);
   };
 
   return (

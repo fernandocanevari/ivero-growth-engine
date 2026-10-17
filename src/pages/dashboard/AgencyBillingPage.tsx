@@ -1,6 +1,6 @@
 import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { useAccountType } from "@/hooks/useAccountType";
 import { useAgencyBrands } from "@/hooks/useAgencyBrands";
 import { PLANOS, formatBRL, type PlanoSugerido } from "@/lib/pricing-rules";
 import { quoteAgency, VOLUME_TIERS, type Ciclo } from "@/lib/agency-pricing";
@@ -27,6 +28,7 @@ export default function AgencyBillingPage() {
   const qc = useQueryClient();
   const { userId } = useAuthUserId();
   const { data: brands = [], isLoading } = useAgencyBrands();
+  const { isAgency, isLoading: accountTypeLoading } = useAccountType();
   const [ciclo, setCiclo] = useState<Ciclo>("mensal");
   const [choice, setChoice] = useState<Record<string, PlanoSugerido>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -108,7 +110,10 @@ export default function AgencyBillingPage() {
     }
   };
 
-  if (isLoading) return <div className="h-40 rounded-xl bg-muted/40 animate-pulse" />;
+  // Guarda de tipo de conta: o faturamento consolidado é exclusivo de agências.
+  // Enquanto o tipo carrega, skeleton (sem flash da página errada).
+  if (isLoading || accountTypeLoading) return <div className="h-40 rounded-xl bg-muted/40 animate-pulse" />;
+  if (!isAgency) return <Navigate to="/dashboard/assinatura" replace />;
 
   const pending = brands.filter((b) => !b.plano);
   const semPlano = brands.filter((b) => !choice[b.id]);
@@ -166,7 +171,7 @@ export default function AgencyBillingPage() {
                 ) : (
                   <>
                     <Select value={choice[b.id]} onValueChange={(v) => setChoice((p) => ({ ...p, [b.id]: v as PlanoSugerido }))}>
-                      <SelectTrigger className="w-40" aria-label={`Plano de ${b.brand_name}`}><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-full sm:w-64 [&>span]:line-clamp-none" aria-label={`Plano de ${b.brand_name}`}><SelectValue placeholder="Escolher plano" /></SelectTrigger>
                       <SelectContent>
                         {KEYS.map((k) => (
                           <SelectItem key={k} value={k}>
