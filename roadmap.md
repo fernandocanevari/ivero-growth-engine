@@ -1,4 +1,5 @@
-- [ ] Preservar histórico do trial e impedir checkouts duplicados.
-- [ ] Corrigir vínculo exato do webhook e fallback único da reconciliação.
-- [ ] Executar testes, publicar três funções e registrar horários/hashes.
-- [ ] Resetar somente agencia01/Bimbo; mostrar antes/depois e limites da verificação.
+- [x] Preservar histórico do trial e impedir checkouts duplicados.
+- [x] Corrigir vínculo exato do webhook e fallback único da reconciliação.
+- [x] Executar testes, publicar três funções e registrar janela de publicação/hashes.
+- [x] Resetar somente agencia01/Bimbo e conferir os valores gravados.
+- [ ] Verificação real de checkout/pagamento: depende do teste do fundador no painel Asaas e dos novos logs; não alterar a cobrança pendente existente.
