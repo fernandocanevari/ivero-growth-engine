@@ -64,14 +64,15 @@ Deno.test("(d) incidente: boleto antigo de 23/06, checkout 15/10 21:00 BRT sem c
   assertEquals(paymentProofDay(old), "2026-06-23");
 });
 
-Deno.test("(d) reconcile: sem chamadas adivinhando assinatura; promoção só após activate", async () => {
+Deno.test("(d) reconcile: assinatura só pelo fallback validado; promoção só após activate", async () => {
   const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
   const flow = src.slice(src.indexOf("const LIVE_STATUSES"));
   assert(!flow.includes("/subscriptions?checkoutSession"));
-  assert(!flow.includes("/subscriptions?externalReference"));
-  assert(!flow.includes("/payments?subscription="));
   assert(!flow.includes("getJson(`/checkouts/"));
   assert(flow.includes("/payments?checkoutSession="));
+  // (ajuste aprovado) /subscriptions e /payments?subscription só via candidato único
+  assert(flow.includes("selectFallbackSubscription(") && flow.includes("pick.candidate?.id"));
+  assert(flow.indexOf("ev.linkedCount === 0") < flow.indexOf("/subscriptions?externalReference"));
   assert(flow.includes("pagamentosPorCheckoutSession") && flow.includes("regra:") && flow.includes("datasComparadas"));
   // limpeza do checkout abandonado (60 min) mantida, só sem cobrança vinculada
   assert(flow.includes("60 * 60 * 1000") && flow.includes("(ev?.linkedCount ?? 0) === 0"));
