@@ -61,11 +61,11 @@ Deno.test("aviso: CHECKOUT_PAID só vincula; contagem de ciclos e promoção fic
   assert(ck.includes("updateAssinatura(checkoutSubId, checkoutCustomerId, {})"));
   assert(!ck.includes('status: "ativo"') && !ck.includes("promoverIntencao") && !ck.includes("promoteAgencyIntent"));
   const pay = src.slice(src.indexOf('case "PAYMENT_CONFIRMED"'), src.indexOf('case "PAYMENT_OVERDUE"'));
-  assert(pay.includes('status: "ativo"') && pay.includes("promoteAgencyIntent") && pay.includes("ciclos_pagos: ciclos"));
+  assert(pay.includes('status: "ativo"') && pay.includes("promoteAgencyIntent") && pay.includes("record_checkout_payment"));
   // localização sem depender de CHECKOUT_PAID: payment.checkoutSession e externalReference
   assert(src.includes("body?.payment?.checkoutSession"));
-  assert(src.includes('.eq("asaas_checkout_id", checkoutId)'));
-  assert(src.includes('.eq("user_id", externalReference)'));
+  assert(src.includes('query.eq("asaas_checkout_id", id)'));
+  assert(src.includes('query.eq("user_id", id)'));
 });
 
 Deno.test("trial vencido (status trial ou expirado): nunca ganha novo período grátis", () => {
@@ -75,11 +75,11 @@ Deno.test("trial vencido (status trial ou expirado): nunca ganha novo período g
   assertEquals(trialEligibility([{ status: "trial", trial_ends_at: PAST }], NOW).trialEmCursoMs, null);
 });
 
-Deno.test("trial em curso mantém a data original; conta nova ganha trial", () => {
+Deno.test("trial em curso mantém a data original; sem data válida não ganha trial", () => {
   const r = trialEligibility([{ status: "trial", trial_ends_at: FUT }], NOW);
   assertEquals(r.trialConcedido, true);
   assertEquals(r.trialEmCursoMs, Date.parse(FUT));
-  assertEquals(trialEligibility([], NOW).trialConcedido, true);
+  assertEquals(trialEligibility([], NOW).trialConcedido, false);
 });
 
 Deno.test("reconcile só chama promoteAgencyIntent após decisão 'activate'", async () => {

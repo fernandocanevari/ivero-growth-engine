@@ -196,11 +196,11 @@ export function evaluateSubscriptionPayments(
     PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt)
   );
   return {
-    outcome: paid ? "activate" : "link",
+    outcome: paid ? "activate" : linked.some((p) => p.status === "PENDING") ? "link" : "none",
     rule: paid ? "A+B" : "A",
     subscriptionId,
     customerId: linked.find((p) => p.customer)?.customer ?? null,
-    linkedCount: Math.max(linked.length, 1),
+    linkedCount: linked.length,
     checkoutDay: brDay(checkoutCreatedAt ?? null),
     comparedDays: linked.map((p) => `${p.status}:${paymentProofDay(p) ?? "?"}`),
   };
