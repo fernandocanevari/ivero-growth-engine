@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import {
-  asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, type AsaasPayment,
+  asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
 } from "../_shared/reconcile-decision.ts";
 
 const corsHeaders = {
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const checkoutSubId: string =
       (typeof checkout?.subscription === "string"
         ? checkout.subscription
-        : checkout?.subscription?.id) ?? "";
+        : checkout?.subscription?.id) ?? body?.subscription?.id ?? "";
     const checkoutCustomerId: string =
       (typeof checkout?.customer === "string" ? checkout.customer : checkout?.customer?.id) ?? "";
     // Com Checkout Session o vínculo com o usuário chega no externalReference
@@ -132,10 +132,18 @@ Deno.serve(async (req) => {
           .eq("asaas_checkout_id", checkoutId).limit(1).maybeSingle();
         if (error) return { error: error.message };
         // Cobrança deste checkout precisa ter dia ≥ dia do checkout (regra B).
-        if (data && (!body?.payment || onOrAfterCheckoutDay(eventDay, data.asaas_checkout_created_at))) {
+        // CHECKOUT_PAID com id idêntico ao asaas_checkout_id: prova suficiente,
+        // sem checagem de data (o evento não traz data de pagamento).
+        if (data && (event === "CHECKOUT_PAID" || !body?.payment || onOrAfterCheckoutDay(eventDay, data.asaas_checkout_created_at))) {
           return apply(data, "checkout");
         }
         if (data) console.warn("[asaas-webhook] regra B recusou (checkout)", checkoutId, eventDay, data.asaas_checkout_created_at);
+      }
+
+      // CHECKOUT_PAID só vincula por checkout exato; nunca pelo caminho solto.
+      if (event === "CHECKOUT_PAID") {
+        console.warn("[asaas-webhook] CHECKOUT_PAID sem checkout correspondente", checkoutId);
+        return { ignored: true };
       }
 
       // Cobranças avulsas usam "prorata:..." / "fidelidade:..." — não são user_id.
@@ -278,6 +286,10 @@ Deno.serve(async (req) => {
         // agendada para o fim do trial): só vincula os IDs do Asaas. Status,
         // planos pretendidos e marcas só mudam em PAYMENT_CONFIRMED/RECEIVED
         // (decideWebhookEvent → "link").
+        // Log sanitizado: só CHAVES do payload e ids de checkout/assinatura.
+        console.log("[asaas-webhook] CHECKOUT_PAID payload", JSON.stringify({
+          keys: payloadKeys(body), checkoutId: checkoutId || null, subscriptionId: checkoutSubId || null,
+        }));
         const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {});
         if (res.error) return json(500, res);
         break;
