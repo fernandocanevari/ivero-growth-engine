@@ -3,7 +3,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, planValue, COMPROMISSO_MESES, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
-import { trialEligibility, isUpgradeBlocked } from "../_shared/trial-eligibility.ts";
+import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
+import { brDay } from "../_shared/reconcile-decision.ts";
 
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -41,6 +42,8 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let lockToken: string | null = null;
+  let lockUser: string | null = null;
   try {
     console.log("create-checkout started");
     // 1. Validate JWT
@@ -69,6 +72,7 @@ Deno.serve(async (req) => {
       });
     }
     const userId = claimsData.claims.sub as string;
+    lockUser = userId;
 
     // 2. Parse + validate body
     const body = (await req.json()) as CheckoutBody;
@@ -563,5 +567,10 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: (err as Error).message || "Erro inesperado." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  } finally {
+    if (lockToken && lockUser) {
+      const adm = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await adm.rpc("release_checkout_creation", { _user_id: lockUser, _token: lockToken });
+    }
   }
 });
