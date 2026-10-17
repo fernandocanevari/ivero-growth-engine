@@ -4,7 +4,7 @@ import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
-  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription,
+  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
 } from "../_shared/reconcile-decision.ts";
 
@@ -138,10 +138,10 @@ Deno.serve(async (req) => {
     if (!row) return json(200, { reconciled: false, reason: "no_subscription" });
     if (row.status === "ativo") return json(200, { reconciled: false, status: "ativo" });
 
-    // Regra A: a ÚNICA fonte é GET /payments?checkoutSession={id}. Não há
+    // Regra A: fonte primária é GET /payments?checkoutSession={id}. Não há
     // GET /checkouts/{id} no Asaas (404) e /subscriptions não filtra por
     // checkoutSession (devolve assinaturas antigas do cliente). Regra D: o
-    // asaas_subscription_id só muda se vier de cobrança deste checkout.
+    // asaas_subscription_id só muda com cobrança deste checkout ou fallback único comprovado.
     let subscriptionId = "";
     let customerId = "";
     const checkoutStatus = "";
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
         ...p, checkoutSession: p?.checkoutSession ?? ckId,
       }));
       ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : []);
-      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? ""))?.id ?? null;
+      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
       subscriptionId = ev.subscriptionId ?? "";
       customerId = ev.customerId ?? "";
 
@@ -171,9 +171,12 @@ Deno.serve(async (req) => {
         // Sem cliente conhecido, usa só externalReference para descobrir um cliente
         // e em seguida examina TODAS as assinaturas desse cliente compartilhado.
         let knownCustomer = row.asaas_customer_id as string | null;
+        let discoveryComplete = true;
         if (!knownCustomer) {
           const refs = await listAll(`/subscriptions?externalReference=${encodeURIComponent(userId)}`);
           const customers = [...new Set(refs.items.filter((r) => r.externalReference === userId && typeof r.customer === "string").map((r) => r.customer as string))];
+          discoveryComplete = refs.complete && customers.length <= 1;
+          fallbackAmbiguous = customers.length > 1;
           if (refs.complete && customers.length === 1) knownCustomer = customers[0];
         }
         if (knownCustomer) {
@@ -189,14 +192,14 @@ Deno.serve(async (req) => {
             lookupComplete = charges.complete;
             if (charges.complete) {
               ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items);
-              subscriptionId = ev.subscriptionId ?? "";
-              customerId = knownCustomer;
-              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? ""))?.id ?? null;
+              subscriptionId = ev.outcome !== "none" ? ev.subscriptionId ?? "" : "";
+              customerId = ev.outcome !== "none" ? knownCustomer : "";
+              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
             }
           }
         } else {
           // Sem vínculo para descobrir cliente: não adivinha por nome/email.
-          lookupComplete = false;
+          lookupComplete = discoveryComplete;
           console.log("[reconcile-asaas] fallback assinaturas", JSON.stringify({ checkout: ckId, candidatos: [], motivo: "customer_not_proven" }));
         }
       }
@@ -275,7 +278,7 @@ Deno.serve(async (req) => {
         ...(customerId ? { asaas_customer_id: customerId } : {}),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", row.id);
+      .eq("id", row.id).eq("asaas_checkout_id", row.asaas_checkout_id).eq("status", row.status);
 
 
     if (error) {

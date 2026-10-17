@@ -444,7 +444,7 @@ Deno.serve(async (req) => {
     // Não acumular histórico: reaproveitamos a linha viva sem vínculo com o
     // Asaas (trial/pendente local) ou, na falta dela, a linha morta mais
     // recente (expirada OU cancelada — reativação) — sempre update in place —
-    // e cancelamos as demais linhas mortas. Reativação nunca ganha trial novo:
+    // sem alterar as demais linhas do histórico. Reativação nunca ganha trial novo:
     // `trialConcedido` já é false por causa do histórico.
     const DEAD_STATUSES = ["expirado", "trial_expirado", "cancelado"];
     const linhaViva = (history ?? []).find((r) => LIVE_STATUSES.includes(r.status ?? ""));
@@ -472,7 +472,7 @@ Deno.serve(async (req) => {
           trial_ends_at: effectiveTrialEndsAt(linhaViva),
         })
         .eq("id", linhaViva.id);
-      insertError = updateError as typeof insertError;
+      insertError = updateError;
     } else if (linhaMorta) {
       const { error: updateError } = await supabaseAdmin
         .from("assinaturas")
@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
           checkout_context: checkoutContextFor(linhaMorta),
         })
         .eq("id", linhaMorta.id);
-      insertError = updateError as typeof insertError;
+      insertError = updateError;
 
     } else {
       const { error } = await supabaseAdmin
@@ -500,7 +500,7 @@ Deno.serve(async (req) => {
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
         });
-      insertError = error as typeof insertError;
+      insertError = error;
     }
 
     if (insertError) {
