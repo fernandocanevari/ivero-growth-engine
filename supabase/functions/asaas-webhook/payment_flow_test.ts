@@ -26,6 +26,13 @@ function reset(status: string, trial: string | null = null) {
 async function event(body: Record<string, unknown>) {
   const h = handler;
   if (!h) throw new Error("handler_not_captured");
+  const timers: number[] = [];
+  const originalInterval = globalThis.setInterval;
+  globalThis.setInterval = ((...args: Parameters<typeof setInterval>) => {
+    const timer = originalInterval(...args);
+    timers.push(timer);
+    return timer;
+  }) as typeof setInterval;
   globalThis.fetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
     const url = new URL(request.url);
@@ -54,7 +61,12 @@ async function event(body: Record<string, unknown>) {
   try {
     const result = await h(new Request("https://function.example.test", { method: "POST", headers: { "asaas-access-token": "fake-webhook", "Content-Type": "application/json" }, body: JSON.stringify(body) }));
     assertEquals(result.status, 200, JSON.stringify(await result.json()));
-  } finally { globalThis.fetch = originalFetch; Deno.env.get = originalGet; }
+  } finally {
+    for (const timer of timers) clearInterval(timer);
+    globalThis.setInterval = originalInterval;
+    globalThis.fetch = originalFetch;
+    Deno.env.get = originalGet;
+  }
 }
 
 Deno.test("handler: agência expirada, CHECKOUT_PAID → CONFIRMED no mesmo segundo ativa, conta 1 e promove Bimbo", async () => {
