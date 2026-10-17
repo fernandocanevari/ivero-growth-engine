@@ -69,15 +69,15 @@ import MarcasPage from "./MarcasPage";
 const INDIVIDUAL_ROUTE = "/dashboard/assinatura";
 const AGENCY_ROUTE = "/dashboard/marcas/assinatura";
 
-function withRouter(ui: React.ReactNode, start: string) {
+function renderAt(start: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[start]}>
         <Routes>
-          <Route path={INDIVIDUAL_ROUTE} element={ui} />
-          <Route path={AGENCY_ROUTE} element={ui} />
-          <Route path="/dashboard/marcas" element={<div>MARCAS</div>} />
+          <Route path={INDIVIDUAL_ROUTE} element={<AssinaturaPage />} />
+          <Route path={AGENCY_ROUTE} element={<AgencyBillingPage />} />
+          <Route path="/dashboard/marcas" element={<MarcasPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -89,10 +89,10 @@ beforeEach(() => {
   listInvoices.mockClear();
 });
 
-describe("Guarda da AssinaturaPage (individual)", () => {
+describe("Guarda da AssinaturaPage (página individual)", () => {
   it("agência em /dashboard/assinatura cai no faturamento consolidado, sem flash nem list_invoices", async () => {
     account = AGENCY;
-    withRouter(<AssinaturaPage />, INDIVIDUAL_ROUTE);
+    renderAt(INDIVIDUAL_ROUTE);
     expect(await screen.findByTestId("agency-quote")).toBeTruthy();
     expect(listInvoices).not.toHaveBeenCalled();
     expect(invoke).not.toHaveBeenCalled();
@@ -100,26 +100,23 @@ describe("Guarda da AssinaturaPage (individual)", () => {
 
   it("individual em /dashboard/assinatura vê a página individual normalmente", async () => {
     account = INDIVIDUAL;
-    withRouter(<AssinaturaPage />, INDIVIDUAL_ROUTE);
-    expect(await screen.findByText(/Assinatura/i)).toBeTruthy();
+    renderAt(INDIVIDUAL_ROUTE);
+    expect(await screen.findByText(/Próxima cobrança/i)).toBeTruthy();
     expect(screen.queryByTestId("agency-quote")).toBeNull();
   });
 });
 
-describe("Guarda da AgencyBillingPage (agência)", () => {
+describe("Guarda da AgencyBillingPage (faturamento consolidado)", () => {
   it("individual em /dashboard/marcas/assinatura cai na assinatura individual", async () => {
     account = INDIVIDUAL;
-    withRouter(<AgencyBillingPage />, AGENCY_ROUTE);
-    // A guarda redireciona para /dashboard/assinatura, que neste roteador
-    // renderiza o mesmo elemento — então afirmamos pelo CONTEÚDO individual:
-    // a cota consolidada da agência não pode aparecer.
-    await screen.findByText(/Assinatura/i);
+    renderAt(AGENCY_ROUTE);
+    expect(await screen.findByText(/Próxima cobrança/i)).toBeTruthy();
     expect(screen.queryByTestId("agency-quote")).toBeNull();
   });
 
   it("agência em /dashboard/marcas/assinatura vê o faturamento consolidado", async () => {
     account = AGENCY;
-    withRouter(<AgencyBillingPage />, AGENCY_ROUTE);
+    renderAt(AGENCY_ROUTE);
     expect(await screen.findByTestId("agency-quote")).toBeTruthy();
   });
 });
@@ -127,7 +124,7 @@ describe("Guarda da AgencyBillingPage (agência)", () => {
 describe("MarcasPage", () => {
   it("não renderiza o botão 'Assinatura' do topo, mas mantém o banner 'Escolher planos'", async () => {
     account = AGENCY;
-    withRouter(<MarcasPage />, "/dashboard/marcas");
+    renderAt("/dashboard/marcas");
     expect(await screen.findByText("Visão Geral das Marcas")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Assinatura$/ })).toBeNull();
     expect(screen.getByRole("button", { name: /Escolher planos/i })).toBeTruthy();

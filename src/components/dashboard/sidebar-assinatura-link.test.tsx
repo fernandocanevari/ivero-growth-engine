@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 let account = { accountType: "agency", agencyName: "Ag", isLoading: false, isAgency: true };
 const AGENCY = { accountType: "agency", agencyName: "Ag", isLoading: false, isAgency: true };
@@ -27,12 +28,15 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 function renderSidebar() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={["/dashboard"]}>
-      <SidebarProvider>
-        <DashboardSidebar />
-      </SidebarProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <SidebarProvider>
+          <DashboardSidebar />
+        </SidebarProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
