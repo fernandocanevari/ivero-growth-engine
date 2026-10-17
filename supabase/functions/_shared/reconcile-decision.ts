@@ -146,3 +146,68 @@ export function evaluateCheckoutPayments(
   }
   return { ...base, outcome: "none", rule: "C", subscriptionId: null };
 }
+
+// ---------------------------------------------------------------------------
+// Fallback da reconciliação (quando /payments?checkoutSession devolve 0).
+// Nunca adota por cliente sozinho: exige dia ≥ dia do checkout (Brasília) E
+// (externalReference == user_id OU valor+ciclo iguais ao pedido) E candidato único.
+// ---------------------------------------------------------------------------
+
+export interface AsaasSubscription {
+  id?: string;
+  dateCreated?: string | null;
+  externalReference?: string | null;
+  value?: number | null;
+  cycle?: string | null;
+  status?: string | null;
+}
+
+export interface RequestedCheckout { value: number | null; cycle: string | null }
+
+export function selectFallbackSubscription(
+  subs: AsaasSubscription[],
+  userId: string,
+  checkoutCreatedAt: string | null | undefined,
+  requested: RequestedCheckout | null,
+): { candidate: AsaasSubscription | null; candidates: string[]; reason: "unique" | "none" | "ambiguous" } {
+  const seen = new Set<string>();
+  const ok = subs.filter((s) => {
+    if (!s?.id || seen.has(s.id)) return false;
+    seen.add(s.id);
+    if (!onOrAfterCheckoutDay(asaasDay(s.dateCreated), checkoutCreatedAt)) return false;
+    const byRef = !!s.externalReference && s.externalReference === userId;
+    const byValue = !!requested && requested.value !== null && requested.cycle !== null &&
+      Number(s.value) === Number(requested.value) && s.cycle === requested.cycle;
+    return byRef || byValue;
+  });
+  const candidates = ok.map((s) => s.id as string);
+  if (ok.length === 1) return { candidate: ok[0], candidates, reason: "unique" };
+  return { candidate: null, candidates, reason: ok.length === 0 ? "none" : "ambiguous" };
+}
+
+/** Cobranças da assinatura adotada: só paga com dia ≥ checkout ativa; resto só vincula. */
+export function evaluateSubscriptionPayments(
+  subscriptionId: string,
+  checkoutCreatedAt: string | null | undefined,
+  payments: AsaasPayment[],
+): CheckoutEvaluation {
+  const linked = payments.filter((p) => p && p.subscription === subscriptionId);
+  const paid = linked.find((p) =>
+    PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt)
+  );
+  return {
+    outcome: paid ? "activate" : "link",
+    rule: paid ? "A+B" : "A",
+    subscriptionId,
+    customerId: linked.find((p) => p.customer)?.customer ?? null,
+    linkedCount: Math.max(linked.length, 1),
+    checkoutDay: brDay(checkoutCreatedAt ?? null),
+    comparedDays: linked.map((p) => `${p.status}:${paymentProofDay(p) ?? "?"}`),
+  };
+}
+
+/** Chaves (sem valores) de um payload, até 2 níveis — para log sanitizado. */
+export function payloadKeys(o: unknown, depth = 2): unknown {
+  if (!o || typeof o !== "object" || Array.isArray(o) || depth === 0) return typeof o;
+  return Object.fromEntries(Object.entries(o as Record<string, unknown>).map(([k, v]) => [k, payloadKeys(v, depth - 1)]));
+}
