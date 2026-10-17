@@ -279,6 +279,7 @@ export type Database = {
           asaas_subscription_id: string | null
           asaas_subscription_id_anterior: string | null
           carencia_ate: string | null
+          checkout_context: Json | null
           ciclo_contratado: string
           ciclo_pretendido: string | null
           ciclos_pagos: number
@@ -304,6 +305,7 @@ export type Database = {
           asaas_subscription_id?: string | null
           asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
+          checkout_context?: Json | null
           ciclo_contratado: string
           ciclo_pretendido?: string | null
           ciclos_pagos?: number
@@ -329,6 +331,7 @@ export type Database = {
           asaas_subscription_id?: string | null
           asaas_subscription_id_anterior?: string | null
           carencia_ate?: string | null
+          checkout_context?: Json | null
           ciclo_contratado?: string
           ciclo_pretendido?: string | null
           ciclos_pagos?: number
@@ -558,6 +561,24 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      checkout_creation_locks: {
+        Row: {
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          token?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1305,6 +1326,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      claim_checkout_creation: {
+        Args: { _token: string; _user_id: string }
+        Returns: boolean
+      }
       create_agency_brand: { Args: never; Returns: string }
       has_brand_access: { Args: { _brand_id: string }; Returns: boolean }
       has_role: {
@@ -1315,6 +1340,10 @@ export type Database = {
         Returns: boolean
       }
       normalize_expired_trials: { Args: never; Returns: number }
+      release_checkout_creation: {
+        Args: { _token: string; _user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       action_category:
