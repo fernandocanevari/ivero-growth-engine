@@ -2,7 +2,10 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
-import { evaluateCheckoutPayments, type AsaasPayment, type CheckoutEvaluation } from "../_shared/reconcile-decision.ts";
+import {
+  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription,
+  type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
+} from "../_shared/reconcile-decision.ts";
 
 const ASAAS_BASE_URL = asaasBaseUrl();
 
@@ -113,7 +116,7 @@ Deno.serve(async (req) => {
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
-        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id, trial_ends_at",
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id, trial_ends_at, checkout_context",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -143,8 +146,41 @@ Deno.serve(async (req) => {
       ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, list);
       subscriptionId = ev.subscriptionId ?? "";
       customerId = ev.customerId ?? "";
+
+      // Fallback: cobranças de checkout RECORRENTE podem não trazer
+      // checkoutSession. Só quando a consulta deu certo e veio vazia.
+      if (pays.status === 200 && ev.linkedCount === 0) {
+        const ctx = (row.checkout_context ?? {}) as { requested?: { value?: number; cycle?: string } };
+        const requested = ctx.requested
+          ? { value: ctx.requested.value ?? null, cycle: ctx.requested.cycle ?? null }
+          : null;
+        const subs: AsaasSubscription[] = [];
+        const paths = [`/subscriptions?externalReference=${encodeURIComponent(userId)}&limit=100`];
+        if (row.asaas_customer_id) paths.push(`/subscriptions?customer=${encodeURIComponent(row.asaas_customer_id as string)}&limit=100`);
+        let complete = true;
+        for (const path of paths) {
+          const r = await getJson(path);
+          if (r.status !== 200 || r.data?.hasMore) complete = false;
+          subs.push(...((r.data?.data ?? []) as AsaasSubscription[]));
+        }
+        const pick = complete
+          ? selectFallbackSubscription(subs, userId, row.asaas_checkout_created_at as string | null, requested)
+          : { candidate: null, candidates: [], reason: "incomplete" as const };
+        console.log("[reconcile-asaas] fallback assinaturas", JSON.stringify({
+          checkout: ckId, lidas: subs.length, candidatos: pick.candidates, motivo: pick.reason,
+        }));
+        if (pick.candidate?.id) {
+          const sp = await getJson(`/payments?subscription=${encodeURIComponent(pick.candidate.id)}&limit=100`);
+          if (sp.status === 200) {
+            ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null,
+              (sp.data?.data ?? []) as AsaasPayment[]);
+            subscriptionId = ev.subscriptionId ?? "";
+            customerId = ev.customerId ?? "";
+          }
+        }
+      }
     }
-    const outcome = ev?.outcome ?? "none";
+    const outcome = (ev as CheckoutEvaluation | null)?.outcome ?? "none";
     console.log("[reconcile-asaas] decisão", JSON.stringify({
       row: row.id,
       checkout: row.asaas_checkout_id ?? null,
@@ -168,15 +204,19 @@ Deno.serve(async (req) => {
         ? false
         : Date.now() - createdAt > CHECKOUT_EXPIRY_MS;
 
+      const prev = ((row.checkout_context ?? null) as { prev?: Record<string, string | null> } | null)?.prev ?? null;
       if (row.status === "pendente" && tooOld && (ev?.linkedCount ?? 0) === 0) {
         await supabase
           .from("assinaturas")
           .update({
-            // 'expirado' é o valor aceito pelo constraint do banco; a leitura
-            // deriva isso para "trial_expirado" (resolveEffectiveStatus).
-            status: "expirado",
-            plano_pretendido: null,
-            ciclo_pretendido: null,
+            // Restaura o estado anterior ao checkout (inclusive trial_ends_at)
+            // quando create-checkout o preservou; sem contexto, 'expirado'
+            // (valor aceito pelo constraint; a leitura deriva "trial_expirado").
+            status: prev?.status && prev.status !== "pendente" ? prev.status : "expirado",
+            ...(prev ? { trial_ends_at: prev.trial_ends_at ?? null } : {}),
+            plano_pretendido: prev?.plano_pretendido ?? null,
+            ciclo_pretendido: prev?.ciclo_pretendido ?? null,
+            checkout_context: null,
             asaas_checkout_id: null,
             ...(subscriptionId ? { asaas_subscription_id: subscriptionId } : {}),
             ...(customerId ? { asaas_customer_id: customerId } : {}),
