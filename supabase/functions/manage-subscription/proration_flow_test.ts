@@ -1,4 +1,8 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { GoTrueClient } from "npm:@supabase/auth-js";
+
+// Disable SDK background refresh only in this isolated test process.
+GoTrueClient.prototype.startAutoRefresh = async () => {};
 
 // Real entrypoints, intercepted HTTP only: no provider/database request can escape.
 const handlers: Record<string, (req: Request) => Promise<Response>> = {};
@@ -11,13 +15,6 @@ Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe 
 
 async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean } = {}) {
   const originalFetch = globalThis.fetch;
-  const originalSetInterval = globalThis.setInterval;
-  const intervals: number[] = [];
-  globalThis.setInterval = ((...args: Parameters<typeof setInterval>) => {
-    const id = originalSetInterval(...args);
-    intervals.push(id);
-    return id;
-  }) as typeof setInterval;
   const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
   const previous = envNames.map((key) => Deno.env.get(key));
   const values = ["https://database.invalid", "test-anon", "test-service", "test-provider", "sandbox"];
@@ -63,11 +60,7 @@ async function run(name: string, options: { due?: string; account?: string; dupl
     const response = await handler(new Request("https://function.invalid", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(name === "agency-manage-brand" ? { action: "add_brand", brand_id: brandId, plano: "presenca" } : { action: "change_plan", plano: "influencia" }) }));
     return { status: response.status, data: await response.json(), calls, logs };
   } finally {
-    // Auth initializes auto-refresh asynchronously after the response resolves.
-    await new Promise((resolve) => setTimeout(resolve, 10));
     globalThis.fetch = originalFetch;
-    globalThis.setInterval = originalSetInterval;
-    intervals.forEach((id) => clearInterval(id));
     console.log = originalLog;
     envNames.forEach((key, i) => { const value = previous[i]; if (value === undefined) Deno.env.delete(key); else Deno.env.set(key, value); });
   }
