@@ -7,6 +7,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan } from "../_shared/agency-pricing.ts";
+import { decideProration, findProrationInvoice, listProrationPayments } from "../_shared/proration.ts";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -82,8 +83,15 @@ Deno.serve(async (req) => {
     const oldValue = Number(cur.json?.value ?? before.total);
     const nextDue: string | null = cur.json?.nextDueDate ?? null;
     const customerId: string | null = cur.json?.customer ?? sub.asaas_customer_id ?? null;
-    const pend = await call(`/subscriptions/${sub.asaas_subscription_id}/payments?status=PENDING&limit=1`);
-    const hasPending = Array.isArray(pend.json?.data) && pend.json!.data.length > 0;
+    let pendingPayments = [];
+    let pendingLookupFailed = false;
+    if (action === "add_brand") {
+      try { pendingPayments = await listProrationPayments(call, `/subscriptions/${sub.asaas_subscription_id}/payments?status=PENDING`); }
+      catch { pendingLookupFailed = true; }
+    } else {
+      const pend = await call(`/subscriptions/${sub.asaas_subscription_id}/payments?status=PENDING&limit=1`);
+      pendingPayments = Array.isArray(pend.json?.data) ? pend.json.data : [];
+    }
 
     const upd = await call(`/subscriptions/${sub.asaas_subscription_id}`, {
       method: "PUT",
@@ -99,15 +107,24 @@ Deno.serve(async (req) => {
     }
 
     // Pró-rata só para aumento de valor com ciclo atual já pago.
-    const msDay = 86_400_000;
-    const today = new Date(new Date().toISOString().slice(0, 10)).getTime();
-    const dueTs = nextDue ? new Date(nextDue).getTime() : NaN;
-    const daysLeft = Number.isNaN(dueTs) ? 0 : Math.max(0, Math.min(30, Math.round((dueTs - today) / msDay)));
     const delta = after.total - oldValue;
-    const proRataValue = delta > 0 && !hasPending ? Math.round((delta * daysLeft / 30) * 100) / 100 : 0;
+    // Both contracted cycles currently bill MONTHLY (annual = 12 monthly payments).
+    // Do not divide a monthly price delta by 365; true annual billing needs a separate migration.
+    const cycleDays = 30;
+    const decision = decideProration({ delta, nextDueDate: nextDue, pendingPayments, today: new Date(), cycleDays });
+    const { daysLeft, currentCycleUnpaid: hasPending } = decision;
+    const proRataValue = pendingLookupFailed ? 0 : decision.proRataValue;
+    const reason = pendingLookupFailed ? "pending_lookup_failed" : decision.reason;
+    let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
     let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
     if (proRataValue >= 5 && customerId) {
-      const pay = await call(`/payments`, {
+      const externalReference = `prorata:${sub.id}:agency:${brandId}`;
+      const existing = await findProrationInvoice(call, { externalReference, customerId, value: proRataValue });
+      invoiceStatus = existing.status;
+      if (existing.status === "reused" && existing.payment) {
+        proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? null };
+      } else if (existing.status === "clear") {
+        const pay = await call(`/payments`, {
         method: "POST",
         body: JSON.stringify({
           customer: customerId,
@@ -115,11 +132,13 @@ Deno.serve(async (req) => {
           value: proRataValue,
           dueDate: new Date().toISOString().slice(0, 10),
           description: `Ivero — marca adicionada à agência (${daysLeft} dia(s) restantes do ciclo)`,
-          externalReference: `prorata:${sub.id}:agency:${brandId}`,
+          externalReference,
         }),
       });
-      if (pay.ok) proRata = { value: proRataValue, days: daysLeft, invoiceUrl: pay.json?.invoiceUrl ?? null };
-      else console.error("agency-manage-brand prorata error", pay.status, pay.text.slice(0, 400));
+        invoiceStatus = pay.ok ? "created" : "failed";
+        if (pay.ok) proRata = { value: proRataValue, days: daysLeft, invoiceUrl: pay.json?.invoiceUrl ?? null };
+        else console.error("agency-manage-brand prorata error", pay.status, pay.text.slice(0, 400));
+      }
     }
 
     if (action === "add_brand") {
@@ -133,7 +152,7 @@ Deno.serve(async (req) => {
       desconto_volume_pct: after.discountPct,
     }).eq("id", sub.id);
 
-    console.log("agency-manage-brand", action, userId, brandId, "old:", oldValue, "new:", after.total, "prorata:", proRata?.value ?? 0);
+    console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
     return json(200, { ok: true, before, after, proRata });
   } catch (e) {
     console.error("agency-manage-brand error", e);

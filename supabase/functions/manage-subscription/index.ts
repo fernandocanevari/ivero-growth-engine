@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { decideProration, findProrationInvoice, listProrationPayments } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
   normalizeCiclo,
@@ -344,8 +345,10 @@ Deno.serve(async (req) => {
       // 3.2 Há cobrança pendente do ciclo atual? Se sim, o próprio
       // updatePendingPayments corrige o valor dela — não existe diferença a
       // cobrar à parte (senão o cliente pagaria duas vezes pelo delta).
-      const pend = await fetchAsaas(`/subscriptions/${subId}/payments?status=PENDING&limit=1`);
-      const hasPending = Array.isArray(pend.json?.data) && pend.json!.data.length > 0;
+      let pendingPayments = [];
+      let pendingLookupFailed = false;
+      try { pendingPayments = await listProrationPayments(fetchAsaas, `/subscriptions/${subId}/payments?status=PENDING`); }
+      catch { pendingLookupFailed = true; }
 
       // 3.3 Diferença proporcional ao que resta do ciclo JÁ PAGO.
       const CYCLE_DAYS: Record<string, number> = {
@@ -358,19 +361,11 @@ Deno.serve(async (req) => {
         YEARLY: 365,
       };
       const cycleDays = CYCLE_DAYS[cycle] ?? 30;
-      const msDay = 86_400_000;
-      const startOfToday = new Date(new Date().toISOString().slice(0, 10)).getTime();
-      const dueTs = nextDue ? new Date(nextDue).getTime() : NaN;
-      const daysLeft = Number.isNaN(dueTs)
-        ? 0
-        : Math.max(0, Math.min(cycleDays, Math.round((dueTs - startOfToday) / msDay)));
-
       const delta = value - oldValue;
-      const isUpgrade = delta > 0;
-      // Só cobramos quando: é upgrade, o ciclo atual está pago (sem pendente),
-      // ainda sobra tempo de ciclo e o valor arredondado é cobrável no Asaas.
-      const proRataRaw = isUpgrade && !hasPending ? (delta * daysLeft) / cycleDays : 0;
-      const proRataValue = Math.round(proRataRaw * 100) / 100;
+      const decision = decideProration({ delta, nextDueDate: nextDue, pendingPayments, today: new Date(), cycleDays });
+      const { daysLeft, currentCycleUnpaid: hasPending } = decision;
+      const proRataValue = pendingLookupFailed ? 0 : decision.proRataValue;
+      const reason = pendingLookupFailed ? "pending_lookup_failed" : decision.reason;
       const shouldChargeProRata = proRataValue >= 5 && !!customerId;
 
       // 3.4 Atualiza o valor da assinatura (vale pros ciclos futuros; com
@@ -396,16 +391,25 @@ Deno.serve(async (req) => {
       // Falha aqui NÃO desfaz a troca de plano: o cliente já está no plano novo
       // e a diferença fica registrada no log para tratamento manual.
       let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
-      if (shouldChargeProRata) {
+      let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
+      if (shouldChargeProRata && customerId) {
+        const externalReference = `prorata:${assinatura.id}:${plano}`;
+        const existing = await findProrationInvoice(fetchAsaas, { externalReference, customerId, value: proRataValue });
+        invoiceStatus = existing.status;
+        if (existing.status === "reused" && existing.payment) {
+          proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? existing.payment.bankSlipUrl ?? null };
+        } else if (existing.status === "clear") {
         const cobranca = await cobrarAvulsa({
-          customerId: customerId!,
+          customerId,
           value: proRataValue,
           description:
             `Ivero — diferença proporcional do upgrade para ${plano} ` +
             `(${daysLeft} dia(s) restantes do ciclo atual)`,
-          externalReference: `prorata:${assinatura.id}:${plano}`,
+          externalReference,
         });
+        invoiceStatus = cobranca ? "created" : "failed";
         if (cobranca) proRata = { ...cobranca, days: daysLeft };
+        }
       }
 
       const { error } = await supabaseAdmin
@@ -414,21 +418,7 @@ Deno.serve(async (req) => {
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
-      console.log(
-        "change_plan asaas:",
-        userId,
-        plano,
-        "oldValue:",
-        oldValue,
-        "newValue:",
-        value,
-        "daysLeft:",
-        daysLeft,
-        "hasPending:",
-        hasPending,
-        "proRata:",
-        proRata?.value ?? 0,
-      );
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
 
       return json(200, {
         ok: true,
