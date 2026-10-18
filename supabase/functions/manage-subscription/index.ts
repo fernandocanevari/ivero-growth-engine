@@ -399,16 +399,18 @@ Deno.serve(async (req) => {
         if (existing.status === "reused" && existing.payment) {
           proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? existing.payment.bankSlipUrl ?? null };
         } else if (existing.status === "clear") {
-        const cobranca = await cobrarAvulsa({
-          customerId,
-          value: proRataValue,
-          description:
-            `Ivero — diferença proporcional do upgrade para ${plano} ` +
-            `(${daysLeft} dia(s) restantes do ciclo atual)`,
-          externalReference,
-        });
-        invoiceStatus = cobranca ? "created" : "failed";
-        if (cobranca) proRata = { ...cobranca, days: daysLeft };
+          try {
+            const cobranca = await cobrarAvulsa({
+              customerId,
+              value: proRataValue,
+              description:
+                `Ivero — diferença proporcional do upgrade para ${plano} ` +
+                `(${daysLeft} dia(s) restantes do ciclo atual)`,
+              externalReference,
+            });
+            invoiceStatus = cobranca ? "created" : "failed";
+            if (cobranca) proRata = { ...cobranca, days: daysLeft };
+          } catch { invoiceStatus = "failed"; }
         }
       }
 

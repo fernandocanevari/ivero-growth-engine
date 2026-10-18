@@ -117,27 +117,29 @@ Deno.serve(async (req) => {
     const reason = pendingLookupFailed ? "pending_lookup_failed" : decision.reason;
     let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
     let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
-    if (proRataValue >= 5 && customerId) {
+    if (action === "add_brand" && proRataValue >= 5 && customerId) {
       const externalReference = `prorata:${sub.id}:agency:${brandId}`;
       const existing = await findProrationInvoice(call, { externalReference, customerId, value: proRataValue });
       invoiceStatus = existing.status;
       if (existing.status === "reused" && existing.payment) {
         proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? null };
       } else if (existing.status === "clear") {
-        const pay = await call(`/payments`, {
-        method: "POST",
-        body: JSON.stringify({
-          customer: customerId,
-          billingType: "UNDEFINED",
-          value: proRataValue,
-          dueDate: new Date().toISOString().slice(0, 10),
-          description: `Ivero — marca adicionada à agência (${daysLeft} dia(s) restantes do ciclo)`,
-          externalReference,
-        }),
-      });
-        invoiceStatus = pay.ok ? "created" : "failed";
-        if (pay.ok) proRata = { value: proRataValue, days: daysLeft, invoiceUrl: pay.json?.invoiceUrl ?? null };
-        else console.error("agency-manage-brand prorata error", pay.status, pay.text.slice(0, 400));
+        try {
+          const pay = await call(`/payments`, {
+            method: "POST",
+            body: JSON.stringify({
+              customer: customerId,
+              billingType: "UNDEFINED",
+              value: proRataValue,
+              dueDate: new Date().toISOString().slice(0, 10),
+              description: `Ivero — marca adicionada à agência (${daysLeft} dia(s) restantes do ciclo)`,
+              externalReference,
+            }),
+          });
+          invoiceStatus = pay.ok ? "created" : "failed";
+          if (pay.ok) proRata = { value: proRataValue, days: daysLeft, invoiceUrl: pay.json?.invoiceUrl ?? null };
+          else console.error("agency-manage-brand prorata error", pay.status, pay.text.slice(0, 400));
+        } catch { invoiceStatus = "failed"; }
       }
     }
 
@@ -152,7 +154,11 @@ Deno.serve(async (req) => {
       desconto_volume_pct: after.discountPct,
     }).eq("id", sub.id);
 
-    console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
+    if (action === "add_brand") {
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
+    } else {
+      console.log("agency-manage-brand", action, userId, brandId, "old:", oldValue, "new:", after.total, "prorata:", proRata?.value ?? 0);
+    }
     return json(200, { ok: true, before, after, proRata });
   } catch (e) {
     console.error("agency-manage-brand error", e);
