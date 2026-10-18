@@ -11,6 +11,13 @@ Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe 
 
 async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean } = {}) {
   const originalFetch = globalThis.fetch;
+  const originalSetInterval = globalThis.setInterval;
+  const intervals: number[] = [];
+  globalThis.setInterval = ((...args: Parameters<typeof setInterval>) => {
+    const id = originalSetInterval(...args);
+    intervals.push(id);
+    return id;
+  }) as typeof setInterval;
   const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
   const previous = envNames.map((key) => Deno.env.get(key));
   const values = ["https://database.invalid", "test-anon", "test-service", "test-provider", "sandbox"];
@@ -57,6 +64,8 @@ async function run(name: string, options: { due?: string; account?: string; dupl
     return { status: response.status, data: await response.json(), calls, logs };
   } finally {
     globalThis.fetch = originalFetch;
+    globalThis.setInterval = originalSetInterval;
+    intervals.forEach((id) => clearInterval(id));
     console.log = originalLog;
     envNames.forEach((key, i) => { const value = previous[i]; if (value === undefined) Deno.env.delete(key); else Deno.env.set(key, value); });
   }
