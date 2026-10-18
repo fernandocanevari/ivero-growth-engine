@@ -7,3 +7,4 @@
 - Checkout state is stored in assinaturas.checkout_context and checkout creation is serialized by a service-only database lease before reading the subscription — prevents lost trial history and concurrent payable sessions.
 - Asaas fallback examines all subscriptions for a proven customer and adopts only a unique validated candidate; webhook matching is isolated in asaas-webhook/matching.ts — prevents attribution by shared customer alone while keeping manage-subscription behavior unchanged.
 - Confirmed payment IDs are counted atomically through record_checkout_payment for webhook and reconciliation — prevents double counting the same paid cycle across delivery paths.
+- Proration decisions and invoice lookup are shared only by agency-manage-brand and manage-subscription through _shared/proration.ts; fail closed on lookup errors to avoid duplicate invoices while preserving immediate access.
