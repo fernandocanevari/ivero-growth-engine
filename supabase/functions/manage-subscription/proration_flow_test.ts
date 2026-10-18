@@ -13,7 +13,7 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
 }
 Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe });
 
-async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean } = {}) {
+async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean } = {}) {
   const originalFetch = globalThis.fetch;
   const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
   const previous = envNames.map((key) => Deno.env.get(key));
@@ -23,7 +23,7 @@ async function run(name: string, options: { due?: string; account?: string; dupl
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args) => logs.push(args.join(" "));
-  const subscription = { id: "local-sub", plano: "presenca", status: "ativo", asaas_subscription_id: "sub_test", asaas_customer_id: "cus_test", ciclo_contratado: "mensal", ciclos_pagos: 1 };
+  const subscription = { id: "local-sub", plano: "presenca", status: "ativo", asaas_subscription_id: "sub_test", asaas_customer_id: "cus_test", ciclo_contratado: options.annual ? "anual" : "mensal", ciclos_pagos: 1 };
   const brandId = "11111111-1111-4111-8111-111111111111";
   globalThis.fetch = async (input, init) => {
     const req = new Request(input, init);
@@ -44,11 +44,17 @@ async function run(name: string, options: { due?: string; account?: string; dupl
       else throw new Error(`Unexpected mocked database path: ${url.pathname}`);
     } else if (url.hostname === "sandbox.asaas.com") {
       if (url.pathname.endsWith("/subscriptions/sub_test")) data = { value: 497, cycle: "MONTHLY", customer: "cus_test", nextDueDate: options.noNextDue ? null : "2099-11-17" };
-      else if (url.pathname.endsWith("/subscriptions/sub_test/payments")) data = { data: [{ status: "PENDING", dueDate: options.due ?? "2099-11-17" }], hasMore: false };
+      else if (url.pathname.endsWith("/subscriptions/sub_test/payments")) {
+        status = options.pendingFail ? 503 : 200;
+        data = { data: [{ status: "PENDING", dueDate: options.due ?? "2099-11-17" }], hasMore: false };
+      }
       else if (url.pathname === "/api/v3/payments" && req.method === "GET") {
         status = options.lookupFail ? 503 : 200;
         data = { data: options.duplicate ? [{ externalReference: url.searchParams.get("externalReference"), customer: "cus_test", value: name === "agency-manage-brand" ? 497 : 400, status: "PENDING", invoiceUrl: "https://invoice.invalid/existing" }] : [] };
-      } else if (url.pathname === "/api/v3/payments" && req.method === "POST") data = { invoiceUrl: "https://invoice.invalid/new" };
+      } else if (url.pathname === "/api/v3/payments" && req.method === "POST") {
+        if (options.postFail) throw new Error("mocked provider network failure");
+        data = { invoiceUrl: "https://invoice.invalid/new" };
+      }
       else throw new Error(`Unexpected mocked provider path: ${url.pathname}`);
     } else throw new Error("Network escape forbidden");
     return new Response(data === null ? null : JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -98,7 +104,28 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assertEquals(result.data.proRata, null);
     assert(result.logs.some((l) => l.includes('"reason":"no_next_due"')));
   });
+  Deno.test(`${name}: POST network failure keeps immediate access and logs failed`, async () => {
+    const result = await run(name, { postFail: true });
+    assertEquals(result.status, 200);
+    assertEquals(result.data.proRata, null);
+    assert(result.logs.some((l) => l.includes('"invoiceStatus":"failed"')));
+    assert(result.calls.some((c) => c.method === "PATCH" && c.url.includes("/rest/v1/assinaturas")));
+  });
+  Deno.test(`${name}: pending lookup failure suppresses charge and logs reason`, async () => {
+    const result = await run(name, { pendingFail: true });
+    assertEquals(result.status, 200);
+    assertEquals(result.data.proRata, null);
+    assert(result.logs.some((l) => l.includes('"reason":"pending_lookup_failed"')));
+    assertEquals(result.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments")).length, 0);
+  });
 }
+Deno.test("agency annual commitment still uses monthly 30-day billing", async () => {
+  const result = await run("agency-manage-brand", { annual: true });
+  assertEquals(result.status, 200);
+  assertEquals(result.data.proRata.days, 30);
+  assertEquals(result.data.proRata.value, 297);
+  assert(result.logs.some((l) => l.includes('"cycleDays":30')));
+});
 Deno.test("manage-subscription: agency 409 guard preserved without provider calls", async () => {
   const result = await run("manage-subscription", { account: "agency" });
   assertEquals(result.status, 409);
