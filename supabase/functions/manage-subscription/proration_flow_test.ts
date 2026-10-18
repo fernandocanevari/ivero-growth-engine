@@ -63,6 +63,8 @@ async function run(name: string, options: { due?: string; account?: string; dupl
     const response = await handler(new Request("https://function.invalid", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(name === "agency-manage-brand" ? { action: "add_brand", brand_id: brandId, plano: "presenca" } : { action: "change_plan", plano: "influencia" }) }));
     return { status: response.status, data: await response.json(), calls, logs };
   } finally {
+    // Auth initializes auto-refresh asynchronously after the response resolves.
+    await new Promise((resolve) => setTimeout(resolve, 10));
     globalThis.fetch = originalFetch;
     globalThis.setInterval = originalSetInterval;
     intervals.forEach((id) => clearInterval(id));
