@@ -70,6 +70,7 @@ const agencyBody = (extra: Record<string, unknown>) => ({
 for (const extra of [{ ciclo: "anual" }, { billing_cycle: "annual" }]) {
   Deno.test(`agência enviando ${JSON.stringify(extra)} ainda é cotada e gravada no mensal`, async () => {
     const result = await run(agencyBody(extra));
+    if (result.status !== 200) console.error("DEBUG", result.status, JSON.stringify(result.data), JSON.stringify(result.calls.map((c) => [c.method, c.url])));
     assertEquals(result.status, 200);
     // 3 × Presença mensal R$497 com 10% de volume = R$1.341,90 (anual seria R$1.071,90).
     assertEquals([result.data.agencyQuote.subtotal, result.data.agencyQuote.discountPct, result.data.agencyQuote.total], [1491, 10, 1341.9]);
