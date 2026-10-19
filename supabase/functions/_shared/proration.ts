@@ -31,11 +31,21 @@ export function decideProration(args: {
   today: string | Date; cycleDays: number;
 }) {
   const today = prorationDay(args.today);
-  const due = prorationDay(args.nextDueDate);
   const currentCycleUnpaid = args.pendingPayments.some((p) => {
     const day = prorationDay(p.dueDate);
     return p.status === "PENDING" && !!day && !!today && day <= today;
   });
+  // Asaas advances subscription.nextDueDate one cycle ahead once the next
+  // charge exists; the earliest future PENDING charge is the real cycle end.
+  const futurePending = today
+    ? args.pendingPayments
+      .filter((p) => p.status === "PENDING")
+      .map((p) => prorationDay(p.dueDate))
+      .filter((day): day is string => !!day && day > today)
+      .sort()
+    : [];
+  const referenceSource: "pending" | "subscription" = futurePending.length > 0 ? "pending" : "subscription";
+  const due = futurePending.length > 0 ? futurePending[0] : prorationDay(args.nextDueDate);
   const daysLeft = today && due && args.cycleDays > 0
     ? Math.max(0, Math.min(args.cycleDays, Math.round((Date.parse(due) - Date.parse(today)) / 86_400_000)))
     : 0;
@@ -48,7 +58,7 @@ export function decideProration(args: {
     proRataValue = Math.round(args.delta * daysLeft / args.cycleDays * 100) / 100;
     if (proRataValue < 5) { proRataValue = 0; reason = "below_minimum"; }
   }
-  return { proRataValue, daysLeft, currentCycleUnpaid, reason };
+  return { proRataValue, daysLeft, currentCycleUnpaid, reason, referenceDue: due, referenceSource };
 }
 
 type AsaasCall = (path: string) => Promise<{ ok: boolean; json: Record<string, any> | null }>;
