@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
-      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus, referenceAttempt }));
 
       return json(200, {
         ok: true,
