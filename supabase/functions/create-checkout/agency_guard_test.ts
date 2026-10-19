@@ -16,5 +16,5 @@ Deno.test("agência sem body.agency é recusada com agencia_usa_faturamento_cons
 Deno.test("fluxo consolidado (com body.agency) continua aceito para agência", () => {
   const block = src.slice(src.indexOf("if (body?.agency) {"));
   assert(block.includes("if (!isAgencyAccount)"), "só conta não-agência é recusada no modo agência");
-  assert(block.includes("quoteAgency(chosen, ciclo)"));
+  assert(block.includes('quoteAgency(chosen, "mensal")'), "agência sempre cotada no mensal");
 });

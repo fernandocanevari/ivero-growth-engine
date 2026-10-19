@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
-import { normalizeCiclo, planValue, COMPROMISSO_MESES, type PlanoKey } from "../_shared/pricing.ts";
+import { normalizeCiclo, planValue, COMPROMISSO_MESES, type CicloContratado, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
 import { checkoutSchedule, preserveCheckoutState } from "../_shared/checkout-state.ts";
@@ -80,7 +80,12 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as CheckoutBody;
     const { nome, email, tipo } = body || ({} as CheckoutBody);
     let plano = body?.plano;
-    const ciclo = normalizeCiclo(body?.ciclo ?? body?.billing_cycle);
+    // Agência: só mensal no lançamento. O ciclo enviado pelo cliente nunca vale
+    // no modo agência (quoteAgency segue aceitando "anual" para uso futuro).
+    const ciclo: CicloContratado = body?.agency ? "mensal" : normalizeCiclo(body?.ciclo ?? body?.billing_cycle);
+    if (body?.agency && (body?.ciclo ?? body?.billing_cycle) !== undefined && normalizeCiclo(body?.ciclo ?? body?.billing_cycle) !== "mensal") {
+      console.warn("create-checkout: agência enviou ciclo", body?.ciclo ?? body?.billing_cycle, "— ignorado, forçado mensal");
+    }
 
     // Modo agência: valida que TODAS as marcas ativas da conta vieram com plano
     // e calcula o valor consolidado com desconto de volume no servidor.
@@ -112,7 +117,7 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      agencyQuote = quoteAgency(chosen, ciclo);
+      agencyQuote = quoteAgency(chosen, "mensal");
       plano = highestPlan(chosen.map((b) => b.plano));
       // Intenção por marca: só vira plano vigente no pagamento confirmado.
       for (const b of chosen) {

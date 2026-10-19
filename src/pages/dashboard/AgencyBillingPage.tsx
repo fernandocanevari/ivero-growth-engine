@@ -14,6 +14,8 @@ import { PLANOS, formatBRL, type PlanoSugerido } from "@/lib/pricing-rules";
 import { quoteAgency, VOLUME_TIERS, type Ciclo } from "@/lib/agency-pricing";
 
 const KEYS: PlanoSugerido[] = ["presenca", "influencia", "autoridade"];
+/** Agências contratam só no mensal no lançamento; quoteAgency segue aceitando "anual" para uso futuro. */
+const AGENCY_CICLO: Ciclo = "mensal";
 
 /** Motivo real do botão "Ativar" desabilitado — nunca fica apagado em silêncio. */
 export function activateBlockReason(s: { brandsCount: number; semPlano: number; busy: boolean }): string | null {
@@ -29,7 +31,6 @@ export default function AgencyBillingPage() {
   const { userId } = useAuthUserId();
   const { data: brands = [], isLoading } = useAgencyBrands();
   const { isAgency, isLoading: accountTypeLoading } = useAccountType();
-  const [ciclo, setCiclo] = useState<Ciclo>("mensal");
   const [choice, setChoice] = useState<Record<string, PlanoSugerido>>({});
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -50,10 +51,6 @@ export default function AgencyBillingPage() {
   const paid = sub?.status === "ativo" && !!sub?.asaas_subscription_id;
 
   useEffect(() => {
-    if (sub?.ciclo_contratado === "anual" || sub?.ciclo_contratado === "mensal") setCiclo(sub.ciclo_contratado);
-  }, [sub?.ciclo_contratado]);
-
-  useEffect(() => {
     setChoice((prev) => {
       const next = { ...prev };
       for (const b of brands) {
@@ -64,7 +61,7 @@ export default function AgencyBillingPage() {
   }, [brands]);
 
   const planosFor = (ids: string[]) => ids.map((id) => choice[id] ?? "presenca");
-  const quote = useMemo(() => quoteAgency(planosFor(brands.map((b) => b.id)), ciclo), [brands, choice, ciclo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const quote = useMemo(() => quoteAgency(planosFor(brands.map((b) => b.id)), AGENCY_CICLO), [brands, choice]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activate = async () => {
     setBusy("checkout");
@@ -75,7 +72,7 @@ export default function AgencyBillingPage() {
           plano: "presenca",
           nome: prof?.nome_completo || prof?.display_name || "Agência",
           email: prof?.email || "",
-          ciclo,
+          ciclo: AGENCY_CICLO,
           agency: { brands: brands.map((b) => ({ brand_id: b.id, plano: choice[b.id] })) },
         },
       });
@@ -140,20 +137,6 @@ export default function AgencyBillingPage() {
         ))}
       </div>
 
-      {!paid && (
-        <div className="inline-flex rounded-lg border border-border p-1">
-          {(["mensal", "anual"] as Ciclo[]).map((c) => (
-            <button
-              key={c}
-              onClick={() => setCiclo(c)}
-              className={`px-3 py-1.5 text-sm rounded-md ${ciclo === c ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
-              {c === "mensal" ? "Mensal" : "Anual (12 meses)"}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="rounded-xl border border-border bg-card divide-y divide-border">
         {brands.map((b, i) => {
           const locked = paid && !!b.plano;
@@ -175,7 +158,7 @@ export default function AgencyBillingPage() {
                       <SelectContent>
                         {KEYS.map((k) => (
                           <SelectItem key={k} value={k}>
-                            {PLANOS[k].name} · {formatBRL(ciclo === "mensal" ? PLANOS[k].monthlyPrice : PLANOS[k].annualPrice)}
+                            {PLANOS[k].name} · {formatBRL(PLANOS[k].monthlyPrice)}
                           </SelectItem>
                         ))}
                       </SelectContent>
