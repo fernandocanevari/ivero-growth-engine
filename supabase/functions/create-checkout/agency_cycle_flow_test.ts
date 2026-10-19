@@ -48,7 +48,8 @@ async function run(body: Record<string, unknown>) {
     return new Response(data === null ? null : JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
   };
   try {
-    const token = `${btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.${btoa(JSON.stringify({ sub: "agency-usr", exp: 4102444800 }))}.c2ln`;
+    const b64url = (v: unknown) => btoa(JSON.stringify(v)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+    const token = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: "agency-usr", exp: 4102444800 })}.c2ln`;
     assert(handler);
     const response = await handler!(new Request("https://function.invalid", {
       method: "POST",
