@@ -75,3 +75,23 @@ Deno.test("cancelled and nonidentical invoices do not suppress new charge", asyn
 Deno.test("idempotency lookup failure fails closed", async () => {
   assertEquals((await findProrationInvoice(() => Promise.reject(new Error("offline")), { externalReference: "ref", customerId: "cus", value: 497 })).status, "lookup_failed");
 });
+// Reference due: earliest future PENDING charge beats the advanced subscription nextDueDate.
+const real = { delta: 447.30, cycleDays: 30, nextDueDate: "2026-12-17", pendingPayments: [{ status: "PENDING", dueDate: "2026-11-17" }] };
+for (const [today, days, value] of [["2026-10-18", 30, 447.3], ["2026-10-30", 18, 268.38], ["2026-11-10", 7, 104.37], ["2026-11-16", 1, 14.91]] as const) {
+  Deno.test(`real log case: today ${today} -> ${days} days, R$${value}`, () => {
+    const d = decideProration({ ...real, today });
+    assertEquals([d.daysLeft, d.proRataValue, d.referenceDue, d.referenceSource], [days, value, "2026-11-17", "pending"]);
+  });
+}
+Deno.test("no pending charges: falls back to subscription nextDueDate", () => {
+  const d = decideProration({ ...real, pendingPayments: [], nextDueDate: "2026-11-17", today: "2026-10-30" });
+  assertEquals([d.referenceSource, d.referenceDue, d.daysLeft], ["subscription", "2026-11-17", 18]);
+});
+Deno.test("pending due today still blocks (unchanged)", () => {
+  const d = decideProration({ ...real, pendingPayments: [{ status: "PENDING", dueDate: "2026-11-17" }], today: "2026-11-17" });
+  assertEquals([d.currentCycleUnpaid, d.reason, d.proRataValue], [true, "current_cycle_open", 0]);
+});
+Deno.test("two pending charges: earliest future one is used", () => {
+  const d = decideProration({ ...real, today: "2026-10-30", pendingPayments: [{ status: "PENDING", dueDate: "2026-12-17" }, { status: "PENDING", dueDate: "2026-11-17" }] });
+  assertEquals([d.referenceDue, d.daysLeft], ["2026-11-17", 18]);
+});

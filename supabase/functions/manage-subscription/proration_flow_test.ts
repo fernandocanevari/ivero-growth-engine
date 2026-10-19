@@ -1,5 +1,6 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { GoTrueClient } from "npm:@supabase/auth-js";
+import { prorationDay } from "../_shared/proration.ts";
 
 // Disable SDK background refresh only in this isolated test process.
 GoTrueClient.prototype.startAutoRefresh = async () => {};
@@ -13,7 +14,7 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
 }
 Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe });
 
-async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean } = {}) {
+async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean; subNextDue?: string } = {}) {
   const originalFetch = globalThis.fetch;
   const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
   const previous = envNames.map((key) => Deno.env.get(key));
@@ -43,7 +44,7 @@ async function run(name: string, options: { due?: string; account?: string; dupl
       ];
       else throw new Error(`Unexpected mocked database path: ${url.pathname}`);
     } else if (url.hostname === "sandbox.asaas.com") {
-      if (url.pathname.endsWith("/subscriptions/sub_test")) data = { value: 497, cycle: "MONTHLY", customer: "cus_test", nextDueDate: options.noNextDue ? null : "2099-11-17" };
+      if (url.pathname.endsWith("/subscriptions/sub_test")) data = { value: 497, cycle: "MONTHLY", customer: "cus_test", nextDueDate: options.noNextDue ? null : (options.subNextDue ?? "2099-11-17") };
       else if (url.pathname.endsWith("/subscriptions/sub_test/payments")) {
         status = options.pendingFail ? 503 : 200;
         data = { data: [{ status: "PENDING", dueDate: options.due ?? "2099-11-17" }], hasMore: false };
@@ -132,3 +133,15 @@ Deno.test("manage-subscription: agency 409 guard preserved without provider call
   assertEquals(result.data.error, "agencia_usa_faturamento_consolidado");
   assertEquals(result.calls.filter((c) => c.url.includes("asaas.com")).length, 0);
 });
+// Both entrypoints route through the shared decideProration: same reference-due rule and log fields.
+const plusDays = (n: number) => new Date(Date.parse(prorationDay(new Date())!) + n * 86_400_000).toISOString().slice(0, 10);
+for (const name of ["manage-subscription", "agency-manage-brand"]) {
+  Deno.test(`${name}: earliest future pending overrides advanced subscription nextDueDate`, async () => {
+    const result = await run(name, { due: plusDays(10), subNextDue: plusDays(40) });
+    assertEquals(result.status, 200);
+    assertEquals(result.data.proRata.days, 10);
+    const log = result.logs.find((l) => l.startsWith("proration diagnostic:"))!;
+    const entry = JSON.parse(log.slice("proration diagnostic:".length));
+    assertEquals([entry.nextDueDate, entry.referenceDue, entry.referenceSource, entry.daysLeft], [plusDays(40), plusDays(10), "pending", 10]);
+  });
+}
