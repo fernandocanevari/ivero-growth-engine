@@ -49,6 +49,10 @@ Deno.serve(async (req) => {
     if (action !== "quote" && !target) return json(404, { error: "Marca não pertence à agência." });
 
     const ciclo = normalizeCiclo(sub?.ciclo_contratado ?? "mensal");
+    // Agências são só mensais no lançamento: anual aqui é inesperado. Só registra; nada muda.
+    if (sub?.ciclo_contratado === "anual") {
+      console.warn("agency-manage-brand: assinatura de agência com ciclo anual (inesperado, mantido)", JSON.stringify({ userId, assinaturaId: sub.id }));
+    }
     const current = (links ?? []).filter((l) => l.status === "ativo" && l.plano)
       .map((l) => ({ brand_id: l.brand_id as string, plano: l.plano as PlanoKey }));
     let next = current.filter((b) => b.brand_id !== brandId);
