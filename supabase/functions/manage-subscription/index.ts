@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         method: "POST",
         body: JSON.stringify({
           customer: args.customerId,
-          billingType: "UNDEFINED",
+          billingType: "CREDIT_CARD",
           value: args.value,
           dueDate: today,
           description: args.description,
@@ -392,10 +392,12 @@ Deno.serve(async (req) => {
       // e a diferença fica registrada no log para tratamento manual.
       let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
       let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
+      let referenceAttempt: number | null = null;
       if (shouldChargeProRata && customerId) {
-        const externalReference = `prorata:${assinatura.id}:${plano}`;
-        const existing = await findProrationInvoice(fetchAsaas, { externalReference, customerId, value: proRataValue });
+        const existing = await findProrationInvoice(fetchAsaas, { externalReference: `prorata:${assinatura.id}:${plano}`, customerId, value: proRataValue });
+        const externalReference = existing.externalReference;
         invoiceStatus = existing.status;
+        referenceAttempt = existing.referenceAttempt;
         if (existing.status === "reused" && existing.payment) {
           proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? existing.payment.bankSlipUrl ?? null };
         } else if (existing.status === "clear") {
