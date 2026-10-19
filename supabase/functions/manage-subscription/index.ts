@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         method: "POST",
         body: JSON.stringify({
           customer: args.customerId,
-          billingType: "UNDEFINED",
+          billingType: "CREDIT_CARD",
           value: args.value,
           dueDate: today,
           description: args.description,
@@ -392,10 +392,12 @@ Deno.serve(async (req) => {
       // e a diferença fica registrada no log para tratamento manual.
       let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
       let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
+      let referenceAttempt: number | null = null;
       if (shouldChargeProRata && customerId) {
-        const externalReference = `prorata:${assinatura.id}:${plano}`;
-        const existing = await findProrationInvoice(fetchAsaas, { externalReference, customerId, value: proRataValue });
+        const existing = await findProrationInvoice(fetchAsaas, { externalReference: `prorata:${assinatura.id}:${plano}`, customerId, value: proRataValue });
+        const externalReference = existing.externalReference;
         invoiceStatus = existing.status;
+        referenceAttempt = existing.referenceAttempt;
         if (existing.status === "reused" && existing.payment) {
           proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? existing.payment.bankSlipUrl ?? null };
         } else if (existing.status === "clear") {
@@ -420,7 +422,7 @@ Deno.serve(async (req) => {
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
 
-      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus, referenceAttempt }));
 
       return json(200, {
         ok: true,

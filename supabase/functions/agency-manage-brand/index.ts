@@ -116,11 +116,13 @@ Deno.serve(async (req) => {
     const proRataValue = pendingLookupFailed ? 0 : decision.proRataValue;
     const reason = pendingLookupFailed ? "pending_lookup_failed" : decision.reason;
     let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
+    let referenceAttempt: number | null = null;
     let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
     if (action === "add_brand" && proRataValue >= 5 && customerId) {
-      const externalReference = `prorata:${sub.id}:agency:${brandId}`;
-      const existing = await findProrationInvoice(call, { externalReference, customerId, value: proRataValue });
+      const existing = await findProrationInvoice(call, { externalReference: `prorata:${sub.id}:agency:${brandId}`, customerId, value: proRataValue });
+      const externalReference = existing.externalReference;
       invoiceStatus = existing.status;
+      referenceAttempt = existing.referenceAttempt;
       if (existing.status === "reused" && existing.payment) {
         proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? null };
       } else if (existing.status === "clear") {
@@ -129,7 +131,7 @@ Deno.serve(async (req) => {
             method: "POST",
             body: JSON.stringify({
               customer: customerId,
-              billingType: "UNDEFINED",
+              billingType: "CREDIT_CARD",
               value: proRataValue,
               dueDate: new Date().toISOString().slice(0, 10),
               description: `Ivero — marca adicionada à agência (${daysLeft} dia(s) restantes do ciclo)`,
@@ -155,7 +157,7 @@ Deno.serve(async (req) => {
     }).eq("id", sub.id);
 
     if (action === "add_brand") {
-      console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus, referenceAttempt }));
     } else {
       console.log("agency-manage-brand", action, userId, brandId, "old:", oldValue, "new:", after.total, "prorata:", proRata?.value ?? 0);
     }

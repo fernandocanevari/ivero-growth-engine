@@ -75,15 +75,52 @@ export async function listProrationPayments(call: AsaasCall, path: string): Prom
   }
 }
 
-/** Existing invoice reuse; lookup failure suppresses POST rather than risking duplication. */
+const OPEN_STATUSES = ["PENDING", "OVERDUE"];
+const VOID_STATUSES = ["CANCELLED", "CANCELED", "DELETED"];
+const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH", "DUNNING_RECEIVED"];
+export const MAX_PRORATION_REFERENCE_ATTEMPTS = 20;
+
+/** Attempt 1 keeps the base reference; later attempts append ":2", ":3"... (prefix preserved). */
+export const prorationReference = (base: string, attempt: number) => attempt <= 1 ? base : `${base}:${attempt}`;
+
+export interface ProrationInvoiceLookup {
+  status: "clear" | "reused" | "lookup_failed" | "unresolved_status" | "attempts_exhausted";
+  payment?: ProrationPayment;
+  /** Reference to reuse or to send on the new charge. */
+  externalReference: string;
+  referenceAttempt: number;
+}
+
+/**
+ * Reuses only an OPEN (PENDING/OVERDUE) identical charge. A paid charge never
+ * satisfies a new request: the next numeric suffix is tried. Any other live
+ * status (risk analysis, refund, chargeback...) or a failed lookup fails
+ * closed — no charge is created rather than risking duplication.
+ */
 export async function findProrationInvoice(call: AsaasCall, args: {
   externalReference: string; customerId: string; value: number;
-}): Promise<{ status: "clear" | "reused" | "lookup_failed"; payment?: ProrationPayment }> {
-  try {
-    const rows = await listProrationPayments(call, `/payments?externalReference=${encodeURIComponent(args.externalReference)}&customer=${encodeURIComponent(args.customerId)}`);
-    const payment = rows.find((p) => p.externalReference === args.externalReference &&
-      p.customer === args.customerId && Number(p.value) === args.value && !p.deleted &&
-      !["CANCELLED", "CANCELED", "DELETED"].includes(String(p.status).toUpperCase()));
-    return payment ? { status: "reused", payment } : { status: "clear" };
-  } catch { return { status: "lookup_failed" }; }
+}): Promise<ProrationInvoiceLookup> {
+  for (let attempt = 1; attempt <= MAX_PRORATION_REFERENCE_ATTEMPTS; attempt++) {
+    const externalReference = prorationReference(args.externalReference, attempt);
+    let rows: ProrationPayment[];
+    try {
+      rows = await listProrationPayments(call, `/payments?externalReference=${encodeURIComponent(externalReference)}&customer=${encodeURIComponent(args.customerId)}`);
+    } catch { return { status: "lookup_failed", externalReference, referenceAttempt: attempt }; }
+    const live = rows.filter((p) => p.externalReference === externalReference && p.customer === args.customerId &&
+      !p.deleted && !VOID_STATUSES.includes(String(p.status).toUpperCase()));
+    const status = (p: ProrationPayment) => String(p.status).toUpperCase();
+    const open = live.find((p) => OPEN_STATUSES.includes(status(p)) && Number(p.value) === args.value);
+    if (open) return { status: "reused", payment: open, externalReference, referenceAttempt: attempt };
+    const closed = live.filter((p) => !OPEN_STATUSES.includes(status(p)));
+    if (closed.length === 0) return { status: "clear", externalReference, referenceAttempt: attempt };
+    if (closed.some((p) => !PAID_STATUSES.includes(status(p)))) {
+      return { status: "unresolved_status", externalReference, referenceAttempt: attempt };
+    }
+    // Every closed charge on this reference is paid: try the next suffix.
+  }
+  return {
+    status: "attempts_exhausted",
+    externalReference: prorationReference(args.externalReference, MAX_PRORATION_REFERENCE_ATTEMPTS),
+    referenceAttempt: MAX_PRORATION_REFERENCE_ATTEMPTS,
+  };
 }

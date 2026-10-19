@@ -95,3 +95,50 @@ Deno.test("two pending charges: earliest future one is used", () => {
   const d = decideProration({ ...real, today: "2026-10-30", pendingPayments: [{ status: "PENDING", dueDate: "2026-12-17" }, { status: "PENDING", dueDate: "2026-11-17" }] });
   assertEquals([d.referenceDue, d.daysLeft], ["2026-11-17", 18]);
 });
+// Change 2: reuse only open charges; paid references advance to ":2", ":3"...
+const lookupArgs = { externalReference: "prorata:sub:agency:brand", customerId: "cus", value: 497 };
+const byRef = (rows: Record<string, Array<Record<string, unknown>>>) => (path: string) => {
+  const ref = new URL(`https://x.invalid${path}`).searchParams.get("externalReference")!;
+  return Promise.resolve({ ok: true, json: { data: (rows[ref] ?? []).map((r) => ({ externalReference: ref, customer: "cus", value: 497, ...r })), hasMore: false } });
+};
+for (const status of ["PENDING", "OVERDUE"]) {
+  Deno.test(`lookup: existing ${status} is reused on the base reference`, async () => {
+    const r = await findProrationInvoice(byRef({ [lookupArgs.externalReference]: [{ status, invoiceUrl: "u" }] }), lookupArgs);
+    assertEquals([r.status, r.externalReference, r.referenceAttempt], ["reused", lookupArgs.externalReference, 1]);
+  });
+}
+for (const status of ["RECEIVED", "CONFIRMED"]) {
+  Deno.test(`lookup: existing ${status} is never reused -> new charge on ":2"`, async () => {
+    const r = await findProrationInvoice(byRef({ [lookupArgs.externalReference]: [{ status }] }), lookupArgs);
+    assertEquals([r.status, r.externalReference, r.referenceAttempt, r.payment], ["clear", `${lookupArgs.externalReference}:2`, 2, undefined]);
+  });
+}
+Deno.test("lookup: RECEIVED plus open \":2\" reuses \":2\"", async () => {
+  const r = await findProrationInvoice(byRef({
+    [lookupArgs.externalReference]: [{ status: "RECEIVED" }],
+    [`${lookupArgs.externalReference}:2`]: [{ status: "PENDING", invoiceUrl: "u2" }],
+  }), lookupArgs);
+  assertEquals([r.status, r.externalReference, r.referenceAttempt, r.payment?.invoiceUrl], ["reused", `${lookupArgs.externalReference}:2`, 2, "u2"]);
+});
+Deno.test("lookup: paid base and paid \":2\" advances to \":3\"", async () => {
+  const r = await findProrationInvoice(byRef({
+    [lookupArgs.externalReference]: [{ status: "RECEIVED_IN_CASH" }],
+    [`${lookupArgs.externalReference}:2`]: [{ status: "CONFIRMED" }],
+  }), lookupArgs);
+  assertEquals([r.status, r.externalReference], ["clear", `${lookupArgs.externalReference}:3`]);
+});
+for (const row of [{ status: "CANCELLED" }, { status: "DELETED" }, { status: "PENDING", deleted: true }]) {
+  Deno.test(`lookup: ${JSON.stringify(row)} existing -> creates normally on base reference`, async () => {
+    const r = await findProrationInvoice(byRef({ [lookupArgs.externalReference]: [row] }), lookupArgs);
+    assertEquals([r.status, r.externalReference, r.referenceAttempt], ["clear", lookupArgs.externalReference, 1]);
+  });
+}
+Deno.test("lookup: failure on a suffix attempt still fails closed", async () => {
+  let n = 0;
+  const r = await findProrationInvoice((path) => ++n === 1 ? byRef({ [lookupArgs.externalReference]: [{ status: "RECEIVED" }] })(path) : Promise.resolve({ ok: false, json: null }), lookupArgs);
+  assertEquals([r.status, r.referenceAttempt], ["lookup_failed", 2]);
+});
+Deno.test("lookup: non-paid closed status (risk analysis) fails closed", async () => {
+  const r = await findProrationInvoice(byRef({ [lookupArgs.externalReference]: [{ status: "AWAITING_RISK_ANALYSIS" }] }), lookupArgs);
+  assertEquals(r.status, "unresolved_status");
+});

@@ -14,7 +14,7 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
 }
 Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe });
 
-async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean; subNextDue?: string; noPending?: boolean } = {}) {
+async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean; subNextDue?: string; noPending?: boolean; existing?: Record<string, Array<Record<string, unknown>>>; body?: Record<string, unknown> } = {}) {
   const originalFetch = globalThis.fetch;
   const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
   const previous = envNames.map((key) => Deno.env.get(key));
@@ -51,7 +51,11 @@ async function run(name: string, options: { due?: string; account?: string; dupl
       }
       else if (url.pathname === "/api/v3/payments" && req.method === "GET") {
         status = options.lookupFail ? 503 : 200;
-        data = { data: options.duplicate ? [{ externalReference: url.searchParams.get("externalReference"), customer: "cus_test", value: name === "agency-manage-brand" ? 497 : 400, status: "PENDING", invoiceUrl: "https://invoice.invalid/existing" }] : [] };
+        const ref = url.searchParams.get("externalReference");
+        const value = name === "agency-manage-brand" ? 497 : 400;
+        data = { data: options.existing
+          ? (options.existing[ref ?? ""] ?? []).map((r) => ({ externalReference: ref, customer: "cus_test", value, ...r }))
+          : options.duplicate ? [{ externalReference: ref, customer: "cus_test", value, status: "PENDING", invoiceUrl: "https://invoice.invalid/existing" }] : [] };
       } else if (url.pathname === "/api/v3/payments" && req.method === "POST") {
         if (options.postFail) throw new Error("mocked provider network failure");
         data = { invoiceUrl: "https://invoice.invalid/new" };
@@ -64,7 +68,7 @@ async function run(name: string, options: { due?: string; account?: string; dupl
     const token = `${btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.${btoa(JSON.stringify({ sub: "test-user", exp: 4102444800 }))}.c2ln`;
     const handler = handlers[name];
     assert(handler);
-    const response = await handler(new Request("https://function.invalid", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(name === "agency-manage-brand" ? { action: "add_brand", brand_id: brandId, plano: "presenca" } : { action: "change_plan", plano: "influencia" }) }));
+    const response = await handler(new Request("https://function.invalid", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(options.body ?? (name === "agency-manage-brand" ? { action: "add_brand", brand_id: brandId, plano: "presenca" } : { action: "change_plan", plano: "influencia" })) }));
     return { status: response.status, data: await response.json(), calls, logs };
   } finally {
     globalThis.fetch = originalFetch;
@@ -145,3 +149,49 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assertEquals([entry.nextDueDate, entry.referenceDue, entry.referenceSource, entry.daysLeft], [plusDays(40), plusDays(10), "pending", 10]);
   });
 }
+
+// Card only + never reuse a paid charge, asserted on the outgoing request body.
+const posts = (r: { calls: { url: string; method: string; body: any }[] }) => r.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments"));
+const diagnostic = (logs: string[]) => JSON.parse(logs.find((l) => l.startsWith("proration diagnostic:"))!.slice("proration diagnostic:".length));
+const baseRef = (name: string) => name === "agency-manage-brand" ? "prorata:local-sub:agency:11111111-1111-4111-8111-111111111111" : "prorata:local-sub:influencia";
+for (const name of ["manage-subscription", "agency-manage-brand"]) {
+  Deno.test(`${name}: pro-rata POST uses billingType CREDIT_CARD and base reference`, async () => {
+    const result = await run(name);
+    assertEquals(posts(result).length, 1);
+    assertEquals([posts(result)[0].body.billingType, posts(result)[0].body.externalReference], ["CREDIT_CARD", baseRef(name)]);
+    assertEquals(diagnostic(result.logs).referenceAttempt, 1);
+  });
+  for (const status of ["RECEIVED", "CONFIRMED"]) {
+    Deno.test(`${name}: existing ${status} charge -> new CREDIT_CARD charge on ":2"`, async () => {
+      const result = await run(name, { existing: { [baseRef(name)]: [{ status }] } });
+      assertEquals(posts(result).length, 1);
+      assertEquals([posts(result)[0].body.billingType, posts(result)[0].body.externalReference], ["CREDIT_CARD", `${baseRef(name)}:2`]);
+      assertEquals(result.data.proRata.invoiceUrl, "https://invoice.invalid/new");
+      const entry = diagnostic(result.logs);
+      assertEquals([entry.invoiceStatus, entry.referenceAttempt], ["created", 2]);
+    });
+  }
+  Deno.test(`${name}: existing OVERDUE charge reused without POST`, async () => {
+    const result = await run(name, { existing: { [baseRef(name)]: [{ status: "OVERDUE", invoiceUrl: "https://invoice.invalid/overdue" }] } });
+    assertEquals(posts(result).length, 0);
+    assertEquals(result.data.proRata.invoiceUrl, "https://invoice.invalid/overdue");
+  });
+  Deno.test(`${name}: RECEIVED plus open ":2" reuses ":2" without POST`, async () => {
+    const result = await run(name, { existing: { [baseRef(name)]: [{ status: "RECEIVED" }], [`${baseRef(name)}:2`]: [{ status: "PENDING", invoiceUrl: "https://invoice.invalid/second" }] } });
+    assertEquals(posts(result).length, 0);
+    assertEquals(result.data.proRata.invoiceUrl, "https://invoice.invalid/second");
+    assertEquals([diagnostic(result.logs).invoiceStatus, diagnostic(result.logs).referenceAttempt], ["reused", 2]);
+  });
+  Deno.test(`${name}: CANCELLED existing charge -> creates normally on base reference`, async () => {
+    const result = await run(name, { existing: { [baseRef(name)]: [{ status: "CANCELLED" }, { status: "DELETED" }] } });
+    assertEquals(posts(result).length, 1);
+    assertEquals(posts(result)[0].body.externalReference, baseRef(name));
+  });
+}
+Deno.test("manage-subscription: fidelidade fee POST uses billingType CREDIT_CARD", async () => {
+  const result = await run("manage-subscription", { annual: true, body: { action: "cancel" } });
+  assertEquals(result.status, 200);
+  assertEquals(posts(result).length, 1);
+  assertEquals(posts(result)[0].body.billingType, "CREDIT_CARD");
+  assert(String(posts(result)[0].body.externalReference).startsWith("fidelidade:local-sub:"));
+});
