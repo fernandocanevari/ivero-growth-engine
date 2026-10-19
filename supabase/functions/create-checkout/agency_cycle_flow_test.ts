@@ -35,7 +35,7 @@ async function run(body: Record<string, unknown>) {
     calls.push({ url: req.url, method: req.method, body: parsed });
     let data: unknown = null;
     if (url.hostname === "database.invalid") {
-      if (url.pathname === "/auth/v1/user") data = { id: "agency-user", aud: "authenticated", role: "authenticated" };
+      if (url.pathname === "/auth/v1/user") data = { id: "agency-usr", aud: "authenticated", role: "authenticated" };
       else if (url.pathname.startsWith("/rest/v1/rpc/")) data = true;
       else if (url.pathname === "/rest/v1/profiles") data = { account_type: "agency" };
       else if (url.pathname === "/rest/v1/agency_brands") data = req.method === "GET" ? BRANDS.map((brand_id) => ({ brand_id })) : null;
@@ -48,7 +48,7 @@ async function run(body: Record<string, unknown>) {
     return new Response(data === null ? null : JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
   };
   try {
-    const token = `${btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.${btoa(JSON.stringify({ sub: "agency-user", exp: 4102444800 }))}.c2ln`;
+    const token = `${btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.${btoa(JSON.stringify({ sub: "agency-usr", exp: 4102444800 }))}.c2ln`;
     assert(handler);
     const response = await handler!(new Request("https://function.invalid", {
       method: "POST",
@@ -70,7 +70,6 @@ const agencyBody = (extra: Record<string, unknown>) => ({
 for (const extra of [{ ciclo: "anual" }, { billing_cycle: "annual" }]) {
   Deno.test(`agência enviando ${JSON.stringify(extra)} ainda é cotada e gravada no mensal`, async () => {
     const result = await run(agencyBody(extra));
-    if (result.status !== 200) console.error("DEBUG", result.status, JSON.stringify(result.data), JSON.stringify(result.calls.map((c) => [c.method, c.url])));
     assertEquals(result.status, 200);
     // 3 × Presença mensal R$497 com 10% de volume = R$1.341,90 (anual seria R$1.071,90).
     assertEquals([result.data.agencyQuote.subtotal, result.data.agencyQuote.discountPct, result.data.agencyQuote.total], [1491, 10, 1341.9]);
