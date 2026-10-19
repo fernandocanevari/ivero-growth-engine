@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     }).eq("id", sub.id);
 
     if (action === "add_brand") {
-      console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, brandId, oldValue, newValue: after.total, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus }));
     } else {
       console.log("agency-manage-brand", action, userId, brandId, "old:", oldValue, "new:", after.total, "prorata:", proRata?.value ?? 0);
     }
