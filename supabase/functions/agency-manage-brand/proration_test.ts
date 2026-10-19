@@ -4,7 +4,7 @@ import { decideProration, findProrationInvoice, listProrationPayments } from "..
 const base = { delta: 497, nextDueDate: "2026-11-17", today: "2026-10-18", cycleDays: 30, pendingPayments: [] };
 Deno.test("paid current cycle: future pending does not block R$497", () => {
   assertEquals(decideProration({ ...base, pendingPayments: [{ status: "PENDING", dueDate: "2026-11-17" }] }),
-    { proRataValue: 497, daysLeft: 30, currentCycleUnpaid: false, reason: "charged" });
+    { proRataValue: 497, daysLeft: 30, currentCycleUnpaid: false, reason: "charged", referenceDue: "2026-11-17", referenceSource: "pending" });
 });
 Deno.test("pending due today blocks proration", () => {
   assertEquals(decideProration({ ...base, pendingPayments: [{ status: "PENDING", dueDate: "2026-10-18" }] }).reason, "current_cycle_open");

@@ -14,7 +14,7 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
 }
 Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe });
 
-async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean; subNextDue?: string } = {}) {
+async function run(name: string, options: { due?: string; account?: string; duplicate?: boolean; lookupFail?: boolean; noNextDue?: boolean; postFail?: boolean; pendingFail?: boolean; annual?: boolean; subNextDue?: string; noPending?: boolean } = {}) {
   const originalFetch = globalThis.fetch;
   const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
   const previous = envNames.map((key) => Deno.env.get(key));
@@ -47,7 +47,7 @@ async function run(name: string, options: { due?: string; account?: string; dupl
       if (url.pathname.endsWith("/subscriptions/sub_test")) data = { value: 497, cycle: "MONTHLY", customer: "cus_test", nextDueDate: options.noNextDue ? null : (options.subNextDue ?? "2099-11-17") };
       else if (url.pathname.endsWith("/subscriptions/sub_test/payments")) {
         status = options.pendingFail ? 503 : 200;
-        data = { data: [{ status: "PENDING", dueDate: options.due ?? "2099-11-17" }], hasMore: false };
+        data = { data: options.noPending ? [] : [{ status: "PENDING", dueDate: options.due ?? "2099-11-17" }], hasMore: false };
       }
       else if (url.pathname === "/api/v3/payments" && req.method === "GET") {
         status = options.lookupFail ? 503 : 200;
@@ -100,8 +100,8 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assert(result.logs.some((l) => l.includes('"invoiceStatus":"lookup_failed"')));
     assertEquals(result.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments")).length, 0);
   });
-  Deno.test(`${name}: absent next due explicitly logged`, async () => {
-    const result = await run(name, { noNextDue: true });
+  Deno.test(`${name}: absent next due and no future pending explicitly logged`, async () => {
+    const result = await run(name, { noNextDue: true, noPending: true });
     assertEquals(result.data.proRata, null);
     assert(result.logs.some((l) => l.includes('"reason":"no_next_due"')));
   });
