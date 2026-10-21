@@ -100,6 +100,24 @@ Deno.serve(async (req) => {
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
     const SELECT = "id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, checkout_context";
 
+    const findRow = (subscriptionId: string) =>
+      matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
+        async (path, id) => {
+          let query = supabase.from("assinaturas").select(SELECT);
+          if (path === "subscription") query = query.eq("asaas_subscription_id", id);
+          if (path === "checkout") query = query.eq("asaas_checkout_id", id);
+          if (path === "externalReference") query = query.eq("user_id", id).in("status", ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"]).order("created_at", { ascending: false });
+          const { data, error } = await query.limit(1).maybeSingle();
+          if (error) throw error;
+          return data as MatchedRow | null;
+        });
+
+    const warnNoMatch = (subscriptionId: string) => console.warn(
+      "[asaas-webhook] No assinatura matched for",
+      event,
+      JSON.stringify({ subscriptionId, externalReference }),
+    );
+
     const updateAssinatura = async (
       subscriptionId: string,
       customerId: string,
@@ -123,23 +141,10 @@ Deno.serve(async (req) => {
         return { ok: true, matched, row };
       };
 
-      const matched = await matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
-        async (path, id) => {
-          let query = supabase.from("assinaturas").select(SELECT);
-          if (path === "subscription") query = query.eq("asaas_subscription_id", id);
-          if (path === "checkout") query = query.eq("asaas_checkout_id", id);
-          if (path === "externalReference") query = query.eq("user_id", id).in("status", ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"]).order("created_at", { ascending: false });
-          const { data, error } = await query.limit(1).maybeSingle();
-          if (error) throw error;
-          return data;
-        });
+      const matched = await findRow(subscriptionId);
       if (matched) return apply(matched.row, matched.matched);
 
-      console.warn(
-        "[asaas-webhook] No assinatura matched for",
-        event,
-        JSON.stringify({ subscriptionId, externalReference }),
-      );
+      warnNoMatch(subscriptionId);
       // Sem correspondência não é erro do nosso lado: responder 500 faz o
       // Asaas interromper a fila inteira de webhooks.
       return { ignored: true };
@@ -188,6 +193,43 @@ Deno.serve(async (req) => {
       case "PAYMENT_RECEIVED": {
         const nextDue = new Date();
         nextDue.setDate(nextDue.getDate() + 30);
+        const payExternalRef: string = body?.payment?.externalReference ?? "";
+        const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
+
+        // Mensalidade com id de pagamento: o Asaas envia CONFIRMED e, no
+        // cartão, RECEIVED ~30 dias depois para o MESMO payment.id (e pode
+        // reenviar qualquer um deles). Só o PRIMEIRO evento de cada payment.id
+        // — seja CONFIRMED ou RECEIVED — conta o ciclo e muda o estado.
+        // claim_subscription_payment decide e aplica tudo numa única instrução
+        // (status, vencimento, carência, trial, checkout_context, plano
+        // pretendido, vínculo dos ids e ciclos_pagos), guardada por
+        // counted_payment_ids — seguro contra corrida e contra reenvio.
+        if (!isAvulsa && p.id) {
+          const found = await findRow(paymentSubId);
+          if (!found) { warnNoMatch(paymentSubId); break; }
+          const { data: claim, error: claimError } = await supabase.rpc("claim_subscription_payment", {
+            _assinatura_id: found.row.id,
+            _payment_id: p.id,
+            _data_vencimento: nextDue.toISOString(),
+            _asaas_subscription_id: paymentSubId || null,
+            _asaas_customer_id: paymentCustomerId || null,
+          });
+          if (claimError) return json(500, { error: claimError.message });
+          const result = claim as { ciclos_pagos: number | null; counted: boolean } | null;
+          if (!result?.counted) {
+            console.log("[asaas-webhook] pagamento já contabilizado, evento ignorado:", event, p.id);
+            return json(200, { received: true, ignored: "already_counted" });
+          }
+          console.log("[asaas-webhook] regra E", found.matched, found.row.id, JSON.stringify({ eventDay, checkoutCreatedAt: found.row.asaas_checkout_created_at ?? null }));
+          if (found.row.plano_pretendido) console.log("[asaas-webhook] plano promovido:", found.row.id, found.row.plano_pretendido);
+          const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", found.row.id).maybeSingle();
+          if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, found.row.id);
+          console.log("[asaas-webhook] ciclos_pagos =", result.ciclos_pagos, "assinatura:", found.row.id);
+          break;
+        }
+
+        // Sem payment.id (não há como deduplicar) ou referência avulsa ligada a
+        // uma assinatura: comportamento anterior, sem contar ciclo.
         const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
           status: "ativo",
           carencia_ate: null,
@@ -196,25 +238,11 @@ Deno.serve(async (req) => {
           checkout_context: null,
         });
         if (res.error) return json(500, res);
-
-        // Contagem de mensalidades efetivamente pagas — base do cálculo da
-        // multa de fidelidade no cancelamento do ciclo anual.
-        // Só contamos em PAYMENT_CONFIRMED (o Asaas dispara CONFIRMED e depois
-        // RECEIVED para o mesmo pagamento) e ignoramos cobranças avulsas
-        // (pró-rata do upgrade / multa de fidelidade), que não são mensalidade.
-        const payExternalRef: string = body?.payment?.externalReference ?? "";
-        const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
-        // Pagamento de mensalidade confirmado → promove o plano pretendido.
         const promove = decideWebhookEvent(event, isAvulsa) === "activate";
         if (promove) res.row = await promoverIntencao(res.row);
         if (promove && res.row) {
           const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", res.row.id).maybeSingle();
           if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, res.row.id);
-        }
-        if (!isAvulsa && res.row && p.id) {
-          const { data: ciclos, error: incError } = await supabase.rpc("record_checkout_payment", { _assinatura_id: res.row.id, _payment_id: p.id });
-          if (incError) return json(500, { error: incError.message });
-          console.log("[asaas-webhook] ciclos_pagos =", ciclos, "assinatura:", res.row.id);
         }
         break;
       }
