@@ -45,6 +45,28 @@ async function event(body: Record<string, unknown>) {
       const id = data._payment_id;
       if (!memory.counted.has(id)) { memory.counted.add(id); memory.row.ciclos_pagos = Number(memory.row.ciclos_pagos ?? 0) + 1; }
       out = memory.row.ciclos_pagos;
+    } else if (table === "claim_subscription_payment") {
+      // Espelha a instrução única do banco: só a 1ª chamada por payment_id altera a linha.
+      const id = data._payment_id;
+      memory.claims.push(id);
+      if (memory.counted.has(id)) {
+        out = { ciclos_pagos: memory.row.ciclos_pagos, counted: false };
+      } else {
+        memory.counted.add(id);
+        const r = memory.row;
+        const promotes = r.plano_pretendido != null;
+        Object.assign(r, {
+          ciclos_pagos: Number(r.ciclos_pagos ?? 0) + 1,
+          status: "ativo", carencia_ate: null, data_vencimento: data._data_vencimento, trial_ends_at: null, checkout_context: null,
+          plano: r.plano_pretendido ?? r.plano,
+          ciclo_contratado: promotes && r.ciclo_pretendido ? r.ciclo_pretendido : r.ciclo_contratado,
+          ciclo_pretendido: promotes ? null : r.ciclo_pretendido,
+          plano_pretendido: null,
+          asaas_subscription_id: data._asaas_subscription_id || r.asaas_subscription_id,
+          asaas_customer_id: data._asaas_customer_id || r.asaas_customer_id,
+        });
+        out = { ciclos_pagos: r.ciclos_pagos, counted: true };
+      }
     } else if (table === "assinaturas") {
       const sub = url.searchParams.get("asaas_subscription_id");
       const ck = url.searchParams.get("asaas_checkout_id");
@@ -60,7 +82,9 @@ async function event(body: Record<string, unknown>) {
   Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://payments.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook" } as Record<string, string>)[key];
   try {
     const result = await h(new Request("https://function.example.test", { method: "POST", headers: { "asaas-access-token": "fake-webhook", "Content-Type": "application/json" }, body: JSON.stringify(body) }));
-    assertEquals(result.status, 200, JSON.stringify(await result.json()));
+    const out = await result.json();
+    assertEquals(result.status, 200, JSON.stringify(out));
+    return out as Record<string, unknown>;
   } finally {
     for (const timer of timers) clearInterval(timer);
     globalThis.setInterval = originalInterval;
@@ -68,6 +92,27 @@ async function event(body: Record<string, unknown>) {
     Deno.env.get = originalGet;
   }
 }
+
+/** Executa fn com o relógio adiantado em offsetMs (new Date() e Date.now()). */
+async function at<T>(offsetMs: number, fn: () => Promise<T>): Promise<T> {
+  const RealDate = Date;
+  class Shifted extends RealDate {
+    constructor(...args: unknown[]) {
+      if (args.length === 0) super(RealDate.now() + offsetMs);
+      // deno-lint-ignore no-explicit-any
+      else super(...(args as [any]));
+    }
+    static override now() { return RealDate.now() + offsetMs; }
+  }
+  globalThis.Date = Shifted as DateConstructor;
+  try { return await fn(); } finally { globalThis.Date = RealDate; }
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+const SUB = "sub_card";
+const payment = (id: string, extra: Record<string, unknown> = {}) =>
+  ({ id, subscription: SUB, customer: "cus_card", confirmedDate: "2026-10-17", externalReference: UID, ...extra });
+const dueMs = () => new Date(String(memory.row.data_vencimento)).getTime();
 
 Deno.test({ name: "handler: agência expirada, CHECKOUT_PAID → CONFIRMED no mesmo segundo ativa, conta 1 e promove Bimbo", sanitizeOps: false, sanitizeResources: false, fn: async () => {
   reset("pendente");
