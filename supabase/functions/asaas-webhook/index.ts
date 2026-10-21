@@ -100,6 +100,24 @@ Deno.serve(async (req) => {
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
     const SELECT = "id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, checkout_context";
 
+    const findRow = (subscriptionId: string) =>
+      matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
+        async (path, id) => {
+          let query = supabase.from("assinaturas").select(SELECT);
+          if (path === "subscription") query = query.eq("asaas_subscription_id", id);
+          if (path === "checkout") query = query.eq("asaas_checkout_id", id);
+          if (path === "externalReference") query = query.eq("user_id", id).in("status", ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"]).order("created_at", { ascending: false });
+          const { data, error } = await query.limit(1).maybeSingle();
+          if (error) throw error;
+          return data as MatchedRow | null;
+        });
+
+    const warnNoMatch = (subscriptionId: string) => console.warn(
+      "[asaas-webhook] No assinatura matched for",
+      event,
+      JSON.stringify({ subscriptionId, externalReference }),
+    );
+
     const updateAssinatura = async (
       subscriptionId: string,
       customerId: string,
@@ -123,23 +141,10 @@ Deno.serve(async (req) => {
         return { ok: true, matched, row };
       };
 
-      const matched = await matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
-        async (path, id) => {
-          let query = supabase.from("assinaturas").select(SELECT);
-          if (path === "subscription") query = query.eq("asaas_subscription_id", id);
-          if (path === "checkout") query = query.eq("asaas_checkout_id", id);
-          if (path === "externalReference") query = query.eq("user_id", id).in("status", ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"]).order("created_at", { ascending: false });
-          const { data, error } = await query.limit(1).maybeSingle();
-          if (error) throw error;
-          return data;
-        });
+      const matched = await findRow(subscriptionId);
       if (matched) return apply(matched.row, matched.matched);
 
-      console.warn(
-        "[asaas-webhook] No assinatura matched for",
-        event,
-        JSON.stringify({ subscriptionId, externalReference }),
-      );
+      warnNoMatch(subscriptionId);
       // Sem correspondência não é erro do nosso lado: responder 500 faz o
       // Asaas interromper a fila inteira de webhooks.
       return { ignored: true };
