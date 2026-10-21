@@ -1333,6 +1333,16 @@ export type Database = {
         Args: { _token: string; _user_id: string }
         Returns: boolean
       }
+      claim_subscription_payment: {
+        Args: {
+          _asaas_customer_id?: string
+          _asaas_subscription_id?: string
+          _assinatura_id: string
+          _data_vencimento: string
+          _payment_id: string
+        }
+        Returns: Json
+      }
       create_agency_brand: { Args: never; Returns: string }
       has_brand_access: { Args: { _brand_id: string }; Returns: boolean }
       has_role: {
