@@ -1,10 +1,10 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 let handler: ((req: Request) => Promise<Response>) | undefined;
 const originalServe = Deno.serve;
 const originalFetch = globalThis.fetch;
 const originalGet = Deno.env.get;
-const memory = { row: {} as Record<string, unknown>, brand: {} as Record<string, unknown>, counted: new Set<string>() };
+const memory = { row: {} as Record<string, unknown>, brand: {} as Record<string, unknown>, counted: new Set<string>(), claims: [] as string[] };
 
 // No network or real secrets: handlers run with an in-memory Supabase transport.
 Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://payments.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook" } as Record<string, string>)[key];
@@ -17,10 +17,11 @@ const CK = "272a8eef-c864-415e-8f8e-94310f789fcd";
 const UID = "ba97500d-53c6-426b-b5e6-7015bfcf4395";
 const AT = "2026-10-17T00:32:11Z";
 
-function reset(status: string, trial: string | null = null) {
-  memory.row = { id: "row_test", user_id: UID, status, plano: "presenca", plano_pretendido: "presenca", ciclo_pretendido: "mensal", ciclo_contratado: "mensal", ciclos_pagos: 0, trial_ends_at: trial, asaas_subscription_id: null, asaas_checkout_id: CK, asaas_checkout_created_at: AT };
+function reset(status: string, trial: string | null = null, subscriptionId: string | null = null) {
+  memory.row = { id: "row_test", user_id: UID, status, plano: "presenca", plano_pretendido: "presenca", ciclo_pretendido: "mensal", ciclo_contratado: "mensal", ciclos_pagos: 0, trial_ends_at: trial, asaas_subscription_id: subscriptionId, asaas_checkout_id: CK, asaas_checkout_created_at: AT };
   memory.brand = { id: "brand_link", brand_id: "brand_test", plano: null, plano_pretendido: "presenca", status: "ativo" };
   memory.counted.clear();
+  memory.claims.length = 0;
 }
 
 async function event(body: Record<string, unknown>) {
@@ -138,3 +139,91 @@ Deno.test({ name: "handler: CHECKOUT_PAID com trial válido vincula, mantém tri
   assertEquals(memory.row.ciclos_pagos, 0);
   assertEquals(memory.brand.plano, null);
 }});
+Deno.test({ name: "a) CONFIRMED no dia 0 e RECEIVED do mesmo pagamento no dia 30 → nada muda no segundo", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  const first = await event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_a") });
+  assertEquals(first, { received: true });
+  assertEquals(memory.row.status, "ativo");
+  assertEquals(memory.row.ciclos_pagos, 1);
+  const due = dueMs();
+  assert(Math.abs(due - (Date.now() + 30 * DAY)) < 60_000, "vencimento deve ser dia 0 + 30");
+  const before = structuredClone(memory.row);
+  const second = await at(30 * DAY, () => event({ event: "PAYMENT_RECEIVED", payment: payment("pay_a") }));
+  assertEquals(second, { received: true, ignored: "already_counted" });
+  assertEquals(memory.row, before);
+  assertEquals(dueMs(), due);
+  assertEquals(memory.row.ciclos_pagos, 1);
+  assertEquals(memory.row.status, "ativo");
+}});
+
+Deno.test({ name: "b) CONFIRMED reenviado 2h depois → ciclos_pagos 1 e vencimento parado", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  await event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_b") });
+  const due = dueMs();
+  const retry = await at(2 * 60 * 60 * 1000, () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_b") }));
+  assertEquals(retry, { received: true, ignored: "already_counted" });
+  assertEquals(memory.row.ciclos_pagos, 1);
+  assertEquals(dueMs(), due);
+}});
+
+Deno.test({ name: "c) RECEIVED sozinho (sem CONFIRMED antes) → ativa, conta 1 e promove o plano escolhido", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  memory.row.plano_pretendido = "influencia";
+  const res = await event({ event: "PAYMENT_RECEIVED", payment: payment("pay_c") });
+  assertEquals(res, { received: true });
+  assertEquals(memory.row.status, "ativo");
+  assertEquals(memory.row.ciclos_pagos, 1);
+  assertEquals(memory.row.plano, "influencia");
+  assertEquals(memory.row.plano_pretendido, null);
+  assertEquals(memory.brand.plano, "presenca");
+  assert(Math.abs(dueMs() - (Date.now() + 30 * DAY)) < 60_000);
+}});
+
+for (const later of ["cancelado", "inadimplente"]) {
+  Deno.test({ name: `d) assinatura virou ${later} depois do CONFIRMED; RECEIVED atrasado não volta para ativo`, sanitizeOps: false, sanitizeResources: false, fn: async () => {
+    reset("pendente", null, SUB);
+    await event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_d") });
+    memory.row.status = later;
+    memory.row.carencia_ate = "2026-11-20T00:00:00.000Z";
+    const due = dueMs();
+    memory.brand.plano_pretendido = "autoridade";
+    const res = await at(30 * DAY, () => event({ event: "PAYMENT_RECEIVED", payment: payment("pay_d") }));
+    assertEquals(res, { received: true, ignored: "already_counted" });
+    assertEquals(memory.row.status, later);
+    assertEquals(memory.row.carencia_ate, "2026-11-20T00:00:00.000Z");
+    assertEquals(dueMs(), due);
+    assertEquals(memory.row.ciclos_pagos, 1);
+    assertEquals(memory.brand.plano_pretendido, "autoridade", "promoção de marcas não roda de novo");
+  }});
+}
+
+Deno.test({ name: "e) renovação com novo payment.id no mês seguinte → ciclos_pagos 2 e vencimento estendido", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  await event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_m1") });
+  const firstDue = dueMs();
+  const res = await at(30 * DAY, () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_m2", { confirmedDate: "2026-11-16" }) }));
+  assertEquals(res, { received: true });
+  assertEquals(memory.row.ciclos_pagos, 2);
+  assertEquals(memory.row.status, "ativo");
+  assert(Math.abs(dueMs() - (firstDue + 30 * DAY)) < 60_000, "vencimento deve andar mais 30 dias");
+  // E o RECEIVED tardio da 1ª mensalidade continua sem efeito.
+  const late = await at(31 * DAY, () => event({ event: "PAYMENT_RECEIVED", payment: payment("pay_m1") }));
+  assertEquals(late, { received: true, ignored: "already_counted" });
+  assertEquals(memory.row.ciclos_pagos, 2);
+}});
+
+for (const ref of ["prorata:row_test:agency:brand_test", "fidelidade:row_test:presenca"]) {
+  for (const ev of ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]) {
+    Deno.test({ name: `f) cobrança avulsa ${ref.split(":")[0]} em ${ev} → ignorada, nada muda`, sanitizeOps: false, sanitizeResources: false, fn: async () => {
+      reset("atrasado", null, SUB);
+      const before = structuredClone(memory.row);
+      const brandBefore = structuredClone(memory.brand);
+      const res = await event({ event: ev, payment: { id: "pay_avulsa", customer: "cus_card", confirmedDate: "2026-10-20", externalReference: ref } });
+      assertEquals(res, { received: true, ignored: "one_off" });
+      assertEquals(memory.row, before);
+      assertEquals(memory.brand, brandBefore);
+      assertEquals(memory.claims.length, 0);
+      assertEquals(memory.counted.size, 0);
+    }});
+  }
+}
