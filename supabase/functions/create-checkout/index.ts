@@ -484,6 +484,28 @@ Deno.serve(async (req) => {
         })
         .eq("id", linhaViva.id);
       insertError = updateError;
+    } else if (resume && linhaMorta) {
+      // Retomada do teste cancelado: a linha CONTINUA 'cancelado' enquanto o
+      // cliente está na tela do Asaas — acesso segue terminando no fim original
+      // do teste (data_vencimento/trial_ends_at intactos, sem janela 'pendente').
+      // Plano/ciclo só como intenção. O vínculo antigo (assinatura já removida)
+      // é descartado. Cartão registrado → asaas-webhook devolve a linha a
+      // 'trial' com o mesmo trial_ends_at; abandono → restoreCheckoutState
+      // devolve exatamente este estado cancelado.
+      const base = { ...linhaMorta, asaas_subscription_id: null };
+      const { error: updateError } = await supabaseAdmin
+        .from("assinaturas")
+        .update({
+          asaas_checkout_id: asaasCheckoutId || null,
+          asaas_checkout_created_at: new Date().toISOString(),
+          asaas_subscription_id: null,
+          plano_pretendido: plano,
+          ciclo_pretendido: ciclo,
+          checkout_context: preserveCheckoutState(base, { value, cycle: "MONTHLY", plano, ciclo }, checkoutUrl, { resumeTrialEndsAt: resume.trialEndsAt }),
+        })
+        .eq("id", linhaMorta.id)
+        .eq("status", "cancelado");
+      insertError = updateError;
     } else if (linhaMorta) {
       const { error: updateError } = await supabaseAdmin
         .from("assinaturas")
@@ -525,7 +547,10 @@ Deno.serve(async (req) => {
     persisted = true;
     // 8. Return checkout URL
     return new Response(
-      JSON.stringify({ success: true, trialConcedido, checkoutUrl, asaasCheckoutId, agencyQuote }),
+      JSON.stringify({
+        success: true, trialConcedido, checkoutUrl, asaasCheckoutId, agencyQuote,
+        ...(resume ? { retomaTeste: true, primeiraCobranca: resume.nextDueDate } : {}),
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
