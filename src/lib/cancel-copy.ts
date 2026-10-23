@@ -4,6 +4,10 @@
  * Datas em DD/MM no fuso de São Paulo.
  */
 
+/** Cancelamento não confirmado no provedor (HTTP 502, code "cancel_unverified"). */
+export const CANCEL_UNVERIFIED_MESSAGE =
+  "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.";
+
 export function formatDiaMesSP(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
