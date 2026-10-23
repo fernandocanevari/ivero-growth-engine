@@ -260,7 +260,7 @@ Deno.test("f) assinatura com externalReference de OUTRO usuário nunca é removi
 Deno.test("resolveSubId: cliente gravado sem assinatura não encerra a busca; acha pelo e-mail, vincula e troca o cliente velho (sem GET /checkouts)", async () => {
   const r = await call("list_invoices", resumedRow, {
     customers: [{ id: "cus_new", email: EMAIL }],
-    subs: [{ id: "sub_live", customer: "cus_new", status: "ACTIVE", dateCreated: new Date().toISOString().slice(0, 10) }],
+    subs: [{ id: "sub_live", customer: "cus_new", status: "ACTIVE", dateCreated: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) }],
   });
   assertEquals(r.status, 200);
   assertEquals(r.patch, { asaas_subscription_id: "sub_live", asaas_customer_id: "cus_new" });
