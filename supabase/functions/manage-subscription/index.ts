@@ -3,6 +3,7 @@ import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { decideProration, findProrationInvoice, listProrationPayments } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
+import { decideCancelAccess } from "./cancel-access.ts";
 import {
   normalizeCiclo,
   planValue,
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses",
+        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -476,9 +477,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Acesso preservado até o fim do período já pago (data_vencimento intacta).
+      // Paga: acesso preservado até o fim do período já pago (data_vencimento
+      // intacta). Teste grátis: acesso só até o fim do teste (ou agora, se não
+      // houver data válida) — gravado em data_vencimento, que é o que o guarda
+      // de acesso lê para assinaturas canceladas.
       // O vínculo com o Asaas é limpo (a assinatura lá deixou de existir), mas
       // guardamos o id anterior para auditoria/suporte.
+      const access = decideCancelAccess({
+        status: assinatura.status as string | null,
+        trial_ends_at: assinatura.trial_ends_at as string | null,
+        data_vencimento: assinatura.data_vencimento as string | null,
+        ciclos_pagos: ciclosPagos,
+        counted_payment_ids: assinatura.counted_payment_ids as string[] | null,
+      });
       const { error } = await supabaseAdmin
         .from("assinaturas")
         .update({
@@ -486,6 +497,7 @@ Deno.serve(async (req) => {
           carencia_ate: null,
           asaas_subscription_id: null,
           asaas_subscription_id_anterior: subId ?? null,
+          ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
         })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
@@ -521,13 +533,21 @@ Deno.serve(async (req) => {
         ciclosPagos,
         "multa:",
         multa?.value ?? 0,
+        "isTrial:",
+        access.isTrial,
+        "accessUntil:",
+        access.accessUntil,
         "motivo:",
         (body.motivo ?? "").slice(0, 200),
       );
       return json(200, {
         ok: true,
         success: true,
-        acessoAte: assinatura.data_vencimento ?? assinatura.trial_ends_at ?? null,
+        // Mesmo valor de accessUntil (campo antigo, mantido por compatibilidade).
+        acessoAte: access.accessUntil,
+        accessUntil: access.accessUntil,
+        isTrial: access.isTrial,
+        endsNow: access.endsNow,
         ciclo: cicloContratado,
         ciclosPagos,
         multa,
