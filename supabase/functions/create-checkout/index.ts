@@ -4,7 +4,7 @@ import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, planValue, COMPROMISSO_MESES, type CicloContratado, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
-import { checkoutSchedule, preserveCheckoutState } from "../_shared/checkout-state.ts";
+import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resumableCancelledTrial } from "../_shared/checkout-state.ts";
 
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -292,27 +292,33 @@ Deno.serve(async (req) => {
 
     const schedule = checkoutSchedule(history ?? []);
     const trialEndsAt = schedule.trialEndsAt ? new Date(schedule.trialEndsAt) : null;
-    const nextDueDate = schedule.nextDueDate;
+    // Cancelou durante o teste e voltou antes do fim original (só conta
+    // individual): sem teste novo — a 1ª cobrança fica no fim do teste original.
+    const resume = !agencyQuote && !trialConcedido ? resumableCancelledTrial(history ?? []) : null;
+    const nextDueDate = resume ? resume.nextDueDate : schedule.nextDueDate;
     const value = agencyQuote ? agencyQuote.total : planValue(plano, ciclo);
-    console.log("create-checkout: nextDueDate =", nextDueDate, "trialConcedido =", trialConcedido);
+    console.log("create-checkout: nextDueDate =", nextDueDate, "trialConcedido =", trialConcedido, "retomaTeste =", !!resume);
     const anterior = (history ?? []).find((r) => r.asaas_checkout_id);
     if (anterior) {
-      const ctx = anterior.checkout_context as { link?: string; requested?: { value?: number; plano?: string; ciclo?: string }; completed?: boolean } | null;
-      const oldTime = anterior.asaas_checkout_created_at ? Date.parse(anterior.asaas_checkout_created_at) : NaN;
-      const fresh = Number.isFinite(oldTime) && Date.now() - oldTime < 60 * 60 * 1000;
-      if (ctx?.completed || anterior.asaas_subscription_id) {
+      const action = previousCheckoutAction(anterior, { value, plano, ciclo });
+      console.log("create-checkout: checkout anterior", anterior.asaas_checkout_id, "status:", anterior.status, "acao:", action);
+      if (action === "blocked") {
         return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "A conclusão do pagamento anterior está sendo conferida." }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (fresh && ctx?.link && ctx.requested?.value === value && ctx.requested?.plano === plano && ctx.requested?.ciclo === ciclo) {
-        return new Response(JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl: ctx.link, asaasCheckoutId: anterior.asaas_checkout_id, agencyQuote }),
+      if (action === "reuse") {
+        const ctx = anterior.checkout_context as { link?: string } | null;
+        return new Response(JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl: ctx?.link, asaasCheckoutId: anterior.asaas_checkout_id, agencyQuote }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      // Só uma confirmação HTTP bem-sucedida permite trocar a sessão; erros não são prova de cancelamento.
-      const canceled = await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(anterior.asaas_checkout_id)}/cancel`, { method: "POST", headers: asaasHeaders });
-      console.log("create-checkout: cancelar checkout anterior", anterior.asaas_checkout_id, canceled.status);
-      if (!canceled.ok) return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "Não foi possível confirmar o encerramento do pagamento anterior." }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (action === "cancel") {
+        // Só uma confirmação HTTP bem-sucedida permite trocar a sessão; erros não são prova de cancelamento.
+        const canceled = await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(anterior.asaas_checkout_id)}/cancel`, { method: "POST", headers: asaasHeaders });
+        console.log("create-checkout: cancelar checkout anterior", anterior.asaas_checkout_id, canceled.status);
+        if (!canceled.ok) return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "Não foi possível confirmar o encerramento do pagamento anterior." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // "skip": linha cancelada com sessão antiga concluída/expirada — nada a encerrar.
     }
 
     // 5. URLs de callback. O Asaas só aceita domínio público https cadastrado
