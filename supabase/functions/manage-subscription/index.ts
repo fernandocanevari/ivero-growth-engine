@@ -476,9 +476,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Acesso preservado até o fim do período já pago (data_vencimento intacta).
+      // Paga: acesso preservado até o fim do período já pago (data_vencimento
+      // intacta). Teste grátis: acesso só até o fim do teste (ou agora, se não
+      // houver data válida) — gravado em data_vencimento, que é o que o guarda
+      // de acesso lê para assinaturas canceladas.
       // O vínculo com o Asaas é limpo (a assinatura lá deixou de existir), mas
       // guardamos o id anterior para auditoria/suporte.
+      const access = decideCancelAccess({
+        status: assinatura.status as string | null,
+        trial_ends_at: assinatura.trial_ends_at as string | null,
+        data_vencimento: assinatura.data_vencimento as string | null,
+        ciclos_pagos: ciclosPagos,
+        counted_payment_ids: assinatura.counted_payment_ids as string[] | null,
+      });
       const { error } = await supabaseAdmin
         .from("assinaturas")
         .update({
@@ -486,6 +496,7 @@ Deno.serve(async (req) => {
           carencia_ate: null,
           asaas_subscription_id: null,
           asaas_subscription_id_anterior: subId ?? null,
+          ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
         })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
