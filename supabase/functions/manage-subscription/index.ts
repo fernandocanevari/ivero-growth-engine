@@ -5,6 +5,18 @@ import { decideProration, findProrationInvoice, listProrationPayments } from "..
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { decideCancelAccess } from "./cancel-access.ts";
 import {
+  belongsToOtherUser,
+  cancelProviderSubscriptions,
+  customerIdsForUser,
+  isLiveSubscription,
+  listAll,
+  type AsaasSubscription,
+} from "./provider-discovery.ts";
+
+/** Única mensagem quando não dá para confirmar o cancelamento no Asaas. */
+export const CANCEL_UNVERIFIED_MESSAGE =
+  "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.";
+import {
   normalizeCiclo,
   planValue,
   multaFidelidade,
@@ -97,7 +109,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses",
+        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -171,10 +183,25 @@ Deno.serve(async (req) => {
       };
     };
 
+    /** E-mail da conta: perfil e, na falta, o e-mail do token. */
+    const accountEmail = async (): Promise<string | null> => {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("email")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const email = (prof?.email as string | null) ?? (claimsData.claims.email as string | undefined) ?? null;
+      return email && email.trim() ? email.trim() : null;
+    };
+
     /**
      * Auto-vínculo: quando o webhook falhou em gravar asaas_subscription_id, a
      * assinatura existe no Asaas mas a linha local está "órfã". Resolvemos na
-     * hora pelo checkout ou pelo customer, gravamos o id e seguimos.
+     * hora pelos clientes do usuário, gravamos o id e seguimos.
+     * O Asaas cria um cliente NOVO a cada checkout: se o cliente gravado não
+     * trouxer assinatura viva, procuramos também em TODOS os clientes com o
+     * e-mail da conta. (GET /checkouts/{id} não existe no Asaas; e
+     * /payments?checkoutSession= devolve 0 para checkout de assinatura — não usamos.)
      * Retorna o id resolvido (ou null quando realmente não existe nada lá).
      */
     const resolveSubId = async (): Promise<string | null> => {
@@ -191,68 +218,54 @@ Deno.serve(async (req) => {
       const checkoutId = checkoutAbandonado
         ? null
         : (assinatura.asaas_checkout_id as string | null);
-      let customerId = assinatura.asaas_customer_id as string | null;
-      if (!checkoutId && !customerId) return null;
+      const storedCustomer = assinatura.asaas_customer_id as string | null;
+      if (!checkoutId && !storedCustomer) return null;
 
       requireAsaas();
 
-      // 1) Pelo checkout: traz subscription e/ou customer. Sessões antigas
-      // podem já não existir mais no Asaas (404) — segue pro passo 2.
-      if (checkoutId) {
-        const co = await fetchAsaas(`/checkouts/${checkoutId}`);
-        if (co.ok && co.json) {
-          const fromCheckout =
-            (co.json.subscription?.id ?? co.json.subscription ?? null) as string | null;
-          if (typeof fromCheckout === "string" && fromCheckout.startsWith("sub_")) {
-            subId = fromCheckout;
+      // Regra D: só adota assinatura criada no mesmo dia ou depois do checkout
+      // atual (dia em Brasília). Nunca adota assinatura removida, a removida
+      // anteriormente nem a de outro usuário.
+      const candidates: AsaasSubscription[] = [];
+      const collect = async (customerIds: string[]) => {
+        for (const customerId of customerIds) {
+          try {
+            const subs = await listAll(fetchAsaas, `/subscriptions?customer=${encodeURIComponent(customerId)}`);
+            for (const s of subs as AsaasSubscription[]) {
+              if (!s?.id || s.deleted === true || belongsToOtherUser(s, userId)) continue;
+              if (s.id === assinatura.asaas_subscription_id_anterior) continue;
+              if (!onOrAfterCheckoutDay(asaasDay(s.dateCreated), assinatura.asaas_checkout_created_at as string | null)) continue;
+              candidates.push({ ...s, customer: s.customer ?? customerId });
+            }
+          } catch (err) {
+            console.error("resolveSubId subs error:", customerId, err instanceof Error ? err.message : String(err));
           }
-          const coCustomer = (co.json.customer?.id ?? co.json.customer ?? null) as string | null;
-          if (!customerId && typeof coCustomer === "string") customerId = coCustomer;
-        } else {
-          console.error("resolveSubId checkout error:", co.status, co.text.slice(0, 300));
         }
-      }
+      };
 
-      // 2) Sem customer gravado: localiza pelo e-mail da conta.
-      if (!subId && !customerId) {
-        const { data: prof } = await supabaseAdmin
-          .from("profiles")
-          .select("email")
-          .eq("user_id", userId)
-          .maybeSingle();
-        const email = (prof?.email as string | null) ?? null;
+      if (storedCustomer) await collect([storedCustomer]);
+      if (!candidates.some(isLiveSubscription)) {
+        const email = await accountEmail();
         if (email) {
-          const cus = await fetchAsaas(`/customers?email=${encodeURIComponent(email)}&limit=10`);
-          const found = Array.isArray(cus.json?.data) ? cus.json!.data[0] : null;
-          if (found?.id) customerId = String(found.id);
-          else console.error("resolveSubId customer lookup vazio:", cus.status);
+          try {
+            const all = await customerIdsForUser(fetchAsaas, null, email);
+            await collect(all.filter((id) => id !== storedCustomer));
+          } catch (err) {
+            console.error("resolveSubId customer lookup error:", err instanceof Error ? err.message : String(err));
+          }
         }
       }
 
-      // 3) Pelo customer: assinatura ativa mais recente.
-      if (!subId && customerId) {
-        const subs = await fetchAsaas(`/subscriptions?customer=${customerId}&limit=10`);
-        if (subs.ok && Array.isArray(subs.json?.data)) {
-          // Regra D: só adota assinatura criada no mesmo dia ou depois do
-          // checkout atual (comparação por DIA em Brasília). Assinaturas
-          // antigas do mesmo cliente Asaas nunca são adotadas.
-          const rows = (subs.json!.data as any[]).filter((s) =>
-            onOrAfterCheckoutDay(asaasDay(s?.dateCreated), assinatura.asaas_checkout_created_at as string | null)
-          );
-          const pick =
-            rows.find((s) => String(s.status ?? "").toUpperCase() === "ACTIVE") ?? rows[0] ?? null;
-          if (!pick) console.log("resolveSubId: nenhuma assinatura do cliente é posterior ao checkout", assinatura.asaas_checkout_created_at ?? null);
-          if (pick?.id) subId = String(pick.id);
-        } else if (!subs.ok) {
-          console.error("resolveSubId subs error:", subs.status, subs.text.slice(0, 300));
-        }
+      const pick = candidates.find(isLiveSubscription) ?? candidates[0] ?? null;
+      if (!pick) {
+        console.log("resolveSubId: nenhuma assinatura do usuário é posterior ao checkout", assinatura.asaas_checkout_created_at ?? null);
+        return null;
       }
-
-
-      if (!subId) return null;
+      subId = String(pick.id);
 
       const patch: Record<string, string> = { asaas_subscription_id: subId };
-      if (customerId && !assinatura.asaas_customer_id) patch.asaas_customer_id = customerId;
+      // Cliente velho (de outro checkout) é substituído pelo dono da assinatura.
+      if (pick.customer && pick.customer !== storedCustomer) patch.asaas_customer_id = String(pick.customer);
       const { error: bindError } = await supabaseAdmin
         .from("assinaturas")
         .update(patch)
@@ -463,18 +476,36 @@ Deno.serve(async (req) => {
         ? multaFidelidade(assinatura.plano as string, ciclosComDesconto)
         : 0;
 
-      if (await resolveSubId()) {
-        requireAsaas();
-        const del = await fetchAsaas(`/subscriptions/${subId}`, { method: "DELETE" });
-        // 404 = já não existe no Asaas: seguimos com o cancelamento local.
-        if (!del.ok && del.status !== 404) {
-          console.error("cancel asaas error:", del.status, del.text.slice(0, 500));
-          return json(502, {
-            error:
-              del.json?.errors?.[0]?.description ||
-              "Não foi possível cancelar no provedor de pagamentos.",
-          });
+      // Cancelamento FAIL-CLOSED: quem já registrou cartão/checkout só tem a
+      // linha cancelada depois de confirmarmos que NENHUMA assinatura viva do
+      // usuário continua no Asaas. Teste sem cartão (sem checkout, cliente nem
+      // assinatura) cancela como antes, sem chamar o Asaas.
+      let removedSubId: string | null = subId;
+      const registeredWithProvider = !!(
+        assinatura.asaas_subscription_id || assinatura.asaas_checkout_id || assinatura.asaas_customer_id
+      );
+      if (registeredWithProvider) {
+        const unverified = (why: string) => {
+          console.error("cancel não confirmado no Asaas, linha intacta:", userId, why);
+          return json(502, { error: CANCEL_UNVERIFIED_MESSAGE, code: "cancel_unverified" });
+        };
+        if (!asaasKey) return unverified(`${asaasKeyName()} ausente`);
+        const email = await accountEmail();
+        let customerIds: string[];
+        try {
+          customerIds = await customerIdsForUser(fetchAsaas, assinatura.asaas_customer_id as string | null, email);
+        } catch (err) {
+          return unverified(`customers: ${err instanceof Error ? err.message : String(err)}`);
         }
+        if (!email && !customerIds.length && !subId) return unverified("sem e-mail, cliente ou assinatura para verificar");
+        const outcome = await cancelProviderSubscriptions(fetchAsaas, {
+          userId,
+          knownSubscriptionId: subId,
+          customerIds,
+        });
+        if (!outcome.ok) return unverified(outcome.reason);
+        removedSubId = subId ?? outcome.deleted[0] ?? null;
+        console.log("cancel: Asaas confirmado sem assinatura viva", userId, JSON.stringify({ customerIds, deleted: outcome.deleted }));
       }
 
       // Paga: acesso preservado até o fim do período já pago (data_vencimento
@@ -496,7 +527,7 @@ Deno.serve(async (req) => {
           status: "cancelado",
           carencia_ate: null,
           asaas_subscription_id: null,
-          asaas_subscription_id_anterior: subId ?? null,
+          asaas_subscription_id_anterior: removedSubId,
           ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
         })
         .eq("id", assinatura.id);
