@@ -30,6 +30,13 @@ import { PLANOS, formatBRL } from "@/lib/pricing-rules";
 import { reconcilePendingPayment } from "@/lib/reconcile-pending";
 import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
+import {
+  cancelDialogTrialCopy,
+  cancelToastTrialCopy,
+  cancelledCardTrialCopy,
+  isCancelledTrial,
+  isTrialBeforeCancel,
+} from "@/lib/cancel-copy";
 
 /**
  * AssinaturaPage — área financeira do cliente, ligada ao Asaas de verdade.
@@ -94,6 +101,16 @@ function AssinaturaPageContent() {
     emCompromisso && planoInfo
       ? (planoInfo.monthlyPrice - planoInfo.annualPrice) * Math.min(ciclosPagos, compromissoMeses)
       : 0;
+
+  // Cancelamento no teste grátis: textos próprios (nada foi pago).
+  const trialDialogCopy = cancelDialogTrialCopy(
+    isTrialBeforeCancel(effectiveStatus, ciclosPagos),
+    trialEndsAt,
+  );
+  const trialCardCopy = cancelledCardTrialCopy(
+    isCancelledTrial({ status, ciclosPagos, trialEndsAt, accessUntil: canceladoAcessoAte }),
+    canceladoAcessoAte,
+  );
 
   // Voltando do checkout (upgrade/contratação): os cards precisam refletir a
   // cobrança nova sem depender de F5.
@@ -236,21 +253,26 @@ function AssinaturaPageContent() {
     setCancelOpen(false);
     refreshBilling();
 
-    toast({
-      title: "Assinatura cancelada",
-      description: [
-        data?.acessoAte
-          ? `Seu acesso continua até ${formatDate(data.acessoAte as string)}.`
-          : "Seu acesso permanece até o fim do período já pago.",
-        (data?.multa as { value?: number } | null)?.value
-          ? `Geramos a cobrança da diferença de fidelidade: ${formatBRL(
-              (data.multa as { value: number }).value,
-            )}.`
-          : "",
-      ]
-        .filter(Boolean)
-        .join(" "),
-    });
+    const trialToast = cancelToastTrialCopy(data);
+    if (trialToast) {
+      toast(trialToast);
+    } else {
+      toast({
+        title: "Assinatura cancelada",
+        description: [
+          data?.acessoAte
+            ? `Seu acesso continua até ${formatDate(data.acessoAte as string)}.`
+            : "Seu acesso permanece até o fim do período já pago.",
+          (data?.multa as { value?: number } | null)?.value
+            ? `Geramos a cobrança da diferença de fidelidade: ${formatBRL(
+                (data.multa as { value: number }).value,
+              )}.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    }
     const multaUrl = (data?.multa as { invoiceUrl?: string | null } | null)?.invoiceUrl;
     if (multaUrl) window.open(multaUrl, "_blank", "noopener");
     void reload();
@@ -335,11 +357,15 @@ function AssinaturaPageContent() {
 
           {canceladoAcessoAte && (
             <p className="text-xs text-muted-foreground mb-4">
-              Cancelada — seu acesso continua até{" "}
-              <span className="font-semibold text-foreground">
-                {formatDate(canceladoAcessoAte)}
-              </span>
-              .
+              {trialCardCopy ?? (
+                <>
+                  Cancelada — seu acesso continua até{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatDate(canceladoAcessoAte)}
+                  </span>
+                  .
+                </>
+              )}
             </p>
           )}
 
@@ -689,12 +715,16 @@ function AssinaturaPageContent() {
           <DialogHeader>
             <DialogTitle>Cancelar assinatura?</DialogTitle>
             <DialogDescription className="pt-2 leading-relaxed">
-              A recorrência é encerrada e nada mais será cobrado. Seu acesso
-              continua até{" "}
-              <span className="font-semibold text-foreground">
-                {formatDate(dataVencimento ?? next?.dueDate ?? trialEndsAt ?? null)}
-              </span>{" "}
-              — o fim do período já pago.
+              {trialDialogCopy ?? (
+                <>
+                  A recorrência é encerrada e nada mais será cobrado. Seu acesso
+                  continua até{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatDate(dataVencimento ?? next?.dueDate ?? trialEndsAt ?? null)}
+                  </span>{" "}
+                  — o fim do período já pago.
+                </>
+              )}
               {emCompromisso && multaEstimada > 0 && (
                 <>
                   {" "}
