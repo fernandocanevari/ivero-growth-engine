@@ -227,3 +227,68 @@ for (const ref of ["prorata:row_test:agency:brand_test", "fidelidade:row_test:pr
     }});
   }
 }
+
+// ── Recontratação após cancelamento no teste / remoção de assinatura ──────────
+const inDays = (n: number) => new Date(Date.now() + n * DAY).toISOString();
+
+Deno.test({ name: "e) SUBSCRIPTION_DELETED depois do cancelamento → id removido não volta; status e data_vencimento intactos", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  const trialEnd = inDays(4);
+  reset("cancelado", trialEnd, null);
+  Object.assign(memory.row, { data_vencimento: trialEnd, asaas_subscription_id_anterior: "sub_removed", checkout_context: { prev: {}, requested: {}, completed: true } });
+  const before = structuredClone(memory.row);
+  await event({ event: "SUBSCRIPTION_DELETED", subscription: { id: "sub_removed", customer: "cus_card", checkoutSession: CK, externalReference: UID, dateCreated: "2026-10-17" } });
+  assertEquals(memory.row, before);
+  assertEquals(memory.row.asaas_subscription_id, null);
+}});
+
+Deno.test({ name: "e) SUBSCRIPTION_DELETED com a linha cancelada ainda apontando para o id removido → só zera o vínculo", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  const trialEnd = inDays(4);
+  reset("cancelado", trialEnd, "sub_removed");
+  memory.row.data_vencimento = trialEnd;
+  await event({ event: "SUBSCRIPTION_DELETED", subscription: { id: "sub_removed" } });
+  assertEquals(memory.row.asaas_subscription_id, null);
+  assertEquals(memory.row.asaas_subscription_id_anterior, "sub_removed");
+  assertEquals(memory.row.status, "cancelado");
+  assertEquals(memory.row.data_vencimento, trialEnd);
+}});
+
+Deno.test({ name: "e) SUBSCRIPTION_DELETED pelo painel do Asaas em assinatura ativa vinculada → cancelado, vínculo zerado, vencimento mantido", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("ativo", null, SUB);
+  const due = inDays(20);
+  memory.row.data_vencimento = due;
+  await event({ event: "SUBSCRIPTION_DELETED", subscription: { id: SUB } });
+  assertEquals(memory.row.status, "cancelado");
+  assertEquals(memory.row.asaas_subscription_id, null);
+  assertEquals(memory.row.data_vencimento, due);
+}});
+
+Deno.test({ name: "e) SUBSCRIPTION_DELETED de assinatura antiga com a linha já em outra assinatura → nada muda", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("ativo", null, "sub_new");
+  const before = structuredClone(memory.row);
+  await event({ event: "SUBSCRIPTION_DELETED", subscription: { id: "sub_old", checkoutSession: CK, externalReference: UID } });
+  assertEquals(memory.row, before);
+}});
+
+Deno.test({ name: "b) retomada: CHECKOUT_PAID com cartão registrado → volta a trial com o MESMO trial_ends_at", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  const trialEnd = inDays(4);
+  reset("cancelado", trialEnd, null);
+  Object.assign(memory.row, { data_vencimento: trialEnd, checkout_context: { prev: { status: "cancelado", data_vencimento: trialEnd, trial_ends_at: trialEnd }, requested: { value: 497, cycle: "MONTHLY", plano: "presenca", ciclo: "mensal" }, resumeTrialEndsAt: trialEnd } });
+  await event({ event: "CHECKOUT_PAID", checkout: { id: CK, subscription: "sub_resume", customer: "cus_card" } });
+  assertEquals(memory.row.status, "trial");
+  assertEquals(memory.row.trial_ends_at, trialEnd);
+  assertEquals(memory.row.data_vencimento, trialEnd);
+  assertEquals(memory.row.asaas_subscription_id, "sub_resume");
+  assertEquals(memory.row.ciclos_pagos, 0);
+}});
+
+Deno.test({ name: "d) retomada abandonada: CHECKOUT_EXPIRED → linha volta a cancelado, acesso não estendido", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  const trialEnd = inDays(4);
+  reset("cancelado", trialEnd, null);
+  Object.assign(memory.row, { data_vencimento: trialEnd, checkout_context: { prev: { status: "cancelado", data_vencimento: trialEnd, trial_ends_at: trialEnd, plano: "presenca", asaas_subscription_id: null }, requested: { value: 497, cycle: "MONTHLY", plano: "presenca", ciclo: "mensal" }, resumeTrialEndsAt: trialEnd } });
+  await event({ event: "CHECKOUT_EXPIRED", checkout: { id: CK } });
+  assertEquals(memory.row.status, "cancelado");
+  assertEquals(memory.row.data_vencimento, trialEnd);
+  assertEquals(memory.row.trial_ends_at, trialEnd);
+  assertEquals(memory.row.asaas_checkout_id, null);
+  assertEquals(memory.row.checkout_context, null);
+}});
