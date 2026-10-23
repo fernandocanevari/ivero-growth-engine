@@ -31,6 +31,7 @@ import { reconcilePendingPayment } from "@/lib/reconcile-pending";
 import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 import {
+  CANCEL_UNVERIFIED_MESSAGE,
   cancelDialogTrialCopy,
   cancelToastTrialCopy,
   cancelledCardTrialCopy,
@@ -242,9 +243,18 @@ function AssinaturaPageContent() {
     invalidateAccessCache();
     setBusy(null);
     if (error || data?.error) {
+      // Resposta non-2xx: o corpo vem em error.context (FunctionsHttpError).
+      let errBody: { code?: string } | null = (data as { code?: string } | null) ?? null;
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (!errBody && ctx && typeof ctx.json === "function") {
+        try { errBody = await ctx.clone().json(); } catch { /* corpo não-JSON */ }
+      }
+      const unverified = errBody?.code === "cancel_unverified";
       toast({
         title: "Não foi possível cancelar",
-        description: error?.message ?? (data?.error as string) ?? "Tente novamente em instantes.",
+        description: unverified
+          ? CANCEL_UNVERIFIED_MESSAGE
+          : error?.message ?? (data?.error as string) ?? "Tente novamente em instantes.",
         variant: "destructive",
       });
       return;

@@ -4,7 +4,7 @@ let handler: ((req: Request) => Promise<Response>) | undefined;
 const originalServe = Deno.serve;
 const originalFetch = globalThis.fetch;
 const originalGet = Deno.env.get;
-const memory = { row: {} as Record<string, unknown>, brand: {} as Record<string, unknown>, counted: new Set<string>(), claims: [] as string[] };
+const memory = { row: {} as Record<string, unknown>, brand: {} as Record<string, unknown>, counted: new Set<string>(), claims: [] as string[], asaasKey: false, asaasCustomers: {} as Record<string, string>, profiles: {} as Record<string, string>, asaasCalls: [] as string[] };
 
 // No network or real secrets: handlers run with an in-memory Supabase transport.
 Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://payments.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook" } as Record<string, string>)[key];
@@ -22,6 +22,10 @@ function reset(status: string, trial: string | null = null, subscriptionId: stri
   memory.brand = { id: "brand_link", brand_id: "brand_test", plano: null, plano_pretendido: "presenca", status: "ativo" };
   memory.counted.clear();
   memory.claims.length = 0;
+  memory.asaasKey = false;
+  memory.asaasCustomers = {};
+  memory.profiles = {};
+  memory.asaasCalls.length = 0;
 }
 
 async function event(body: Record<string, unknown>) {
@@ -37,6 +41,14 @@ async function event(body: Record<string, unknown>) {
   globalThis.fetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
     const url = new URL(request.url);
+    if (url.hostname === "sandbox.asaas.com" && memory.asaasKey) {
+      // Asaas simulado: só GET /customers/{id} (vínculo por e-mail).
+      memory.asaasCalls.push(`${request.method} ${url.pathname}`);
+      const m = url.pathname.match(/^\/api\/v3\/customers\/([^/]+)$/);
+      if (request.method !== "GET" || !m) throw new Error(`unexpected_asaas:${request.method} ${url.pathname}`);
+      const email = memory.asaasCustomers[decodeURIComponent(m[1])];
+      return new Response(JSON.stringify(email ? { id: m[1], email } : { errors: [] }), { status: email ? 200 : 404, headers: { "Content-Type": "application/json" } });
+    }
     if (url.hostname !== "payments.example.test") throw new Error("unexpected_network");
     const table = url.pathname.split("/").pop();
     const method = request.method;
@@ -71,16 +83,20 @@ async function event(body: Record<string, unknown>) {
     } else if (table === "assinaturas") {
       const sub = url.searchParams.get("asaas_subscription_id");
       const ck = url.searchParams.get("asaas_checkout_id");
-      const matches = (!sub || sub === `eq.${memory.row.asaas_subscription_id}`) && (!ck || ck === `eq.${memory.row.asaas_checkout_id}`);
+      const uid = url.searchParams.get("user_id");
+      const matches = (!sub || sub === `eq.${memory.row.asaas_subscription_id}`) && (!ck || ck === `eq.${memory.row.asaas_checkout_id}`) && (!uid || uid === `eq.${memory.row.user_id}`);
       if (method === "GET") out = matches ? memory.row : null;
       else if (matches) Object.assign(memory.row, data);
+    } else if (table === "profiles") {
+      const emails = (url.searchParams.get("email") ?? "").replace(/^in\.\(|\)$/g, "").split(",").map((e) => e.replace(/^"|"$/g, ""));
+      out = Object.entries(memory.profiles).filter(([email]) => emails.includes(email)).map(([, user_id]) => ({ user_id }));
     } else if (table === "agency_brands") {
       if (method === "GET") out = [memory.brand];
       else Object.assign(memory.brand, data);
     } else throw new Error(`unexpected_table:${table}`);
     return new Response(out === null ? null : JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json" } });
   };
-  Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://payments.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook" } as Record<string, string>)[key];
+  Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://payments.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook", ...(memory.asaasKey ? { ASAAS_ENV: "sandbox", ASAAS_API_KEY_SANDBOX: "fake-asaas" } : {}) } as Record<string, string>)[key];
   try {
     const result = await h(new Request("https://function.example.test", { method: "POST", headers: { "asaas-access-token": "fake-webhook", "Content-Type": "application/json" }, body: JSON.stringify(body) }));
     const out = await result.json();
@@ -291,4 +307,63 @@ Deno.test({ name: "d) retomada abandonada: CHECKOUT_EXPIRED → linha volta a ca
   assertEquals(memory.row.trial_ends_at, trialEnd);
   assertEquals(memory.row.asaas_checkout_id, null);
   assertEquals(memory.row.checkout_context, null);
+}});
+
+// ── P21: vínculo na criação da assinatura ─────────────────────────────────────
+const EMAIL = "cliente69@teste.com.br";
+function resumeRow(trialEnd: string, completed = false) {
+  reset("cancelado", trialEnd, null);
+  Object.assign(memory.row, {
+    asaas_customer_id: "cus_old", data_vencimento: trialEnd, asaas_subscription_id_anterior: "sub_removed",
+    checkout_context: { prev: { status: "cancelado", data_vencimento: trialEnd, trial_ends_at: trialEnd }, requested: { value: 497, cycle: "MONTHLY", plano: "presenca", ciclo: "mensal" }, resumeTrialEndsAt: trialEnd, ...(completed ? { completed: true } : {}) },
+  });
+  memory.asaasKey = true;
+  memory.asaasCustomers = { cus_new: EMAIL };
+  memory.profiles = { [EMAIL]: UID };
+}
+
+Deno.test({ name: "P21 e) retomada: SUBSCRIPTION_CREATED com id desconhecido e cliente NOVO → casa pelo e-mail, grava assinatura E cliente, volta a trial com o mesmo trial_ends_at", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  const trialEnd = inDays(4);
+  resumeRow(trialEnd);
+  await event({ event: "SUBSCRIPTION_CREATED", subscription: { id: "sub_resume_new", customer: "cus_new", dateCreated: "2026-10-17", status: "ACTIVE" } });
+  assertEquals(memory.asaasCalls, ["GET /api/v3/customers/cus_new"]);
+  assertEquals(memory.row.asaas_subscription_id, "sub_resume_new");
+  assertEquals(memory.row.asaas_customer_id, "cus_new");
+  assertEquals(memory.row.status, "trial");
+  assertEquals(memory.row.trial_ends_at, trialEnd);
+  assertEquals(memory.row.data_vencimento, trialEnd);
+  assertEquals(memory.row.ciclos_pagos, 0);
+}});
+
+Deno.test({ name: "P21 e) cancelamento comum (checkout já concluído) não é reaberto por SUBSCRIPTION_CREATED atrasado", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  resumeRow(inDays(4), true);
+  const before = structuredClone(memory.row);
+  await event({ event: "SUBSCRIPTION_CREATED", subscription: { id: "sub_late", customer: "cus_new", dateCreated: "2026-10-17" } });
+  assertEquals(memory.row, before);
+}});
+
+Deno.test({ name: "P21 e) id já removido (asaas_subscription_id_anterior) nunca é religado pelo e-mail", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  resumeRow(inDays(4));
+  const before = structuredClone(memory.row);
+  await event({ event: "SUBSCRIPTION_CREATED", subscription: { id: "sub_removed", customer: "cus_new", dateCreated: "2026-10-17" } });
+  assertEquals(memory.row, before);
+}});
+
+Deno.test({ name: "P21 f) externalReference de OUTRO usuário → vínculo por e-mail recusado", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  resumeRow(inDays(4));
+  const before = structuredClone(memory.row);
+  await event({ event: "SUBSCRIPTION_CREATED", subscription: { id: "sub_x", customer: "cus_new", dateCreated: "2026-10-17", externalReference: "0f5b2b8e-8c55-4c39-9a3a-2a0f2f6f9d11" } });
+  assertEquals(memory.row, before);
+}});
+
+Deno.test({ name: "P21 g) primeiro checkout (regressão): SUBSCRIPTION_CREATED com externalReference vincula como antes, sem chamar o Asaas", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  const trialEnd = inDays(6);
+  reset("trial", trialEnd, null);
+  memory.row.asaas_customer_id = null;
+  await event({ event: "SUBSCRIPTION_CREATED", subscription: { id: "sub_first", customer: "cus_first", dateCreated: "2026-10-17", externalReference: UID } });
+  assertEquals(memory.row.asaas_subscription_id, "sub_first");
+  assertEquals(memory.row.asaas_customer_id, "cus_first");
+  assertEquals(memory.row.status, "trial");
+  assertEquals(memory.row.trial_ends_at, trialEnd);
+  assertEquals(memory.asaasCalls.length, 0);
 }});

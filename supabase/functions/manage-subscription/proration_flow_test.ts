@@ -49,6 +49,8 @@ async function run(name: string, options: { due?: string; account?: string; dupl
         status = options.pendingFail ? 503 : 200;
         data = { data: options.noPending ? [] : [{ status: "PENDING", dueDate: options.due ?? "2099-11-17" }], hasMore: false };
       }
+      // Verificação do cancelamento fail-closed: nenhuma outra assinatura viva.
+      else if (url.pathname === "/api/v3/subscriptions" && req.method === "GET") data = { data: [], hasMore: false };
       else if (url.pathname === "/api/v3/payments" && req.method === "GET") {
         status = options.lookupFail ? 503 : 200;
         const ref = url.searchParams.get("externalReference");
