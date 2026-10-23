@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
             for (const s of subs as AsaasSubscription[]) {
               if (!s?.id || s.deleted === true || belongsToOtherUser(s, userId)) continue;
               if (s.id === assinatura.asaas_subscription_id_anterior) continue;
-              if (!onOrAfterCheckoutDay(asaasDay(s.dateCreated), assinatura.asaas_checkout_created_at as string | null)) continue;
+              if (!onOrAfterCheckoutDay(asaasDay(s?.dateCreated), assinatura.asaas_checkout_created_at as string | null)) continue;
               candidates.push({ ...s, customer: s.customer ?? customerId });
             }
           } catch (err) {
