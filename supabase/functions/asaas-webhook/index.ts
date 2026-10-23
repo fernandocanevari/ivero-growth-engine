@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { matchWebhookRow } from "./matching.ts";
+import { isBindEvent, matchWebhookRow } from "./matching.ts";
+import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
 import { resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
@@ -89,30 +90,71 @@ Deno.serve(async (req) => {
       plano_pretendido?: string | null;
       ciclo_pretendido?: string | null;
       asaas_checkout_created_at?: string | null;
+      asaas_subscription_id_anterior?: string | null;
       checkout_context?: CheckoutContext | null;
     };
 
     // Regra E: vínculo estrito. (1) asaas_subscription_id já gravado na linha;
     // (2) checkoutSession == asaas_checkout_id; (3) externalReference só se o
-    // dia do evento (Brasília) for ≥ dia do checkout atual da linha. Evento de
-    // assinatura antiga do mesmo cliente que não passa em nenhuma é ignorado.
+    // dia do evento (Brasília) for ≥ dia do checkout atual da linha; (4) só em
+    // SUBSCRIPTION_CREATED/CHECKOUT_PAID: e-mail do cliente do Asaas == e-mail
+    // da conta. Evento de assinatura antiga do mesmo cliente que não passa em
+    // nenhuma é ignorado.
     const p = (body?.payment ?? {}) as AsaasPayment;
     const eventDay: string | null = body?.payment
       ? paymentProofDay(p)
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
-    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, checkout_context";
+    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context";
+    const USER_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"];
+    // Retomada de teste: a linha fica 'cancelado' durante a tela do Asaas, então
+    // os eventos de vínculo também a enxergam (bindableByUser restringe o caso).
+    const userStatuses = isBindEvent(event) ? [...USER_STATUSES, "cancelado"] : USER_STATUSES;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const bindCustomerId = event === "SUBSCRIPTION_CREATED" ? subscriptionCustomerId : event === "CHECKOUT_PAID" ? checkoutCustomerId : "";
+
+    /**
+     * Cliente do Asaas → conta pelo e-mail. Exige exatamente 1 perfil com esse
+     * e-mail e, se o evento trouxer externalReference de OUTRO usuário, recusa.
+     */
+    const findRowByCustomerEmail = async (customerId: string): Promise<MatchedRow | null> => {
+      const key = asaasApiKey();
+      if (!key) { console.warn("[asaas-webhook] chave do Asaas ausente: vínculo por e-mail indisponível"); return null; }
+      const res = await fetch(`${asaasBaseUrl()}/customers/${encodeURIComponent(customerId)}`, {
+        headers: { "Content-Type": "application/json", access_token: key },
+      });
+      const text = await res.text();
+      let cus: Record<string, unknown> | null = null;
+      try { cus = text ? JSON.parse(text) : null; } catch { /* não-JSON */ }
+      if (!res.ok) { console.error("[asaas-webhook] GET customer falhou:", res.status, customerId); return null; }
+      const email = String(cus?.email ?? "").trim();
+      if (!email) { console.warn("[asaas-webhook] cliente do Asaas sem e-mail:", customerId); return null; }
+      const { data: profs, error: profError } = await supabase.from("profiles").select("user_id")
+        .in("email", [...new Set([email, email.toLowerCase()])]).limit(2);
+      if (profError) throw profError;
+      if (!profs || profs.length !== 1) { console.warn("[asaas-webhook] e-mail do cliente não identifica uma única conta:", customerId, profs?.length ?? 0); return null; }
+      const uid = String((profs[0] as { user_id: string }).user_id);
+      if (UUID_RE.test(externalReference) && externalReference.toLowerCase() !== uid.toLowerCase()) {
+        console.warn("[asaas-webhook] externalReference de outro usuário, vínculo por e-mail recusado:", customerId);
+        return null;
+      }
+      const { data, error } = await supabase.from("assinaturas").select(SELECT).eq("user_id", uid)
+        .in("status", userStatuses).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return data as MatchedRow | null;
+    };
 
     const findRow = (subscriptionId: string) =>
       matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
         async (path, id) => {
+          if (path === "email") return findRowByCustomerEmail(id);
           let query = supabase.from("assinaturas").select(SELECT);
           if (path === "subscription") query = query.eq("asaas_subscription_id", id);
           if (path === "checkout") query = query.eq("asaas_checkout_id", id);
-          if (path === "externalReference") query = query.eq("user_id", id).in("status", ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"]).order("created_at", { ascending: false });
+          if (path === "externalReference") query = query.eq("user_id", id).in("status", userStatuses).order("created_at", { ascending: false });
           const { data, error } = await query.limit(1).maybeSingle();
           if (error) throw error;
           return data as MatchedRow | null;
-        });
+        }, bindCustomerId);
 
     const warnNoMatch = (subscriptionId: string) => console.warn(
       "[asaas-webhook] No assinatura matched for",
