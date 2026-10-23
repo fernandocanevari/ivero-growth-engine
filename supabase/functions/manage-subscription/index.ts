@@ -3,6 +3,7 @@ import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { decideProration, findProrationInvoice, listProrationPayments } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
+import { decideCancelAccess } from "./cancel-access.ts";
 import {
   normalizeCiclo,
   planValue,
@@ -532,13 +533,21 @@ Deno.serve(async (req) => {
         ciclosPagos,
         "multa:",
         multa?.value ?? 0,
+        "isTrial:",
+        access.isTrial,
+        "accessUntil:",
+        access.accessUntil,
         "motivo:",
         (body.motivo ?? "").slice(0, 200),
       );
       return json(200, {
         ok: true,
         success: true,
-        acessoAte: assinatura.data_vencimento ?? assinatura.trial_ends_at ?? null,
+        // Mesmo valor de accessUntil (campo antigo, mantido por compatibilidade).
+        acessoAte: access.accessUntil,
+        accessUntil: access.accessUntil,
+        isTrial: access.isTrial,
+        endsNow: access.endsNow,
         ciclo: cicloContratado,
         ciclosPagos,
         multa,
