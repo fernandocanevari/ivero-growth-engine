@@ -83,7 +83,8 @@ async function event(body: Record<string, unknown>) {
     } else if (table === "assinaturas") {
       const sub = url.searchParams.get("asaas_subscription_id");
       const ck = url.searchParams.get("asaas_checkout_id");
-      const matches = (!sub || sub === `eq.${memory.row.asaas_subscription_id}`) && (!ck || ck === `eq.${memory.row.asaas_checkout_id}`);
+      const uid = url.searchParams.get("user_id");
+      const matches = (!sub || sub === `eq.${memory.row.asaas_subscription_id}`) && (!ck || ck === `eq.${memory.row.asaas_checkout_id}`) && (!uid || uid === `eq.${memory.row.user_id}`);
       if (method === "GET") out = matches ? memory.row : null;
       else if (matches) Object.assign(memory.row, data);
     } else if (table === "profiles") {
