@@ -58,10 +58,11 @@ Deno.test("reconciliação e aviso dão o mesmo resultado para o mesmo estado", 
 Deno.test("aviso: CHECKOUT_PAID só vincula; contagem de ciclos e promoção ficam no pagamento confirmado", async () => {
   const src = await Deno.readTextFile(new URL("../asaas-webhook/index.ts", import.meta.url));
   const ck = src.slice(src.indexOf('case "CHECKOUT_PAID"'), src.indexOf('case "CHECKOUT_CANCELED"'));
-  assert(ck.includes("updateAssinatura(checkoutSubId, checkoutCustomerId, {})"));
+  // Só vínculo (+ retomada de teste cancelado → 'trial', nunca 'ativo').
+  assert(ck.includes("updateAssinatura(checkoutSubId, checkoutCustomerId, (row) => resumeTrialPatch(row))"));
   assert(!ck.includes('status: "ativo"') && !ck.includes("promoverIntencao") && !ck.includes("promoteAgencyIntent"));
   const pay = src.slice(src.indexOf('case "PAYMENT_CONFIRMED"'), src.indexOf('case "PAYMENT_OVERDUE"'));
-  assert(pay.includes('status: "ativo"') && pay.includes("promoteAgencyIntent") && pay.includes("record_checkout_payment"));
+  assert(pay.includes('status: "ativo"') && pay.includes("promoteAgencyIntent") && pay.includes("claim_subscription_payment"));
   // localização sem depender de CHECKOUT_PAID: payment.checkoutSession e externalReference
   assert(src.includes("body?.payment?.checkoutSession"));
   assert(src.includes('query.eq("asaas_checkout_id", id)'));
