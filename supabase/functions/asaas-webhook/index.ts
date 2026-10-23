@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { matchWebhookRow } from "./matching.ts";
+import { resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import {
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
      */
     type MatchedRow = {
       id: string;
+      status?: string | null;
       ciclo_contratado?: string | null;
       ciclos_pagos?: number | null;
       compromisso_inicio?: string | null;
@@ -98,7 +100,7 @@ Deno.serve(async (req) => {
     const eventDay: string | null = body?.payment
       ? paymentProofDay(p)
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
-    const SELECT = "id, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, checkout_context";
+    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, checkout_context";
 
     const findRow = (subscriptionId: string) =>
       matchWebhookRow(event, eventDay, !!body?.payment, subscriptionId, checkoutId, externalReference,
@@ -121,17 +123,21 @@ Deno.serve(async (req) => {
     const updateAssinatura = async (
       subscriptionId: string,
       customerId: string,
-      patch: Record<string, unknown>,
+      patch: Record<string, unknown> | ((row: MatchedRow) => Record<string, unknown>),
     ): Promise<{ ok?: boolean; matched?: string; row?: MatchedRow; error?: string; ignored?: boolean }> => {
       const now = new Date().toISOString();
+      // Vínculo no 1º contato (CHECKOUT_PAID / SUBSCRIPTION_CREATED / pagamento):
+      // grava os ids do Asaas que a linha ainda não tem. Eventos de remoção de
+      // assinatura NÃO passam por aqui (ver SUBSCRIPTION_DELETED abaixo).
       const bindIds: Record<string, unknown> = {};
       if (subscriptionId) bindIds.asaas_subscription_id = subscriptionId;
       if (customerId) bindIds.asaas_customer_id = customerId;
 
       const apply = async (row: MatchedRow & { asaas_checkout_created_at?: string | null }, matched: string) => {
+        const rowPatch = typeof patch === "function" ? patch(row) : patch;
         const { error } = await supabase
           .from("assinaturas")
-          .update({ ...patch, ...bindIds, ...(event === "CHECKOUT_PAID" ? { checkout_context: { ...row.checkout_context, completed: true } } : {}), updated_at: now })
+          .update({ ...rowPatch, ...bindIds, ...(event === "CHECKOUT_PAID" ? { checkout_context: { ...row.checkout_context, completed: true } } : {}), updated_at: now })
           .eq("id", row.id);
         if (error) {
           console.error(`[asaas-webhook] DB update error (by ${matched}):`, error);
@@ -279,7 +285,9 @@ Deno.serve(async (req) => {
         console.log("[asaas-webhook] CHECKOUT_PAID payload", JSON.stringify({
           keys: payloadKeys(body), checkoutId: checkoutId || null, subscriptionId: checkoutSubId || null,
         }));
-        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, {});
+        // Retomada de teste cancelado: cartão registrado → volta a 'trial' com
+        // o mesmo trial_ends_at original (demais linhas: só vínculo, como antes).
+        const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, (row) => resumeTrialPatch(row));
         if (res.error) return json(500, res);
         break;
       }
@@ -301,8 +309,9 @@ Deno.serve(async (req) => {
       }
 
       case "SUBSCRIPTION_CREATED": {
-        // Vincula os IDs do Asaas assim que a assinatura nasce no checkout.
-        const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {});
+        // Vincula os IDs do Asaas assim que a assinatura nasce no checkout
+        // (e, na retomada de teste cancelado, devolve a linha a 'trial').
+        const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, (row) => resumeTrialPatch(row));
         if (res.error) return json(500, res);
         break;
       }
@@ -319,11 +328,25 @@ Deno.serve(async (req) => {
 
       case "SUBSCRIPTION_DELETED":
       case "SUBSCRIPTION_INACTIVATED": {
-        const res = await updateAssinatura(subscriptionSubId, subscriptionCustomerId, {
-          status: "cancelado",
-          carencia_ate: null,
-        });
-        if (res.error) return json(500, res);
+        // Remoção NUNCA usa updateAssinatura: aquele caminho grava o id do
+        // evento na linha (bindIds) e, depois que o cancelamento pelo app já
+        // limpou o vínculo, casava por checkout/externalReference e regravava
+        // o id da assinatura REMOVIDA. Aqui só a linha ainda vinculada
+        // exatamente a esse id é tocada (ver subscriptionRemovalPatch).
+        if (!subscriptionSubId) { console.log("[asaas-webhook] remoção sem subscription.id, ignorada:", event); break; }
+        const { data: bound, error: readError } = await supabase.from("assinaturas")
+          .select("id, status, asaas_subscription_id").eq("asaas_subscription_id", subscriptionSubId).limit(1).maybeSingle();
+        if (readError) return json(500, { error: readError.message });
+        const removal = subscriptionRemovalPatch(bound as { status: string | null; asaas_subscription_id: string | null } | null, subscriptionSubId);
+        if (!removal || !bound) {
+          console.log("[asaas-webhook] remoção de assinatura não vinculada, ignorada:", event, subscriptionSubId);
+          break;
+        }
+        const { error } = await supabase.from("assinaturas")
+          .update({ ...removal, updated_at: new Date().toISOString() })
+          .eq("id", (bound as { id: string }).id).eq("asaas_subscription_id", subscriptionSubId);
+        if (error) return json(500, { error: error.message });
+        console.log("[asaas-webhook] assinatura removida desvinculada:", event, (bound as { id: string }).id, "status:", removal.status ?? (bound as { status: string | null }).status);
         break;
       }
 
