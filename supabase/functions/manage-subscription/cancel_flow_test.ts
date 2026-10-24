@@ -29,6 +29,8 @@ interface Provider {
   deleteIgnored?: Set<string>;
   /** HTTP forçado na busca de clientes. */
   customersStatus?: number;
+  /** Cobranças da assinatura (GET /subscriptions/{id}/payments, filtra ?status=). */
+  payments?: Record<string, unknown>[];
 }
 
 async function call(action: string, row: Record<string, unknown>, provider: Provider = {}) {
@@ -88,7 +90,8 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
         const sub = subs.find((s) => s.id === decodeURIComponent(subMatch[1]));
         if (!sub) { status = 404; data = { errors: [] }; } else data = sub;
       } else if (/^\/subscriptions\/[^/]+\/payments$/.test(p) && req.method === "GET") {
-        data = { object: "list", hasMore: false, data: [] };
+        const st = url.searchParams.get("status");
+        data = { object: "list", hasMore: false, data: (provider.payments ?? []).filter((x) => !st || x.status === st) };
       } else if (p === "/payments" && req.method === "POST") data = { invoiceUrl: "https://invoice.invalid/multa" };
       else throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
     } else throw new Error("Network escape forbidden");
@@ -265,4 +268,40 @@ Deno.test("resolveSubId: cliente gravado sem assinatura não encerra a busca; ac
   assertEquals(r.status, 200);
   assertEquals(r.patch, { asaas_subscription_id: "sub_live", asaas_customer_id: "cus_new" });
   assertEquals(r.asaasCalls.some((c) => c.url.includes("/checkouts/")), false);
+});
+
+// ── P24: mensalidade vencida na tela de cobrança ──────────────────────────────
+const LIVE_SUB = { subs: [{ id: "sub_test", customer: "cus_test", status: "ACTIVE" }] };
+const OVERDUE_PAYMENTS = [
+  { id: "pay_new", status: "OVERDUE", value: 497, dueDate: "2026-11-10", invoiceUrl: "https://invoice.invalid/new" },
+  { id: "pay_old", status: "OVERDUE", value: 497, dueDate: "2026-10-10", invoiceUrl: "https://invoice.invalid/old" },
+  { id: "pay_paid", status: "RECEIVED", value: 497, dueDate: "2026-09-10", invoiceUrl: "https://invoice.invalid/paid" },
+];
+
+Deno.test("P24 list_invoices devolve a vencida mais antiga em overdue", async () => {
+  const r = await call("list_invoices", { status: "inadimplente", trial_ends_at: null }, { ...LIVE_SUB, payments: OVERDUE_PAYMENTS });
+  assertEquals(r.status, 200);
+  assertEquals(r.data.overdue, { id: "pay_old", value: 497, dueDate: "2026-10-10", invoiceUrl: "https://invoice.invalid/old" });
+});
+
+Deno.test("P24 list_invoices sem vencida → overdue null", async () => {
+  const r = await call("list_invoices", { status: "ativo", trial_ends_at: null }, { ...LIVE_SUB, payments: [OVERDUE_PAYMENTS[2]] });
+  assertEquals(r.data.overdue, null);
+});
+
+Deno.test("P24 update_card sem pendente usa a fatura vencida (sem updateCreditCard)", async () => {
+  const r = await call("update_card", { status: "inadimplente", trial_ends_at: null }, { ...LIVE_SUB, payments: OVERDUE_PAYMENTS });
+  assertEquals(r.data, { ok: true, success: true, url: "https://invoice.invalid/old" });
+  assert(!r.asaasCalls.some((c) => c.url.includes("updateCreditCard")));
+  assertEquals(r.charges, 0);
+});
+
+Deno.test("P24 update_card com pendente continua usando a pendente", async () => {
+  const r = await call("update_card", { status: "ativo", trial_ends_at: null }, { ...LIVE_SUB, payments: [...OVERDUE_PAYMENTS, { id: "pay_p", status: "PENDING", invoiceUrl: "https://invoice.invalid/pending" }] });
+  assertEquals(r.data.url, "https://invoice.invalid/pending");
+});
+
+Deno.test("P24 update_card sem pendente nem vencida → comportamento de hoje", async () => {
+  const r = await call("update_card", { status: "ativo", trial_ends_at: null }, { ...LIVE_SUB, payments: [] });
+  assertEquals(r.data.reason, "sem_cobranca_pendente");
 });
