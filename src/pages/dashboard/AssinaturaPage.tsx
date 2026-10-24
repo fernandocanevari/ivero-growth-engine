@@ -38,6 +38,8 @@ import {
   isCancelledTrial,
   isTrialBeforeCancel,
 } from "@/lib/cancel-copy";
+import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
+import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 
 /**
  * AssinaturaPage — área financeira do cliente, ligada ao Asaas de verdade.
@@ -78,9 +80,12 @@ function AssinaturaPageContent() {
   const {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
-    cicloContratado, ciclosPagos, compromissoMeses,
+    cicloContratado, ciclosPagos, compromissoMeses, carenciaAte, isPaid,
   } = useSubscriptionStatus();
-  const { invoices, next, isLoading: invoicesLoading, reload } = useBillingInvoices();
+  const { invoices, next, overdue, isLoading: invoicesLoading, reload } = useBillingInvoices();
+  // Mensalidade vencida: aviso, selo e card de cobrança mudam (tolerância ou pausa).
+  const isOverdue = effectiveStatus === "inadimplente" && !!overdue;
+  const overdueInGrace = isOverdue && isPaid;
   const [searchParams] = useSearchParams();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { openUpgrade } = useUpgradeEntry(useCallback(() => setUpgradeOpen(true), []));
@@ -307,6 +312,10 @@ function AssinaturaPageContent() {
         </div>
       </div>
 
+      {isOverdue && overdue && (
+        <OverdueNoticeView overdue={overdue} carenciaAte={carenciaAte} inGrace={overdueInGrace} />
+      )}
+
       {/* Top: Plano atual + Próxima cobrança */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Plano atual */}
@@ -326,6 +335,11 @@ function AssinaturaPageContent() {
             {status === "cancelado" && (
               <Badge variant="outline" className="border-destructive/40 text-destructive">
                 Cancelada
+              </Badge>
+            )}
+            {effectiveStatus === "inadimplente" && (
+              <Badge variant="outline" className="border-destructive/40 text-destructive">
+                {PAYMENT_PENDING_BADGE}
               </Badge>
             )}
           </div>
@@ -406,6 +420,22 @@ function AssinaturaPageContent() {
               <Skeleton className="h-7 w-40" />
               <Skeleton className="h-4 w-56" />
             </div>
+          ) : isOverdue && overdue ? (
+            <>
+              <h2 className="text-2xl font-bold text-foreground mb-1">
+                {formatBRL(overdue.value)}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4" data-testid="overdue-next-charge">
+                {overdueNextChargeText(overdue.value, overdue.dueDate)}
+              </p>
+              {overdue.invoiceUrl && (
+                <Button asChild size="sm">
+                  <a href={overdue.invoiceUrl} target="_blank" rel="noopener noreferrer">
+                    {PAY_NOW_LABEL}
+                  </a>
+                </Button>
+              )}
+            </>
           ) : next ? (
             <>
               <h2 className="text-2xl font-bold text-foreground mb-1">
@@ -521,6 +551,11 @@ function AssinaturaPageContent() {
                 Cobrança recorrente do plano {planoInfo?.name ?? "—"}.
               </p>
             </div>
+          </div>
+        ) : isOverdue || invoices.some((i) => i.billingType === "CREDIT_CARD") ? (
+          <div className="rounded-lg border border-border p-4 flex items-center gap-3">
+            <CreditCard className="w-5 h-5 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">Cartão de crédito</p>
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-border p-6 text-center">

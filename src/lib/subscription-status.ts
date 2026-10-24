@@ -118,6 +118,22 @@ export function blockedRedirectFor(isAgency: boolean, individualTarget: string):
   return isAgency ? AGENCY_BILLING_ROUTE : individualTarget;
 }
 
+/**
+ * Mensalidade vencida ainda dentro da tolerância (carencia_ate no futuro).
+ * Regra única usada pelo guarda de acesso e pelo useSubscriptionStatus.
+ */
+export function isInOverdueGrace(
+  row: SubscriptionLike,
+  now: Date = new Date(),
+): boolean {
+  if (!row || resolveEffectiveStatus(row, now) !== "inadimplente") return false;
+  const ts = row.carencia_ate ? new Date(row.carencia_ate).getTime() : NaN;
+  return !Number.isNaN(ts) && ts > now.getTime();
+}
+
+/** Destino de quem está com o acesso pausado por mensalidade não paga. */
+export const BILLING_ROUTE = "/dashboard/assinatura";
+
 export function isTrialExpired(
   trialEndsAt: string | null | undefined,
   now: Date = new Date(),
@@ -144,7 +160,8 @@ export function resolveEffectiveStatus(
   }
 
   if (status === "ativo") return "ativo";
-  if (status === "inadimplente") return "inadimplente";
+  // "atrasado" era gravado pelo aviso antigo do Asaas: mesmo significado.
+  if (status === "inadimplente" || status === "atrasado") return "inadimplente";
   if (status === "cancelado") return "cancelado";
   if (status === "pendente") return "pendente";
   return "desconhecido";

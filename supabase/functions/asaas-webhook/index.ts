@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { isBindEvent, matchWebhookRow } from "./matching.ts";
 import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
-import { resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
+import { overduePatch, resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import {
@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       asaas_checkout_created_at?: string | null;
       asaas_subscription_id_anterior?: string | null;
       checkout_context?: CheckoutContext | null;
+      carencia_ate?: string | null;
     };
 
     // Regra E: vínculo estrito. (1) asaas_subscription_id já gravado na linha;
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
     const eventDay: string | null = body?.payment
       ? paymentProofDay(p)
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
-    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context";
+    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context, carencia_ate";
     const USER_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"];
     // Retomada de teste: a linha fica 'cancelado' durante a tela do Asaas, então
     // os eventos de vínculo também a enxergam (bindableByUser restringe o caso).
@@ -298,12 +299,10 @@ Deno.serve(async (req) => {
       case "PAYMENT_OVERDUE": {
         // Cobrança avulsa vencida (pró-rata/multa) não afeta a mensalidade.
         if (isAvulsaPayment) { console.log("[asaas-webhook] avulsa overdue ignorada"); break; }
-        const carencia = new Date();
-        carencia.setDate(carencia.getDate() + 7);
-        const res = await updateAssinatura(paymentSubId, paymentCustomerId, {
-          status: "atrasado",
-          carencia_ate: carencia.toISOString(),
-        });
+        // Tolerância de 3 dias contada do VENCIMENTO (fim do dia em Brasília);
+        // reenvio não estende a carência já gravada.
+        const dueDate: string | null = body?.payment?.dueDate ?? null;
+        const res = await updateAssinatura(paymentSubId, paymentCustomerId, (row) => overduePatch(row, dueDate));
         if (res.error) return json(500, res);
         break;
       }

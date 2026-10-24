@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
-import { cancelAccessUntil, resolveEffectiveStatus } from "@/lib/subscription-status";
+import { cancelAccessUntil, isInOverdueGrace, resolveEffectiveStatus } from "@/lib/subscription-status";
 import { getBrandScope, subscribeBrandScope } from "@/lib/brand-scope";
 
 type Plano = "presenca" | "influencia" | "autoridade" | null;
@@ -176,9 +176,7 @@ export function useSubscriptionStatus() {
       isTrial = false;
     } else if (effectiveStatus === "inadimplente") {
       status = "inadimplente";
-      const withinGrace =
-        carenciaAte !== null && new Date(carenciaAte).getTime() > Date.now();
-      isPaid = withinGrace;
+      isPaid = isInOverdueGrace(assinatura);
       isTrial = false;
     } else if (effectiveStatus === "cancelado") {
       status = "cancelado";

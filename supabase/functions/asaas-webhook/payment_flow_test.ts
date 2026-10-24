@@ -367,3 +367,48 @@ Deno.test({ name: "P21 g) primeiro checkout (regressão): SUBSCRIPTION_CREATED c
   assertEquals(memory.row.trial_ends_at, trialEnd);
   assertEquals(memory.asaasCalls.length, 0);
 }});
+
+// ── P24: mensalidade vencida (tolerância de 3 dias contada do vencimento) ─────
+const overdueRow = () => { reset("ativo", null, SUB); Object.assign(memory.row, { plano_pretendido: null, ciclo_pretendido: null, ciclos_pagos: 1, counted_payment_ids: ["pay_m1"], data_vencimento: "2026-10-10T12:00:00.000Z", carencia_ate: null }); memory.counted.add("pay_m1"); };
+
+Deno.test({ name: "P24 PAYMENT_OVERDUE → inadimplente, carência = vencimento + 3 dias (fim do dia em Brasília); nada mais muda", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  overdueRow();
+  await event({ event: "PAYMENT_OVERDUE", payment: { id: "pay_m2", subscription: SUB, customer: "cus_card", dueDate: "2026-10-10", status: "OVERDUE" } });
+  assertEquals(memory.row.status, "inadimplente");
+  assertEquals(memory.row.carencia_ate, "2026-10-14T02:59:59.999Z");
+  assertEquals(memory.row.data_vencimento, "2026-10-10T12:00:00.000Z");
+  assertEquals(memory.row.plano, "presenca");
+  assertEquals(memory.row.plano_pretendido, null);
+  assertEquals(memory.row.ciclos_pagos, 1);
+}});
+
+Deno.test({ name: "P24 PAYMENT_OVERDUE repetido não estende a carência", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  overdueRow();
+  await event({ event: "PAYMENT_OVERDUE", payment: { id: "pay_m2", subscription: SUB, customer: "cus_card", dueDate: "2026-10-10" } });
+  await event({ event: "PAYMENT_OVERDUE", payment: { id: "pay_m2", subscription: SUB, customer: "cus_card", dueDate: "2026-10-12" } });
+  assertEquals(memory.row.status, "inadimplente");
+  assertEquals(memory.row.carencia_ate, "2026-10-14T02:59:59.999Z");
+}});
+
+Deno.test({ name: "P24 PAYMENT_OVERDUE de cobrança avulsa continua ignorado", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  overdueRow();
+  const before = structuredClone(memory.row);
+  const res = await event({ event: "PAYMENT_OVERDUE", payment: { id: "pay_avulsa", customer: "cus_card", dueDate: "2026-10-10", externalReference: "prorata:row_test:influencia" } });
+  assertEquals(res, { received: true, ignored: "one_off" });
+  assertEquals(memory.row, before);
+}});
+
+Deno.test({ name: "P24 pagar a vencida → ativo, carência limpa, ciclo contado uma vez; RECEIVED tardio não conta de novo", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  overdueRow();
+  await event({ event: "PAYMENT_OVERDUE", payment: { id: "pay_m2", subscription: SUB, customer: "cus_card", dueDate: "2026-10-10" } });
+  await event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_m2") });
+  assertEquals(memory.row.status, "ativo");
+  assertEquals(memory.row.carencia_ate, null);
+  assertEquals(memory.row.ciclos_pagos, 2);
+  const venc = Date.parse(String(memory.row.data_vencimento));
+  assert(Math.abs(venc - (Date.now() + 30 * DAY)) < 2 * DAY, "vencimento = pagamento + 30 dias");
+  const again = await event({ event: "PAYMENT_RECEIVED", payment: payment("pay_m2") });
+  assertEquals(again, { received: true, ignored: "already_counted" });
+  assertEquals(memory.row.ciclos_pagos, 2);
+  assertEquals(memory.row.data_vencimento, new Date(venc).toISOString());
+}});

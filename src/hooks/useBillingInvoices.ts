@@ -17,6 +17,14 @@ export interface BillingInvoice {
   billingType: string | null;
 }
 
+/** Mensalidade vencida mais antiga (manage-subscription/list_invoices). */
+export interface OverdueInvoice {
+  id: string;
+  value: number;
+  dueDate: string | null;
+  invoiceUrl: string | null;
+}
+
 export const INVOICE_STATUS_LABEL: Record<string, string> = {
   PENDING: "Aguardando pagamento",
   AWAITING_RISK_ANALYSIS: "Em análise",
@@ -55,6 +63,7 @@ export function useBillingInvoices() {
 
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [next, setNext] = useState<BillingInvoice | null>(null);
+  const [overdue, setOverdue] = useState<OverdueInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +76,7 @@ export function useBillingInvoices() {
     if (!hasUser) {
       setInvoices([]);
       setNext(null);
+      setOverdue(null);
       hasLoadedRef.current = true;
       setIsLoading(false);
       return;
@@ -83,10 +93,12 @@ export function useBillingInvoices() {
       if (!hasLoadedRef.current) {
         setInvoices([]);
         setNext(null);
+        setOverdue(null);
       }
     } else {
       setInvoices((data?.invoices ?? []) as BillingInvoice[]);
       setNext((data?.next ?? null) as BillingInvoice | null);
+      setOverdue((data?.overdue ?? null) as OverdueInvoice | null);
     }
     hasLoadedRef.current = true;
     setIsValidating(false);
@@ -97,5 +109,5 @@ export function useBillingInvoices() {
     void load();
   }, [load]);
 
-  return { invoices, next, isLoading, isValidating, error, reload: load };
+  return { invoices, next, overdue, isLoading, isValidating, error, reload: load };
 }

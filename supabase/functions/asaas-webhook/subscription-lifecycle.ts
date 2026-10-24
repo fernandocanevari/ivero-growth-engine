@@ -41,3 +41,32 @@ export function subscriptionRemovalPatch(
     ? { ...unlink, status: "cancelado", carencia_ate: null }
     : unlink;
 }
+
+/** Dias de tolerância após o vencimento da mensalidade (decisão do fundador). */
+export const OVERDUE_GRACE_DAYS = 3;
+
+/**
+ * Fim da tolerância: dueDate (YYYY-MM-DD) + 3 dias, às 23:59:59.999 em
+ * Brasília (UTC-3, sem horário de verão), devolvido em UTC.
+ * Ex.: vencimento 10/10 → 13/10 23:59:59.999 BRT = 14/10 02:59:59.999Z.
+ * Sem dueDate válido usa o dia de hoje em Brasília.
+ */
+export function graceEndFromDueDate(dueDate: string | null | undefined, now = new Date()): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dueDate ?? "");
+  const base = m ? m : /^(\d{4})-(\d{2})-(\d{2})/.exec(now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }))!;
+  const [y, mo, d] = [Number(base[1]), Number(base[2]) - 1, Number(base[3])];
+  return new Date(Date.UTC(y, mo, d + OVERDUE_GRACE_DAYS, 23 + 3, 59, 59, 999)).toISOString();
+}
+
+/**
+ * PAYMENT_OVERDUE de mensalidade: 'inadimplente' com tolerância contada do
+ * vencimento. Reenvio do evento nunca estende uma carência já gravada.
+ */
+export function overduePatch(
+  row: { carencia_ate?: string | null },
+  dueDate: string | null | undefined,
+  now = new Date(),
+): Record<string, unknown> {
+  if (row.carencia_ate) return { status: "inadimplente" };
+  return { status: "inadimplente", carencia_ate: graceEndFromDueDate(dueDate, now) };
+}

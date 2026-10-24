@@ -53,6 +53,22 @@ const json = (status: number, body: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+/** Cobrança OVERDUE mais antiga (por vencimento) da lista, ou null. */
+export function oldestOverdue(
+  rows: Array<Record<string, unknown>>,
+): { id: string; value: number; dueDate: string | null; invoiceUrl: string | null } | null {
+  const o = rows
+    .filter((p) => p?.status === "OVERDUE" && !p?.deleted)
+    .sort((a, b) => String(a.dueDate ?? "").localeCompare(String(b.dueDate ?? "")))[0];
+  if (!o) return null;
+  return {
+    id: String(o.id ?? ""),
+    value: Number(o.value ?? 0),
+    dueDate: (o.dueDate as string | null) ?? null,
+    invoiceUrl: ((o.invoiceUrl ?? o.bankSlipUrl) as string | null) ?? null,
+  };
+}
+
 /** Trial vencido = data no passado. Sem data, não tratamos como vencido. */
 const trialVencido = (trialEndsAt: string | null): boolean => {
   if (!trialEndsAt) return false;
@@ -620,8 +636,15 @@ Deno.serve(async (req) => {
       // Página hospedada pelo Asaas da próxima cobrança: é lá que o cliente
       // troca o cartão sem que a gente toque em dado de cartão (PCI).
       const list = await fetchAsaas(`/subscriptions/${resolved}/payments?status=PENDING&limit=1`);
-      const url: string =
+      let url: string =
         list.json?.data?.[0]?.invoiceUrl || list.json?.data?.[0]?.bankSlipUrl || "";
+      if (!url) {
+        // Sem cobrança pendente: a mensalidade VENCIDA mais antiga. Na fatura
+        // hospedada pelo Asaas o cliente paga com o cartão que escolher.
+        const overdueList = await fetchAsaas(`/subscriptions/${resolved}/payments?status=OVERDUE&limit=50`);
+        const oldest = oldestOverdue(Array.isArray(overdueList.json?.data) ? overdueList.json!.data : []);
+        url = oldest?.invoiceUrl ?? "";
+      }
       if (!url) {
         return json(200, {
           ok: false,
@@ -661,7 +684,9 @@ Deno.serve(async (req) => {
         .filter((i) => i.status === "PENDING" || i.status === "AWAITING_RISK_ANALYSIS")
         .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))[0] ?? null;
 
-    return json(200, { success: true, invoices, next });
+    // Mensalidade vencida mais antiga: tem prioridade sobre "próxima cobrança" na tela.
+    const overdue = oldestOverdue(rows);
+    return json(200, { success: true, invoices, next, overdue });
   } catch (err) {
     console.error("manage-subscription error:", err instanceof Error ? err.message : String(err));
     return json(500, { error: (err as Error).message || "Erro inesperado." });
