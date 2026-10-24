@@ -6,6 +6,8 @@ import {
   isAgencyAccountRoute,
   blockedRedirectFor,
   isRecentPendingCheckout,
+  isInOverdueGrace,
+  BILLING_ROUTE,
 } from "@/lib/subscription-status";
 import type { AccessEntry } from "@/lib/access-cache";
 
@@ -47,14 +49,15 @@ export function decideAccess(
   if (status === "trial_expirado") return block("/escolher-plano?motivo=trial_expirado");
   if (status === "ativo" || status === "trial") return allow({ isInGracePeriod: false, status, carenciaAte });
   if (status === "inadimplente") {
-    const inGrace = carenciaAte ? new Date(carenciaAte).getTime() > now.getTime() : false;
-    return inGrace
+    // Tolerância em curso: acesso normal. Vencida: só a tela de cobrança.
+    return isInOverdueGrace(sub, now)
       ? allow({ isInGracePeriod: true, status, carenciaAte })
-      : block("/escolher-plano?motivo=inadimplente");
+      : block(BILLING_ROUTE);
   }
   if (status === "cancelado") {
     if (cancelAccessUntil(sub, now)) return allow({ isInGracePeriod: false, status, carenciaAte });
     return block("/escolher-plano?motivo=cancelado");
   }
-  return block("/escolher-plano");
+  // Status não reconhecido: continua bloqueado, mas na tela de cobrança.
+  return block(BILLING_ROUTE);
 }

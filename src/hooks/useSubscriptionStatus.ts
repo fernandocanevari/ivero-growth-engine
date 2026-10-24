@@ -176,9 +176,7 @@ export function useSubscriptionStatus() {
       isTrial = false;
     } else if (effectiveStatus === "inadimplente") {
       status = "inadimplente";
-      const withinGrace =
-        carenciaAte !== null && new Date(carenciaAte).getTime() > Date.now();
-      isPaid = withinGrace;
+      isPaid = isInOverdueGrace(assinatura);
       isTrial = false;
     } else if (effectiveStatus === "cancelado") {
       status = "cancelado";
