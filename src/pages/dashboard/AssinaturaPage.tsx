@@ -80,10 +80,9 @@ function AssinaturaPageContent() {
   const {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
-    cicloContratado, ciclosPagos, compromissoMeses,
+    cicloContratado, ciclosPagos, compromissoMeses, carenciaAte, isPaid,
   } = useSubscriptionStatus();
   const { invoices, next, overdue, isLoading: invoicesLoading, reload } = useBillingInvoices();
-  const { carenciaAte, isPaid } = useSubscriptionStatus();
   // Mensalidade vencida: aviso, selo e card de cobrança mudam (tolerância ou pausa).
   const isOverdue = effectiveStatus === "inadimplente" && !!overdue;
   const overdueInGrace = isOverdue && isPaid;
