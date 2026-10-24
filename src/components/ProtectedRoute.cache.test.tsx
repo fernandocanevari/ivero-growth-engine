@@ -175,7 +175,7 @@ describe("Liberados (decisão pura)", () => {
   });
   it("redirecionamentos com motivo preservados", () => {
     const s = (o: Record<string, unknown>) => ({ trial_ends_at: null, carencia_ate: null, updated_at: past, ...o }) as never;
-    expect(decideAccess({ ...base, sub: s({ status: "inadimplente", carencia_ate: past }) }, "/dashboard")).toEqual({ kind: "block", to: "/escolher-plano?motivo=inadimplente" });
+    expect(decideAccess({ ...base, sub: s({ status: "inadimplente", carencia_ate: past }) }, "/dashboard")).toEqual({ kind: "block", to: "/dashboard/assinatura" });
     expect(decideAccess({ ...base, isAgency: true, sub: s({ status: "cancelado" }) }, "/dashboard")).toEqual({ kind: "block", to: "/dashboard/marcas/assinatura" });
   });
 });
