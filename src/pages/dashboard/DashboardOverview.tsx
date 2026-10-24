@@ -23,6 +23,7 @@ import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { WELCOME_FEATURES } from "@/lib/welcome-features";
 import { FeatureHighlightCard } from "@/components/welcome/FeatureHighlightCard";
 import BrandProfileModal from "@/components/dashboard/BrandProfileModal";
+import { DashboardOverdueNotice } from "@/components/dashboard/OverdueNotice";
 import { RecommendedToolCard } from "@/components/dashboard/RecommendedToolCard";
 
 const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
@@ -72,6 +73,7 @@ export default function DashboardOverview() {
   if (hasDiagnostic === false) {
     return (
       <div className="space-y-6 max-w-6xl">
+        <DashboardOverdueNotice />
         <motion.div {...fade}>
           <h1 className="text-2xl font-bold font-display text-foreground">
             Olá{hasBrand ? `, ${displayName}` : ""} 👋
@@ -124,6 +126,7 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-8 max-w-6xl">
+      <DashboardOverdueNotice />
       {/* Header */}
       <motion.div {...fade}>
         <h1 className="text-2xl font-bold font-display text-foreground">
