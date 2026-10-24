@@ -1,0 +1,1 @@
+UPDATE public.assinaturas SET status = 'inadimplente', updated_at = now() WHERE status = 'atrasado';
