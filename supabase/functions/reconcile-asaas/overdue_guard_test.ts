@@ -61,11 +61,13 @@ async function run(): Promise<{ status: number; body: Record<string, unknown> }>
     if (table === "agency_brands" || table === "profiles") return Response.json([]);
     throw new Error(`unexpected_table:${table}`);
   };
+  Deno.env.get = (k: string) => ENV[k];
   try {
     const res = await handler!(new Request("https://fn.example.test", { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } }));
     return { status: res.status, body: await res.json() };
   } finally {
     globalThis.fetch = originalFetch;
+    Deno.env.get = originalGet;
   }
 }
 
