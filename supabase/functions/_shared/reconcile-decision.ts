@@ -125,10 +125,16 @@ export interface CheckoutEvaluation {
  * Cobrança vinculada mas não paga (ex.: trial com 1ª cobrança futura PENDING)
  * → "link": grava só o id da assinatura, status/planos intactos.
  */
+/** Pagamento já contabilizado (counted_payment_ids) nunca serve de prova para ativar. */
+export function isCountedPayment(p: AsaasPayment, counted: string[] | null | undefined): boolean {
+  return !!p?.id && Array.isArray(counted) && counted.includes(p.id);
+}
+
 export function evaluateCheckoutPayments(
   checkoutId: string,
   checkoutCreatedAt: string | null | undefined,
   payments: AsaasPayment[],
+  countedPaymentIds: string[] | null = null,
 ): CheckoutEvaluation {
   const linked = payments.filter((p) => p && p.checkoutSession === checkoutId && !isOneOffPayment(p));
   const checkoutDay = brDay(checkoutCreatedAt ?? null);
@@ -138,7 +144,8 @@ export function evaluateCheckoutPayments(
     customerId: linked.find((p) => p.customer)?.customer ?? null,
   };
   const paid = linked.find((p) =>
-    PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt)
+    PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt) &&
+    !isCountedPayment(p, countedPaymentIds)
   );
   if (paid) return { ...base, outcome: "activate", rule: "A+B", subscriptionId: paid.subscription ?? null };
   if (linked.length > 0) {
@@ -190,10 +197,12 @@ export function evaluateSubscriptionPayments(
   subscriptionId: string,
   checkoutCreatedAt: string | null | undefined,
   payments: AsaasPayment[],
+  countedPaymentIds: string[] | null = null,
 ): CheckoutEvaluation {
   const linked = payments.filter((p) => p && p.subscription === subscriptionId);
   const paid = linked.find((p) =>
-    PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt)
+    PAID_PAYMENT_STATUSES.includes(p.status ?? "") && onOrAfterCheckoutDay(paymentProofDay(p), checkoutCreatedAt) &&
+    !isCountedPayment(p, countedPaymentIds)
   );
   return {
     outcome: paid ? "activate" : linked.some((p) => p.status === "PENDING") ? "link" : "none",

@@ -4,7 +4,7 @@ import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
-  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay,
+  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay, isCountedPayment,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
 } from "../_shared/reconcile-decision.ts";
 
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
-        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id, trial_ends_at, checkout_context",
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id, trial_ends_at, checkout_context, counted_payment_ids",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -136,7 +136,13 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!row) return json(200, { reconciled: false, reason: "no_subscription" });
+    if (row.status === "inadimplente" || row.status === "atrasado") {
+      // Só o aviso do Asaas (pagamento da cobrança vencida) reativa cliente em atraso.
+      console.log("reconcile: ignorado, cliente em atraso (só o webhook reativa)", JSON.stringify({ row: row.id, status: row.status }));
+      return json(200, { reconciled: false, status: row.status, reason: "overdue_requires_webhook" });
+    }
     if (row.status === "ativo") return json(200, { reconciled: false, status: "ativo" });
+    const counted: string[] = Array.isArray(row.counted_payment_ids) ? row.counted_payment_ids as string[] : [];
 
     // Regra A: fonte primária é GET /payments?checkoutSession={id}. Não há
     // GET /checkouts/{id} no Asaas (404) e /subscriptions não filtra por
@@ -158,8 +164,8 @@ Deno.serve(async (req) => {
       const list: AsaasPayment[] = pays.items.map((p: AsaasPayment) => ({
         ...p, checkoutSession: p?.checkoutSession ?? ckId,
       }));
-      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : []);
-      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
+      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : [], counted);
+      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted))?.id ?? null;
       subscriptionId = ev.subscriptionId ?? "";
       customerId = ev.customerId ?? "";
 
@@ -191,10 +197,10 @@ Deno.serve(async (req) => {
             const charges = await listAll(`/payments?subscription=${encodeURIComponent(pick.candidate.id)}`);
             lookupComplete = charges.complete;
             if (charges.complete) {
-              ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items);
+              ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items, counted);
               subscriptionId = ev.outcome !== "none" ? ev.subscriptionId ?? "" : "";
               customerId = ev.outcome !== "none" ? knownCustomer : "";
-              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
+              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted))?.id ?? null;
             }
           }
         } else {
