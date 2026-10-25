@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { Outlet, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardBreadcrumb } from "./DashboardBreadcrumb";
@@ -21,7 +20,7 @@ import { useBrandProfile } from "@/hooks/useBrandProfile";
 import { useHasDiagnostic } from "@/hooks/useHasDiagnostic";
 import { useSubscriptionGate } from "@/components/ProtectedRoute";
 import { useAccountType } from "@/hooks/useAccountType";
-import { AGENCY_BILLING_ROUTE, isAgencyAccountRoute } from "@/lib/subscription-status";
+import { isAgencyAccountRoute } from "@/lib/subscription-status";
 
 
 
@@ -31,8 +30,7 @@ export default function DashboardLayout() {
   const { isPaid, isAdmin, isTrial, plano, trialEndsAt, isTrialExpired, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const location = useLocation();
   const { isAgency } = useAccountType();
-  const navigate = useNavigate();
-  const { isInGracePeriod, carenciaAte, isPendingCheckout } = useSubscriptionGate();
+  const { isPendingCheckout } = useSubscriptionGate();
   const [userId, setUserId] = useState<string | null>(null);
   const [brandModalDismissed, setBrandModalDismissed] = useState(false);
   const [brandModalForceOpen, setBrandModalForceOpen] = useState(false);
@@ -93,36 +91,10 @@ export default function DashboardLayout() {
       !skippedRecently &&
       !brandModalDismissed);
 
-  const gracePeriodDate = carenciaAte
-    ? new Date(carenciaAte).toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-    : "";
-
+  // Mensalidade vencida: o único aviso é o OverdueNotice, dentro do conteúdo
+  // (Visão Geral e tela de cobrança). Sem faixa extra aqui.
   return (
     <SidebarProvider>
-      {isInGracePeriod && (
-        <div className="w-full bg-amber-50 border-b border-amber-200 px-4 py-3">
-          <div className="flex items-center justify-between gap-4 max-w-full">
-            <div className="flex items-center gap-3 min-w-0">
-              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-              <p className="text-sm text-amber-800">
-                Seu pagamento está pendente. Você tem acesso até{" "}
-                <strong>{gracePeriodDate}</strong>. Regularize agora para não
-                perder o acesso.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate(isAgency ? AGENCY_BILLING_ROUTE : "/escolher-plano")}
-              className="text-sm font-medium text-amber-900 hover:text-amber-950 underline underline-offset-2 shrink-0 whitespace-nowrap"
-            >
-              Regularizar agora →
-            </button>
-          </div>
-        </div>
-      )}
       <div className="min-h-screen flex w-full bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col min-w-0">
