@@ -4,7 +4,7 @@ import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import {
-  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay,
+  evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay, isCountedPayment,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
 } from "../_shared/reconcile-decision.ts";
 
@@ -164,8 +164,8 @@ Deno.serve(async (req) => {
       const list: AsaasPayment[] = pays.items.map((p: AsaasPayment) => ({
         ...p, checkoutSession: p?.checkoutSession ?? ckId,
       }));
-      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : []);
-      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
+      ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : [], counted);
+      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted))?.id ?? null;
       subscriptionId = ev.subscriptionId ?? "";
       customerId = ev.customerId ?? "";
 
@@ -197,10 +197,10 @@ Deno.serve(async (req) => {
             const charges = await listAll(`/payments?subscription=${encodeURIComponent(pick.candidate.id)}`);
             lookupComplete = charges.complete;
             if (charges.complete) {
-              ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items);
+              ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items, counted);
               subscriptionId = ev.outcome !== "none" ? ev.subscriptionId ?? "" : "";
               customerId = ev.outcome !== "none" ? knownCustomer : "";
-              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at))?.id ?? null;
+              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted))?.id ?? null;
             }
           }
         } else {
