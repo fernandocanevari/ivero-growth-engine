@@ -8,3 +8,4 @@
 - Asaas fallback examines all subscriptions for a proven customer and adopts only a unique validated candidate; webhook matching is isolated in asaas-webhook/matching.ts — prevents attribution by shared customer alone while keeping manage-subscription behavior unchanged.
 - Confirmed payment IDs are counted atomically through record_checkout_payment for webhook and reconciliation — prevents double counting the same paid cycle across delivery paths.
 - Proration decisions and invoice lookup are shared only by agency-manage-brand and manage-subscription through _shared/proration.ts; fail closed on lookup errors to avoid duplicate invoices while preserving immediate access.
+- Individual upgrade differences ("prorata:<assinatura>:<plano>") are applied only by asaas-webhook/upgrade-payment.ts from the dedicated assinaturas.upgrade_pendente_* columns, never plano_pretendido — renewal RPCs promote plano_pretendido, so reusing it would grant upgrades unpaid.
