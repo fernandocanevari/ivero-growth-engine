@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { decideProration, findProrationInvoice, listProrationPayments } from "../_shared/proration.ts";
+import { decideProration, listProrationPayments, prorationDay } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { decideCancelAccess } from "./cancel-access.ts";
 import {
@@ -16,6 +16,29 @@ import {
 /** Única mensagem quando não dá para confirmar o cancelamento no Asaas. */
 export const CANCEL_UNVERIFIED_MESSAGE =
   "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.";
+
+/** P25b — mensagens do pedido de upgrade com pagamento da diferença. */
+export const OVERDUE_CHANGE_PLAN_MESSAGE =
+  "Sua mensalidade está em atraso. Pague a fatura vencida para poder mudar de plano.";
+export const UPGRADE_IN_PROGRESS_MESSAGE =
+  "Já existe um pedido de mudança de plano sendo processado. Aguarde alguns instantes e tente de novo.";
+export const UPGRADE_PAID_CONFIRMING_MESSAGE =
+  "Recebemos o pagamento da diferença e estamos confirmando. O novo plano será liberado em instantes.";
+
+/** Colunas do pedido de upgrade pendente (P25a). Limpas juntas, sempre. */
+const CLEAR_UPGRADE_PENDENTE = {
+  upgrade_pendente_plano: null,
+  upgrade_pendente_ciclo: null,
+  upgrade_pendente_valor_novo: null,
+  upgrade_pendente_diferenca: null,
+  upgrade_pendente_payment_id: null,
+  upgrade_pendente_invoice_url: null,
+  upgrade_pendente_em: null,
+};
+/** Reserva sem cobrança gravada vale por 60s (duplo clique / pedidos simultâneos). */
+const UPGRADE_RESERVA_MS = 60_000;
+/** Prazo da cobrança da diferença: hoje + 3 dias (calendário de Brasília). */
+const UPGRADE_DUE_DAYS = 3;
 import {
   normalizeCiclo,
   planValue,
@@ -125,7 +148,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses",
+        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
