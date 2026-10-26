@@ -710,6 +710,25 @@ Deno.serve(async (req) => {
         ciclos_pagos: ciclosPagos,
         counted_payment_ids: assinatura.counted_payment_ids as string[] | null,
       });
+
+      // P25b: pedido de upgrade pendente deixa de existir com o cancelamento.
+      // Falha ao remover a cobrança no Asaas não impede o cancelamento.
+      const pendingUpgradeId = (assinatura.upgrade_pendente_payment_id as string | null) ?? null;
+      let upgradeCleanup: Record<string, unknown> = {};
+      if (pendingUpgradeId) {
+        let removed = false;
+        if (asaasKey) {
+          try {
+            const del = await fetchAsaas(`/payments/${encodeURIComponent(pendingUpgradeId)}`, { method: "DELETE" });
+            removed = del.ok || del.status === 404;
+          } catch { removed = false; }
+        }
+        if (!removed) {
+          console.error(`ALERTA upgrade pendente não removido no cancelamento ${assinatura.id} ${pendingUpgradeId}`);
+        }
+        upgradeCleanup = { ...CLEAR_UPGRADE_PENDENTE, upgrade_ultimo_payment_id: pendingUpgradeId };
+      }
+
       const { error } = await supabaseAdmin
         .from("assinaturas")
         .update({
@@ -718,6 +737,7 @@ Deno.serve(async (req) => {
           asaas_subscription_id: null,
           asaas_subscription_id_anterior: removedSubId,
           ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
+          ...upgradeCleanup,
         })
         .eq("id", assinatura.id);
       if (error) return json(500, { error: error.message });
