@@ -463,7 +463,7 @@ Deno.serve(async (req) => {
       const customerId: string | null = cur.json?.customer ?? assinatura.asaas_customer_id ?? null;
 
       /** Troca imediata: novo valor no Asaas e, só depois, plano/ciclo no banco. */
-      const applyImmediately = async (proRata: null) => {
+      const applyImmediately = async () => {
         const upd = await fetchAsaas(`/subscriptions/${subId}`, {
           method: "PUT",
           body: JSON.stringify({
@@ -494,7 +494,7 @@ Deno.serve(async (req) => {
           value,
           previousValue: oldValue,
           nextDueDate: upd.json?.nextDueDate ?? null,
-          proRata,
+          proRata: null,
         });
       };
 
@@ -502,7 +502,7 @@ Deno.serve(async (req) => {
       // diferença a cobrar nem pedido pendente. Troca imediata.
       if (assinatura.status === "trial") {
         console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, status: "trial", reason: "trial_no_charge", path: "immediate" }));
-        return await applyImmediately(null);
+        return await applyImmediately();
       }
 
       // 3.2 Há cobrança pendente do ciclo atual? Se sim, o próprio
@@ -535,7 +535,7 @@ Deno.serve(async (req) => {
       console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: needsCharge ? proRataValue : 0, proRataValue, invoiceStatus: needsCharge ? (customerId ? "planned" : "missing_customer") : "not_required", path }));
 
       // Sem cobrança necessária (redução, só ciclo, abaixo do mínimo...): imediato, como hoje.
-      if (!needsCharge) return await applyImmediately(null);
+      if (!needsCharge) return await applyImmediately();
 
       // Cobrança necessária sem cliente no Asaas: nunca libera o upgrade de graça.
       if (!customerId) {
