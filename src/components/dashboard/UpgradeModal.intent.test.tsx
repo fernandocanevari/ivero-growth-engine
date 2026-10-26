@@ -162,4 +162,48 @@ describe("UpgradeModal — roteamento por intenção", () => {
     await waitFor(() => expect(toastMock).toHaveBeenCalled());
     expect((toastMock.mock.calls[0][0] as { variant?: string }).variant).not.toBe("destructive");
   });
+
+  it("P25b pending_payment: aviso exato e abre a fatura da diferença", async () => {
+    statusMock = PAGANTE;
+    invoke.mockResolvedValue({
+      data: {
+        ok: true, mode: "pending_payment", plano: "presenca", planoPendente: "influencia", ciclo: "mensal",
+        diferenca: 266.67, dueDate: "2026-10-29", invoiceUrl: "https://asaas.test/i/dif",
+      },
+      error: null,
+    });
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    await clickPlano(/Ampliar influência/i);
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    expect((toastMock.mock.calls[0][0] as { description: string }).description).toBe(
+      "Pedido registrado. O plano Influência será liberado assim que o pagamento da diferença de R$ 266,67 for confirmado. Você continua no seu plano atual.",
+    );
+    expect(open).toHaveBeenCalledWith("https://asaas.test/i/dif", "_blank", "noopener");
+    open.mockRestore();
+  });
+
+  it("P25b pagamento_em_atraso mostra a mensagem do servidor", async () => {
+    statusMock = { ...PAGANTE, effectiveStatus: "inadimplente" };
+    const message = "Sua mensalidade está em atraso. Pague a fatura vencida para poder mudar de plano.";
+    invoke.mockResolvedValue({ data: { ok: false, reason: "pagamento_em_atraso", message }, error: null });
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    await clickPlano(/Ampliar influência/i);
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    const arg = toastMock.mock.calls[0][0] as { title: string; description: string };
+    expect(arg.title).toBe("Mensalidade em atraso");
+    expect(arg.description).toBe(message);
+  });
+
+  it("P25b pedido_em_andamento mostra aviso próprio, sem abrir checkout", async () => {
+    statusMock = PAGANTE;
+    invoke.mockResolvedValue({ data: { ok: false, reason: "pedido_em_andamento" }, error: null });
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    await clickPlano(/Ampliar influência/i);
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    const arg = toastMock.mock.calls[0][0] as { title: string; description: string; variant?: string };
+    expect(arg.title).toBe("Pedido em andamento");
+    expect(arg.description).toContain("Já existe um pedido de mudança de plano");
+    expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
+  });
 });

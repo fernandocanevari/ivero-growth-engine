@@ -80,7 +80,8 @@ async function run(name: string, options: { due?: string; account?: string; dupl
 }
 
 for (const name of ["manage-subscription", "agency-manage-brand"]) {
-  Deno.test(`${name}: future pending permits invoice and immediate local update`, async () => {
+  // P25b: o individual não cobra/libera mais na hora (ver p25b_change_plan_test.ts).
+  if (name === "agency-manage-brand") Deno.test(`${name}: future pending permits invoice and immediate local update`, async () => {
     const result = await run(name);
     assertEquals(result.status, 200);
     assertEquals(result.data.proRata.value, name === "agency-manage-brand" ? 497 : 400);
@@ -94,12 +95,12 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assertEquals(result.data.proRata, null);
     assertEquals(result.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments")).length, 0);
   });
-  Deno.test(`${name}: identical invoice reused without POST`, async () => {
+  if (name === "agency-manage-brand") Deno.test(`${name}: identical invoice reused without POST`, async () => {
     const result = await run(name, { duplicate: true });
     assertEquals(result.data.proRata.invoiceUrl, "https://invoice.invalid/existing");
     assertEquals(result.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments")).length, 0);
   });
-  Deno.test(`${name}: failed duplicate lookup preserves access without POST`, async () => {
+  if (name === "agency-manage-brand") Deno.test(`${name}: failed duplicate lookup preserves access without POST`, async () => {
     const result = await run(name, { lookupFail: true });
     assertEquals(result.status, 200);
     assertEquals(result.data.proRata, null);
@@ -111,7 +112,7 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assertEquals(result.data.proRata, null);
     assert(result.logs.some((l) => l.includes('"reason":"no_next_due"')));
   });
-  Deno.test(`${name}: POST network failure keeps immediate access and logs failed`, async () => {
+  if (name === "agency-manage-brand") Deno.test(`${name}: POST network failure keeps immediate access and logs failed`, async () => {
     const result = await run(name, { postFail: true });
     assertEquals(result.status, 200);
     assertEquals(result.data.proRata, null);
@@ -145,7 +146,7 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
   Deno.test(`${name}: earliest future pending overrides advanced subscription nextDueDate`, async () => {
     const result = await run(name, { due: plusDays(10), subNextDue: plusDays(40) });
     assertEquals(result.status, 200);
-    assertEquals(result.data.proRata.days, 10);
+    if (name === "agency-manage-brand") assertEquals(result.data.proRata.days, 10);
     const log = result.logs.find((l) => l.startsWith("proration diagnostic:"))!;
     const entry = JSON.parse(log.slice("proration diagnostic:".length));
     assertEquals([entry.nextDueDate, entry.referenceDue, entry.referenceSource, entry.daysLeft], [plusDays(40), plusDays(10), "pending", 10]);
@@ -156,7 +157,8 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
 const posts = (r: { calls: { url: string; method: string; body: any }[] }) => r.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments"));
 const diagnostic = (logs: string[]) => JSON.parse(logs.find((l) => l.startsWith("proration diagnostic:"))!.slice("proration diagnostic:".length));
 const baseRef = (name: string) => name === "agency-manage-brand" ? "prorata:local-sub:agency:11111111-1111-4111-8111-111111111111" : "prorata:local-sub:influencia";
-for (const name of ["manage-subscription", "agency-manage-brand"]) {
+// P25b: o individual sempre cria cobrança NOVA (sem reuso por referência) — ver p25b_change_plan_test.ts.
+for (const name of ["agency-manage-brand"]) {
   Deno.test(`${name}: pro-rata POST uses billingType CREDIT_CARD and base reference`, async () => {
     const result = await run(name);
     assertEquals(posts(result).length, 1);
