@@ -107,7 +107,8 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assert(result.logs.some((l) => l.includes('"invoiceStatus":"lookup_failed"')));
     assertEquals(result.calls.filter((c) => c.method === "POST" && c.url.includes("/api/v3/payments")).length, 0);
   });
-  Deno.test(`${name}: absent next due and no future pending explicitly logged`, async () => {
+  // P25b-fix: no individual este caso agora é recusado (ver p25b_change_plan_test.ts).
+  if (name === "agency-manage-brand") Deno.test(`${name}: absent next due and no future pending explicitly logged`, async () => {
     const result = await run(name, { noNextDue: true, noPending: true });
     assertEquals(result.data.proRata, null);
     assert(result.logs.some((l) => l.includes('"reason":"no_next_due"')));
@@ -119,7 +120,8 @@ for (const name of ["manage-subscription", "agency-manage-brand"]) {
     assert(result.logs.some((l) => l.includes('"invoiceStatus":"failed"')));
     assert(result.calls.some((c) => c.method === "PATCH" && c.url.includes("/rest/v1/assinaturas")));
   });
-  Deno.test(`${name}: pending lookup failure suppresses charge and logs reason`, async () => {
+  // P25b-fix: no individual este caso agora é recusado (ver p25b_change_plan_test.ts).
+  if (name === "agency-manage-brand") Deno.test(`${name}: pending lookup failure suppresses charge and logs reason`, async () => {
     const result = await run(name, { pendingFail: true });
     assertEquals(result.status, 200);
     assertEquals(result.data.proRata, null);

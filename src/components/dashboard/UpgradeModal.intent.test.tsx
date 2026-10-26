@@ -206,4 +206,22 @@ describe("UpgradeModal — roteamento por intenção", () => {
     expect(arg.description).toContain("Já existe um pedido de mudança de plano");
     expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
   });
+  for (const [reason, message] of [
+    ["nao_foi_possivel_calcular", "Não conseguimos calcular a diferença agora. Tente de novo em alguns instantes."],
+    ["cobranca_indisponivel", "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes."],
+    ["pedido_em_andamento", "Já existe um pedido de mudança de plano sendo processado. Aguarde alguns instantes e tente de novo."],
+    ["pagamento_em_atraso", "Sua mensalidade está em atraso. Pague a fatura vencida para poder mudar de plano."],
+  ] as const) {
+    it(`P25b-fix ${reason}: mostra a mensagem da resposta, nunca o texto técnico`, async () => {
+      statusMock = PAGANTE;
+      invoke.mockResolvedValue({ data: { ok: false, reason, message }, error: null });
+      render(<UpgradeModal open onOpenChange={() => {}} />);
+      await clickPlano(/Ampliar influência/i);
+      await waitFor(() => expect(toastMock).toHaveBeenCalled());
+      const arg = toastMock.mock.calls[0][0] as { description: string };
+      expect(arg.description).toBe(message);
+      expect(JSON.stringify(toastMock.mock.calls)).not.toContain("non-2xx");
+      expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
+    });
+  }
 });

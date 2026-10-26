@@ -144,6 +144,19 @@ export function UpgradeModal({
       });
       return;
     }
+    // P25b-fix: diferença não calculável ou cobrança indisponível — nada mudou.
+    if (
+      data?.ok === false &&
+      (data?.reason === "nao_foi_possivel_calcular" || data?.reason === "cobranca_indisponivel")
+    ) {
+      toast({
+        title: "Não foi possível mudar o plano",
+        description:
+          (data?.message as string) ?? "Não conseguimos concluir agora. Tente de novo em alguns instantes.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (data?.ok === false) {
       // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
       throw new Error(
