@@ -1,0 +1,1 @@
+ALTER TABLE public.assinaturas ADD COLUMN IF NOT EXISTS upgrade_ultimo_payment_id text;

@@ -303,6 +303,7 @@ export type Database = {
           upgrade_pendente_payment_id: string | null
           upgrade_pendente_plano: string | null
           upgrade_pendente_valor_novo: number | null
+          upgrade_ultimo_payment_id: string | null
           user_id: string
           valor_consolidado: number | null
         }
@@ -337,6 +338,7 @@ export type Database = {
           upgrade_pendente_payment_id?: string | null
           upgrade_pendente_plano?: string | null
           upgrade_pendente_valor_novo?: number | null
+          upgrade_ultimo_payment_id?: string | null
           user_id: string
           valor_consolidado?: number | null
         }
@@ -371,6 +373,7 @@ export type Database = {
           upgrade_pendente_payment_id?: string | null
           upgrade_pendente_plano?: string | null
           upgrade_pendente_valor_novo?: number | null
+          upgrade_ultimo_payment_id?: string | null
           user_id?: string
           valor_consolidado?: number | null
         }
