@@ -124,12 +124,48 @@ export function UpgradeModal({
     });
     invalidateAccessCache();
     if (error || data?.error) throw new Error(error?.message ?? data?.error);
+    // P25b: mensalidade em atraso ou outro pedido de upgrade ainda em curso.
+    if (data?.ok === false && data?.reason === "pagamento_em_atraso") {
+      toast({
+        title: "Mensalidade em atraso",
+        description:
+          (data?.message as string) ??
+          "Sua mensalidade está em atraso. Pague a fatura vencida para poder mudar de plano.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (data?.ok === false && data?.reason === "pedido_em_andamento") {
+      toast({
+        title: "Pedido em andamento",
+        description:
+          (data?.message as string) ??
+          "Já existe um pedido de mudança de plano sendo processado. Aguarde alguns instantes e tente de novo.",
+      });
+      return;
+    }
     if (data?.ok === false) {
       // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
       throw new Error(
         (data?.message as string) ??
           "Não foi possível trocar o plano. Tente contratar novamente.",
       );
+    }
+    // P25b: o plano novo só vale depois do pagamento da diferença.
+    if (data?.mode === "pending_payment") {
+      const pendingKey = data?.planoPendente as string | undefined;
+      const pendingName = PLANOS_ARRAY.find((p) => p.key === pendingKey)?.name ?? planName;
+      const diferenca = Number(data?.diferenca ?? 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      toast({
+        description: `Pedido registrado. O plano ${pendingName} será liberado assim que o pagamento da diferença de R$ ${diferenca} for confirmado. Você continua no seu plano atual.`,
+      });
+      if (data?.invoiceUrl) window.open(data.invoiceUrl as string, "_blank", "noopener");
+      onPlanChanged?.();
+      onOpenChange(false);
+      return;
     }
     const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
     toast({
