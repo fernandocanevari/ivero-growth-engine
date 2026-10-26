@@ -33,6 +33,8 @@ interface World {
   /** Cobranças avulsas no Asaas, por id. */
   charges: Map<string, Record<string, unknown>>;
   postStatus?: number;
+  /** HTTP forçado em GET /subscriptions/{id}/payments. */
+  subPaymentsStatus?: number;
   postNetworkError?: boolean;
   deletePaymentStatus?: number;
   /** PATCH que grava a cobrança falha (simula erro de banco). */
@@ -131,6 +133,7 @@ async function call(w: World, body: Record<string, unknown>) {
       if (p === "/subscriptions/sub_test" && req.method === "GET") return w.sub.deleted ? reply({ errors: [] }, 404) : reply(w.sub);
       if (p === "/subscriptions/sub_test" && req.method === "PUT") return reply({ ...w.sub, value: reqBody.value });
       if (p === "/subscriptions/sub_test" && req.method === "DELETE") { w.sub.deleted = true; return reply({ deleted: true }); }
+      if (p === "/subscriptions/sub_test/payments" && w.subPaymentsStatus) return reply({ errors: [] }, w.subPaymentsStatus);
       if (p === "/subscriptions/sub_test/payments") return reply({ object: "list", hasMore: false, data: w.subPayments });
       if (p === "/subscriptions" && req.method === "GET") {
         const live = !w.sub.deleted && w.sub.customer === url.searchParams.get("customer") ? [w.sub] : [];
@@ -337,7 +340,11 @@ Deno.test("diferença exigida sem customer no Asaas → erro e NADA muda (nunca 
   w.sub.customer = null;
   const before = structuredClone(w.row);
   const r = await upgrade(w);
-  assertEquals(r.status, 502);
+  assertEquals(r.status, 200);
+  assertEquals(r.data, {
+    ok: false, reason: "cobranca_indisponivel",
+    message: "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes.",
+  });
   assertEquals(posts(w).length + puts(w).length, 0);
   assertEquals(w.row, before);
 });
@@ -424,3 +431,88 @@ Deno.test("cancel sem upgrade pendente: não chama DELETE /payments nem mexe nas
   const cancelPatch = w.patches.find((p) => p.status === "cancelado")!;
   assertEquals(UPGRADE_COLS.some((k) => k in cancelPatch) || "upgrade_ultimo_payment_id" in cancelPatch, false);
 });
+
+// ── P25b-fix ─────────────────────────────────────────────────────────────────
+const CANNOT = { ok: false, reason: "nao_foi_possivel_calcular", message: "Não conseguimos calcular a diferença agora. Tente de novo em alguns instantes." };
+
+Deno.test("fix 1a: lista de cobranças pendentes falha num aumento → recusa (200) e NADA muda", async () => {
+  const w = world({}, { subPaymentsStatus: 503 });
+  const before = structuredClone(w.row);
+  const r = await upgrade(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data, CANNOT);
+  assertEquals(posts(w).length + puts(w).length, 0);
+  assertEquals(w.patches.length, 0);
+  assertEquals(w.row, before);
+});
+
+Deno.test("fix 1b: sem vencimento de referência num aumento → recusa (200) e NADA muda", async () => {
+  const w = world({}, { subPayments: [] });
+  w.sub.nextDueDate = null;
+  const before = structuredClone(w.row);
+  const r = await upgrade(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data, CANNOT);
+  assertEquals(posts(w).length + puts(w).length, 0);
+  assertEquals(w.patches.length, 0);
+  assertEquals(w.row, before);
+});
+
+Deno.test("fix 1: recusa com pedido anterior pendente não remove a cobrança anterior", async () => {
+  const w = withOldCharge(world(OPEN_PENDING, { subPaymentsStatus: 503 }));
+  const before = structuredClone(w.row);
+  const r = await upgrade(w, "autoridade");
+  assertEquals(r.data, CANNOT);
+  assertEquals(asaas(w, "DELETE", /./).length, 0);
+  assertEquals(w.charges.get("pay_old")?.deleted, undefined);
+  assertEquals(w.row, before);
+});
+
+Deno.test("fix 1: redução com lista indisponível continua imediata (como hoje)", async () => {
+  const w = world({ plano: "influencia" }, { subPaymentsStatus: 503 });
+  w.sub.value = 897;
+  const r = await upgrade(w, "presenca");
+  assertEquals(r.data.mode, "asaas");
+  assertEquals(w.row.plano, "presenca");
+});
+
+Deno.test("fix 2: status 'atrasado' é recusado como 'inadimplente'", async () => {
+  const w = world({ status: "atrasado" });
+  const before = structuredClone(w.row);
+  const r = await upgrade(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data, {
+    ok: false, reason: "pagamento_em_atraso",
+    message: "Sua mensalidade está em atraso. Pague a fatura vencida para poder mudar de plano.",
+  });
+  assertEquals(w.calls.filter((c) => c.url.includes("asaas.com")).length, 0);
+  assertEquals(w.row, before);
+});
+
+Deno.test("S1: ciclo anterior pago, cobrança do PRÓXIMO ciclo pendente com vencimento futuro → pending_payment, nada mais muda", async () => {
+  const w = world({ ciclos_pagos: 1, counted_payment_ids: ["pay_c1"] });
+  w.subPayments = [{ id: "pay_next", status: "PENDING", dueDate: plusDays(25), value: 497 }];
+  const r = await upgrade(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.mode, "pending_payment");
+  assertEquals(r.data.diferenca, 333.33); // 400 x 25/30
+  assertEquals(puts(w).length, 0, "valor da cobrança do próximo ciclo não é alterado");
+  assertEquals(posts(w).length, 1);
+  assertEquals([w.row.plano, w.row.ciclo_contratado, w.row.ciclos_pagos], ["presenca", "mensal", 1]);
+});
+
+for (const [label, due] of [["S2: cobrança em aberto vence HOJE", plusDays(0)], ["S3: cobrança em aberto venceu no passado", plusDays(-3)]] as const) {
+  Deno.test(`${label} → aplica na hora e atualiza essa cobrança (updatePendingPayments)`, async () => {
+    const w = world();
+    w.subPayments = [{ id: "pay_open", status: "PENDING", dueDate: due, value: 497 }];
+    const r = await upgrade(w);
+    assertEquals(r.status, 200);
+    assertEquals(r.data.mode, "asaas");
+    assertEquals(r.data.proRata, null);
+    assertEquals(posts(w).length, 0);
+    assertEquals(puts(w).length, 1);
+    assertEquals(puts(w)[0].body, { value: 897, updatePendingPayments: true, description: "Ivero — Plano influencia" });
+    assertEquals(w.row.plano, "influencia");
+    assertEquals(pending(w.row), NO_PENDING);
+  });
+}
