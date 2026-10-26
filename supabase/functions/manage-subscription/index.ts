@@ -341,6 +341,11 @@ Deno.serve(async (req) => {
         });
       }
 
+      // P25b: com mensalidade em atraso não há mudança de plano — nada muda.
+      if (assinatura.status === "inadimplente") {
+        return json(200, { ok: false, reason: "pagamento_em_atraso", message: OVERDUE_CHANGE_PLAN_MESSAGE });
+      }
+
       // Ciclo: o enviado agora ou, na ausência, o já contratado.
       const ciclo = body.ciclo || body.billing_cycle
         ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
