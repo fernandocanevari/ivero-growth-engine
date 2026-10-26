@@ -296,6 +296,13 @@ export type Database = {
           status: string
           trial_ends_at: string | null
           updated_at: string
+          upgrade_pendente_ciclo: string | null
+          upgrade_pendente_diferenca: number | null
+          upgrade_pendente_em: string | null
+          upgrade_pendente_invoice_url: string | null
+          upgrade_pendente_payment_id: string | null
+          upgrade_pendente_plano: string | null
+          upgrade_pendente_valor_novo: number | null
           user_id: string
           valor_consolidado: number | null
         }
@@ -323,6 +330,13 @@ export type Database = {
           status?: string
           trial_ends_at?: string | null
           updated_at?: string
+          upgrade_pendente_ciclo?: string | null
+          upgrade_pendente_diferenca?: number | null
+          upgrade_pendente_em?: string | null
+          upgrade_pendente_invoice_url?: string | null
+          upgrade_pendente_payment_id?: string | null
+          upgrade_pendente_plano?: string | null
+          upgrade_pendente_valor_novo?: number | null
           user_id: string
           valor_consolidado?: number | null
         }
@@ -350,6 +364,13 @@ export type Database = {
           status?: string
           trial_ends_at?: string | null
           updated_at?: string
+          upgrade_pendente_ciclo?: string | null
+          upgrade_pendente_diferenca?: number | null
+          upgrade_pendente_em?: string | null
+          upgrade_pendente_invoice_url?: string | null
+          upgrade_pendente_payment_id?: string | null
+          upgrade_pendente_plano?: string | null
+          upgrade_pendente_valor_novo?: number | null
           user_id?: string
           valor_consolidado?: number | null
         }
