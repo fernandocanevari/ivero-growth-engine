@@ -28,6 +28,10 @@ const memory = {
   claims: [] as string[],
   dbWrites: 0,
   clearOnPut: false,
+  noKey: false,
+  putThrow: false,
+  dbReadError: false,
+  dbUpdateError: false,
 };
 
 function reset() {
@@ -41,6 +45,7 @@ function reset() {
     upgrade_pendente_valor_novo: 997, upgrade_pendente_diferenca: 120.5,
     upgrade_pendente_payment_id: "pay_up", upgrade_pendente_invoice_url: "https://sandbox.asaas.com/i/pay_up",
     upgrade_pendente_em: "2026-10-26T15:00:00.000Z",
+    upgrade_ultimo_payment_id: null,
   };
   memory.asaasCalls.length = 0;
   memory.asaasBodies.length = 0;
@@ -49,6 +54,10 @@ function reset() {
   memory.claims.length = 0;
   memory.dbWrites = 0;
   memory.clearOnPut = false;
+  memory.noKey = false;
+  memory.putThrow = false;
+  memory.dbReadError = false;
+  memory.dbUpdateError = false;
 }
 
 const CLEARED = {
@@ -85,6 +94,7 @@ async function send(body: Record<string, unknown>): Promise<{ status: number; ou
       memory.asaasCalls.push(`${request.method} ${url.pathname.replace("/api/v3", "")}`);
       if (request.method === "PUT" && /^\/api\/v3\/subscriptions\/[^/]+$/.test(url.pathname)) {
         memory.asaasBodies.push(await request.json());
+        if (memory.putThrow) throw new TypeError("network timeout");
         if (memory.clearOnPut) memory.row.upgrade_pendente_payment_id = null;
         return new Response(JSON.stringify(memory.putStatus === 200 ? { id: SUB } : { errors: [{ description: "falha" }] }), { status: memory.putStatus });
       }
@@ -109,6 +119,8 @@ async function send(body: Record<string, unknown>): Promise<{ status: number; ou
         Object.assign(r, { ciclos_pagos: Number(r.ciclos_pagos) + 1, status: "ativo", carencia_ate: null, data_vencimento: data._data_vencimento, trial_ends_at: null, checkout_context: null, plano: r.plano_pretendido ?? r.plano, plano_pretendido: null });
         out = { ciclos_pagos: r.ciclos_pagos, counted: true };
       }
+    } else if (table === "assinaturas" && ((method === "GET" && memory.dbReadError) || (method !== "GET" && memory.dbUpdateError))) {
+      return new Response(JSON.stringify({ message: "db indisponível", code: "57P01" }), { status: 503, headers: { "Content-Type": "application/json" } });
     } else if (table === "assinaturas") {
       const matches = rowMatches(url.searchParams);
       if (method === "GET") out = matches ? memory.row : null;
@@ -122,7 +134,7 @@ async function send(body: Record<string, unknown>): Promise<{ status: number; ou
     } else throw new Error(`unexpected_table:${table}`);
     return new Response(out === null ? null : JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json" } });
   };
-  Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://upgrade.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook", ASAAS_ENV: "sandbox", ASAAS_API_KEY_SANDBOX: "fake-asaas" } as Record<string, string>)[key];
+  Deno.env.get = (key: string) => ({ SUPABASE_URL: "https://upgrade.example.test", SUPABASE_SERVICE_ROLE_KEY: "fake-service", ASAAS_WEBHOOK_TOKEN: "fake-webhook", ASAAS_ENV: "sandbox", ...(memory.noKey ? {} : { ASAAS_API_KEY_SANDBOX: "fake-asaas" }) } as Record<string, string>)[key];
   try {
     const res = await h(new Request("https://function.example.test", { method: "POST", headers: { "asaas-access-token": "fake-webhook", "Content-Type": "application/json" }, body: JSON.stringify(body) }));
     return { status: res.status, out: await res.json(), logs };
@@ -160,6 +172,7 @@ Deno.test({ ...opts, name: "1) CONFIRMED com upgrade pendente: PUT primeiro, dep
   assertEquals(memory.row.plano, "autoridade");
   assertEquals(memory.row.ciclo_contratado, "anual");
   for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
+  assertEquals(memory.row.upgrade_ultimo_payment_id, "pay_up");
   assertEquals(pick(memory.row), before);
   assertEquals(memory.claims.length, 0);
 }});
@@ -179,9 +192,11 @@ Deno.test({ ...opts, name: "2) RECEIVED do mesmo pagamento depois do CONFIRMED �
   const snapshot = structuredClone(memory.row);
   memory.asaasCalls.length = 0;
   const writes = memory.dbWrites;
-  const { status, out } = await send({ event: "PAYMENT_RECEIVED", payment: upgradePayment() });
+  const { status, out, logs } = await send({ event: "PAYMENT_RECEIVED", payment: upgradePayment() });
   assertEquals(status, 200);
   assertEquals(out, { received: true, ignored: "one_off" });
+  assert(logs.includes("upgrade já tratado pay_up PAYMENT_RECEIVED"), logs.join("\n"));
+  assert(!logs.some((l) => l.includes("ALERTA")), logs.join("\n"));
   assertEquals(memory.row, snapshot);
   assertEquals(memory.asaasCalls, []);
   assertEquals(memory.dbWrites, writes);
@@ -199,26 +214,49 @@ Deno.test({ ...opts, name: "2b) corrida: outra entrega limpa a pendência entre 
   assert(logs.some((l) => l.includes("upgrade já processado")));
 }});
 
-Deno.test({ ...opts, name: "3) PUT falha → HTTP 500 e linha intacta", fn: async () => {
-  reset();
-  memory.putStatus = 500;
-  const snapshot = structuredClone(memory.row);
-  const { status, logs } = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
-  assertEquals(status, 500);
-  assertEquals(memory.row, snapshot);
-  assertEquals(memory.dbWrites, 0);
-  assert(logs.some((l) => l.includes("PUT /subscriptions falhou")));
-}});
+// ── Falhas PERMANENTES: 200, nada muda, ALERTA ──────────────────────────────
+const PERMANENT: Array<[string, () => void, string, boolean]> = [
+  ["sem asaas_subscription_id", () => { memory.row.asaas_subscription_id = null; }, "assinatura_sem_asaas_subscription_id", false],
+  ["sem upgrade_pendente_valor_novo", () => { memory.row.upgrade_pendente_valor_novo = null; }, "sem_upgrade_pendente_valor_novo", false],
+  ["sem chave do Asaas", () => { memory.noKey = true; }, "chave_asaas_ausente", false],
+  ...[400, 401, 403, 404].map((code) => [`PUT responde ${code}`, () => { memory.putStatus = code; }, `asaas_put_http_${code}`, true] as [string, () => void, string, boolean]),
+];
+for (const [label, setup, reason, callsPut] of PERMANENT) {
+  for (const ev of ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]) {
+    Deno.test({ ...opts, name: `3) permanente: ${label} em ${ev} → 200, linha intacta, ALERTA`, fn: async () => {
+      reset();
+      setup();
+      const snapshot = structuredClone(memory.row);
+      const { status, out, logs } = await send({ event: ev, payment: upgradePayment() });
+      assertEquals(status, 200);
+      assertEquals(out, { received: true, ignored: "upgrade_not_applied" });
+      assertEquals(memory.row, snapshot);
+      assertEquals(memory.dbWrites, 0);
+      assertEquals(memory.asaasCalls, callsPut ? [`PUT /subscriptions/${SUB}`] : []);
+      assert(logs.some((l) => l.startsWith(`ALERTA upgrade pago sem promoção: ${RID} pay_up ${reason}`)), logs.join("\n"));
+    }});
+  }
+}
 
-Deno.test({ ...opts, name: "3b) sem asaas_subscription_id → 500 sem chamar o Asaas e linha intacta", fn: async () => {
-  reset();
-  memory.row.asaas_subscription_id = null;
-  const snapshot = structuredClone(memory.row);
-  const { status } = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
-  assertEquals(status, 500);
-  assertEquals(memory.asaasCalls, []);
-  assertEquals(memory.row, snapshot);
-}});
+// ── Falhas TRANSITÓRIAS: 500, nada muda (o Asaas reenvia) ─────────────────────
+const TRANSIENT: Array<[string, () => void]> = [
+  ["erro de rede/timeout no PUT", () => { memory.putThrow = true; }],
+  ...[500, 502, 503, 429].map((code) => [`PUT responde ${code}`, () => { memory.putStatus = code; }] as [string, () => void]),
+  ["erro ao ler a assinatura", () => { memory.dbReadError = true; }],
+  ["erro no UPDATE de promoção", () => { memory.dbUpdateError = true; }],
+];
+for (const [label, setup] of TRANSIENT) {
+  Deno.test({ ...opts, name: `3t) transitória: ${label} → 500 e linha intacta`, fn: async () => {
+    reset();
+    setup();
+    const snapshot = structuredClone(memory.row);
+    const { status, logs } = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+    assertEquals(status, 500);
+    assertEquals(memory.row, snapshot);
+    assertEquals(memory.dbWrites, 0);
+    assert(!logs.some((l) => l.startsWith("ALERTA upgrade pago sem promoção")), logs.join("\n"));
+  }});
+}
 
 for (const ev of ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]) {
   Deno.test({ ...opts, name: `4) ${ev} com payment.id diferente → ALERTA e nada muda`, fn: async () => {
@@ -230,6 +268,7 @@ for (const ev of ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]) {
     assertEquals(memory.row, snapshot);
     assertEquals(memory.asaasCalls, []);
     assert(logs.some((l) => l.includes(`ALERTA: pagamento de upgrade sem pendência correspondente pay_outro ${RID}`)), logs.join("\n"));
+    assert(!logs.some((l) => l.startsWith("upgrade já tratado")));
   }});
 }
 
@@ -255,6 +294,7 @@ for (const deleteStatus of [200, 404, 500]) {
     assertEquals(out, { received: true, upgrade: "expired" });
     assertEquals(memory.asaasCalls, ["DELETE /payments/pay_up"]);
     for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
+    assertEquals(memory.row.upgrade_ultimo_payment_id, "pay_up");
     assertEquals(memory.row.plano, "influencia");
     assertEquals(memory.row.ciclo_contratado, "mensal");
     assertEquals(pick(memory.row), before);
@@ -270,6 +310,7 @@ Deno.test({ ...opts, name: "6) DELETED → limpa o upgrade pendente sem chamar o
   assertEquals(out, { received: true, upgrade: "expired" });
   assertEquals(memory.asaasCalls, []);
   for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
+  assertEquals(memory.row.upgrade_ultimo_payment_id, "pay_up");
   assertEquals(memory.row.plano, "influencia");
   assertEquals(pick(memory.row), before);
 }});
