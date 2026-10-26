@@ -25,6 +25,11 @@ export const UPGRADE_IN_PROGRESS_MESSAGE =
 export const UPGRADE_PAID_CONFIRMING_MESSAGE =
   "Recebemos o pagamento da diferença e estamos confirmando. O novo plano será liberado em instantes.";
 
+export const CANNOT_CALCULATE_MESSAGE =
+  "Não conseguimos calcular a diferença agora. Tente de novo em alguns instantes.";
+export const MISSING_CUSTOMER_MESSAGE =
+  "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes.";
+
 /** Colunas do pedido de upgrade pendente (P25a). Limpas juntas, sempre. */
 const CLEAR_UPGRADE_PENDENTE = {
   upgrade_pendente_plano: null,
@@ -342,7 +347,8 @@ Deno.serve(async (req) => {
       }
 
       // P25b: com mensalidade em atraso não há mudança de plano — nada muda.
-      if (assinatura.status === "inadimplente") {
+      // "atrasado" (status antigo) é tratado exatamente como "inadimplente".
+      if (assinatura.status === "inadimplente" || assinatura.status === "atrasado") {
         return json(200, { ok: false, reason: "pagamento_em_atraso", message: OVERDUE_CHANGE_PLAN_MESSAGE });
       }
 
@@ -425,7 +431,12 @@ Deno.serve(async (req) => {
           }
           // Removida / vencida / outro estado: substitui como um pedido diferente.
         }
-        // Pedido diferente (ou cobrança não mais aberta): remove a cobrança anterior primeiro.
+      }
+      // Pedido diferente (ou cobrança não mais aberta): remove a cobrança anterior
+      // ANTES de aplicar/criar o novo — mas só depois das recusas (P25b-fix), para
+      // que uma recusa nunca mexa no pedido anterior. Devolve resposta só em falha.
+      const replacePreviousPending = async (): Promise<Response | null> => {
+        if (!pendingUpgradeId) return null;
         let del: Awaited<ReturnType<typeof fetchAsaas>> | null = null;
         try {
           del = await fetchAsaas(`/payments/${encodeURIComponent(pendingUpgradeId)}`, { method: "DELETE" });
@@ -448,7 +459,8 @@ Deno.serve(async (req) => {
           return json(200, { ok: false, reason: "pedido_em_andamento", message: UPGRADE_IN_PROGRESS_MESSAGE });
         }
         console.log("change_plan: pedido de upgrade anterior removido:", assinatura.id, pendingUpgradeId);
-      }
+        return null;
+      };
 
       // 3.1 Estado atual da assinatura no Asaas (valor antigo, ciclo, vencimento
       // e customer — precisamos do customer pra emitir a cobrança avulsa).
@@ -502,6 +514,8 @@ Deno.serve(async (req) => {
       // diferença a cobrar nem pedido pendente. Troca imediata.
       if (assinatura.status === "trial") {
         console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, status: "trial", reason: "trial_no_charge", path: "immediate" }));
+        const replaced = await replacePreviousPending();
+        if (replaced) return replaced;
         return await applyImmediately();
       }
 
@@ -529,19 +543,33 @@ Deno.serve(async (req) => {
       const { daysLeft, currentCycleUnpaid: hasPending } = decision;
       const proRataValue = pendingLookupFailed ? 0 : decision.proRataValue;
       const reason = pendingLookupFailed ? "pending_lookup_failed" : decision.reason;
-      const needsCharge = proRataValue >= 5;
-      const path = needsCharge ? (customerId ? "pending_payment" : "missing_customer") : "immediate";
+      // P25b-fix: aumento de preço sem como calcular a diferença (lista de
+      // cobranças indisponível ou sem vencimento de referência) → recusa.
+      const cannotCalculate = delta > 0 && (pendingLookupFailed || decision.reason === "no_next_due");
+      const needsCharge = !cannotCalculate && proRataValue >= 5;
+      const path = cannotCalculate
+        ? "cannot_calculate"
+        : needsCharge ? (customerId ? "pending_payment" : "missing_customer") : "immediate";
 
       console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: needsCharge ? proRataValue : 0, proRataValue, invoiceStatus: needsCharge ? (customerId ? "planned" : "missing_customer") : "not_required", path }));
 
-      // Sem cobrança necessária (redução, só ciclo, abaixo do mínimo...): imediato, como hoje.
-      if (!needsCharge) return await applyImmediately();
+      if (cannotCalculate) {
+        console.error("change_plan: diferença não calculável, nada alterado:", assinatura.id, reason);
+        return json(200, { ok: false, reason: "nao_foi_possivel_calcular", message: CANNOT_CALCULATE_MESSAGE });
+      }
 
       // Cobrança necessária sem cliente no Asaas: nunca libera o upgrade de graça.
-      if (!customerId) {
+      if (needsCharge && !customerId) {
         console.error("change_plan: diferença exigida sem customer no Asaas, nada alterado:", assinatura.id, proRataValue);
-        return json(502, { error: "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes." });
+        return json(200, { ok: false, reason: "cobranca_indisponivel", message: MISSING_CUSTOMER_MESSAGE });
       }
+
+      const replaced = await replacePreviousPending();
+      if (replaced) return replaced;
+
+      // Sem cobrança necessária (redução, só ciclo, abaixo do mínimo, ciclo
+      // vencido em aberto): imediato, como hoje.
+      if (!needsCharge) return await applyImmediately();
 
       // 3.4 P25b — reserva o pedido (UPDATE condicional atômico): só um pedido
       // por vez cria cobrança; duplo clique / requisição simultânea recebe 0 linhas.
