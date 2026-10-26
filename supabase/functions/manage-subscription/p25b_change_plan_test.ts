@@ -17,6 +17,7 @@ const ROW_ID = "5d6f1a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b";
 const EMAIL = "cliente@teste.com.br";
 const DAY = 86_400_000;
 const today = prorationDay(new Date())!;
+const DUE = new Date(Date.now() + 20 * DAY).toISOString();
 const plusDays = (n: number) => new Date(Date.parse(`${today}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
 const UPGRADE_COLS = [
   "upgrade_pendente_plano", "upgrade_pendente_ciclo", "upgrade_pendente_valor_novo", "upgrade_pendente_diferenca",
@@ -46,7 +47,7 @@ function world(row: Row = {}, over: Partial<World> = {}): World {
     row: {
       id: ROW_ID, plano: "presenca", status: "ativo", asaas_subscription_id: "sub_test", asaas_subscription_id_anterior: null,
       asaas_customer_id: "cus_test", asaas_checkout_id: null, asaas_checkout_created_at: null,
-      data_vencimento: new Date(Date.now() + 20 * DAY).toISOString(), trial_ends_at: null, ciclo_contratado: "mensal",
+      data_vencimento: DUE, trial_ends_at: null, ciclo_contratado: "mensal",
       ciclos_pagos: 1, counted_payment_ids: ["pay_c1"], compromisso_inicio: null, compromisso_meses: 12,
       upgrade_pendente_plano: null, upgrade_pendente_ciclo: null, upgrade_pendente_valor_novo: null, upgrade_pendente_diferenca: null,
       upgrade_pendente_payment_id: null, upgrade_pendente_invoice_url: null, upgrade_pendente_em: null, upgrade_ultimo_payment_id: null,
