@@ -219,7 +219,7 @@ const PERMANENT: Array<[string, () => void, string, boolean]> = [
   ["sem asaas_subscription_id", () => { memory.row.asaas_subscription_id = null; }, "assinatura_sem_asaas_subscription_id", false],
   ["sem upgrade_pendente_valor_novo", () => { memory.row.upgrade_pendente_valor_novo = null; }, "sem_upgrade_pendente_valor_novo", false],
   ["sem chave do Asaas", () => { memory.noKey = true; }, "chave_asaas_ausente", false],
-  ...[400, 401, 403, 404].map((code) => [`PUT responde ${code}`, () => { memory.putStatus = code; }, `asaas_put_http_${code}`, true] as [string, () => void, string, boolean]),
+  ...[400, 401, 403, 404, 409, 422].map((code) => [`PUT responde ${code}`, () => { memory.putStatus = code; }, `asaas_put_http_${code}`, true] as [string, () => void, string, boolean]),
 ];
 for (const [label, setup, reason, callsPut] of PERMANENT) {
   for (const ev of ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]) {
@@ -241,7 +241,7 @@ for (const [label, setup, reason, callsPut] of PERMANENT) {
 // ── Falhas TRANSITÓRIAS: 500, nada muda (o Asaas reenvia) ─────────────────────
 const TRANSIENT: Array<[string, () => void]> = [
   ["erro de rede/timeout no PUT", () => { memory.putThrow = true; }],
-  ...[500, 502, 503, 429].map((code) => [`PUT responde ${code}`, () => { memory.putStatus = code; }] as [string, () => void]),
+  ...[408, 429, 500, 502, 503].map((code) => [`PUT responde ${code}`, () => { memory.putStatus = code; }] as [string, () => void]),
   ["erro ao ler a assinatura", () => { memory.dbReadError = true; }],
   ["erro no UPDATE de promoção", () => { memory.dbUpdateError = true; }],
 ];
