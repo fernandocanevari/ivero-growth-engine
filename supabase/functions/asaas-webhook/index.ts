@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
 
     // P25a: diferença de upgrade individual ("prorata:<assinatura>:<plano>").
     // Agência (":agency:") e fidelidade não casam e seguem abaixo como antes.
-    const upgradeRef = event.startsWith("PAYMENT_") && body?.payment ? parseUpgradeRef(p.externalReference) : null;
+    const upgradeRef = event.startsWith("PAYMENT_") && body?.payment ? parseUpgradeRef(body.payment.externalReference) : null;
     if (upgradeRef) {
       if (UPGRADE_EVENTS.has(event)) {
         const r = await handleUpgradePayment(supabase, event, String(p.id ?? ""), upgradeRef);
