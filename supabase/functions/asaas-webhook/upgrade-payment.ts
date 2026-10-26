@@ -32,6 +32,7 @@ type PendingRow = {
   upgrade_pendente_ciclo: string | null;
   upgrade_pendente_valor_novo: number | string | null;
   upgrade_pendente_payment_id: string | null;
+  upgrade_ultimo_payment_id: string | null;
 };
 
 export type UpgradeResult = { status: number; body: Record<string, unknown> };
@@ -43,7 +44,7 @@ export async function handleUpgradePayment(
   ref: { assinaturaId: string; plano: string },
 ): Promise<UpgradeResult> {
   const { data, error } = await supabase.from("assinaturas")
-    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id")
+    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id")
     .eq("id", ref.assinaturaId).maybeSingle();
   if (error) {
     console.error("[asaas-webhook] upgrade: erro ao ler assinatura", ref.assinaturaId, error.message);
@@ -53,7 +54,9 @@ export async function handleUpgradePayment(
   const matches = !!row && !!paymentId && !!row.upgrade_pendente_payment_id && row.upgrade_pendente_payment_id === paymentId;
 
   if (!matches) {
-    if (event === "PAYMENT_CONFIRMED" || event === "PAYMENT_RECEIVED") {
+    if (row && paymentId && row.upgrade_ultimo_payment_id === paymentId) {
+      console.log("upgrade já tratado", paymentId, event);
+    } else if (event === "PAYMENT_CONFIRMED" || event === "PAYMENT_RECEIVED") {
       console.warn("ALERTA: pagamento de upgrade sem pendência correspondente", paymentId, ref.assinaturaId);
     } else {
       console.log("[asaas-webhook] upgrade sem pendência correspondente, ignorado:", event, paymentId, ref.assinaturaId);
@@ -68,10 +71,15 @@ export async function handleUpgradePayment(
     // (1) PRIMEIRO o novo valor no Asaas; falhou → 500 sem tocar no banco (Asaas reenvia).
     const key = asaasApiKey();
     const valor = pending.upgrade_pendente_valor_novo == null ? NaN : Number(pending.upgrade_pendente_valor_novo);
-    if (!key || !pending.asaas_subscription_id || !Number.isFinite(valor)) {
-      console.error("[asaas-webhook] upgrade: não foi possível atualizar o valor no Asaas", pending.id, JSON.stringify({ temChave: !!key, temAssinatura: !!pending.asaas_subscription_id, valor: pending.upgrade_pendente_valor_novo }));
-      return { status: 500, body: { error: "upgrade_put_unavailable" } };
-    }
+    // Falha PERMANENTE (dado/configuração): 200 sem mudar nada, para nunca
+    // travar a fila de webhooks do Asaas com reenvios que não vão funcionar.
+    const permanent = (reason: string): UpgradeResult => {
+      console.error("ALERTA upgrade pago sem promoção:", pending.id, paymentId, reason);
+      return { status: 200, body: { received: true, ignored: "upgrade_not_applied" } };
+    };
+    if (!pending.asaas_subscription_id) return permanent("assinatura_sem_asaas_subscription_id");
+    if (!Number.isFinite(valor)) return permanent("sem_upgrade_pendente_valor_novo");
+    if (!key) return permanent("chave_asaas_ausente");
     try {
       const res = await fetch(`${asaasBaseUrl()}/subscriptions/${encodeURIComponent(pending.asaas_subscription_id)}`, {
         method: "PUT",
@@ -80,6 +88,7 @@ export async function handleUpgradePayment(
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
+        if ([400, 401, 403, 404].includes(res.status)) return permanent(`asaas_put_http_${res.status}: ${text.slice(0, 300)}`);
         console.error("[asaas-webhook] upgrade: PUT /subscriptions falhou", res.status, pending.id, text.slice(0, 300));
         return { status: 500, body: { error: "upgrade_put_failed" } };
       }
@@ -90,7 +99,7 @@ export async function handleUpgradePayment(
     }
 
     // (2) DEPOIS promove numa única instrução condicional.
-    const patch: Record<string, unknown> = { plano: pending.upgrade_pendente_plano, ...CLEAR_PENDING };
+    const patch: Record<string, unknown> = { plano: pending.upgrade_pendente_plano, ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId };
     if (pending.upgrade_pendente_ciclo) patch.ciclo_contratado = pending.upgrade_pendente_ciclo;
     const { data: updated, error: upError } = await supabase.from("assinaturas").update(patch)
       .eq("id", pending.id).eq("upgrade_pendente_payment_id", paymentId).select("id");
@@ -128,7 +137,7 @@ export async function handleUpgradePayment(
       }
     }
   }
-  const { error: clearError } = await supabase.from("assinaturas").update(CLEAR_PENDING)
+  const { error: clearError } = await supabase.from("assinaturas").update({ ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId })
     .eq("id", pending.id).eq("upgrade_pendente_payment_id", paymentId);
   if (clearError) {
     console.error("[asaas-webhook] upgrade expirado: erro ao limpar pendência", pending.id, clearError.message);
