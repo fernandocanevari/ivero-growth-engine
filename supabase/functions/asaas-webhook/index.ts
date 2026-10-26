@@ -4,6 +4,7 @@ import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
 import { overduePatch, resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
+import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
 import {
   asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
 } from "../_shared/reconcile-decision.ts";
@@ -198,6 +199,17 @@ Deno.serve(async (req) => {
       // Asaas interromper a fila inteira de webhooks.
       return { ignored: true };
     };
+
+    // P25a: diferença de upgrade individual ("prorata:<assinatura>:<plano>").
+    // Agência (":agency:") e fidelidade não casam e seguem abaixo como antes.
+    const upgradeRef = event.startsWith("PAYMENT_") && body?.payment ? parseUpgradeRef(p.externalReference) : null;
+    if (upgradeRef) {
+      if (UPGRADE_EVENTS.has(event)) {
+        const r = await handleUpgradePayment(supabase, event, String(p.id ?? ""), upgradeRef);
+        return json(r.status, r.body);
+      }
+      console.log("[asaas-webhook] cobrança de upgrade, evento ignorado:", event, p.id ?? "");
+    }
 
     // Cobrança avulsa (sem assinatura e sem checkout: pró-rata, multa...):
     // nunca muda status, plano, ciclos_pagos nem promove marcas.
