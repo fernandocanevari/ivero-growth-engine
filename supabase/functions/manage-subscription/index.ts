@@ -388,6 +388,68 @@ Deno.serve(async (req) => {
 
       requireAsaas();
 
+      // 3.0 P25b — pedido de upgrade já existente (aguardando pagamento da diferença).
+      const pendingUpgradeId = (assinatura.upgrade_pendente_payment_id as string | null) ?? null;
+      const pendingEmMs = assinatura.upgrade_pendente_em
+        ? new Date(assinatura.upgrade_pendente_em as string).getTime()
+        : NaN;
+      // Reserva recente sem cobrança gravada = outro pedido ainda em curso.
+      if (!pendingUpgradeId && !Number.isNaN(pendingEmMs) && Date.now() - pendingEmMs < UPGRADE_RESERVA_MS) {
+        return json(200, { ok: false, reason: "pedido_em_andamento", message: UPGRADE_IN_PROGRESS_MESSAGE });
+      }
+      if (pendingUpgradeId) {
+        const samePending =
+          assinatura.upgrade_pendente_plano === plano && assinatura.upgrade_pendente_ciclo === ciclo;
+        if (samePending) {
+          // Mesmo pedido de novo: nada é criado enquanto a cobrança estiver aberta.
+          let look: Awaited<ReturnType<typeof fetchAsaas>> | null = null;
+          try { look = await fetchAsaas(`/payments/${encodeURIComponent(pendingUpgradeId)}`); } catch { look = null; }
+          const st = String(look?.json?.status ?? "").toUpperCase();
+          const existingResponse = () => json(200, {
+            ok: true,
+            mode: "pending_payment",
+            reused: true,
+            plano: assinatura.plano,
+            planoPendente: assinatura.upgrade_pendente_plano,
+            ciclo: assinatura.upgrade_pendente_ciclo,
+            diferenca: Number(assinatura.upgrade_pendente_diferenca ?? 0),
+            dueDate: (look?.json?.dueDate as string | undefined) ?? null,
+            invoiceUrl: (assinatura.upgrade_pendente_invoice_url as string | null) ?? null,
+          });
+          // Consulta indisponível: devolve o pedido gravado (nunca cria outra cobrança).
+          if (!look || (!look.ok && look.status !== 404)) return existingResponse();
+          if (look.ok && look.json?.deleted !== true && st === "PENDING") return existingResponse();
+          if (look.ok && look.json?.deleted !== true && ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"].includes(st)) {
+            // Já pago, aguardando o webhook promover: nada a fazer aqui.
+            return json(200, { ok: false, reason: "pedido_em_andamento", message: UPGRADE_PAID_CONFIRMING_MESSAGE });
+          }
+          // Removida / vencida / outro estado: substitui como um pedido diferente.
+        }
+        // Pedido diferente (ou cobrança não mais aberta): remove a cobrança anterior primeiro.
+        let del: Awaited<ReturnType<typeof fetchAsaas>> | null = null;
+        try {
+          del = await fetchAsaas(`/payments/${encodeURIComponent(pendingUpgradeId)}`, { method: "DELETE" });
+        } catch (err) {
+          console.error("change_plan: DELETE da cobrança de upgrade anterior erro:", pendingUpgradeId, err instanceof Error ? err.message : String(err));
+        }
+        if (!del || (!del.ok && del.status !== 404)) {
+          console.error("change_plan: cobrança de upgrade anterior não removida, nada alterado:", assinatura.id, pendingUpgradeId, del?.status ?? "network");
+          return json(502, { error: "Não foi possível cancelar o pedido de mudança de plano anterior. Nada foi alterado. Tente de novo em instantes." });
+        }
+        // Limpa só se ainda é o mesmo pedido (ou se o webhook já limpou ao receber o DELETE).
+        const { data: cleared, error: clearErr } = await supabaseAdmin
+          .from("assinaturas")
+          .update({ ...CLEAR_UPGRADE_PENDENTE, upgrade_ultimo_payment_id: pendingUpgradeId })
+          .eq("id", assinatura.id)
+          .or(`upgrade_pendente_payment_id.eq.${pendingUpgradeId},and(upgrade_pendente_payment_id.is.null,upgrade_pendente_em.is.null)`)
+          .select("id");
+        if (clearErr) return json(500, { error: clearErr.message });
+        if (!cleared || cleared.length === 0) {
+          return json(200, { ok: false, reason: "pedido_em_andamento", message: UPGRADE_IN_PROGRESS_MESSAGE });
+        }
+        console.log("change_plan: pedido de upgrade anterior removido:", assinatura.id, pendingUpgradeId);
+      }
+
       // 3.1 Estado atual da assinatura no Asaas (valor antigo, ciclo, vencimento
       // e customer — precisamos do customer pra emitir a cobrança avulsa).
       const cur = await fetchAsaas(`/subscriptions/${subId}`);
@@ -399,6 +461,49 @@ Deno.serve(async (req) => {
       const cycle = String(cur.json?.cycle ?? "MONTHLY");
       const nextDue: string | null = cur.json?.nextDueDate ?? null;
       const customerId: string | null = cur.json?.customer ?? assinatura.asaas_customer_id ?? null;
+
+      /** Troca imediata: novo valor no Asaas e, só depois, plano/ciclo no banco. */
+      const applyImmediately = async (proRata: null) => {
+        const upd = await fetchAsaas(`/subscriptions/${subId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            value,
+            updatePendingPayments: true,
+            description: `Ivero — Plano ${plano}`,
+          }),
+        });
+        if (!upd.ok) {
+          console.error("change_plan asaas error:", upd.status, upd.text.slice(0, 500));
+          return json(502, {
+            error:
+              upd.json?.errors?.[0]?.description ||
+              "Não foi possível atualizar o plano no provedor de pagamentos.",
+          });
+        }
+        const { error } = await supabaseAdmin
+          .from("assinaturas")
+          .update({ plano, ciclo_contratado: ciclo })
+          .eq("id", assinatura.id);
+        if (error) return json(500, { error: error.message });
+        return json(200, {
+          ok: true,
+          success: true,
+          mode: "asaas",
+          plano,
+          ciclo,
+          value,
+          previousValue: oldValue,
+          nextDueDate: upd.json?.nextDueDate ?? null,
+          proRata,
+        });
+      };
+
+      // 3.1b P25b — teste grátis com vínculo: nada foi pago, então não há
+      // diferença a cobrar nem pedido pendente. Troca imediata.
+      if (assinatura.status === "trial") {
+        console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, status: "trial", reason: "trial_no_charge", path: "immediate" }));
+        return await applyImmediately(null);
+      }
 
       // 3.2 Há cobrança pendente do ciclo atual? Se sim, o próprio
       // updatePendingPayments corrige o valor dela — não existe diferença a
@@ -424,74 +529,114 @@ Deno.serve(async (req) => {
       const { daysLeft, currentCycleUnpaid: hasPending } = decision;
       const proRataValue = pendingLookupFailed ? 0 : decision.proRataValue;
       const reason = pendingLookupFailed ? "pending_lookup_failed" : decision.reason;
-      const shouldChargeProRata = proRataValue >= 5 && !!customerId;
+      const needsCharge = proRataValue >= 5;
+      const path = needsCharge ? (customerId ? "pending_payment" : "missing_customer") : "immediate";
 
-      // 3.4 Atualiza o valor da assinatura (vale pros ciclos futuros; com
-      // updatePendingPayments ajusta também a pendente do ciclo corrente).
-      const upd = await fetchAsaas(`/subscriptions/${subId}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          value,
-          updatePendingPayments: true,
-          description: `Ivero — Plano ${plano}`,
-        }),
-      });
-      if (!upd.ok) {
-        console.error("change_plan asaas error:", upd.status, upd.text.slice(0, 500));
-        return json(502, {
-          error:
-            upd.json?.errors?.[0]?.description ||
-            "Não foi possível atualizar o plano no provedor de pagamentos.",
-        });
+      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: needsCharge ? proRataValue : 0, proRataValue, invoiceStatus: needsCharge ? (customerId ? "planned" : "missing_customer") : "not_required", path }));
+
+      // Sem cobrança necessária (redução, só ciclo, abaixo do mínimo...): imediato, como hoje.
+      if (!needsCharge) return await applyImmediately(null);
+
+      // Cobrança necessária sem cliente no Asaas: nunca libera o upgrade de graça.
+      if (!customerId) {
+        console.error("change_plan: diferença exigida sem customer no Asaas, nada alterado:", assinatura.id, proRataValue);
+        return json(502, { error: "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes." });
       }
 
-      // 3.5 Cobrança avulsa da diferença proporcional (upgrade no meio do ciclo).
-      // Falha aqui NÃO desfaz a troca de plano: o cliente já está no plano novo
-      // e a diferença fica registrada no log para tratamento manual.
-      let proRata: { value: number; days: number; invoiceUrl: string | null } | null = null;
-      let invoiceStatus = proRataValue >= 5 && !customerId ? "missing_customer" : "not_required";
-      let referenceAttempt: number | null = null;
-      if (shouldChargeProRata && customerId) {
-        const existing = await findProrationInvoice(fetchAsaas, { externalReference: `prorata:${assinatura.id}:${plano}`, customerId, value: proRataValue });
-        const externalReference = existing.externalReference;
-        invoiceStatus = existing.status;
-        referenceAttempt = existing.referenceAttempt;
-        if (existing.status === "reused" && existing.payment) {
-          proRata = { value: proRataValue, days: daysLeft, invoiceUrl: existing.payment.invoiceUrl ?? existing.payment.bankSlipUrl ?? null };
-        } else if (existing.status === "clear") {
-          try {
-            const cobranca = await cobrarAvulsa({
-              customerId,
-              value: proRataValue,
-              description:
-                `Ivero — diferença proporcional do upgrade para ${plano} ` +
-                `(${daysLeft} dia(s) restantes do ciclo atual)`,
-              externalReference,
-            });
-            invoiceStatus = cobranca ? "created" : "failed";
-            if (cobranca) proRata = { ...cobranca, days: daysLeft };
-          } catch { invoiceStatus = "failed"; }
-        }
-      }
-
-      const { error } = await supabaseAdmin
+      // 3.4 P25b — reserva o pedido (UPDATE condicional atômico): só um pedido
+      // por vez cria cobrança; duplo clique / requisição simultânea recebe 0 linhas.
+      const reservedAt = new Date().toISOString();
+      const reservaCutoff = new Date(Date.now() - UPGRADE_RESERVA_MS).toISOString();
+      const releaseReservation = async () => {
+        const { error: relErr } = await supabaseAdmin
+          .from("assinaturas")
+          .update(CLEAR_UPGRADE_PENDENTE)
+          .eq("id", assinatura.id)
+          .eq("upgrade_pendente_em", reservedAt)
+          .is("upgrade_pendente_payment_id", null);
+        if (relErr) console.error("change_plan: erro ao liberar reserva de upgrade:", assinatura.id, relErr.message);
+      };
+      const { data: reserved, error: reserveErr } = await supabaseAdmin
         .from("assinaturas")
-        .update({ plano, ciclo_contratado: ciclo })
-        .eq("id", assinatura.id);
-      if (error) return json(500, { error: error.message });
+        .update({ upgrade_pendente_plano: plano, upgrade_pendente_ciclo: ciclo, upgrade_pendente_em: reservedAt })
+        .eq("id", assinatura.id)
+        .is("upgrade_pendente_payment_id", null)
+        .or(`upgrade_pendente_em.is.null,upgrade_pendente_em.lt."${reservaCutoff}"`)
+        .select("id");
+      if (reserveErr) return json(500, { error: reserveErr.message });
+      if (!reserved || reserved.length === 0) {
+        return json(200, { ok: false, reason: "pedido_em_andamento", message: UPGRADE_IN_PROGRESS_MESSAGE });
+      }
 
-      console.log("proration diagnostic:", JSON.stringify({ action, userId, plan: plano, oldValue, newValue: value, delta, nextDue, nextDueDate: nextDue, referenceDue: decision.referenceDue, referenceSource: decision.referenceSource, cycleDays, daysLeft, hasPending, pendingDueDates: pendingPayments.map((p) => p.dueDate ?? null), reason, prorata: proRata?.value ?? 0, proRataValue, invoiceStatus, referenceAttempt }));
+      // 3.5 Cobrança NOVA da diferença (vence em hoje + 3 dias, Brasília).
+      const hojeBrt = prorationDay(new Date())!;
+      const dueDate = new Date(Date.parse(`${hojeBrt}T00:00:00Z`) + UPGRADE_DUE_DAYS * 86_400_000).toISOString().slice(0, 10);
+      const externalReference = `prorata:${assinatura.id}:${plano}:${Math.floor(Date.now() / 1000)}`;
+      let charge: Awaited<ReturnType<typeof fetchAsaas>> | null = null;
+      try {
+        charge = await fetchAsaas(`/payments`, {
+          method: "POST",
+          body: JSON.stringify({
+            customer: customerId,
+            billingType: "CREDIT_CARD",
+            value: proRataValue,
+            dueDate,
+            description:
+              `Ivero — diferença proporcional do upgrade para ${plano} ` +
+              `(${daysLeft} dia(s) restantes do ciclo atual)`,
+            externalReference,
+          }),
+        });
+      } catch (err) {
+        console.error("change_plan: POST /payments erro:", err instanceof Error ? err.message : String(err));
+        charge = null;
+      }
+      const chargeId = charge?.ok ? String(charge.json?.id ?? "") : "";
+      if (!charge || !charge.ok || !chargeId) {
+        console.error("change_plan: cobrança da diferença não criada, nada alterado:", assinatura.id, charge?.status ?? "network", charge?.text?.slice(0, 500) ?? "");
+        await releaseReservation();
+        return json(502, { error: "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes." });
+      }
+      const invoiceUrl: string | null = charge.json?.invoiceUrl ?? charge.json?.bankSlipUrl ?? null;
 
+      // 3.6 Grava o pedido. Plano, ciclo e valor da assinatura no Asaas NÃO mudam.
+      const { data: saved, error: saveErr } = await supabaseAdmin
+        .from("assinaturas")
+        .update({
+          upgrade_pendente_plano: plano,
+          upgrade_pendente_ciclo: ciclo,
+          upgrade_pendente_valor_novo: value,
+          upgrade_pendente_diferenca: proRataValue,
+          upgrade_pendente_payment_id: chargeId,
+          upgrade_pendente_invoice_url: invoiceUrl,
+          upgrade_pendente_em: reservedAt,
+        })
+        .eq("id", assinatura.id)
+        .eq("upgrade_pendente_em", reservedAt)
+        .is("upgrade_pendente_payment_id", null)
+        .select("id");
+      if (saveErr || !saved || saved.length === 0) {
+        console.error("change_plan: pedido de upgrade não gravado, removendo a cobrança:", assinatura.id, chargeId, saveErr?.message ?? "0 linhas");
+        try {
+          const undo = await fetchAsaas(`/payments/${encodeURIComponent(chargeId)}`, { method: "DELETE" });
+          if (!undo.ok && undo.status !== 404) console.error("ALERTA cobrança de upgrade órfã não removida:", assinatura.id, chargeId, undo.status);
+        } catch (err) {
+          console.error("ALERTA cobrança de upgrade órfã não removida:", assinatura.id, chargeId, err instanceof Error ? err.message : String(err));
+        }
+        await releaseReservation();
+        return json(500, { error: "Não foi possível registrar o pedido de mudança de plano. Nada foi alterado. Tente de novo em instantes." });
+      }
+
+      console.log("change_plan: pedido de upgrade aguardando pagamento:", assinatura.id, plano, ciclo, chargeId, proRataValue);
       return json(200, {
         ok: true,
-        success: true,
-        mode: "asaas",
-        plano,
+        mode: "pending_payment",
+        plano: assinatura.plano,
+        planoPendente: plano,
         ciclo,
-        value,
-        previousValue: oldValue,
-        nextDueDate: upd.json?.nextDueDate ?? null,
-        proRata,
+        diferenca: proRataValue,
+        dueDate,
+        invoiceUrl,
       });
     }
 
