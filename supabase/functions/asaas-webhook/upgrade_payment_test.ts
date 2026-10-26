@@ -27,6 +27,7 @@ const memory = {
   deleteStatus: 200,
   claims: [] as string[],
   dbWrites: 0,
+  clearOnPut: false,
 };
 
 function reset() {
@@ -47,6 +48,7 @@ function reset() {
   memory.deleteStatus = 200;
   memory.claims.length = 0;
   memory.dbWrites = 0;
+  memory.clearOnPut = false;
 }
 
 const CLEARED = {
@@ -83,6 +85,7 @@ async function send(body: Record<string, unknown>): Promise<{ status: number; ou
       memory.asaasCalls.push(`${request.method} ${url.pathname.replace("/api/v3", "")}`);
       if (request.method === "PUT" && /^\/api\/v3\/subscriptions\/[^/]+$/.test(url.pathname)) {
         memory.asaasBodies.push(await request.json());
+        if (memory.clearOnPut) memory.row.upgrade_pendente_payment_id = null;
         return new Response(JSON.stringify(memory.putStatus === 200 ? { id: SUB } : { errors: [{ description: "falha" }] }), { status: memory.putStatus });
       }
       if (request.method === "DELETE" && /^\/api\/v3\/payments\/[^/]+$/.test(url.pathname)) {
@@ -184,29 +187,16 @@ Deno.test({ ...opts, name: "2) RECEIVED do mesmo pagamento depois do CONFIRMED �
   assertEquals(memory.dbWrites, writes);
 }});
 
-Deno.test({ ...opts, name: "2b) corrida: pendência some entre a leitura e o UPDATE → 0 linhas, 200, nada muda", fn: async () => {
+Deno.test({ ...opts, name: "2b) corrida: outra entrega limpa a pendência entre o PUT e o UPDATE → 0 linhas, 200, nada muda", fn: async () => {
   reset();
-  // Simula outra entrega que já limpou a pendência após o PUT.
-  const realFetch = originalFetch;
-  void realFetch;
-  memory.putStatus = 200;
-  const origAssign = Object.assign;
-  let cleared = false;
-  // Limpa o payment_id logo após o PUT (antes do UPDATE condicional).
-  const wrap = globalThis.fetch;
-  void wrap;
-  const p = send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
-  // O PUT é a 1ª chamada ao Asaas; troca a linha assim que ele aparecer.
-  const iv = setInterval(() => {
-    if (!cleared && memory.asaasCalls.length > 0) { cleared = true; origAssign(memory.row, { upgrade_pendente_payment_id: null }); }
-  }, 0);
-  const { status, out } = await p;
-  clearInterval(iv);
+  memory.clearOnPut = true;
+  const { status, out, logs } = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
   assertEquals(status, 200);
-  if (cleared) {
-    assertEquals(out, { received: true, ignored: "upgrade_already_applied" });
-    assertEquals(memory.row.plano, "influencia");
-  }
+  assertEquals(out, { received: true, ignored: "upgrade_already_applied" });
+  assertEquals(memory.row.plano, "influencia");
+  assertEquals(memory.row.ciclo_contratado, "mensal");
+  assertEquals(memory.dbWrites, 0);
+  assert(logs.some((l) => l.includes("upgrade já processado")));
 }});
 
 Deno.test({ ...opts, name: "3) PUT falha → HTTP 500 e linha intacta", fn: async () => {
