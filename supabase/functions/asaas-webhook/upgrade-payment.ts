@@ -88,7 +88,7 @@ export async function handleUpgradePayment(
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        if ([400, 401, 403, 404].includes(res.status)) return permanent(`asaas_put_http_${res.status}: ${text.slice(0, 300)}`);
+        if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) return permanent(`asaas_put_http_${res.status}: ${text.slice(0, 300)}`);
         console.error("[asaas-webhook] upgrade: PUT /subscriptions falhou", res.status, pending.id, text.slice(0, 300));
         return { status: 500, body: { error: "upgrade_put_failed" } };
       }
