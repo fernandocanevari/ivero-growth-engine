@@ -148,29 +148,11 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // 3. Assinatura viva do usuário
-    const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "atrasado", "pendente", "cancelado"];
-    const { data: assinatura } = await supabaseAdmin
-      .from("assinaturas")
-      .select(
-        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id",
-      )
-      .eq("user_id", userId)
-      .in("status", LIVE_STATUSES)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!assinatura) {
-      return json(404, { error: "Nenhuma assinatura encontrada para este usuário." });
-    }
-
     const asaasKey = asaasApiKey();
     const asaasHeaders = {
       "Content-Type": "application/json",
       "access_token": asaasKey ?? "",
     };
-    let subId = assinatura.asaas_subscription_id as string | null;
 
     const requireAsaas = () => {
       if (!asaasKey) throw new Error(`${asaasKeyName()} não configurada.`);
@@ -185,6 +167,31 @@ Deno.serve(async (req) => {
       } catch { /* corpo vazio / não-JSON */ }
       return { ok: res.ok, status: res.status, json: parsed, text };
     };
+
+    // P26: multa de cancelamento — procura em TODAS as linhas do usuário.
+    if (action === "pay_penalty") {
+      return json(200, await handlePayPenalty({ db: supabaseAdmin, userId, fetchAsaas, hasKey: !!asaasKey }));
+    }
+
+    // 3. Assinatura viva do usuário
+    const LIVE_STATUSES = ["ativo", "trial", "inadimplente", "atrasado", "pendente", "cancelado"];
+    const { data: assinatura } = await supabaseAdmin
+      .from("assinaturas")
+      .select(
+        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, " +
+          PENALTY_COLUMNS,
+      )
+      .eq("user_id", userId)
+      .in("status", LIVE_STATUSES)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!assinatura) {
+      return json(404, { error: "Nenhuma assinatura encontrada para este usuário." });
+    }
+
+    let subId = assinatura.asaas_subscription_id as string | null;
 
     /**
      * Cobrança avulsa (PAYMENT único) no Asaas. Usada tanto pela diferença
