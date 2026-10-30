@@ -714,7 +714,7 @@ Deno.serve(async (req) => {
           }
           : null;
       /** P26: linha já cancelada → nada é recalculado nem cobrado de novo. */
-      const reusedCancel = (row: CancelRow) => {
+      const reusedCancel = (row: CancelRow, cleaned: string[] = []) => {
         const pagos = Number(row.ciclos_pagos ?? 0);
         const cancelledTrial = pagos === 0 && !(Array.isArray(row.counted_payment_ids) && row.counted_payment_ids.length);
         const until = row.data_vencimento ?? row.trial_ends_at ?? null;
@@ -730,11 +730,53 @@ Deno.serve(async (req) => {
           ciclo: normalizeCiclo(row.ciclo_contratado),
           ciclosPagos: pagos,
           multa: penaltyOf(row),
+          ...(cleaned.length ? { cleaned } : {}),
         });
       };
+
+      // Cancelamento FAIL-CLOSED: quem já registrou cartão/checkout só tem a
+      // linha cancelada depois de confirmarmos que NENHUMA assinatura viva do
+      // usuário continua no Asaas. Teste sem cartão (sem checkout, cliente nem
+      // assinatura) cancela como antes, sem chamar o Asaas.
+      // Devolve a resposta de erro (linha intacta) ou as assinaturas removidas.
+      const registeredWithProvider = !!(
+        assinatura.asaas_subscription_id || assinatura.asaas_checkout_id || assinatura.asaas_customer_id
+      );
+      const providerCleanup = async (): Promise<Response | { deleted: string[] }> => {
+        if (!registeredWithProvider) return { deleted: [] };
+        const unverified = (why: string) => {
+          console.error("cancel não confirmado no Asaas, linha intacta:", userId, why);
+          return json(502, { error: CANCEL_UNVERIFIED_MESSAGE, code: "cancel_unverified" });
+        };
+        if (!asaasKey) return unverified(`${asaasKeyName()} ausente`);
+        const email = await accountEmail();
+        let customerIds: string[];
+        try {
+          customerIds = await customerIdsForUser(fetchAsaas, assinatura.asaas_customer_id as string | null, email);
+        } catch (err) {
+          return unverified(`customers: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        if (!email && !customerIds.length && !subId) return unverified("sem e-mail, cliente ou assinatura para verificar");
+        const outcome = await cancelProviderSubscriptions(fetchAsaas, {
+          userId,
+          knownSubscriptionId: subId,
+          customerIds,
+        });
+        if (!outcome.ok) return unverified(outcome.reason);
+        console.log("cancel: Asaas confirmado sem assinatura viva", userId, JSON.stringify({ customerIds, deleted: outcome.deleted }));
+        return { deleted: outcome.deleted };
+      };
+
+      // P26-fix1: linha já cancelada → a limpeza no Asaas roda de novo (rede de
+      // segurança contra assinatura viva que continuaria cobrando), mas a multa
+      // não é recalculada nem cobrada: devolve a multa gravada.
       if (assinatura.status === "cancelado") {
-        console.log("cancel: assinatura já cancelada, nada recalculado", userId, assinatura.id);
-        return reusedCancel(assinatura as CancelRow);
+        const cleanup = await providerCleanup();
+        if (cleanup instanceof Response) return cleanup;
+        const cleaned = cleanup.deleted;
+        if (cleaned.length) console.log(`cancel: limpeza repetida removeu ${cleaned.join(",")}`, userId, assinatura.id);
+        else console.log("cancel: assinatura já cancelada, nada recalculado", userId, assinatura.id);
+        return reusedCancel(assinatura as CancelRow, cleaned);
       }
 
       // Compromisso anual: cancelar antes de completar os 12 ciclos gera
@@ -761,36 +803,11 @@ Deno.serve(async (req) => {
         ? multaFidelidade(assinatura.plano as string, ciclosComDesconto)
         : 0;
 
-      // Cancelamento FAIL-CLOSED: quem já registrou cartão/checkout só tem a
-      // linha cancelada depois de confirmarmos que NENHUMA assinatura viva do
-      // usuário continua no Asaas. Teste sem cartão (sem checkout, cliente nem
-      // assinatura) cancela como antes, sem chamar o Asaas.
       let removedSubId: string | null = subId;
-      const registeredWithProvider = !!(
-        assinatura.asaas_subscription_id || assinatura.asaas_checkout_id || assinatura.asaas_customer_id
-      );
       if (registeredWithProvider) {
-        const unverified = (why: string) => {
-          console.error("cancel não confirmado no Asaas, linha intacta:", userId, why);
-          return json(502, { error: CANCEL_UNVERIFIED_MESSAGE, code: "cancel_unverified" });
-        };
-        if (!asaasKey) return unverified(`${asaasKeyName()} ausente`);
-        const email = await accountEmail();
-        let customerIds: string[];
-        try {
-          customerIds = await customerIdsForUser(fetchAsaas, assinatura.asaas_customer_id as string | null, email);
-        } catch (err) {
-          return unverified(`customers: ${err instanceof Error ? err.message : String(err)}`);
-        }
-        if (!email && !customerIds.length && !subId) return unverified("sem e-mail, cliente ou assinatura para verificar");
-        const outcome = await cancelProviderSubscriptions(fetchAsaas, {
-          userId,
-          knownSubscriptionId: subId,
-          customerIds,
-        });
-        if (!outcome.ok) return unverified(outcome.reason);
-        removedSubId = subId ?? outcome.deleted[0] ?? null;
-        console.log("cancel: Asaas confirmado sem assinatura viva", userId, JSON.stringify({ customerIds, deleted: outcome.deleted }));
+        const cleanup = await providerCleanup();
+        if (cleanup instanceof Response) return cleanup;
+        removedSubId = subId ?? cleanup.deleted[0] ?? null;
       }
 
       // Paga: acesso preservado até o fim do período já pago (data_vencimento
