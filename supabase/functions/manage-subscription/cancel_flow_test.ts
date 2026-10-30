@@ -67,7 +67,8 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
     let status = 200;
     if (url.hostname === "database.invalid") {
       if (url.pathname === "/auth/v1/user") data = { id: "test-user", aud: "authenticated", role: "authenticated" };
-      else if (req.method === "PATCH") data = null;
+      // PATCH com return=representation (gravação condicional) devolve a linha casada.
+      else if (req.method === "PATCH") data = (req.headers.get("Prefer") ?? "").includes("return=representation") ? [{ id: assinatura.id }] : null;
       else if (url.pathname === "/rest/v1/assinaturas") data = assinatura;
       else if (url.pathname === "/rest/v1/profiles") data = { email: EMAIL };
       else throw new Error(`Unexpected mocked database path: ${url.pathname}`);
@@ -92,7 +93,7 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
       } else if (/^\/subscriptions\/[^/]+\/payments$/.test(p) && req.method === "GET") {
         const st = url.searchParams.get("status");
         data = { object: "list", hasMore: false, data: (provider.payments ?? []).filter((x) => !st || x.status === st) };
-      } else if (p === "/payments" && req.method === "POST") data = { invoiceUrl: "https://invoice.invalid/multa" };
+      } else if (p === "/payments" && req.method === "POST") data = { id: "pay_multa", invoiceUrl: "https://invoice.invalid/multa" };
       else throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
     } else throw new Error("Network escape forbidden");
     return new Response(data === null ? null : JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
