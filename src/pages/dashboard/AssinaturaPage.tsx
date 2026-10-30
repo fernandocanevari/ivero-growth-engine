@@ -40,6 +40,8 @@ import {
 } from "@/lib/cancel-copy";
 import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
+import { formatPenaltyBRL, REACTIVATE_BLOCKED_HELPER } from "@/lib/penalty";
+import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
  * AssinaturaPage — área financeira do cliente, ligada ao Asaas de verdade.
@@ -80,8 +82,11 @@ function AssinaturaPageContent() {
   const {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
-    cicloContratado, ciclosPagos, compromissoMeses, carenciaAte, isPaid,
+    cicloContratado, ciclosPagos, compromissoMeses, carenciaAte, isPaid, multaPendente,
   } = useSubscriptionStatus();
+  // P26: multa de cancelamento em aberto bloqueia "Reativar plano".
+  const penaltyBlocksReactivation = status === "cancelado" && !!multaPendente;
+  const [payingPenalty, setPayingPenalty] = useState(false);
   const { invoices, next, overdue, isLoading: invoicesLoading, reload } = useBillingInvoices();
   // Mensalidade vencida: aviso, selo e card de cobrança mudam (tolerância ou pausa).
   const isOverdue = effectiveStatus === "inadimplente" && !!overdue;
@@ -136,6 +141,30 @@ function AssinaturaPageContent() {
     void refreshRef.current();
     void reloadRef.current();
   }, [returnedFromCheckout]);
+
+  // P26: ao voltar para a aba (depois de pagar a multa), relê a assinatura para
+  // o card sumir e "Reativar plano" liberar sozinho.
+  const penaltyPendingRef = useRef(false);
+  penaltyPendingRef.current = penaltyBlocksReactivation;
+  useEffect(() => {
+    const onReturn = () => {
+      if (!penaltyPendingRef.current || document.visibilityState === "hidden") return;
+      void refreshRef.current();
+    };
+    window.addEventListener("focus", onReturn);
+    document.addEventListener("visibilitychange", onReturn);
+    return () => {
+      window.removeEventListener("focus", onReturn);
+      document.removeEventListener("visibilitychange", onReturn);
+    };
+  }, []);
+
+  const handlePayPenalty = async () => {
+    setPayingPenalty(true);
+    const outcome = await payPenaltyAndOpen();
+    setPayingPenalty(false);
+    if (outcome === "cleared") void refreshStatus();
+  };
 
   const refreshBilling = () => {
     void refreshStatus();
@@ -279,9 +308,13 @@ function AssinaturaPageContent() {
             ? `Seu acesso continua até ${formatDate(data.acessoAte as string)}.`
             : "Seu acesso permanece até o fim do período já pago.",
           (data?.multa as { value?: number } | null)?.value
-            ? `Geramos a cobrança da diferença de fidelidade: ${formatBRL(
-                (data.multa as { value: number }).value,
-              )}.`
+            ? (data.multa as { error?: string }).error
+              ? `A multa de cancelamento de ${formatPenaltyBRL(
+                  (data.multa as { value: number }).value,
+                )} pode ser paga nesta página.`
+              : `Geramos a cobrança da diferença de fidelidade: ${formatBRL(
+                  (data.multa as { value: number }).value,
+                )}.`
             : "",
         ]
           .filter(Boolean)
@@ -394,7 +427,12 @@ function AssinaturaPageContent() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleChangePlan} className="gap-1.5">
+            <Button
+              onClick={handleChangePlan}
+              className="gap-1.5"
+              disabled={penaltyBlocksReactivation}
+              aria-describedby={penaltyBlocksReactivation ? "reativar-bloqueado" : undefined}
+            >
               {status === "cancelado" ? "Reativar plano" : "Mudar plano"}
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
@@ -404,6 +442,11 @@ function AssinaturaPageContent() {
               </Button>
             )}
           </div>
+          {penaltyBlocksReactivation && (
+            <p id="reativar-bloqueado" className="text-xs text-muted-foreground mt-2">
+              {REACTIVATE_BLOCKED_HELPER}
+            </p>
+          )}
         </Card>
 
         {/* Próxima cobrança */}
@@ -519,6 +562,32 @@ function AssinaturaPageContent() {
 
         </Card>
       </div>
+
+      {/* P26 — multa de cancelamento pendente */}
+      {penaltyBlocksReactivation && multaPendente && (
+        <Card className="p-6 border-destructive/40" data-testid="penalty-card">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="max-w-2xl">
+              <h3 className="text-base font-semibold text-foreground">
+                Multa de cancelamento: {formatPenaltyBRL(multaPendente.valor)}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Você cancelou um plano com desconto anual. Falta pagar{" "}
+                {formatPenaltyBRL(multaPendente.valor)}, a diferença dos meses em que você usou o
+                preço promocional. Pague agora e, quando quiser voltar, é só reativar.
+              </p>
+            </div>
+            <Button onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
+              {payingPenalty ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Pagar agora
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Forma de pagamento */}
       <Card className="p-6">

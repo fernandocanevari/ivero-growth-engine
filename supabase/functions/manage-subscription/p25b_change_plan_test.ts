@@ -87,6 +87,8 @@ function cond(row: Row, col: string, op: string, raw: string): boolean {
   const cell = row[col];
   if (op === "is" && value === "null") return cell === null || cell === undefined;
   if (op === "eq") return cell !== null && cell !== undefined && String(cell) === value;
+  // P26: gravação condicional do cancelamento (.neq("status","cancelado")).
+  if (op === "neq") return cell !== null && cell !== undefined && String(cell) !== value;
   if (op === "lt") return cell !== null && cell !== undefined && Date.parse(String(cell)) < Date.parse(value);
   throw new Error(`filtro não simulado: ${col}.${op}.${raw}`);
 }

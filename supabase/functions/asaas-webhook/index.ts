@@ -5,6 +5,7 @@ import { overduePatch, resumeTrialPatch, subscriptionRemovalPatch } from "./subs
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
+import { FIDELIDADE_EVENTS, handleFidelidadePayment, parseFidelidadeRef } from "./fidelidade-payment.ts";
 import {
   asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
 } from "../_shared/reconcile-decision.ts";
@@ -209,6 +210,14 @@ Deno.serve(async (req) => {
         return json(r.status, r.body);
       }
       console.log("[asaas-webhook] cobrança de upgrade, evento ignorado:", event, p.id ?? "");
+    }
+
+    // P26: multa de fidelidade ("fidelidade:<assinatura>[:<plano>]") — antes do
+    // early return de avulsa. Agência e demais avulsas seguem como antes.
+    const fidelidadeRef = event.startsWith("PAYMENT_") && body?.payment ? parseFidelidadeRef(body.payment.externalReference) : null;
+    if (fidelidadeRef && FIDELIDADE_EVENTS.has(event)) {
+      const r = await handleFidelidadePayment(supabase, event, String(p.id ?? ""), fidelidadeRef);
+      return json(r.status, r.body);
     }
 
     // Cobrança avulsa (sem assinatura e sem checkout: pró-rata, multa...):

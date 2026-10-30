@@ -291,6 +291,12 @@ export type Database = {
           data_vencimento: string | null
           desconto_volume_pct: number | null
           id: string
+          multa_pendente_ciclos: number | null
+          multa_pendente_em: string | null
+          multa_pendente_invoice_url: string | null
+          multa_pendente_payment_id: string | null
+          multa_pendente_valor: number | null
+          multa_ultimo_payment_id: string | null
           plano: string
           plano_pretendido: string | null
           status: string
@@ -326,6 +332,12 @@ export type Database = {
           data_vencimento?: string | null
           desconto_volume_pct?: number | null
           id?: string
+          multa_pendente_ciclos?: number | null
+          multa_pendente_em?: string | null
+          multa_pendente_invoice_url?: string | null
+          multa_pendente_payment_id?: string | null
+          multa_pendente_valor?: number | null
+          multa_ultimo_payment_id?: string | null
           plano: string
           plano_pretendido?: string | null
           status?: string
@@ -361,6 +373,12 @@ export type Database = {
           data_vencimento?: string | null
           desconto_volume_pct?: number | null
           id?: string
+          multa_pendente_ciclos?: number | null
+          multa_pendente_em?: string | null
+          multa_pendente_invoice_url?: string | null
+          multa_pendente_payment_id?: string | null
+          multa_pendente_valor?: number | null
+          multa_ultimo_payment_id?: string | null
           plano?: string
           plano_pretendido?: string | null
           status?: string

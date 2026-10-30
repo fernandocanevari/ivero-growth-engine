@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
 import { cancelAccessUntil, isInOverdueGrace, resolveEffectiveStatus } from "@/lib/subscription-status";
 import { getBrandScope, subscribeBrandScope } from "@/lib/brand-scope";
+import { isPenaltyPending } from "@/lib/penalty";
 
 type Plano = "presenca" | "influencia" | "autoridade" | null;
 
@@ -17,6 +18,11 @@ interface AssinaturaRow {
   ciclos_pagos: number | null;
   compromisso_inicio: string | null;
   compromisso_meses: number | null;
+  multa_pendente_valor?: number | null;
+  multa_pendente_ciclos?: number | null;
+  multa_pendente_payment_id?: string | null;
+  multa_pendente_invoice_url?: string | null;
+  multa_ultimo_payment_id?: string | null;
 }
 
 
@@ -81,7 +87,8 @@ export function useSubscriptionStatus() {
       .from("assinaturas")
       .select(
         "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id, " +
-          "ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses",
+          "ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses, " +
+          "multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_ultimo_payment_id",
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -241,6 +248,14 @@ export function useSubscriptionStatus() {
     ciclosPagos: assinatura?.ciclos_pagos ?? 0,
     compromissoMeses: assinatura?.compromisso_meses ?? 12,
     compromissoInicio: assinatura?.compromisso_inicio ?? null,
+    /** P26 — multa de cancelamento em aberto (somente leitura). null = nenhuma. */
+    multaPendente: isPenaltyPending(assinatura)
+      ? {
+        valor: Number(assinatura!.multa_pendente_valor),
+        ciclos: Number(assinatura!.multa_pendente_ciclos ?? 0),
+        invoiceUrl: assinatura!.multa_pendente_invoice_url ?? null,
+      }
+      : null,
     /** Recarrega a assinatura do banco (usado após upgrade/retorno de checkout). */
     refresh: fetchAssinatura,
   };

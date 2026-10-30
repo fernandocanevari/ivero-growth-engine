@@ -12,6 +12,8 @@ import { useAccountType } from "@/hooks/useAccountType";
 import { useAgencyBrands } from "@/hooks/useAgencyBrands";
 import { PLANOS, formatBRL, type PlanoSugerido } from "@/lib/pricing-rules";
 import { quoteAgency, VOLUME_TIERS, type Ciclo } from "@/lib/agency-pricing";
+import { isPenaltyBlocked } from "@/lib/penalty";
+import { showPenaltyBlocked } from "@/lib/penalty-flow";
 
 const KEYS: PlanoSugerido[] = ["presenca", "influencia", "autoridade"];
 /** Agências contratam só no mensal no lançamento; quoteAgency segue aceitando "anual" para uso futuro. */
@@ -77,6 +79,12 @@ export default function AgencyBillingPage() {
         },
       });
       invalidateAccessCache();
+      // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      if (isPenaltyBlocked(data)) {
+        showPenaltyBlocked(data);
+        setBusy(null);
+        return;
+      }
       if (error || !data?.checkoutUrl) throw new Error(data?.error || error?.message || "Não foi possível abrir o pagamento.");
       window.location.href = data.checkoutUrl;
     } catch (e) {
