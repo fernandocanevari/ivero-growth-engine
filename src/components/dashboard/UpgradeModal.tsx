@@ -23,6 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
+import { isPenaltyBlocked } from "@/lib/penalty";
+import { showPenaltyBlocked } from "@/lib/penalty-flow";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -258,6 +260,12 @@ export function UpgradeModal({
           return;
         }
         throw new Error(errBody?.message ?? error.message);
+      }
+      // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      if (isPenaltyBlocked(data)) {
+        showPenaltyBlocked(data);
+        onOpenChange(false);
+        return;
       }
       if (data?.error) throw new Error(data.message ?? data.error);
       // Servidor mandou fazer localmente (trial em curso sem cobrança).

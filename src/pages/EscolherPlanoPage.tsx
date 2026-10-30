@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { resolveEffectiveStatus, isRecentPendingCheckout, AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
+import { isPenaltyBlocked } from "@/lib/penalty";
+import { showPenaltyBlocked } from "@/lib/penalty-flow";
 
 import {
   PLANOS,
@@ -192,6 +194,12 @@ const EscolherPlanoPage = () => {
       invalidateAccessCache();
       if (error) {
         toast.error(error.message || "Erro ao criar assinatura.");
+        return;
+      }
+      // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      if (isPenaltyBlocked(data)) {
+        setCheckoutOpen(false);
+        showPenaltyBlocked(data);
         return;
       }
       // Assinatura viva já existia: reaproveitada, nunca duplicada.

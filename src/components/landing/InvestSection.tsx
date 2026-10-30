@@ -16,6 +16,8 @@ import {
 } from "@/lib/pricing-rules";
 import { PRICING_COPY, AGENCY_COPY } from "@/content/landing";
 import { getAgencyWhatsappUrl } from "@/lib/support";
+import { isPenaltyBlocked } from "@/lib/penalty";
+import { showPenaltyBlocked } from "@/lib/penalty-flow";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 // O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
@@ -156,6 +158,12 @@ const InvestSection = () => {
 
       if (error) {
         toast.error(error.message || "Erro ao criar assinatura.");
+        return;
+      }
+      // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      if (isPenaltyBlocked(data)) {
+        setCheckoutOpen(false);
+        showPenaltyBlocked(data);
         return;
       }
       if (!data?.success || !data?.checkoutUrl) {
