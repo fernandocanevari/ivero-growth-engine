@@ -127,6 +127,7 @@ async function call(w: World, body: Record<string, unknown>) {
         const live = w.row.__subDeleted ? [] : [{ id: "sub_test", customer: "cus_test", status: "ACTIVE" }];
         return reply({ object: "list", hasMore: false, data: url.searchParams.get("customer") === "cus_test" ? live : [] });
       }
+      if (p === "/subscriptions/sub_test" && req.method === "GET") return w.row.__subDeleted ? reply({ errors: [] }, 404) : reply({ id: "sub_test", status: "ACTIVE" });
       if (p === "/subscriptions/sub_test" && req.method === "DELETE") { w.row.__subDeleted = true; return reply({ deleted: true }); }
       if (p === "/payments" && req.method === "POST") {
         if (w.postNetworkError) throw new TypeError("network timeout");
