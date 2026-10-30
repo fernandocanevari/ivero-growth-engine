@@ -4,6 +4,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { decideProration, listProrationPayments, prorationDay } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { decideCancelAccess } from "./cancel-access.ts";
+import { handlePayPenalty } from "./penalty.ts";
+import { isPenaltyPending, PENALTY_COLUMNS, penaltyDescription, penaltyRef, type PenaltyRow } from "../_shared/penalty.ts";
 import {
   belongsToOtherUser,
   cancelProviderSubscriptions,
@@ -73,7 +75,7 @@ const ASAAS_BASE_URL = asaasBaseUrl();
 const PLANOS_VALIDOS = ["presenca", "influencia", "autoridade"];
 
 type Plano = "presenca" | "influencia" | "autoridade";
-type Action = "change_plan" | "cancel" | "update_card" | "list_invoices";
+type Action = "change_plan" | "cancel" | "update_card" | "list_invoices" | "pay_penalty";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -139,7 +141,7 @@ Deno.serve(async (req) => {
     // 2. Body
     const body = (await req.json().catch(() => ({}))) as Body;
     const action = body.action;
-    const VALID_ACTIONS: Action[] = ["change_plan", "cancel", "update_card", "list_invoices"];
+    const VALID_ACTIONS: Action[] = ["change_plan", "cancel", "update_card", "list_invoices", "pay_penalty"];
     if (!action || !VALID_ACTIONS.includes(action)) {
       return json(400, { error: "action inválida. Use: " + VALID_ACTIONS.join(", ") });
     }
@@ -194,29 +196,37 @@ Deno.serve(async (req) => {
     let subId = assinatura.asaas_subscription_id as string | null;
 
     /**
-     * Cobrança avulsa (PAYMENT único) no Asaas. Usada tanto pela diferença
-     * proporcional do upgrade quanto pela multa de fidelidade do ciclo anual.
-     * Nunca lança: em falha, loga e devolve null (a operação principal segue).
+     * Cobrança avulsa (PAYMENT único) no Asaas — usada só pela multa de
+     * fidelidade do ciclo anual (o upgrade cria a própria cobrança).
+     * Nunca lança: em falha (HTTP, rede ou sem id), loga e devolve null.
      */
     const cobrarAvulsa = async (args: {
       customerId: string;
       value: number;
       description: string;
       externalReference: string;
-    }): Promise<{ value: number; invoiceUrl: string | null } | null> => {
-      const today = new Date().toISOString().slice(0, 10);
-      const pay = await fetchAsaas(`/payments`, {
-        method: "POST",
-        body: JSON.stringify({
-          customer: args.customerId,
-          billingType: "CREDIT_CARD",
-          value: args.value,
-          dueDate: today,
-          description: args.description,
-          externalReference: args.externalReference,
-        }),
-      });
-      if (!pay.ok) {
+    }): Promise<{ id: string; value: number; invoiceUrl: string | null } | null> => {
+      // Vencimento: hoje no calendário de Brasília.
+      const today = prorationDay(new Date()) ?? new Date().toISOString().slice(0, 10);
+      let pay: Awaited<ReturnType<typeof fetchAsaas>>;
+      try {
+        pay = await fetchAsaas(`/payments`, {
+          method: "POST",
+          body: JSON.stringify({
+            customer: args.customerId,
+            billingType: "CREDIT_CARD",
+            value: args.value,
+            dueDate: today,
+            description: args.description,
+            externalReference: args.externalReference,
+          }),
+        });
+      } catch (err) {
+        console.error("cobrarAvulsa network error:", err instanceof Error ? err.message : String(err), "ref:", args.externalReference);
+        return null;
+      }
+      const id = pay.ok ? String(pay.json?.id ?? "") : "";
+      if (!pay.ok || !id) {
         console.error(
           "cobrarAvulsa error:",
           pay.status,
@@ -229,6 +239,7 @@ Deno.serve(async (req) => {
         return null;
       }
       return {
+        id,
         value: args.value,
         invoiceUrl: pay.json?.invoiceUrl ?? pay.json?.bankSlipUrl ?? null,
       };
