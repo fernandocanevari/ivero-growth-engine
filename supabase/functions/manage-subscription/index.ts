@@ -5,7 +5,7 @@ import { decideProration, listProrationPayments, prorationDay } from "../_shared
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { decideCancelAccess } from "./cancel-access.ts";
 import { handlePayPenalty } from "./penalty.ts";
-import { isPenaltyPending, PENALTY_COLUMNS, penaltyDescription, penaltyRef, type PenaltyRow } from "../_shared/penalty.ts";
+import { isPenaltyPending, penaltyDescription, penaltyRef, type PenaltyRow } from "../_shared/penalty.ts";
 import {
   belongsToOtherUser,
   cancelProviderSubscriptions,
@@ -190,8 +190,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, " +
-          PENALTY_COLUMNS,
+        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -894,7 +893,7 @@ Deno.serve(async (req) => {
         await undoCharge();
         const { data: fresh } = await supabaseAdmin
           .from("assinaturas")
-          .select("data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, " + PENALTY_COLUMNS)
+          .select("data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id")
           .eq("id", assinatura.id)
           .maybeSingle();
         console.log("cancel: corrida — outra chamada já cancelou", userId, assinatura.id);
