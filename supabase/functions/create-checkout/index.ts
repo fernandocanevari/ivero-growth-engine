@@ -5,6 +5,7 @@ import { normalizeCiclo, planValue, COMPROMISSO_MESES, type CicloContratado, typ
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
 import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resumableCancelledTrial } from "../_shared/checkout-state.ts";
+import { isPenaltyPending, PENALTY_COLUMNS, penaltyBlockedMessage, type PenaltyRow } from "../_shared/penalty.ts";
 
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -100,6 +101,29 @@ Deno.serve(async (req) => {
         error: "agencia_usa_faturamento_consolidado",
         message: "Contas de agência contratam pelo faturamento consolidado das marcas.",
       }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // P26: multa de cancelamento em aberto (em QUALQUER linha do usuário)
+    // bloqueia toda nova contratação até ser paga ou perdoada. Linhas antigas,
+    // sem dados de multa, nunca bloqueiam. O link de pagamento vem de
+    // manage-subscription/pay_penalty, nunca daqui.
+    {
+      const { data: penaltyRows, error: penaltyError } = await adm
+        .from("assinaturas")
+        .select(`id, ${PENALTY_COLUMNS}`)
+        .eq("user_id", userId);
+      if (penaltyError) throw penaltyError;
+      const blocking = ((penaltyRows ?? []) as PenaltyRow[]).find(isPenaltyPending);
+      if (blocking) {
+        const valor = Number(blocking.multa_pendente_valor);
+        console.log("create-checkout: bloqueado por multa pendente", userId, valor);
+        return new Response(JSON.stringify({
+          ok: false,
+          reason: "multa_pendente",
+          valor,
+          ciclos: Number(blocking.multa_pendente_ciclos ?? 0),
+          message: penaltyBlockedMessage(valor),
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
     if (body?.agency) {
       if (!isAgencyAccount) {
