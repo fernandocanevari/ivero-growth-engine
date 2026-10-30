@@ -32,6 +32,10 @@ interface World {
   getPaymentStatus?: number;
   /** Outra chamada de cancelamento grava 'cancelado' entre a leitura e a escrita desta. */
   raceOnCancel?: boolean;
+  /** HTTP forçado no DELETE da assinatura (limpeza não confirmada). */
+  deleteSubStatus?: number;
+  /** A gravação 'cancelado' falha por erro de banco. */
+  cancelWriteFails?: boolean;
 }
 
 function world(row: Row = {}, over: Partial<World> = {}): World {
@@ -113,6 +117,7 @@ async function call(w: World, body: Record<string, unknown>) {
         if (w.raceOnCancel && reqBody?.status === "cancelado") {
           Object.assign(w.row, { status: "cancelado", multa_pendente_valor: MULTA, multa_pendente_ciclos: 3, multa_pendente_payment_id: "pay_other", multa_pendente_invoice_url: "https://invoice.invalid/pay_other" });
         }
+        if (w.cancelWriteFails && reqBody?.status === "cancelado") return reply({ message: "db down", code: "XX000" }, 500);
         const hit = matches(w.row, url.searchParams);
         if (hit) Object.assign(w.row, reqBody);
         return url.searchParams.has("select") ? reply(hit ? [{ id: w.row.id }] : []) : new Response(null, { status: 204 });
@@ -128,7 +133,10 @@ async function call(w: World, body: Record<string, unknown>) {
         return reply({ object: "list", hasMore: false, data: url.searchParams.get("customer") === "cus_test" ? live : [] });
       }
       if (p === "/subscriptions/sub_test" && req.method === "GET") return w.row.__subDeleted ? reply({ errors: [] }, 404) : reply({ id: "sub_test", status: "ACTIVE" });
-      if (p === "/subscriptions/sub_test" && req.method === "DELETE") { w.row.__subDeleted = true; return reply({ deleted: true }); }
+      if (p === "/subscriptions/sub_test" && req.method === "DELETE") {
+        if (w.deleteSubStatus) return reply({ errors: [{ description: "provider down" }] }, w.deleteSubStatus);
+        w.row.__subDeleted = true; return reply({ deleted: true });
+      }
       if (p === "/payments" && req.method === "POST") {
         if (w.postNetworkError) throw new TypeError("network timeout");
         if (w.postStatus) return reply({ errors: [{ description: "recusado" }] }, w.postStatus);
@@ -345,4 +353,59 @@ Deno.test("pay_penalty: Asaas recusa criar a cobrança → cobranca_indisponivel
   assertEquals(r.data, { ok: false, reason: "cobranca_indisponivel", message: UNAVAILABLE });
   assertEquals(w.row.multa_pendente_payment_id, null);
   assertEquals(w.row.multa_pendente_em, null, "novo clique pode tentar de novo");
+});
+
+// ── P26-fix1: cancelamento repetido ainda limpa o Asaas ──────────────────────
+const UNVERIFIED = { error: "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.", code: "cancel_unverified" };
+const deletes = (w: World) => w.calls.filter((c) => c.method === "DELETE" && c.path.startsWith("/subscriptions/")).map((c) => c.path.split("/").pop());
+
+Deno.test("fix1: já cancelada com assinatura viva sobrando no Asaas → removida, sem nova cobrança, multa gravada devolvida", async () => {
+  const w = world(pendingRow("pay_x"));
+  charge(w, "pay_x");
+  const before = structuredClone(w.row);
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(deletes(w), ["sub_test"]);
+  assertEquals(r.data.cleaned, ["sub_test"]);
+  assertEquals(r.data.reused, true);
+  assertEquals(r.data.multa, { value: MULTA, ciclos: 3, invoiceUrl: "https://invoice.invalid/pay_x" });
+  assertEquals(posts(w).length, 0, "multa nunca cobrada de novo");
+  const { __subDeleted: _, ...after } = w.row;
+  assertEquals(after, before, "linha não muda");
+});
+
+Deno.test("fix1: já cancelada sem nada a limpar → nada removido, sem cobrança, sem 'cleaned'", async () => {
+  const w = world({ ...pendingRow("pay_x"), __subDeleted: true });
+  const before = structuredClone(w.row);
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, true);
+  assertEquals("cleaned" in r.data, false);
+  assertEquals(deletes(w), []);
+  assertEquals(posts(w).length, 0);
+  assertEquals(w.row, before);
+});
+
+Deno.test("fix1: já cancelada e limpeza não confirmada → mesmo 502 do 1º cancelamento, linha intacta", async () => {
+  const first = await cancel(world({}, { deleteSubStatus: 503 }));
+  const w = world(pendingRow("pay_x"), { deleteSubStatus: 503 });
+  const before = structuredClone(w.row);
+  const r = await cancel(w);
+  assertEquals(r.status, 502);
+  assertEquals(r.data, UNVERIFIED);
+  assertEquals(first.status, 502);
+  assertEquals(r.data, first.data, "mesmo resultado do primeiro cancelamento");
+  assertEquals(posts(w).length, 0);
+  assertEquals(w.row, before);
+});
+
+Deno.test("fix1 B: gravação do cancelamento falha depois de criar a multa → cobrança removida, erro devolvido, linha não cancelada", async () => {
+  const w = world({}, { cancelWriteFails: true });
+  const r = await cancel(w);
+  assertEquals(r.status, 500);
+  assert(r.data.error, "resposta de erro");
+  assertEquals(posts(w).length, 1);
+  assertEquals(w.charges.get("pay_m1")?.deleted, true, "nenhuma cobrança órfã");
+  assertEquals(w.row.status, "ativo");
+  assertEquals(w.row.multa_pendente_valor, null);
 });
