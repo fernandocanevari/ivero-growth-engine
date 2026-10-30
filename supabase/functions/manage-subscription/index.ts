@@ -172,7 +172,17 @@ Deno.serve(async (req) => {
 
     // P26: multa de cancelamento — procura em TODAS as linhas do usuário.
     if (action === "pay_penalty") {
-      return json(200, await handlePayPenalty({ db: supabaseAdmin, userId, fetchAsaas, hasKey: !!asaasKey }));
+      return json(200, await handlePayPenalty({
+        db: supabaseAdmin,
+        userId,
+        fetchAsaas,
+        hasKey: !!asaasKey,
+        findCustomerId: async () => {
+          const { data: prof } = await supabaseAdmin.from("profiles").select("email").eq("user_id", userId).maybeSingle();
+          const email = (prof?.email as string | null) ?? (claimsData.claims.email as string | undefined) ?? null;
+          return (await customerIdsForUser(fetchAsaas, null, email))[0] ?? null;
+        },
+      }));
     }
 
     // 3. Assinatura viva do usuário

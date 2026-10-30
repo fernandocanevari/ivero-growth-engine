@@ -35,6 +35,8 @@ export async function handlePayPenalty(args: {
   userId: string;
   fetchAsaas: FetchAsaas;
   hasKey: boolean;
+  /** Cliente do Asaas pelo e-mail da conta, quando a linha não tem um gravado. */
+  findCustomerId?: () => Promise<string | null>;
   now?: Date;
 }): Promise<Record<string, unknown>> {
   const { db, userId, fetchAsaas, hasKey } = args;
@@ -104,7 +106,12 @@ export async function handlePayPenalty(args: {
   }
 
   // 2) Cobrança não criada no cancelamento: cria agora, uma vez só.
-  const customerId = row.asaas_customer_id ?? null;
+  let customerId = row.asaas_customer_id ?? null;
+  if (!customerId && args.findCustomerId) {
+    try { customerId = await args.findCustomerId(); } catch (err) {
+      return unavailable(`busca de cliente: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
   if (!customerId) return unavailable("sem cliente no Asaas");
 
   const reservedAt = now.toISOString();
