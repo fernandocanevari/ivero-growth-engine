@@ -687,6 +687,47 @@ Deno.serve(async (req) => {
     }
 
     if (action === "cancel") {
+      type CancelRow = PenaltyRow & {
+        data_vencimento?: string | null;
+        trial_ends_at?: string | null;
+        ciclo_contratado?: string | null;
+        ciclos_pagos?: number | null;
+        counted_payment_ids?: string[] | null;
+      };
+      /** Multa gravada na linha, no formato da resposta do cancelamento. */
+      const penaltyOf = (row: CancelRow) =>
+        isPenaltyPending(row)
+          ? {
+            value: Number(row.multa_pendente_valor),
+            ciclos: Number(row.multa_pendente_ciclos ?? 0),
+            invoiceUrl: row.multa_pendente_invoice_url ?? null,
+            ...(row.multa_pendente_payment_id ? {} : { error: "cobranca_indisponivel" }),
+          }
+          : null;
+      /** P26: linha já cancelada → nada é recalculado nem cobrado de novo. */
+      const reusedCancel = (row: CancelRow) => {
+        const pagos = Number(row.ciclos_pagos ?? 0);
+        const cancelledTrial = pagos === 0 && !(Array.isArray(row.counted_payment_ids) && row.counted_payment_ids.length);
+        const until = row.data_vencimento ?? row.trial_ends_at ?? null;
+        const untilMs = until ? new Date(until).getTime() : NaN;
+        return json(200, {
+          ok: true,
+          success: true,
+          reused: true,
+          acessoAte: until,
+          accessUntil: until,
+          isTrial: cancelledTrial,
+          endsNow: cancelledTrial && (Number.isNaN(untilMs) || untilMs <= Date.now()),
+          ciclo: normalizeCiclo(row.ciclo_contratado),
+          ciclosPagos: pagos,
+          multa: penaltyOf(row),
+        });
+      };
+      if (assinatura.status === "cancelado") {
+        console.log("cancel: assinatura já cancelada, nada recalculado", userId, assinatura.id);
+        return reusedCancel(assinatura as CancelRow);
+      }
+
       // Compromisso anual: cancelar antes de completar os 12 ciclos gera
       // cobrança avulsa da diferença (valor cheio - promocional) x meses já
       // usufruídos com desconto. Base primária = mensalidades confirmadas;
@@ -775,7 +816,52 @@ Deno.serve(async (req) => {
         upgradeCleanup = { ...CLEAR_UPGRADE_PENDENTE, upgrade_ultimo_payment_id: pendingUpgradeId };
       }
 
-      const { error } = await supabaseAdmin
+      // P26 — multa de fidelidade: a cobrança é criada ANTES de gravar o
+      // cancelamento para que valor, ciclos e cobrança fiquem na MESMA
+      // instrução. Falha ao criar a cobrança não impede o cancelamento: valor e
+      // ciclos ficam gravados com payment_id nulo (pay_penalty cria depois).
+      let multa: { value: number; ciclos: number; invoiceUrl: string | null; error?: string } | null = null;
+      let penaltyPatch: Record<string, unknown> = {};
+      let chargeId: string | null = null;
+      if (multaValue >= 5) {
+        const customerParaMulta = assinatura.asaas_customer_id as string | null;
+        const cobranca = customerParaMulta && asaasKey
+          ? await cobrarAvulsa({
+            customerId: customerParaMulta,
+            value: multaValue,
+            description: penaltyDescription(assinatura.plano as string, ciclosComDesconto),
+            externalReference: penaltyRef(assinatura.id as string, assinatura.plano as string),
+          })
+          : null;
+        if (!cobranca) {
+          console.error("cancel: cobrança da multa não criada, fica pendente para pay_penalty:", userId, multaValue, customerParaMulta ? "falha no Asaas" : "sem customer");
+        }
+        chargeId = cobranca?.id ?? null;
+        penaltyPatch = {
+          multa_pendente_valor: multaValue,
+          multa_pendente_ciclos: ciclosComDesconto,
+          multa_pendente_payment_id: chargeId,
+          multa_pendente_invoice_url: cobranca?.invoiceUrl ?? null,
+          multa_pendente_em: cobranca ? new Date().toISOString() : null,
+        };
+        multa = cobranca
+          ? { value: multaValue, ciclos: ciclosComDesconto, invoiceUrl: cobranca.invoiceUrl }
+          : { value: multaValue, ciclos: ciclosComDesconto, invoiceUrl: null, error: "cobranca_indisponivel" };
+      } else if (multaValue > 0) {
+        console.log("cancel: multa abaixo do mínimo de cobrança, não gerada:", userId, multaValue);
+      }
+      const undoCharge = async () => {
+        if (!chargeId) return;
+        try {
+          const undo = await fetchAsaas(`/payments/${encodeURIComponent(chargeId)}`, { method: "DELETE" });
+          if (!undo.ok && undo.status !== 404) console.error("ALERTA multa duplicada não removida", assinatura.id, chargeId, undo.status);
+        } catch (err) {
+          console.error("ALERTA multa duplicada não removida", assinatura.id, chargeId, err instanceof Error ? err.message : String(err));
+        }
+      };
+
+      // Gravação condicional: só uma chamada de cancelamento vence.
+      const { data: cancelled, error } = await supabaseAdmin
         .from("assinaturas")
         .update({
           status: "cancelado",
@@ -784,30 +870,25 @@ Deno.serve(async (req) => {
           asaas_subscription_id_anterior: removedSubId,
           ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
           ...upgradeCleanup,
+          ...penaltyPatch,
         })
-        .eq("id", assinatura.id);
-      if (error) return json(500, { error: error.message });
-
-      // Multa de fidelidade — emitida DEPOIS do cancelamento efetivo: falha
-      // aqui não impede o cliente de cancelar (mesma política do pró-rata).
-      let multa: { value: number; ciclos: number; invoiceUrl: string | null } | null = null;
-      const customerParaMulta = assinatura.asaas_customer_id as string | null;
-      if (multaValue >= 5 && customerParaMulta && asaasKey) {
-        const cobranca = await cobrarAvulsa({
-          customerId: customerParaMulta,
-          value: multaValue,
-          description:
-            `Ivero — diferença de fidelidade (plano ${assinatura.plano}, ` +
-            `${ciclosComDesconto} mês(es) com desconto anual)`,
-          externalReference: `fidelidade:${assinatura.id}:${assinatura.plano}`,
-        });
-        if (cobranca) multa = { ...cobranca, ciclos: ciclosComDesconto };
-      } else if (multaValue > 0) {
-        console.error(
-          "cancel: multa de fidelidade não emitida (sem customer/chave):",
-          userId,
-          multaValue,
-        );
+        .eq("id", assinatura.id)
+        .neq("status", "cancelado")
+        .select("id");
+      if (error) {
+        await undoCharge();
+        return json(500, { error: error.message });
+      }
+      if (!cancelled || cancelled.length === 0) {
+        // Outra chamada simultânea já cancelou: a cobrança desta é desfeita.
+        await undoCharge();
+        const { data: fresh } = await supabaseAdmin
+          .from("assinaturas")
+          .select("data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, " + PENALTY_COLUMNS)
+          .eq("id", assinatura.id)
+          .maybeSingle();
+        console.log("cancel: corrida — outra chamada já cancelou", userId, assinatura.id);
+        return reusedCancel(((fresh as CancelRow | null) ?? (assinatura as CancelRow)));
       }
 
       console.log(
@@ -819,6 +900,8 @@ Deno.serve(async (req) => {
         ciclosPagos,
         "multa:",
         multa?.value ?? 0,
+        "multaPaymentId:",
+        chargeId,
         "isTrial:",
         access.isTrial,
         "accessUntil:",
@@ -838,6 +921,7 @@ Deno.serve(async (req) => {
         ciclosPagos,
         multa,
       });
+
 
     }
 
