@@ -22,7 +22,8 @@ const session = { user: { id: "u1", email: "c@x.com", user_metadata: { display_n
 vi.mock("@/integrations/supabase/client", () => {
   const q: Record<string, unknown> = {};
   for (const m of ["select", "eq", "order", "limit", "in"]) q[m] = () => q;
-  q.maybeSingle = async () => ({ data: null, error: null });
+  // Linha de assinatura cancelada: a landing abre o modal de contratação.
+  q.maybeSingle = async () => ({ data: { status: "cancelado", carencia_ate: null }, error: null });
   q.then = (r: (v: unknown) => unknown) => r({ data: [], error: null });
   return {
     supabase: {
