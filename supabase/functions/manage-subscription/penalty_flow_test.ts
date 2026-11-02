@@ -422,3 +422,133 @@ Deno.test("preview_cancel mensal → valor 0, sem compromisso", async () => {
   const r = await call(w, { action: "preview_cancel" });
   assertEquals(r.data, { ok: true, multa: { valor: 0, ciclos: 0 }, emCompromisso: false });
 });
+
+// ── P27: webhook SUBSCRIPTION_DELETED cancela a linha antes da gravação do cancel ──
+const P27_UPGRADE = {
+  upgrade_pendente_plano: "influencia", upgrade_pendente_ciclo: "anual", upgrade_pendente_valor_novo: 897,
+  upgrade_pendente_diferenca: 50, upgrade_pendente_payment_id: "pay_up", upgrade_pendente_invoice_url: "https://invoice.invalid/pay_up",
+  upgrade_pendente_em: new Date(Date.now() - DAY).toISOString(), upgrade_ultimo_payment_id: null,
+};
+
+Deno.test("P27 webhook vence com multa: multa gravada, cobrança mantida, resposta normal com multa e link", async () => {
+  const w = world({}, { webhookWinsOnCancel: true });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined, "resposta normal, não reused");
+  assertEquals(r.data.multa, { value: MULTA, ciclos: 3, invoiceUrl: "https://invoice.invalid/pay_m1" });
+  assertEquals(posts(w).length, 1);
+  assertEquals(w.charges.get("pay_m1")?.deleted, undefined, "cobrança NÃO removida");
+  assertEquals(w.row.status, "cancelado");
+  assertEquals(w.row.asaas_subscription_id, null);
+  assertEquals(w.row.asaas_subscription_id_anterior, "sub_test");
+  assertEquals(w.row.multa_pendente_valor, MULTA);
+  assertEquals(w.row.multa_pendente_ciclos, 3);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.row.multa_pendente_invoice_url, "https://invoice.invalid/pay_m1");
+  assert(w.row.multa_pendente_em, "multa_pendente_em gravado");
+  assertEquals(w.raceWrites, 1);
+});
+
+Deno.test("P27 webhook vence: patch completo aplicado (upgrade pendente limpo, upgrade_ultimo_payment_id, carência)", async () => {
+  const w = world({ ...P27_UPGRADE, carencia_ate: new Date(Date.now() + DAY).toISOString() }, { webhookWinsOnCancel: true });
+  charge(w, "pay_up");
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.multa.value, MULTA);
+  for (const k of ["upgrade_pendente_plano", "upgrade_pendente_ciclo", "upgrade_pendente_valor_novo", "upgrade_pendente_diferenca", "upgrade_pendente_payment_id", "upgrade_pendente_invoice_url", "upgrade_pendente_em"]) {
+    assertEquals(w.row[k], null, k);
+  }
+  assertEquals(w.row.upgrade_ultimo_payment_id, "pay_up");
+  assertEquals(w.row.carencia_ate, null);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.charges.get("pay_up")?.deleted, true, "cobrança do upgrade removida como antes");
+  assertEquals(w.charges.get("pay_m1")?.deleted, undefined);
+});
+
+Deno.test("P27 webhook vence sem multa (mensal): sem cobrança, campos de upgrade ainda gravados", async () => {
+  const w = world({ ciclo_contratado: "mensal", ...P27_UPGRADE }, { webhookWinsOnCancel: true });
+  charge(w, "pay_up");
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(r.data.multa, null);
+  assertEquals(posts(w).length, 0);
+  assertEquals(w.row.upgrade_pendente_payment_id, null);
+  assertEquals(w.row.upgrade_ultimo_payment_id, "pay_up");
+  assertEquals(w.row.multa_pendente_valor, null);
+  assertEquals(w.row.status, "cancelado");
+});
+
+Deno.test("P27 webhook vence sem multa (teste grátis): data_vencimento = fim do teste ainda gravado", async () => {
+  const trialEnd = new Date(Date.now() + 4 * DAY).toISOString();
+  const w = world({ status: "trial", ciclos_pagos: 0, counted_payment_ids: [], trial_ends_at: trialEnd, data_vencimento: null }, { webhookWinsOnCancel: true });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(r.data.isTrial, true);
+  assertEquals(r.data.accessUntil, trialEnd);
+  assertEquals(r.data.multa, null);
+  assertEquals(posts(w).length, 0);
+  assertEquals(w.row.data_vencimento, trialEnd);
+  assertEquals(w.row.status, "cancelado");
+});
+
+Deno.test("P27 webhook vence sem multa e nada a completar: sem gravação extra, resposta normal", async () => {
+  const w = world({ ciclo_contratado: "mensal" }, { webhookWinsOnCancel: true });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(r.data.multa, null);
+  assertEquals(w.raceWrites ?? 0, 0);
+  assertEquals(w.row.status, "cancelado");
+});
+
+Deno.test("P27 duplo clique: as duas chamadas perdem a gravação principal; só uma multa fica, a outra cobrança é removida", async () => {
+  const w = world({}, { webhookWinsOnCancel: true });
+  const [a, b] = await callMany(w, [{ action: "cancel", motivo: "a" }, { action: "cancel", motivo: "b" }]);
+  assertEquals(a.status, 200);
+  assertEquals(b.status, 200);
+  assertEquals(posts(w).length, 2, "as duas chamadas chegaram a criar cobrança");
+  const alive = [...w.charges.values()].filter((c) => !c.deleted);
+  assertEquals(alive.length, 1, "exatamente uma cobrança permanece");
+  assertEquals(w.row.multa_pendente_payment_id, alive[0].id);
+  assertEquals(w.row.multa_pendente_valor, MULTA);
+  const reused = [a, b].filter((r) => r.data.reused === true);
+  assertEquals(reused.length, 1, "uma resposta reused");
+  assertEquals(reused[0].data.multa.invoiceUrl, alive[0].invoiceUrl);
+  const normal = [a, b].find((r) => r.data.reused !== true)!;
+  assertEquals(normal.data.multa.invoiceUrl, alive[0].invoiceUrl);
+});
+
+Deno.test("P27 duplicata genuína (multa já gravada por outra chamada, mesmo anterior): cobrança desta removida, reused", async () => {
+  const w = world({}, { raceOnCancel: true, raceAnterior: true });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, true);
+  assertEquals(w.charges.get("pay_m1")?.deleted, true);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_other");
+  assertEquals(r.data.multa.invoiceUrl, "https://invoice.invalid/pay_other");
+  assertEquals(w.raceWrites ?? 0, 0);
+});
+
+Deno.test("P27 erro de banco na correção pós-webhook: 1 nova tentativa resolve", async () => {
+  const w = world({}, { webhookWinsOnCancel: true, raceWriteFailures: 1 });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(w.raceWrites, 2);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.charges.get("pay_m1")?.deleted, undefined);
+  assertEquals(w.errors.some((e) => e.includes("ALERTA cancel")), false);
+});
+
+Deno.test("P27 erro de banco persistente na correção pós-webhook: ALERTA, cobrança mantida, 200 com a multa", async () => {
+  const w = world({}, { webhookWinsOnCancel: true, raceWriteFailures: 2 });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(w.raceWrites, 2, "uma tentativa + uma nova tentativa");
+  assertEquals(r.data.reused, undefined);
+  assertEquals(r.data.multa, { value: MULTA, ciclos: 3, invoiceUrl: "https://invoice.invalid/pay_m1" });
+  assertEquals(w.charges.get("pay_m1")?.deleted, undefined, "cobrança NÃO removida");
+  assert(w.errors.some((e) => e.includes("ALERTA cancel: multa criada mas não gravada") && e.includes("pay_m1") && e.includes(String(MULTA))), w.errors.join("\n"));
+  assertEquals(w.row.multa_pendente_valor, null, "não gravada (banco fora)");
+});
