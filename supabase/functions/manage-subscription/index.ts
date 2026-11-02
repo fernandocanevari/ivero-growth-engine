@@ -896,17 +896,18 @@ Deno.serve(async (req) => {
       };
 
       // Gravação condicional: só uma chamada de cancelamento vence.
+      const cancelPatch: Record<string, unknown> = {
+        status: "cancelado",
+        carencia_ate: null,
+        asaas_subscription_id: null,
+        asaas_subscription_id_anterior: removedSubId,
+        ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
+        ...upgradeCleanup,
+        ...penaltyPatch,
+      };
       const { data: cancelled, error } = await supabaseAdmin
         .from("assinaturas")
-        .update({
-          status: "cancelado",
-          carencia_ate: null,
-          asaas_subscription_id: null,
-          asaas_subscription_id_anterior: removedSubId,
-          ...(access.dataVencimento !== undefined ? { data_vencimento: access.dataVencimento } : {}),
-          ...upgradeCleanup,
-          ...penaltyPatch,
-        })
+        .update(cancelPatch)
         .eq("id", assinatura.id)
         .neq("status", "cancelado")
         .select("id");
@@ -915,15 +916,57 @@ Deno.serve(async (req) => {
         return json(500, { error: error.message });
       }
       if (!cancelled || cancelled.length === 0) {
-        // Outra chamada simultânea já cancelou: a cobrança desta é desfeita.
-        await undoCharge();
-        const { data: fresh } = await supabaseAdmin
-          .from("assinaturas")
-          .select("data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id")
-          .eq("id", assinatura.id)
-          .maybeSingle();
-        console.log("cancel: corrida — outra chamada já cancelou", userId, assinatura.id);
-        return reusedCancel(((fresh as CancelRow | null) ?? (assinatura as CancelRow)));
+        const readFresh = async () => {
+          const { data } = await supabaseAdmin.from("assinaturas").select("*").eq("id", assinatura.id).maybeSingle();
+          return (data as (CancelRow & Record<string, unknown>) | null) ?? null;
+        };
+        const fresh = await readFresh();
+        // P27: o webhook SUBSCRIPTION_DELETED da assinatura que ESTA chamada
+        // removeu marcou a linha 'cancelado' antes da gravação acima. Nenhuma
+        // multa foi gravada ainda → completa o cancelamento (multa incluída)
+        // em vez de desfazer a cobrança.
+        const webhookWon = !!fresh && !!removedSubId &&
+          fresh.status === "cancelado" &&
+          fresh.asaas_subscription_id_anterior === removedSubId &&
+          fresh.multa_pendente_valor == null &&
+          fresh.multa_ultimo_payment_id == null;
+        let completed = false;
+        if (webhookWon) {
+          const patch = Object.fromEntries(Object.entries(cancelPatch).filter(([k, v]) => fresh![k] !== v));
+          if (Object.keys(patch).length === 0) {
+            completed = true;
+          } else {
+            const completeAfterWebhook = () => supabaseAdmin
+              .from("assinaturas")
+              .update(patch)
+              .eq("id", assinatura.id)
+              .eq("status", "cancelado")
+              .eq("asaas_subscription_id_anterior", removedSubId as string)
+              .is("multa_pendente_valor", null)
+              .is("multa_ultimo_payment_id", null)
+              .select("id");
+            let res = await completeAfterWebhook();
+            if (res.error) res = await completeAfterWebhook();
+            if (res.error) {
+              // Cobrança mantida: apagar aqui deixaria o cliente sem multa.
+              console.error(
+                multaValue > 0 ? "ALERTA cancel: multa criada mas não gravada" : "ALERTA cancel: dados do cancelamento não gravados após o webhook",
+                userId, assinatura.id, chargeId, multaValue, res.error.message,
+              );
+              completed = true;
+            } else if (res.data && res.data.length > 0) {
+              console.log("cancel: corrida com webhook, cancelamento completado e multa persistida", userId, assinatura.id, multaValue);
+              completed = true;
+            }
+          }
+        }
+        if (!completed) {
+          // Outra chamada simultânea já cancelou: a cobrança desta é desfeita.
+          await undoCharge();
+          const again = webhookWon ? await readFresh() : fresh;
+          console.log("cancel: corrida — outra chamada já cancelou", userId, assinatura.id);
+          return reusedCancel(((again as CancelRow | null) ?? (assinatura as CancelRow)));
+        }
       }
 
       console.log(
