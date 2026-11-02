@@ -591,33 +591,8 @@ function AssinaturaPageContent() {
           )}
 
         </Card>
+        )}
       </div>
-
-      {/* P26 — multa de cancelamento pendente */}
-      {penaltyBlocksReactivation && multaPendente && (
-        <Card className="p-6 border-destructive/40" data-testid="penalty-card">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="max-w-2xl">
-              <h3 className="text-base font-semibold text-foreground">
-                Multa de cancelamento: {formatPenaltyBRL(multaPendente.valor)}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Você cancelou um plano com desconto anual. Falta pagar{" "}
-                {formatPenaltyBRL(multaPendente.valor)}, a diferença dos meses em que você usou o
-                preço promocional. Pague agora e, quando quiser voltar, é só reativar.
-              </p>
-            </div>
-            <Button onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
-              {payingPenalty ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              Pagar agora
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Forma de pagamento */}
       <Card className="p-6">
