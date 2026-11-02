@@ -5,7 +5,14 @@ import { decideProration, listProrationPayments, prorationDay } from "../_shared
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { decideCancelAccess } from "./cancel-access.ts";
 import { handlePayPenalty } from "./penalty.ts";
-import { isPenaltyPending, penaltyDescription, penaltyRef, type PenaltyRow } from "../_shared/penalty.ts";
+import {
+  calcularMultaCancelamento,
+  isPenaltyPending,
+  penaltyDescription,
+  penaltyRef,
+  snapshotDesconto,
+  type PenaltyRow,
+} from "../_shared/penalty.ts";
 import {
   belongsToOtherUser,
   cancelProviderSubscriptions,
@@ -29,6 +36,10 @@ export const UPGRADE_PAID_CONFIRMING_MESSAGE =
 
 export const CANNOT_CALCULATE_MESSAGE =
   "Não conseguimos calcular a diferença agora. Tente de novo em alguns instantes.";
+export const PREVIEW_NO_SUBSCRIPTION_MESSAGE =
+  "Não encontramos uma assinatura ativa para cancelar.";
+export const PREVIEW_ALREADY_CANCELLED_MESSAGE =
+  "Sua assinatura já está cancelada.";
 export const MISSING_CUSTOMER_MESSAGE =
   "Não foi possível gerar a cobrança da diferença agora. Nada foi alterado. Tente de novo em instantes.";
 
@@ -49,8 +60,6 @@ const UPGRADE_DUE_DAYS = 3;
 import {
   normalizeCiclo,
   planValue,
-  multaFidelidade,
-  COMPROMISSO_MESES,
 } from "../_shared/pricing.ts";
 
 /**
@@ -75,7 +84,7 @@ const ASAAS_BASE_URL = asaasBaseUrl();
 const PLANOS_VALIDOS = ["presenca", "influencia", "autoridade"];
 
 type Plano = "presenca" | "influencia" | "autoridade";
-type Action = "change_plan" | "cancel" | "update_card" | "list_invoices" | "pay_penalty";
+type Action = "change_plan" | "cancel" | "update_card" | "list_invoices" | "pay_penalty" | "preview_cancel";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -141,7 +150,7 @@ Deno.serve(async (req) => {
     // 2. Body
     const body = (await req.json().catch(() => ({}))) as Body;
     const action = body.action;
-    const VALID_ACTIONS: Action[] = ["change_plan", "cancel", "update_card", "list_invoices", "pay_penalty"];
+    const VALID_ACTIONS: Action[] = ["change_plan", "cancel", "update_card", "list_invoices", "pay_penalty", "preview_cancel"];
     if (!action || !VALID_ACTIONS.includes(action)) {
       return json(400, { error: "action inválida. Use: " + VALID_ACTIONS.join(", ") });
     }
@@ -190,13 +199,26 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id",
+        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id, desconto_acumulado, ciclos_no_upgrade",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // P26-fix2 — prévia da multa do cancelamento: mesma linha e MESMO cálculo
+    // do "cancel". Somente leitura: não grava nada, não chama o Asaas.
+    if (action === "preview_cancel") {
+      if (!assinatura) {
+        return json(200, { ok: false, reason: "sem_assinatura", message: PREVIEW_NO_SUBSCRIPTION_MESSAGE });
+      }
+      if (assinatura.status === "cancelado") {
+        return json(200, { ok: false, reason: "assinatura_cancelada", message: PREVIEW_ALREADY_CANCELLED_MESSAGE });
+      }
+      const m = calcularMultaCancelamento(assinatura);
+      return json(200, { ok: true, multa: { valor: m.valor, ciclos: m.ciclos }, emCompromisso: m.emCompromisso });
+    }
 
     if (!assinatura) {
       return json(404, { error: "Nenhuma assinatura encontrada para este usuário." });
@@ -411,7 +433,7 @@ Deno.serve(async (req) => {
       if (!(await resolveSubId())) {
         const { error } = await supabaseAdmin
           .from("assinaturas")
-          .update({ plano, ciclo_contratado: ciclo })
+          .update({ plano, ciclo_contratado: ciclo, ...snapshotDesconto(assinatura) })
           .eq("id", assinatura.id);
         if (error) return json(500, { error: error.message });
         console.log("change_plan local:", userId, plano, ciclo);
@@ -519,9 +541,10 @@ Deno.serve(async (req) => {
               "Não foi possível atualizar o plano no provedor de pagamentos.",
           });
         }
+        // P26-fix2: desconto dos ciclos já pagos fica com o plano ANTIGO.
         const { error } = await supabaseAdmin
           .from("assinaturas")
-          .update({ plano, ciclo_contratado: ciclo })
+          .update({ plano, ciclo_contratado: ciclo, ...snapshotDesconto(assinatura) })
           .eq("id", assinatura.id);
         if (error) return json(500, { error: error.message });
         return json(200, {
@@ -779,29 +802,15 @@ Deno.serve(async (req) => {
         return reusedCancel(assinatura as CancelRow, cleaned);
       }
 
-      // Compromisso anual: cancelar antes de completar os 12 ciclos gera
-      // cobrança avulsa da diferença (valor cheio - promocional) x meses já
-      // usufruídos com desconto. Base primária = mensalidades confirmadas;
-      // a data de início do compromisso serve de sanidade (nunca conta mais
-      // meses do que os decorridos).
+      // Compromisso anual: cancelar antes de completar o compromisso gera
+      // cobrança avulsa do desconto anual realmente usufruído (por plano em
+      // cada ciclo pago). Cálculo único em _shared/penalty.ts — o mesmo da
+      // prévia (preview_cancel). Base = ciclos_pagos (1 por pagamento único).
       const cicloContratado = normalizeCiclo(assinatura.ciclo_contratado);
       const ciclosPagos = Number(assinatura.ciclos_pagos ?? 0);
-      const compromissoMeses = Number(assinatura.compromisso_meses ?? COMPROMISSO_MESES);
-      let mesesDecorridos = ciclosPagos;
-      if (assinatura.compromisso_inicio) {
-        const inicioTs = new Date(assinatura.compromisso_inicio as string).getTime();
-        if (!Number.isNaN(inicioTs)) {
-          const dias = Math.max(0, (Date.now() - inicioTs) / 86_400_000);
-          mesesDecorridos = Math.min(ciclosPagos, Math.floor(dias / 30) + 1);
-        }
-      }
-      const ciclosComDesconto =
-        cicloContratado === "anual" && ciclosPagos > 0 && ciclosPagos < compromissoMeses
-          ? Math.max(0, mesesDecorridos)
-          : 0;
-      const multaValue = ciclosComDesconto > 0
-        ? multaFidelidade(assinatura.plano as string, ciclosComDesconto)
-        : 0;
+      const calculo = calcularMultaCancelamento(assinatura);
+      const ciclosComDesconto = calculo.ciclos;
+      const multaValue = calculo.valor;
 
       let removedSubId: string | null = subId;
       if (registeredWithProvider) {
@@ -849,7 +858,7 @@ Deno.serve(async (req) => {
       let multa: { value: number; ciclos: number; invoiceUrl: string | null; error?: string } | null = null;
       let penaltyPatch: Record<string, unknown> = {};
       let chargeId: string | null = null;
-      if (multaValue >= 5) {
+      if (multaValue > 0) {
         const customerParaMulta = assinatura.asaas_customer_id as string | null;
         const cobranca = customerParaMulta && asaasKey
           ? await cobrarAvulsa({
@@ -873,8 +882,8 @@ Deno.serve(async (req) => {
         multa = cobranca
           ? { value: multaValue, ciclos: ciclosComDesconto, invoiceUrl: cobranca.invoiceUrl }
           : { value: multaValue, ciclos: ciclosComDesconto, invoiceUrl: null, error: "cobranca_indisponivel" };
-      } else if (multaValue > 0) {
-        console.log("cancel: multa abaixo do mínimo de cobrança, não gerada:", userId, multaValue);
+      } else if (calculo.abaixoDoMinimo) {
+        console.log("cancel: multa abaixo do mínimo de cobrança, não gerada:", userId);
       }
       const undoCharge = async () => {
         if (!chargeId) return;
