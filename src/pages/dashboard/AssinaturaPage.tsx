@@ -412,14 +412,16 @@ function AssinaturaPageContent() {
           <p className="text-sm text-muted-foreground mb-4">
             {planoInfo?.tagline ?? "Escolha um plano para desbloquear os recursos avançados."}
           </p>
+          {status !== "cancelado" && (
           <div className="flex items-baseline gap-2 mb-6">
             <span className="text-3xl font-bold text-foreground">
               {valorMensalAtual !== null ? formatBRL(valorMensalAtual) : "—"}
             </span>
             <span className="text-sm text-muted-foreground">/ mês</span>
           </div>
+          )}
 
-          {planoInfo && (
+          {planoInfo && status !== "cancelado" && (
             <p className="text-xs text-muted-foreground mb-4">
               {isAnual ? (
                 <>
@@ -441,7 +443,7 @@ function AssinaturaPageContent() {
             </p>
           )}
 
-          {canceladoAcessoAte && (
+          {canceladoAcessoAte && status !== "cancelado" && (
             <p className="text-xs text-muted-foreground mb-4">
               {trialCardCopy ?? (
                 <>
