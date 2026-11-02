@@ -381,7 +381,7 @@ function AssinaturaPageContent() {
       {/* Top: Plano atual + Próxima cobrança */}
       <div className={status === "cancelado" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 lg:grid-cols-2 gap-4"}>
         {/* Plano atual */}
-        <Card className="p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <Card className={status === "cancelado" ? "p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent flex flex-col" : "p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent"}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -466,7 +466,7 @@ function AssinaturaPageContent() {
                   {formatDate(canceladoAcessoAte)}
                 </span>
               </div>
-              {isAnual && compromissoMeses > 0 && (
+              {isAnual && compromissoMeses > 0 && ciclosPagos >= 1 && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-muted-foreground">Compromisso</span>
@@ -488,7 +488,10 @@ function AssinaturaPageContent() {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div
+            className={status === "cancelado" ? "flex flex-wrap items-center gap-x-3 gap-y-2 mt-auto" : "flex flex-wrap items-center gap-x-3 gap-y-2"}
+            data-testid={status === "cancelado" ? "reactivate-cta" : undefined}
+          >
             <Button
               onClick={handleChangePlan}
               className={status === "cancelado" ? "gap-1.5 w-full" : "gap-1.5"}
@@ -512,7 +515,7 @@ function AssinaturaPageContent() {
 
         {/* P28 — multa pendente: um único card no lugar de "Próxima cobrança" */}
         {penaltyBlocksReactivation && multaPendente ? (
-          <Card className="p-6 border-destructive/40" data-testid="penalty-card">
+          <Card className="p-6 border-destructive/40 flex flex-col" data-testid="penalty-card">
             <div className="flex items-center gap-2 mb-4">
               <Flag className="w-4 h-4 text-destructive" aria-hidden="true" />
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -527,14 +530,16 @@ function AssinaturaPageContent() {
               É a diferença do desconto anual dos meses em que você usou o preço promocional.
               Depois de pagar, é só reativar.
             </p>
-            <Button className="w-full" onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
-              {payingPenalty ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              Pagar agora
-            </Button>
+            <div className="mt-auto" data-testid="penalty-cta">
+              <Button className="w-full" onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
+                {payingPenalty ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                Pagar agora
+              </Button>
+            </div>
           </Card>
         ) : (
         /* Próxima cobrança */
