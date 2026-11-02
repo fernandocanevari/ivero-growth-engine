@@ -35,4 +35,6 @@ export const penaltyBlockedMessage = (valor: number) =>
   `Antes de assinar de novo, falta pagar a multa do cancelamento anterior: ${formatPenaltyBRL(valor)}.`;
 
 export const PENALTY_UNAVAILABLE_MESSAGE = "Não conseguimos abrir a cobrança agora. Tente de novo em instantes.";
-export const REACTIVATE_BLOCKED_HELPER = "Disponível depois que a multa for paga.";
+/** Texto colado ao botão "Reativar plano" desabilitado por multa pendente. */
+export const reactivateBlockedHelper = (valor: number) =>
+  `Para reativar, pague antes a multa de ${formatPenaltyBRL(valor)}.`;

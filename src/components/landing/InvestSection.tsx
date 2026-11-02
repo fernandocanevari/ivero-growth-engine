@@ -17,7 +17,7 @@ import {
 import { PRICING_COPY, AGENCY_COPY } from "@/content/landing";
 import { getAgencyWhatsappUrl } from "@/lib/support";
 import { isPenaltyBlocked } from "@/lib/penalty";
-import { showPenaltyBlocked } from "@/lib/penalty-flow";
+import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 // O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
@@ -49,6 +49,8 @@ const InvestSection = () => {
   const [isAnnual, setIsAnnual] = useState(true);
   const navigate = useNavigate();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // P26: multa pendente devolvida pelo create-checkout (aviso fixo no modal).
+  const [penaltyValor, setPenaltyValor] = useState<number | null>(null);
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -161,9 +163,9 @@ const InvestSection = () => {
         return;
       }
       // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      // Fica aberto, com aviso fixo e "Pagar multa" ao lado do botão de contratar.
       if (isPenaltyBlocked(data)) {
-        setCheckoutOpen(false);
-        showPenaltyBlocked(data);
+        setPenaltyValor(Number(data.valor ?? 0));
         return;
       }
       if (!data?.success || !data?.checkoutUrl) {
@@ -504,7 +506,14 @@ const InvestSection = () => {
 
       </div>
 
-      <Dialog open={checkoutOpen} onOpenChange={(open) => !submitting && setCheckoutOpen(open)}>
+      <Dialog
+        open={checkoutOpen}
+        onOpenChange={(open) => {
+          if (submitting) return;
+          setCheckoutOpen(open);
+          if (!open) setPenaltyValor(null);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar assinatura</DialogTitle>
@@ -535,6 +544,7 @@ const InvestSection = () => {
               />
             </div>
           </div>
+          {penaltyValor !== null && <PenaltyBlockedNotice valor={penaltyValor} />}
           <DialogFooter>
             <Button onClick={handleConfirmCheckout} disabled={submitting} className="w-full">
               {submitting ? (

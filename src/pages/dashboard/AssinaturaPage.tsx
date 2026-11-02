@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 import {
   CreditCard, Download, Sparkles, Calendar, Loader2,
-  ArrowUpRight, HelpCircle, ExternalLink,
+  ArrowUpRight, HelpCircle, ExternalLink, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +40,7 @@ import {
 } from "@/lib/cancel-copy";
 import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
-import { formatPenaltyBRL, REACTIVATE_BLOCKED_HELPER } from "@/lib/penalty";
+import { formatPenaltyBRL, reactivateBlockedHelper } from "@/lib/penalty";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -107,11 +107,40 @@ function AssinaturaPageContent() {
     ? isAnual ? planoInfo.annualPrice : planoInfo.monthlyPrice
     : null;
   const ciclosRestantes = Math.max(0, compromissoMeses - ciclosPagos);
-  const emCompromisso = isAnual && ciclosPagos > 0 && ciclosRestantes > 0;
-  const multaEstimada =
-    emCompromisso && planoInfo
-      ? (planoInfo.monthlyPrice - planoInfo.annualPrice) * Math.min(ciclosPagos, compromissoMeses)
-      : 0;
+
+  // P26-fix2: o valor da multa no diálogo vem SEMPRE do servidor
+  // (manage-subscription/preview_cancel) — o mesmo cálculo do cancelamento.
+  // Nunca mostramos um valor estimado aqui.
+  const [cancelPreview, setCancelPreview] = useState<
+    | { status: "loading" }
+    | { status: "error" }
+    | { status: "ready"; valor: number; ciclos: number; emCompromisso: boolean }
+  >({ status: "loading" });
+  const [previewAttempt, setPreviewAttempt] = useState(0);
+  useEffect(() => {
+    if (!cancelOpen) return;
+    let alive = true;
+    setCancelPreview({ status: "loading" });
+    supabase.functions
+      .invoke("manage-subscription", { body: { action: "preview_cancel" } })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error || !data?.ok || !data?.multa) {
+          setCancelPreview({ status: "error" });
+          return;
+        }
+        setCancelPreview({
+          status: "ready",
+          valor: Number(data.multa.valor ?? 0),
+          ciclos: Number(data.multa.ciclos ?? 0),
+          emCompromisso: !!data.emCompromisso,
+        });
+      })
+      .catch(() => alive && setCancelPreview({ status: "error" }));
+    return () => {
+      alive = false;
+    };
+  }, [cancelOpen, previewAttempt]);
 
   // Cancelamento no teste grátis: textos próprios (nada foi pago).
   const trialDialogCopy = cancelDialogTrialCopy(
@@ -442,9 +471,10 @@ function AssinaturaPageContent() {
               </Button>
             )}
           </div>
-          {penaltyBlocksReactivation && (
-            <p id="reativar-bloqueado" className="text-xs text-muted-foreground mt-2">
-              {REACTIVATE_BLOCKED_HELPER}
+          {penaltyBlocksReactivation && multaPendente && (
+            <p id="reativar-bloqueado" className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+              <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
+              {reactivateBlockedHelper(multaPendente.valor)}
             </p>
           )}
         </Card>
@@ -839,22 +869,44 @@ function AssinaturaPageContent() {
                   — o fim do período já pago.
                 </>
               )}
-              {emCompromisso && multaEstimada > 0 && (
+              {cancelPreview.status === "loading" && (
+                <span className="block mt-3 text-foreground" data-testid="cancel-preview-loading">
+                  Calculando…
+                </span>
+              )}
+              {cancelPreview.status === "ready" && cancelPreview.emCompromisso && cancelPreview.valor > 0 && (
                 <>
                   {" "}
-                  <span className="block mt-3 text-foreground">
+                  <span className="block mt-3 text-foreground" data-testid="cancel-preview-multa">
                     Seu plano tem preço promocional com compromisso de{" "}
                     {compromissoMeses} meses. Cancelando agora, será gerada uma
                     cobrança única de{" "}
-                    <span className="font-semibold">{formatBRL(multaEstimada)}</span>{" "}
+                    <span className="font-semibold">{formatPenaltyBRL(cancelPreview.valor)}</span>{" "}
                     — a diferença entre o valor cheio e o promocional dos{" "}
-                    {Math.min(ciclosPagos, compromissoMeses)} mês(es) já
+                    {cancelPreview.ciclos} mês(es) já
                     utilizados com desconto.
                   </span>
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
+          {cancelPreview.status === "error" && (
+            <div
+              role="alert"
+              data-testid="cancel-preview-error"
+              className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground"
+            >
+              <p>Não conseguimos confirmar agora o valor do cancelamento.</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                onClick={() => setPreviewAttempt((n) => n + 1)}
+              >
+                Tentar de novo
+              </Button>
+            </div>
+          )}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">
               O que motivou o cancelamento? (opcional)
@@ -870,7 +922,11 @@ function AssinaturaPageContent() {
             <Button variant="outline" onClick={() => setCancelOpen(false)}>
               Manter assinatura
             </Button>
-            <Button variant="destructive" onClick={handleCancel} disabled={busy === "cancel"}>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={busy === "cancel" || cancelPreview.status !== "ready"}
+            >
               {busy === "cancel" && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
               Confirmar cancelamento
             </Button>

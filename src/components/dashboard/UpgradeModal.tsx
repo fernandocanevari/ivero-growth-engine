@@ -24,7 +24,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
 import { isPenaltyBlocked } from "@/lib/penalty";
-import { showPenaltyBlocked } from "@/lib/penalty-flow";
+import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -73,6 +73,8 @@ export function UpgradeModal({
   intent = "trocar_plano",
 }: UpgradeModalProps) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+  // P26: multa pendente devolvida pelo create-checkout (aviso fixo no modal).
+  const [penaltyValor, setPenaltyValor] = useState<number | null>(null);
   const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription, cicloContratado } =
     useSubscriptionStatus();
   // Defesa: agência usa faturamento consolidado — nunca troca plano por aqui.
@@ -87,6 +89,7 @@ export function UpgradeModal({
   useEffect(() => {
     if (!open) {
       userPickedCiclo.current = false;
+      setPenaltyValor(null);
       return;
     }
     if (isLoading || userPickedCiclo.current) return;
@@ -262,9 +265,9 @@ export function UpgradeModal({
         throw new Error(errBody?.message ?? error.message);
       }
       // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      // Modal fica aberto, com aviso fixo e "Pagar multa".
       if (isPenaltyBlocked(data)) {
-        showPenaltyBlocked(data);
-        onOpenChange(false);
+        setPenaltyValor(Number(data.valor ?? 0));
         return;
       }
       if (data?.error) throw new Error(data.message ?? data.error);
@@ -363,6 +366,11 @@ export function UpgradeModal({
             </div>
           </div>
         </DialogHeader>
+        {penaltyValor !== null && (
+          <div className="px-6 pt-4 sm:px-8">
+            <PenaltyBlockedNotice valor={penaltyValor} />
+          </div>
+        )}
 
         {/* Cards */}
         <div className="px-6 py-6 sm:px-8 sm:py-8">

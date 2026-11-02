@@ -518,3 +518,24 @@ for (const [label, due] of [["S2: cobrança em aberto vence HOJE", plusDays(0)],
     assertEquals(pending(w.row), NO_PENDING);
   });
 }
+
+// ── P26-fix2: troca imediata registra o desconto já usufruído (plano ANTIGO) ─
+Deno.test("P26-fix2: downgrade anual Influência → Presença grava desconto com o plano antigo (2 × 180 = 360)", async () => {
+  const w = world({ plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 2, counted_payment_ids: ["pay_c1", "pay_c2"], desconto_acumulado: null, ciclos_no_upgrade: null });
+  w.sub.value = 717;
+  const r = await upgrade(w, "presenca", "anual");
+  assertEquals(r.status, 200);
+  assertEquals(r.data.mode, "asaas");
+  assertEquals(w.row.plano, "presenca");
+  assertEquals(w.row.desconto_acumulado, 360);
+  assertEquals(w.row.ciclos_no_upgrade, 2);
+});
+
+Deno.test("P26-fix2: troca imediata em linha mensal não grava desconto", async () => {
+  const w = world({ plano: "influencia" });
+  w.sub.value = 897;
+  await upgrade(w, "presenca");
+  assertEquals(w.row.plano, "presenca");
+  assertEquals(w.row.desconto_acumulado, undefined);
+  assertEquals(w.row.ciclos_no_upgrade, undefined);
+});

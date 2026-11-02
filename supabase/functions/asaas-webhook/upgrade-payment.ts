@@ -3,6 +3,7 @@
 // gravar as colunas upgrade_pendente_* (nada grava ainda).
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
+import { snapshotDesconto, type DescontoRow } from "../_shared/penalty.ts";
 
 // Referências de agência ("prorata:<id>:agency:<marca>") e de fidelidade não casam.
 export const UPGRADE_REF_RE = /^prorata:([0-9a-f-]{36}):(presenca|influencia|autoridade)(?::\d+)?$/;
@@ -25,7 +26,7 @@ const CLEAR_PENDING = {
   upgrade_pendente_em: null,
 };
 
-type PendingRow = {
+type PendingRow = DescontoRow & {
   id: string;
   asaas_subscription_id: string | null;
   upgrade_pendente_plano: string | null;
@@ -44,7 +45,7 @@ export async function handleUpgradePayment(
   ref: { assinaturaId: string; plano: string },
 ): Promise<UpgradeResult> {
   const { data, error } = await supabase.from("assinaturas")
-    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id")
+    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id, plano, ciclo_contratado, ciclos_pagos, compromisso_meses, desconto_acumulado, ciclos_no_upgrade")
     .eq("id", ref.assinaturaId).maybeSingle();
   if (error) {
     console.error("[asaas-webhook] upgrade: erro ao ler assinatura", ref.assinaturaId, error.message);
@@ -98,8 +99,10 @@ export async function handleUpgradePayment(
       return { status: 500, body: { error: "upgrade_put_failed" } };
     }
 
-    // (2) DEPOIS promove numa única instrução condicional.
-    const patch: Record<string, unknown> = { plano: pending.upgrade_pendente_plano, ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId };
+    // (2) DEPOIS promove numa única instrução condicional. P26-fix2: o desconto
+    // dos ciclos já pagos fica registrado com o plano ANTIGO na mesma gravação;
+    // reenvio do mesmo pagamento não casa (pendência já limpa) e não soma de novo.
+    const patch: Record<string, unknown> = { plano: pending.upgrade_pendente_plano, ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId, ...snapshotDesconto(pending) };
     if (pending.upgrade_pendente_ciclo) patch.ciclo_contratado = pending.upgrade_pendente_ciclo;
     const { data: updated, error: upError } = await supabase.from("assinaturas").update(patch)
       .eq("id", pending.id).eq("upgrade_pendente_payment_id", paymentId).select("id");

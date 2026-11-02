@@ -282,6 +282,7 @@ export type Database = {
           checkout_context: Json | null
           ciclo_contratado: string
           ciclo_pretendido: string | null
+          ciclos_no_upgrade: number | null
           ciclos_pagos: number
           compromisso_inicio: string | null
           compromisso_meses: number
@@ -289,6 +290,7 @@ export type Database = {
           created_at: string
           data_inicio: string
           data_vencimento: string | null
+          desconto_acumulado: number | null
           desconto_volume_pct: number | null
           id: string
           multa_pendente_ciclos: number | null
@@ -323,6 +325,7 @@ export type Database = {
           checkout_context?: Json | null
           ciclo_contratado: string
           ciclo_pretendido?: string | null
+          ciclos_no_upgrade?: number | null
           ciclos_pagos?: number
           compromisso_inicio?: string | null
           compromisso_meses?: number
@@ -330,6 +333,7 @@ export type Database = {
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
+          desconto_acumulado?: number | null
           desconto_volume_pct?: number | null
           id?: string
           multa_pendente_ciclos?: number | null
@@ -364,6 +368,7 @@ export type Database = {
           checkout_context?: Json | null
           ciclo_contratado?: string
           ciclo_pretendido?: string | null
+          ciclos_no_upgrade?: number | null
           ciclos_pagos?: number
           compromisso_inicio?: string | null
           compromisso_meses?: number
@@ -371,6 +376,7 @@ export type Database = {
           created_at?: string
           data_inicio?: string
           data_vencimento?: string | null
+          desconto_acumulado?: number | null
           desconto_volume_pct?: number | null
           id?: string
           multa_pendente_ciclos?: number | null

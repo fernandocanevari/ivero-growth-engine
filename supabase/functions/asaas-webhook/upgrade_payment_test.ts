@@ -362,3 +362,45 @@ Deno.test({ ...opts, name: "9) mensalidade normal (com subscription) segue o flu
   assertEquals(memory.row.upgrade_pendente_plano, "autoridade");
   assertEquals(memory.asaasCalls, []);
 }});
+
+// ── P26-fix2: registro do desconto já usufruído na promoção do upgrade ───────
+Deno.test({ ...opts, name: "P26-fix2 a) anual Presença (2 ciclos) → Influência: grava desconto com o plano ANTIGO (200) e ciclos_no_upgrade=2", fn: async () => {
+  reset();
+  Object.assign(memory.row, { plano: "presenca", ciclo_contratado: "anual", ciclos_pagos: 2, counted_payment_ids: ["pay_a", "pay_b"], compromisso_meses: 12, desconto_acumulado: null, ciclos_no_upgrade: null, upgrade_pendente_plano: "influencia", upgrade_pendente_ciclo: "anual" });
+  const { status, out } = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+  assertEquals(status, 200);
+  assertEquals(out, { received: true, upgrade: "applied" });
+  assertEquals(memory.row.plano, "influencia");
+  assertEquals(memory.row.desconto_acumulado, 200);
+  assertEquals(memory.row.ciclos_no_upgrade, 2);
+}});
+
+Deno.test({ ...opts, name: "P26-fix2 b) reenvio do mesmo pagamento (RECEIVED depois do CONFIRMED) não soma o desconto de novo", fn: async () => {
+  reset();
+  Object.assign(memory.row, { plano: "presenca", ciclo_contratado: "anual", ciclos_pagos: 2, counted_payment_ids: ["pay_a", "pay_b"], compromisso_meses: 12, desconto_acumulado: null, ciclos_no_upgrade: null, upgrade_pendente_plano: "influencia", upgrade_pendente_ciclo: "anual" });
+  await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+  const writes = memory.dbWrites;
+  const r = await send({ event: "PAYMENT_RECEIVED", payment: upgradePayment() });
+  assertEquals(r.status, 200);
+  assertEquals(memory.dbWrites, writes, "nenhuma gravação nova");
+  assertEquals(memory.row.desconto_acumulado, 200);
+  assertEquals(memory.row.ciclos_no_upgrade, 2);
+}});
+
+Deno.test({ ...opts, name: "P26-fix2 c) segundo upgrade soma ao acumulado só os ciclos novos, com o plano da época", fn: async () => {
+  reset();
+  // Já tinha 200 (2 ciclos Presença); pagou mais 3 em Influência (3 × 180) e sobe para Autoridade.
+  Object.assign(memory.row, { plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 5, compromisso_meses: 12, desconto_acumulado: 200, ciclos_no_upgrade: 2, upgrade_pendente_plano: "autoridade", upgrade_pendente_ciclo: "anual" });
+  await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+  assertEquals(memory.row.plano, "autoridade");
+  assertEquals(memory.row.desconto_acumulado, 740);
+  assertEquals(memory.row.ciclos_no_upgrade, 5);
+}});
+
+Deno.test({ ...opts, name: "P26-fix2 d) linha mensal: promoção não grava desconto", fn: async () => {
+  reset();
+  await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+  assertEquals(memory.row.plano, "autoridade");
+  assertEquals(memory.row.desconto_acumulado, undefined);
+  assertEquals(memory.row.ciclos_no_upgrade, undefined);
+}});
