@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 import {
   CreditCard, Download, Sparkles, Calendar, Loader2,
-  ArrowUpRight, HelpCircle, ExternalLink, Lock,
+  ArrowUpRight, HelpCircle, ExternalLink, Lock, Flag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +40,7 @@ import {
 } from "@/lib/cancel-copy";
 import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
-import { formatPenaltyBRL, reactivateBlockedHelper } from "@/lib/penalty";
+import { formatPenaltyBRL } from "@/lib/penalty";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -379,7 +379,7 @@ function AssinaturaPageContent() {
       )}
 
       {/* Top: Plano atual + Próxima cobrança */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className={status === "cancelado" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 lg:grid-cols-2 gap-4"}>
         {/* Plano atual */}
         <Card className="p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-start justify-between mb-4">
@@ -412,14 +412,16 @@ function AssinaturaPageContent() {
           <p className="text-sm text-muted-foreground mb-4">
             {planoInfo?.tagline ?? "Escolha um plano para desbloquear os recursos avançados."}
           </p>
+          {status !== "cancelado" && (
           <div className="flex items-baseline gap-2 mb-6">
             <span className="text-3xl font-bold text-foreground">
               {valorMensalAtual !== null ? formatBRL(valorMensalAtual) : "—"}
             </span>
             <span className="text-sm text-muted-foreground">/ mês</span>
           </div>
+          )}
 
-          {planoInfo && (
+          {planoInfo && status !== "cancelado" && (
             <p className="text-xs text-muted-foreground mb-4">
               {isAnual ? (
                 <>
@@ -441,7 +443,7 @@ function AssinaturaPageContent() {
             </p>
           )}
 
-          {canceladoAcessoAte && (
+          {canceladoAcessoAte && status !== "cancelado" && (
             <p className="text-xs text-muted-foreground mb-4">
               {trialCardCopy ?? (
                 <>
@@ -455,13 +457,48 @@ function AssinaturaPageContent() {
             </p>
           )}
 
+          {/* P28 — cancelada: data de acesso (único lugar na página) e compromisso */}
+          {status === "cancelado" && (
+            <div className="border-t border-border pt-4 mb-6 space-y-3" data-testid="cancelled-summary">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">Seu acesso vai até</span>
+                <span className="font-medium text-foreground" data-testid="cancelled-access-date">
+                  {formatDate(canceladoAcessoAte)}
+                </span>
+              </div>
+              {isAnual && compromissoMeses > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-muted-foreground">Compromisso</span>
+                    <span className="font-medium text-foreground">
+                      {ciclosPagos} de {compromissoMeses} meses
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-surface-1 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-accent"
+                      data-testid="commitment-progress-fill"
+                      style={{
+                        width: `${Math.max(Math.min(ciclosPagos / compromissoMeses, 1), 0.04) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <Button
               onClick={handleChangePlan}
-              className="gap-1.5"
+              className={status === "cancelado" ? "gap-1.5 w-full" : "gap-1.5"}
               disabled={penaltyBlocksReactivation}
-              aria-describedby={penaltyBlocksReactivation ? "reativar-bloqueado" : undefined}
+              aria-describedby={penaltyBlocksReactivation ? "multa-explicacao" : undefined}
+              title={penaltyBlocksReactivation ? "Pague a multa para reativar" : undefined}
             >
+              {penaltyBlocksReactivation && (
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" data-testid="reativar-lock" />
+              )}
               {status === "cancelado" ? "Reativar plano" : "Mudar plano"}
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
@@ -470,16 +507,37 @@ function AssinaturaPageContent() {
                 Cancelar
               </Button>
             )}
-            {penaltyBlocksReactivation && multaPendente && (
-              <p id="reativar-bloqueado" className="text-sm text-muted-foreground flex items-center gap-1.5 min-w-0">
-                <Lock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="min-w-0 break-words">{reactivateBlockedHelper(multaPendente.valor)}</span>
-              </p>
-            )}
           </div>
         </Card>
 
-        {/* Próxima cobrança */}
+        {/* P28 — multa pendente: um único card no lugar de "Próxima cobrança" */}
+        {penaltyBlocksReactivation && multaPendente ? (
+          <Card className="p-6 border-destructive/40" data-testid="penalty-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Flag className="w-4 h-4 text-destructive" aria-hidden="true" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Antes de voltar
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">Multa de cancelamento</p>
+            <p className="text-[28px] leading-tight font-medium text-foreground mb-3" data-testid="penalty-value">
+              {formatPenaltyBRL(multaPendente.valor)}
+            </p>
+            <p id="multa-explicacao" className="text-sm text-muted-foreground mb-6">
+              É a diferença do desconto anual dos meses em que você usou o preço promocional.
+              Depois de pagar, é só reativar.
+            </p>
+            <Button className="w-full" onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
+              {payingPenalty ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Pagar agora
+            </Button>
+          </Card>
+        ) : (
+        /* Próxima cobrança */
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -565,7 +623,7 @@ function AssinaturaPageContent() {
               <h2 className="text-2xl font-bold text-foreground mb-1">Cobrança encerrada</h2>
               <p className="text-sm text-muted-foreground">
                 {canceladoAcessoAte
-                  ? `Não haverá novas cobranças. Seu acesso vai até ${formatDate(canceladoAcessoAte)}.`
+                  ? "Não haverá novas cobranças."
                   : "Não haverá novas cobranças. Contrate um plano para voltar a usar."}
               </p>
             </>
@@ -591,33 +649,8 @@ function AssinaturaPageContent() {
           )}
 
         </Card>
+        )}
       </div>
-
-      {/* P26 — multa de cancelamento pendente */}
-      {penaltyBlocksReactivation && multaPendente && (
-        <Card className="p-6 border-destructive/40" data-testid="penalty-card">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="max-w-2xl">
-              <h3 className="text-base font-semibold text-foreground">
-                Multa de cancelamento: {formatPenaltyBRL(multaPendente.valor)}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Você cancelou um plano com desconto anual. Falta pagar{" "}
-                {formatPenaltyBRL(multaPendente.valor)}, a diferença dos meses em que você usou o
-                preço promocional. Pague agora e, quando quiser voltar, é só reativar.
-              </p>
-            </div>
-            <Button onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
-              {payingPenalty ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              Pagar agora
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Forma de pagamento */}
       <Card className="p-6">
