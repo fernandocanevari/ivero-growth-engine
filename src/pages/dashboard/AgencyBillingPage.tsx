@@ -13,7 +13,7 @@ import { useAgencyBrands } from "@/hooks/useAgencyBrands";
 import { PLANOS, formatBRL, type PlanoSugerido } from "@/lib/pricing-rules";
 import { quoteAgency, VOLUME_TIERS, type Ciclo } from "@/lib/agency-pricing";
 import { isPenaltyBlocked } from "@/lib/penalty";
-import { showPenaltyBlocked } from "@/lib/penalty-flow";
+import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
 
 const KEYS: PlanoSugerido[] = ["presenca", "influencia", "autoridade"];
 /** Agências contratam só no mensal no lançamento; quoteAgency segue aceitando "anual" para uso futuro. */
@@ -35,6 +35,8 @@ export default function AgencyBillingPage() {
   const { isAgency, isLoading: accountTypeLoading } = useAccountType();
   const [choice, setChoice] = useState<Record<string, PlanoSugerido>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  // P26: multa pendente devolvida pelo create-checkout.
+  const [penaltyValor, setPenaltyValor] = useState<number | null>(null);
 
   const { data: sub } = useQuery({
     queryKey: ["agency-sub", userId],
@@ -80,8 +82,9 @@ export default function AgencyBillingPage() {
       });
       invalidateAccessCache();
       // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
+      // Aviso fixo logo acima do botão de ativar, com "Pagar multa".
       if (isPenaltyBlocked(data)) {
-        showPenaltyBlocked(data);
+        setPenaltyValor(Number(data.valor ?? 0));
         setBusy(null);
         return;
       }
@@ -190,6 +193,7 @@ export default function AgencyBillingPage() {
         <div className="flex justify-between font-semibold text-foreground pt-2 border-t border-border"><span>Total mensal</span><span>{formatBRL(quote.total)}</span></div>
         {!paid && (
           <>
+            {penaltyValor !== null && <PenaltyBlockedNotice valor={penaltyValor} className="mt-3" />}
             <Button variant="hero" className="w-full mt-3" disabled={!!motivoBloqueio} onClick={activate}>
               {busy === "checkout" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ativar assinatura da agência"}
             </Button>
