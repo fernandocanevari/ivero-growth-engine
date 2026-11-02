@@ -565,7 +565,7 @@ function AssinaturaPageContent() {
               <h2 className="text-2xl font-bold text-foreground mb-1">Cobrança encerrada</h2>
               <p className="text-sm text-muted-foreground">
                 {canceladoAcessoAte
-                  ? `Não haverá novas cobranças. Seu acesso vai até ${formatDate(canceladoAcessoAte)}.`
+                  ? "Não haverá novas cobranças."
                   : "Não haverá novas cobranças. Contrate um plano para voltar a usar."}
               </p>
             </>
