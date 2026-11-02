@@ -118,7 +118,8 @@ describe("Barra do compromisso", () => {
     const { unmount } = render(<AssinaturaPage />);
     expect(screen.getByTestId("commitment-progress-fill").style.width).toBe("100%");
     unmount();
-    STATUS = { ...BASE, ciclosPagos: 0, compromissoMeses: 12 };
+    // 1/30 ≈ 3,3% → piso de 4% (ciclosPagos = 0 agora esconde a linha inteira).
+    STATUS = { ...BASE, ciclosPagos: 1, compromissoMeses: 30 };
     render(<AssinaturaPage />);
     expect(screen.getByTestId("commitment-progress-fill").style.width).toBe("4%");
   });
@@ -128,6 +129,56 @@ describe("Barra do compromisso", () => {
     render(<AssinaturaPage />);
     expect(screen.queryByTestId("commitment-progress-fill")).toBeNull();
     expect(screen.queryByText("Compromisso")).toBeNull();
+  });
+
+  it("P28-fix1: anual com ciclosPagos = 0 (cancelado no teste grátis) não mostra 'Compromisso'", () => {
+    STATUS = { ...BASE, ciclosPagos: 0, compromissoMeses: 12 };
+    render(<AssinaturaPage />);
+    expect(screen.queryByText("Compromisso")).toBeNull();
+    expect(screen.queryByText("0 de 12 meses")).toBeNull();
+    expect(screen.queryByTestId("commitment-progress-fill")).toBeNull();
+    // A data de acesso continua no resumo.
+    expect(screen.getByTestId("cancelled-access-date")).toBeInTheDocument();
+  });
+
+  it("P28-fix1: anual com ciclosPagos = 1 mostra 'Compromisso' como hoje", () => {
+    STATUS = { ...BASE, ciclosPagos: 1, compromissoMeses: 12 };
+    render(<AssinaturaPage />);
+    expect(screen.getByText("Compromisso")).toBeInTheDocument();
+    expect(screen.getByText("1 de 12 meses")).toBeInTheDocument();
+    expect(screen.getByTestId("commitment-progress-fill")).toBeInTheDocument();
+  });
+});
+
+describe("P28-fix1 — CTAs alinhados no rodapé dos cards", () => {
+  it("com multa: 'Reativar plano' e 'Pagar agora' ficam dentro de um contêiner mt-auto, em cards flex-col", () => {
+    STATUS = { ...BASE, multaPendente: { valor: 100, ciclos: 1 } };
+    render(<AssinaturaPage />);
+    const reativarWrap = reativar().closest(".mt-auto");
+    const pagarWrap = screen.getByRole("button", { name: /Pagar agora/ }).closest(".mt-auto");
+    expect(reativarWrap).not.toBeNull();
+    expect(pagarWrap).not.toBeNull();
+    expect(reativarWrap).not.toBe(pagarWrap);
+    expect(reativarWrap!.parentElement!.className).toContain("flex-col");
+    expect(pagarWrap!.parentElement).toBe(screen.getByTestId("penalty-card"));
+    expect(screen.getByTestId("penalty-card").className).toContain("flex-col");
+  });
+
+  it("sem multa: 'Reativar plano' no rodapé e 'Cobrança encerrada' sem botão", () => {
+    render(<AssinaturaPage />);
+    expect(reativar().closest(".mt-auto")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: /Pagar agora/ })).toBeNull();
+  });
+
+  it("estado ativo não ganha mt-auto nem flex-col", () => {
+    STATUS = {
+      ...BASE, status: "ativo", effectiveStatus: "ativo", canceladoAcessoAte: null,
+      ciclosPagos: 2, compromissoMeses: 12,
+    };
+    render(<AssinaturaPage />);
+    const btn = screen.getByRole("button", { name: /Mudar plano/ });
+    expect(btn.closest(".mt-auto")).toBeNull();
+    expect(screen.queryByTestId("reactivate-cta")).toBeNull();
   });
 });
 
