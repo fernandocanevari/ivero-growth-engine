@@ -143,7 +143,49 @@ async function callMany(w: World, bodies: Record<string, unknown>[]) {
           }
         }
         if (w.cancelWriteFails && reqBody?.status === "cancelado") return reply({ message: "db down", code: "XX000" }, 500);
-...
+        const hit = matches(w.row, url.searchParams);
+        if (hit) Object.assign(w.row, reqBody);
+        return url.searchParams.has("select") ? reply(hit ? [{ id: w.row.id }] : []) : new Response(null, { status: 204 });
+      }
+      throw new Error(`Unexpected mocked database path: ${req.method} ${url.pathname}`);
+    }
+    if (url.hostname === "sandbox.asaas.com") {
+      const p = url.pathname.replace("/api/v3", "");
+      w.calls.push({ method: req.method, path: p, body: reqBody });
+      if (p === "/customers" && req.method === "GET") return reply({ object: "list", hasMore: false, data: [{ id: "cus_mail", email: EMAIL }] });
+      if (p === "/subscriptions" && req.method === "GET") {
+        const live = w.row.__subDeleted ? [] : [{ id: "sub_test", customer: "cus_test", status: "ACTIVE" }];
+        return reply({ object: "list", hasMore: false, data: url.searchParams.get("customer") === "cus_test" ? live : [] });
+      }
+      if (p === "/subscriptions/sub_test" && req.method === "GET") return w.row.__subDeleted ? reply({ errors: [] }, 404) : reply({ id: "sub_test", status: "ACTIVE" });
+      if (p === "/subscriptions/sub_test" && req.method === "DELETE") {
+        if (w.deleteSubStatus) return reply({ errors: [{ description: "provider down" }] }, w.deleteSubStatus);
+        w.row.__subDeleted = true; return reply({ deleted: true });
+      }
+      if (p === "/payments" && req.method === "POST") {
+        if (w.postNetworkError) throw new TypeError("network timeout");
+        if (w.postStatus) return reply({ errors: [{ description: "recusado" }] }, w.postStatus);
+        const id = `pay_m${++seq}`;
+        const charge = { id, status: "PENDING", ...reqBody, invoiceUrl: `https://invoice.invalid/${id}` };
+        w.charges.set(id, charge);
+        return reply(charge);
+      }
+      const m = p.match(/^\/payments\/([^/]+)$/);
+      if (m && req.method === "GET") {
+        if (w.getPaymentStatus) return reply({ errors: [] }, w.getPaymentStatus);
+        const c = w.charges.get(decodeURIComponent(m[1]));
+        return c ? reply(c) : reply({ errors: [] }, 404);
+      }
+      if (m && req.method === "DELETE") {
+        const id = decodeURIComponent(m[1]);
+        if (!w.charges.has(id)) return reply({ errors: [] }, 404);
+        w.charges.set(id, { ...w.charges.get(id), deleted: true });
+        return reply({ deleted: true, id });
+      }
+      throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
+    }
+    throw new Error("Network escape forbidden");
+  };
   try {
     const token = `${btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.${btoa(JSON.stringify({ sub: "test-user", exp: 4102444800 }))}.c2ln`;
     assert(handler);
