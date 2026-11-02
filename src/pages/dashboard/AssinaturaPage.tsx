@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 import {
   CreditCard, Download, Sparkles, Calendar, Loader2,
-  ArrowUpRight, HelpCircle, ExternalLink, Lock,
+  ArrowUpRight, HelpCircle, ExternalLink, Lock, Flag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +40,7 @@ import {
 } from "@/lib/cancel-copy";
 import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
-import { formatPenaltyBRL, reactivateBlockedHelper } from "@/lib/penalty";
+import { formatPenaltyBRL } from "@/lib/penalty";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -379,7 +379,7 @@ function AssinaturaPageContent() {
       )}
 
       {/* Top: Plano atual + Próxima cobrança */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className={status === "cancelado" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 lg:grid-cols-2 gap-4"}>
         {/* Plano atual */}
         <Card className="p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-start justify-between mb-4">
