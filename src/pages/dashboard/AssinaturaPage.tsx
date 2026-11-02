@@ -455,7 +455,7 @@ function AssinaturaPageContent() {
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <Button
               onClick={handleChangePlan}
               className="gap-1.5"
@@ -470,13 +470,13 @@ function AssinaturaPageContent() {
                 Cancelar
               </Button>
             )}
+            {penaltyBlocksReactivation && multaPendente && (
+              <p id="reativar-bloqueado" className="text-sm text-muted-foreground flex items-center gap-1.5 min-w-0">
+                <Lock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">{reactivateBlockedHelper(multaPendente.valor)}</span>
+              </p>
+            )}
           </div>
-          {penaltyBlocksReactivation && multaPendente && (
-            <p id="reativar-bloqueado" className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-              <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
-              {reactivateBlockedHelper(multaPendente.valor)}
-            </p>
-          )}
         </Card>
 
         {/* Próxima cobrança */}
