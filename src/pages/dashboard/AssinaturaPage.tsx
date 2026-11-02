@@ -455,13 +455,48 @@ function AssinaturaPageContent() {
             </p>
           )}
 
+          {/* P28 — cancelada: data de acesso (único lugar na página) e compromisso */}
+          {status === "cancelado" && (
+            <div className="border-t border-border pt-4 mb-6 space-y-3" data-testid="cancelled-summary">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">Seu acesso vai até</span>
+                <span className="font-medium text-foreground" data-testid="cancelled-access-date">
+                  {formatDate(canceladoAcessoAte)}
+                </span>
+              </div>
+              {isAnual && compromissoMeses > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-muted-foreground">Compromisso</span>
+                    <span className="font-medium text-foreground">
+                      {ciclosPagos} de {compromissoMeses} meses
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-surface-1 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-accent"
+                      data-testid="commitment-progress-fill"
+                      style={{
+                        width: `${Math.max(Math.min(ciclosPagos / compromissoMeses, 1), 0.04) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <Button
               onClick={handleChangePlan}
-              className="gap-1.5"
+              className={status === "cancelado" ? "gap-1.5 w-full" : "gap-1.5"}
               disabled={penaltyBlocksReactivation}
-              aria-describedby={penaltyBlocksReactivation ? "reativar-bloqueado" : undefined}
+              aria-describedby={penaltyBlocksReactivation ? "multa-explicacao" : undefined}
+              title={penaltyBlocksReactivation ? "Pague a multa para reativar" : undefined}
             >
+              {penaltyBlocksReactivation && (
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" data-testid="reativar-lock" />
+              )}
               {status === "cancelado" ? "Reativar plano" : "Mudar plano"}
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
@@ -470,16 +505,37 @@ function AssinaturaPageContent() {
                 Cancelar
               </Button>
             )}
-            {penaltyBlocksReactivation && multaPendente && (
-              <p id="reativar-bloqueado" className="text-sm text-muted-foreground flex items-center gap-1.5 min-w-0">
-                <Lock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                <span className="min-w-0 break-words">{reactivateBlockedHelper(multaPendente.valor)}</span>
-              </p>
-            )}
           </div>
         </Card>
 
-        {/* Próxima cobrança */}
+        {/* P28 — multa pendente: um único card no lugar de "Próxima cobrança" */}
+        {penaltyBlocksReactivation && multaPendente ? (
+          <Card className="p-6 border-destructive/40" data-testid="penalty-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Flag className="w-4 h-4 text-destructive" aria-hidden="true" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Antes de voltar
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">Multa de cancelamento</p>
+            <p className="text-[28px] leading-tight font-medium text-foreground mb-3" data-testid="penalty-value">
+              {formatPenaltyBRL(multaPendente.valor)}
+            </p>
+            <p id="multa-explicacao" className="text-sm text-muted-foreground mb-6">
+              É a diferença do desconto anual dos meses em que você usou o preço promocional.
+              Depois de pagar, é só reativar.
+            </p>
+            <Button className="w-full" onClick={() => void handlePayPenalty()} disabled={payingPenalty}>
+              {payingPenalty ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Pagar agora
+            </Button>
+          </Card>
+        ) : (
+        /* Próxima cobrança */
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-4 h-4 text-muted-foreground" />
