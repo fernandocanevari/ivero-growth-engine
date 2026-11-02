@@ -36,6 +36,14 @@ interface World {
   deleteSubStatus?: number;
   /** A gravação 'cancelado' falha por erro de banco. */
   cancelWriteFails?: boolean;
+  /** P27: o webhook SUBSCRIPTION_DELETED desvincula e cancela a linha logo antes da gravação do cancel. */
+  webhookWinsOnCancel?: boolean;
+  /** P27: com raceOnCancel, a outra chamada também grava asaas_subscription_id_anterior = sub_test. */
+  raceAnterior?: boolean;
+  /** P27: quantas gravações da correção pós-webhook falham por erro de banco. */
+  raceWriteFailures?: number;
+  /** P27: número de gravações da correção pós-webhook recebidas. */
+  raceWrites?: number;
 }
 
 function world(row: Row = {}, over: Partial<World> = {}): World {
@@ -93,83 +101,42 @@ function matches(row: Row, params: URLSearchParams): boolean {
 }
 
 async function call(w: World, body: Record<string, unknown>) {
+  return (await callMany(w, [body]))[0];
+}
+
+/** Executa os pedidos em paralelo sobre o mesmo mundo simulado. */
+async function callMany(w: World, bodies: Record<string, unknown>[]) {
   const originalFetch = globalThis.fetch;
-  const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
-  const previous = envNames.map((k) => Deno.env.get(k));
-  ["https://database.invalid", "test-anon", "test-service", "test-provider", "sandbox"].forEach((v, i) => Deno.env.set(envNames[i], v));
-  const orig = { log: console.log, warn: console.warn, error: console.error };
-  console.log = () => {}; console.warn = () => {};
-  console.error = (...a: unknown[]) => { w.errors.push(a.map(String).join(" ")); };
-  let seq = w.charges.size;
-  const reply = (data: unknown, status = 200) =>
-    new Response(data === null ? null : JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
-  globalThis.fetch = async (input, init) => {
-    const req = new Request(input, init);
-    const url = new URL(req.url);
-    const reqBody = ["POST", "PUT", "PATCH"].includes(req.method) ? await req.json() : null;
-    if (url.hostname === "database.invalid") {
-      if (url.pathname === "/auth/v1/user") return reply({ id: "test-user", aud: "authenticated", role: "authenticated" });
-      if (url.pathname === "/rest/v1/profiles") return reply([{ account_type: "individual", email: EMAIL }]);
-      if (url.pathname === "/rest/v1/assinaturas" && req.method === "GET") {
-        return reply(matches(w.row, url.searchParams) ? [{ ...w.row }] : []);
-      }
+...
       if (url.pathname === "/rest/v1/assinaturas" && req.method === "PATCH") {
         if (w.raceOnCancel && reqBody?.status === "cancelado") {
           Object.assign(w.row, { status: "cancelado", multa_pendente_valor: MULTA, multa_pendente_ciclos: 3, multa_pendente_payment_id: "pay_other", multa_pendente_invoice_url: "https://invoice.invalid/pay_other" });
+          if (w.raceAnterior) Object.assign(w.row, { asaas_subscription_id: null, asaas_subscription_id_anterior: "sub_test" });
+        }
+        // P27: webhook SUBSCRIPTION_DELETED (subscriptionRemovalPatch) chega antes da gravação do cancel.
+        if (w.webhookWinsOnCancel && url.searchParams.get("status") === "neq.cancelado" && w.row.status !== "cancelado" && w.row.asaas_subscription_id) {
+          Object.assign(w.row, { status: "cancelado", carencia_ate: null, asaas_subscription_id: null, asaas_subscription_id_anterior: w.row.asaas_subscription_id });
+        }
+        if (url.searchParams.has("multa_ultimo_payment_id")) {
+          w.raceWrites = (w.raceWrites ?? 0) + 1;
+          if ((w.raceWriteFailures ?? 0) > 0) {
+            w.raceWriteFailures = (w.raceWriteFailures ?? 0) - 1;
+            return reply({ message: "db down", code: "XX000" }, 500);
+          }
         }
         if (w.cancelWriteFails && reqBody?.status === "cancelado") return reply({ message: "db down", code: "XX000" }, 500);
-        const hit = matches(w.row, url.searchParams);
-        if (hit) Object.assign(w.row, reqBody);
-        return url.searchParams.has("select") ? reply(hit ? [{ id: w.row.id }] : []) : new Response(null, { status: 204 });
-      }
-      throw new Error(`Unexpected mocked database path: ${req.method} ${url.pathname}`);
-    }
-    if (url.hostname === "sandbox.asaas.com") {
-      const p = url.pathname.replace("/api/v3", "");
-      w.calls.push({ method: req.method, path: p, body: reqBody });
-      if (p === "/customers" && req.method === "GET") return reply({ object: "list", hasMore: false, data: [{ id: "cus_mail", email: EMAIL }] });
-      if (p === "/subscriptions" && req.method === "GET") {
-        const live = w.row.__subDeleted ? [] : [{ id: "sub_test", customer: "cus_test", status: "ACTIVE" }];
-        return reply({ object: "list", hasMore: false, data: url.searchParams.get("customer") === "cus_test" ? live : [] });
-      }
-      if (p === "/subscriptions/sub_test" && req.method === "GET") return w.row.__subDeleted ? reply({ errors: [] }, 404) : reply({ id: "sub_test", status: "ACTIVE" });
-      if (p === "/subscriptions/sub_test" && req.method === "DELETE") {
-        if (w.deleteSubStatus) return reply({ errors: [{ description: "provider down" }] }, w.deleteSubStatus);
-        w.row.__subDeleted = true; return reply({ deleted: true });
-      }
-      if (p === "/payments" && req.method === "POST") {
-        if (w.postNetworkError) throw new TypeError("network timeout");
-        if (w.postStatus) return reply({ errors: [{ description: "recusado" }] }, w.postStatus);
-        const id = `pay_m${++seq}`;
-        const charge = { id, status: "PENDING", ...reqBody, invoiceUrl: `https://invoice.invalid/${id}` };
-        w.charges.set(id, charge);
-        return reply(charge);
-      }
-      const m = p.match(/^\/payments\/([^/]+)$/);
-      if (m && req.method === "GET") {
-        if (w.getPaymentStatus) return reply({ errors: [] }, w.getPaymentStatus);
-        const c = w.charges.get(decodeURIComponent(m[1]));
-        return c ? reply(c) : reply({ errors: [] }, 404);
-      }
-      if (m && req.method === "DELETE") {
-        const id = decodeURIComponent(m[1]);
-        if (!w.charges.has(id)) return reply({ errors: [] }, 404);
-        w.charges.set(id, { ...w.charges.get(id), deleted: true });
-        return reply({ deleted: true, id });
-      }
-      throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
-    }
-    throw new Error("Network escape forbidden");
-  };
+...
   try {
     const token = `${btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.${btoa(JSON.stringify({ sub: "test-user", exp: 4102444800 }))}.c2ln`;
     assert(handler);
-    const res = await handler(new Request("https://function.invalid", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    return await Promise.all(bodies.map(async (body) => {
+      const res = await handler!(new Request("https://function.invalid", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }));
+      return { status: res.status, data: await res.json() };
     }));
-    return { status: res.status, data: await res.json() };
   } finally {
     globalThis.fetch = originalFetch;
     Object.assign(console, orig);
