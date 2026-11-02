@@ -37,6 +37,7 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),
+  useInRouterContext: () => false,
   useSearchParams: () => [new URLSearchParams("")],
   Navigate: () => null,
 }));
