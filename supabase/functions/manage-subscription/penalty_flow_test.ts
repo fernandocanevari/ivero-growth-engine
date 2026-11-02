@@ -520,9 +520,9 @@ Deno.test("P27 webhook vence: patch completo aplicado (upgrade pendente limpo, u
   }
   assertEquals(w.row.upgrade_ultimo_payment_id, "pay_up");
   assertEquals(w.row.carencia_ate, null);
-  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m2");
   assertEquals(w.charges.get("pay_up")?.deleted, true, "cobrança do upgrade removida como antes");
-  assertEquals(w.charges.get("pay_m1")?.deleted, undefined);
+  assertEquals(w.charges.get("pay_m2")?.deleted, undefined);
 });
 
 Deno.test("P27 webhook vence sem multa (mensal): sem cobrança, campos de upgrade ainda gravados", async () => {
