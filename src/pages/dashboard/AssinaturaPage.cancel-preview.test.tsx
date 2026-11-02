@@ -46,7 +46,9 @@ import AssinaturaPage from "./AssinaturaPage";
 
 const confirmButton = () => screen.getByRole("button", { name: /Confirmar cancelamento/ });
 
-beforeEach(() => invoke.mockReset());
+beforeEach(() => {
+  invoke.mockReset();
+});
 
 describe("Diálogo de cancelamento — valor vem do servidor", () => {
   it("mostra 'Calculando…' com Confirmar desabilitado e depois o valor e os meses do servidor", async () => {
