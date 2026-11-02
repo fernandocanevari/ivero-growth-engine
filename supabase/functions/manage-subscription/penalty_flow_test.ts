@@ -107,7 +107,25 @@ async function call(w: World, body: Record<string, unknown>) {
 /** Executa os pedidos em paralelo sobre o mesmo mundo simulado. */
 async function callMany(w: World, bodies: Record<string, unknown>[]) {
   const originalFetch = globalThis.fetch;
-...
+  const envNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "ASAAS_API_KEY_SANDBOX", "ASAAS_ENV"];
+  const previous = envNames.map((k) => Deno.env.get(k));
+  ["https://database.invalid", "test-anon", "test-service", "test-provider", "sandbox"].forEach((v, i) => Deno.env.set(envNames[i], v));
+  const orig = { log: console.log, warn: console.warn, error: console.error };
+  console.log = () => {}; console.warn = () => {};
+  console.error = (...a: unknown[]) => { w.errors.push(a.map(String).join(" ")); };
+  let seq = w.charges.size;
+  const reply = (data: unknown, status = 200) =>
+    new Response(data === null ? null : JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
+  globalThis.fetch = async (input, init) => {
+    const req = new Request(input, init);
+    const url = new URL(req.url);
+    const reqBody = ["POST", "PUT", "PATCH"].includes(req.method) ? await req.json() : null;
+    if (url.hostname === "database.invalid") {
+      if (url.pathname === "/auth/v1/user") return reply({ id: "test-user", aud: "authenticated", role: "authenticated" });
+      if (url.pathname === "/rest/v1/profiles") return reply([{ account_type: "individual", email: EMAIL }]);
+      if (url.pathname === "/rest/v1/assinaturas" && req.method === "GET") {
+        return reply(matches(w.row, url.searchParams) ? [{ ...w.row }] : []);
+      }
       if (url.pathname === "/rest/v1/assinaturas" && req.method === "PATCH") {
         if (w.raceOnCancel && reqBody?.status === "cancelado") {
           Object.assign(w.row, { status: "cancelado", multa_pendente_valor: MULTA, multa_pendente_ciclos: 3, multa_pendente_payment_id: "pay_other", multa_pendente_invoice_url: "https://invoice.invalid/pay_other" });
