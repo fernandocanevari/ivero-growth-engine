@@ -409,3 +409,49 @@ Deno.test("fix1 B: gravação do cancelamento falha depois de criar a multa → 
   assertEquals(w.row.status, "ativo");
   assertEquals(w.row.multa_pendente_valor, null);
 });
+
+// ── P26-fix2: prévia do cancelamento = o que o cancelamento grava ───────────
+const CLIENTE71 = { plano: "influencia", ciclos_pagos: 2, counted_payment_ids: ["p1", "p2"], compromisso_inicio: new Date(Date.now() - 8 * DAY).toISOString(), desconto_acumulado: 200, ciclos_no_upgrade: 2 };
+
+Deno.test("preview_cancel (caso cliente71): 200 { ok, multa: { valor: 200, ciclos: 2 } } sem gravar nada e sem chamar o Asaas", async () => {
+  const w = world(CLIENTE71);
+  const before = structuredClone(w.row);
+  const r = await call(w, { action: "preview_cancel" });
+  assertEquals(r.status, 200);
+  assertEquals(r.data, { ok: true, multa: { valor: 200, ciclos: 2 }, emCompromisso: true });
+  assertEquals(w.calls.length, 0, "nenhuma chamada ao Asaas");
+  assertEquals(w.row, before, "nenhuma gravação");
+});
+
+for (const [label, row] of [["cliente71 (snapshot)", CLIENTE71], ["linha antiga sem snapshot", { plano: "influencia", ciclos_pagos: 2, counted_payment_ids: ["p1", "p2"] }], ["Presença 1 ciclo", { ciclos_pagos: 1, counted_payment_ids: ["p1"] }]] as const) {
+  Deno.test(`preview_cancel == cancel (${label}): mesmo valor e mesmos ciclos gravados`, async () => {
+    const w = world(row as Row);
+    const prev = await call(w, { action: "preview_cancel" });
+    const r = await cancel(w);
+    assertEquals(r.status, 200);
+    assertEquals(w.row.multa_pendente_valor, prev.data.multa.valor);
+    assertEquals(w.row.multa_pendente_ciclos, prev.data.multa.ciclos);
+    assertEquals(posts(w)[0].body.value, prev.data.multa.valor);
+  });
+}
+
+Deno.test("cancel: 2 ciclos pagos em 8 dias contam os 2 (sem trava de calendário)", async () => {
+  const w = world({ plano: "influencia", ciclos_pagos: 2, counted_payment_ids: ["p1", "p2"], compromisso_inicio: new Date(Date.now() - 8 * DAY).toISOString() });
+  await cancel(w);
+  assertEquals(w.row.multa_pendente_valor, 360);
+  assertEquals(w.row.multa_pendente_ciclos, 2);
+});
+
+Deno.test("preview_cancel sem assinatura viva → 200 ok:false em português", async () => {
+  const w = world({ status: "expirado" });
+  const r = await call(w, { action: "preview_cancel" });
+  assertEquals(r.status, 200);
+  assertEquals(r.data, { ok: false, reason: "sem_assinatura", message: "Não encontramos uma assinatura ativa para cancelar." });
+  assertEquals(w.calls.length, 0);
+});
+
+Deno.test("preview_cancel mensal → valor 0, sem compromisso", async () => {
+  const w = world({ ciclo_contratado: "mensal" });
+  const r = await call(w, { action: "preview_cancel" });
+  assertEquals(r.data, { ok: true, multa: { valor: 0, ciclos: 0 }, emCompromisso: false });
+});
