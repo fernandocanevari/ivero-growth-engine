@@ -142,3 +142,36 @@ for (const status of ["trial", "expirado"]) {
     assert(memory.writes.includes("PATCH assinaturas"));
   } });
 }
+
+// data_vencimento segue o ciclo do Asaas: dueDate da cobrança confirmada + 1 mês (fim do dia em Brasília).
+async function runAt(iso: string) {
+  const RealDate = Date;
+  const offset = RealDate.parse(iso) - RealDate.now();
+  class Shifted extends RealDate {
+    constructor(...args: unknown[]) {
+      if (args.length === 0) super(RealDate.now() + offset);
+      // deno-lint-ignore no-explicit-any
+      else super(...(args as [any]));
+    }
+    static override now() { return RealDate.now() + offset; }
+  }
+  globalThis.Date = Shifted as DateConstructor;
+  try { return await run(); } finally { globalThis.Date = RealDate; }
+}
+
+Deno.test({ name: "(venc) reconcile ativa com data_vencimento = dueDate da cobrança confirmada + 1 mês", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset({ status: "trial", carencia_ate: null, counted_payment_ids: [], ciclos_pagos: 0, trial_ends_at: "2026-11-09T15:00:00.000Z", asaas_checkout_created_at: "2026-11-02T14:00:00Z" },
+    [{ ...oldPaid, id: "pay_trial", dueDate: "2026-11-09", confirmedDate: "2026-11-02" }]);
+  const r = await runAt("2026-11-02T15:00:00Z");
+  assertEquals(r.body, { reconciled: true, status: "ativo" });
+  assertEquals(memory.row!.data_vencimento, "2026-12-10T02:59:59.999Z");
+  assertEquals(memory.row!.counted_payment_ids, ["pay_trial"]);
+} });
+
+Deno.test({ name: "(venc) reconcile sem dueDate na cobrança → agora + 30 dias (fallback)", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset({ status: "pendente", carencia_ate: null, counted_payment_ids: [], ciclos_pagos: 0, asaas_checkout_created_at: "2026-11-02T14:00:00Z" },
+    [{ ...oldPaid, id: "pay_nodue", confirmedDate: "2026-11-02" }]);
+  const r = await runAt("2026-11-02T15:00:00Z");
+  assertEquals(r.body, { reconciled: true, status: "ativo" });
+  assertEquals(memory.row!.data_vencimento, "2026-12-02T15:00:00.000Z");
+} });

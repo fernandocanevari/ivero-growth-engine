@@ -412,3 +412,73 @@ Deno.test({ name: "P24 pagar a vencida → ativo, carência limpa, ciclo contado
   assertEquals(memory.row.ciclos_pagos, 2);
   assertEquals(memory.row.data_vencimento, new Date(venc).toISOString());
 }});
+
+// ── data_vencimento segue o ciclo do Asaas: dueDate + 1 mês, fim do dia em Brasília ──
+/** Executa fn com o relógio fixado em iso (mesmo mecanismo de at()). */
+const atIso = <T>(iso: string, fn: () => Promise<T>) => at(Date.parse(iso) - Date.now(), fn);
+
+Deno.test({ name: "venc) CONFIRMED com dueDate 2026-11-09 → _data_vencimento exato 2026-12-10T02:59:59.999Z", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_due", { dueDate: "2026-11-09", confirmedDate: "2026-11-02" }) }));
+  assertEquals(memory.claims, ["pay_due"]);
+  assertEquals(memory.row.data_vencimento, "2026-12-10T02:59:59.999Z");
+  assertEquals(memory.row.ciclos_pagos, 1);
+}});
+
+Deno.test({ name: "venc) pagamento DURANTE o trial (1ª cobrança vence no fim do trial 09/11, paga 02/11) → acesso até 09/12", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("trial", "2026-11-09T15:00:00.000Z", SUB);
+  await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_trial", { dueDate: "2026-11-09", confirmedDate: "2026-11-02" }) }));
+  assertEquals(memory.row.status, "ativo");
+  assertEquals(memory.row.trial_ends_at, null);
+  assertEquals(memory.row.data_vencimento, "2026-12-10T02:59:59.999Z", "dias restantes do trial preservados (37 dias)");
+}});
+
+Deno.test({ name: "venc) pagamento DEPOIS do trial (vence e é pago em 02/11) → acesso até 02/12", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_after", { dueDate: "2026-11-02", confirmedDate: "2026-11-02" }) }));
+  assertEquals(memory.row.data_vencimento, "2026-12-03T02:59:59.999Z");
+}});
+
+Deno.test({ name: "venc) CONFIRMED + RECEIVED do mesmo payment.id (e reenvio) gravam a data uma única vez", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  const pay = payment("pay_once", { dueDate: "2026-11-09", confirmedDate: "2026-11-02" });
+  await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: pay }));
+  assertEquals(memory.row.data_vencimento, "2026-12-10T02:59:59.999Z");
+  memory.row.data_vencimento = "sentinela"; // qualquer nova gravação apareceria aqui
+  const retry = await atIso("2026-11-02T17:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: pay }));
+  const received = await atIso("2026-12-02T15:00:00Z", () => event({ event: "PAYMENT_RECEIVED", payment: pay }));
+  assertEquals(retry, { received: true, ignored: "already_counted" });
+  assertEquals(received, { received: true, ignored: "already_counted" });
+  assertEquals(memory.row.data_vencimento, "sentinela");
+  assertEquals(memory.row.ciclos_pagos, 1);
+}});
+
+Deno.test({ name: "venc) sem payment.id (ramo sem deduplicação) também usa dueDate + 1 mês", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: { subscription: SUB, customer: "cus_card", dueDate: "2026-11-09", confirmedDate: "2026-11-02", externalReference: UID } }));
+  assertEquals(memory.claims.length, 0);
+  assertEquals(memory.row.status, "ativo");
+  assertEquals(memory.row.data_vencimento, "2026-12-10T02:59:59.999Z");
+}});
+
+Deno.test({ name: "venc) sem dueDate → agora + 30 dias (fallback com aviso)", sanitizeOps: false, sanitizeResources: false, fn: async () => {
+  reset("pendente", null, SUB);
+  const warns: string[] = [];
+  const warn = console.warn;
+  console.warn = (...a: unknown[]) => { warns.push(a.map(String).join(" ")); };
+  try {
+    await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_nodue") }));
+  } finally { console.warn = warn; }
+  assertEquals(memory.row.data_vencimento, "2026-12-02T15:00:00.000Z");
+  assert(warns.some((w) => w.includes("WARNING fallback") && w.includes("pay_nodue")), warns.join("\n"));
+}});
+
+for (const ref of ["prorata:row_test:agency:brand_test", "fidelidade:row_test:presenca"]) {
+  Deno.test({ name: `venc) avulsa ${ref.split(":")[0]} com dueDate não grava data_vencimento nem chama o RPC`, sanitizeOps: false, sanitizeResources: false, fn: async () => {
+    reset("ativo", null, SUB);
+    memory.row.data_vencimento = "2026-11-20T12:00:00.000Z";
+    await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_avulsa2", customer: "cus_card", dueDate: "2026-11-02", confirmedDate: "2026-11-02", externalReference: ref } }));
+    assertEquals(memory.claims.length, 0);
+    assertEquals(memory.row.data_vencimento, "2026-11-20T12:00:00.000Z");
+  }});
+}
