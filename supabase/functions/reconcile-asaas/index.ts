@@ -3,6 +3,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
+import { accessEndFromDueDate } from "../_shared/dates.ts";
 import {
   evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay, isCountedPayment,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
@@ -152,6 +153,7 @@ Deno.serve(async (req) => {
     let customerId = "";
     const checkoutStatus = "";
     let confirmedPaymentId: string | null = null;
+    let confirmedDueDate: string | null = null;
     let lookupComplete = true;
     let fallbackAmbiguous = false;
     let ev: CheckoutEvaluation | null = null;
@@ -165,7 +167,11 @@ Deno.serve(async (req) => {
         ...p, checkoutSession: p?.checkoutSession ?? ckId,
       }));
       ev = evaluateCheckoutPayments(ckId, row.asaas_checkout_created_at as string | null, lookupComplete ? list : [], counted);
-      if (ev.outcome === "activate") confirmedPaymentId = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted))?.id ?? null;
+      if (ev.outcome === "activate") {
+        const confirmed = list.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.checkoutSession === ckId && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted));
+        confirmedPaymentId = confirmed?.id ?? null;
+        confirmedDueDate = confirmed?.dueDate ?? null;
+      }
       subscriptionId = ev.subscriptionId ?? "";
       customerId = ev.customerId ?? "";
 
@@ -200,7 +206,11 @@ Deno.serve(async (req) => {
               ev = evaluateSubscriptionPayments(pick.candidate.id, row.asaas_checkout_created_at as string | null, charges.items, counted);
               subscriptionId = ev.outcome !== "none" ? ev.subscriptionId ?? "" : "";
               customerId = ev.outcome !== "none" ? knownCustomer : "";
-              if (ev.outcome === "activate") confirmedPaymentId = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted))?.id ?? null;
+              if (ev.outcome === "activate") {
+                const confirmed = charges.items.find((p) => ["CONFIRMED", "RECEIVED"].includes(p.status ?? "") && p.subscription === pick.candidate?.id && onOrAfterCheckoutDay(paymentProofDay(p), row.asaas_checkout_created_at) && !isCountedPayment(p, counted));
+                confirmedPaymentId = confirmed?.id ?? null;
+                confirmedDueDate = confirmed?.dueDate ?? null;
+              }
             }
           }
         } else {
@@ -259,8 +269,13 @@ Deno.serve(async (req) => {
       return json(200, { reconciled: false, status: row.status, checkoutStatus, outcome });
     }
 
-    const nextDue = new Date();
-    nextDue.setDate(nextDue.getDate() + 30);
+    // Fim do período pago segue o ciclo do Asaas: dueDate da cobrança confirmada + 1 mês.
+    const accessEnd = accessEndFromDueDate(confirmedDueDate);
+    (accessEnd.usedFallback ? console.warn : console.log)(
+      `[reconcile-asaas] data_vencimento${accessEnd.usedFallback ? " WARNING fallback agora+30d" : ""}`,
+      JSON.stringify({ paymentId: confirmedPaymentId, dueDate: confirmedDueDate, dataVencimento: accessEnd.value, usedFallback: accessEnd.usedFallback }),
+    );
+    const nextDue = new Date(accessEnd.value);
     const { error } = await supabase
       .from("assinaturas")
       .update({

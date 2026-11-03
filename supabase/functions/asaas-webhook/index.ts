@@ -6,6 +6,7 @@ import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
 import { FIDELIDADE_EVENTS, handleFidelidadePayment, parseFidelidadeRef } from "./fidelidade-payment.ts";
+import { accessEndFromDueDate } from "../_shared/dates.ts";
 import {
   asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
 } from "../_shared/reconcile-decision.ts";
@@ -261,8 +262,13 @@ Deno.serve(async (req) => {
     switch (event) {
       case "PAYMENT_CONFIRMED":
       case "PAYMENT_RECEIVED": {
-        const nextDue = new Date();
-        nextDue.setDate(nextDue.getDate() + 30);
+        // Fim do período pago segue o ciclo do Asaas: dueDate + 1 mês (fim do dia em Brasília).
+        const accessEnd = accessEndFromDueDate(p.dueDate);
+        (accessEnd.usedFallback ? console.warn : console.log)(
+          `[asaas-webhook] data_vencimento${accessEnd.usedFallback ? " WARNING fallback agora+30d" : ""}`,
+          JSON.stringify({ paymentId: p.id ?? null, dueDate: p.dueDate ?? null, dataVencimento: accessEnd.value, usedFallback: accessEnd.usedFallback }),
+        );
+        const nextDue = new Date(accessEnd.value);
         const payExternalRef: string = body?.payment?.externalReference ?? "";
         const isAvulsa = /^(prorata|fidelidade):/.test(payExternalRef);
 
