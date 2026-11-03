@@ -41,6 +41,7 @@ import {
 import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
+import { formatDateBR } from "@/lib/date-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -52,8 +53,7 @@ import { payPenaltyAndOpen } from "@/lib/penalty-flow";
  * acontece na página hospedada pelo Asaas.
  */
 
-const formatDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
+const formatDate = (iso: string | null) => formatDateBR(iso);
 
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 
