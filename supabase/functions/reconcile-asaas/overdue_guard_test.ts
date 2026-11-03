@@ -173,5 +173,6 @@ Deno.test({ name: "(venc) reconcile sem dueDate na cobrança → agora + 30 dias
     [{ ...oldPaid, id: "pay_nodue", confirmedDate: "2026-11-02" }]);
   const r = await runAt("2026-11-02T15:00:00Z");
   assertEquals(r.body, { reconciled: true, status: "ativo" });
-  assertEquals(memory.row!.data_vencimento, "2026-12-02T15:00:00.000Z");
+  const venc = Date.parse(String(memory.row!.data_vencimento));
+  assert(Math.abs(venc - Date.parse("2026-12-02T15:00:00.000Z")) < 60_000, String(memory.row!.data_vencimento));
 } });

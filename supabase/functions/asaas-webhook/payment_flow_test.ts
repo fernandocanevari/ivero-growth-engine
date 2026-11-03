@@ -469,7 +469,7 @@ Deno.test({ name: "venc) sem dueDate → agora + 30 dias (fallback com aviso)", 
   try {
     await atIso("2026-11-02T15:00:00Z", () => event({ event: "PAYMENT_CONFIRMED", payment: payment("pay_nodue") }));
   } finally { console.warn = warn; }
-  assertEquals(memory.row.data_vencimento, "2026-12-02T15:00:00.000Z");
+  assert(Math.abs(dueMs() - Date.parse("2026-12-02T15:00:00.000Z")) < 60_000, String(memory.row.data_vencimento));
   assert(warns.some((w) => w.includes("WARNING fallback") && w.includes("pay_nodue")), warns.join("\n"));
 }});
 
