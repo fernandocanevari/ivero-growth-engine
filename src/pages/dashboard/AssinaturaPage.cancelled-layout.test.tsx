@@ -21,8 +21,8 @@ vi.mock("@/hooks/useAccountType", () => ({
 }));
 const refresh = vi.fn(async () => {});
 const BASE = {
-  plano: "presenca", status: "cancelado", canceladoAcessoAte: "2026-12-02T00:00:00.000Z",
-  dataVencimento: "2026-12-02T00:00:00.000Z", trialEndsAt: null,
+  plano: "presenca", status: "cancelado", canceladoAcessoAte: "2026-12-03T02:59:59.999Z",
+  dataVencimento: "2026-12-03T02:59:59.999Z", trialEndsAt: null,
   effectiveStatus: "cancelado", isLoading: false, refresh,
   cicloContratado: "anual", ciclosPagos: 1, compromissoMeses: 12,
   carenciaAte: null, isPaid: true, multaPendente: null as null | { valor: number; ciclos: number },
@@ -201,7 +201,7 @@ describe("Estados não cancelados continuam como antes", () => {
   it("teste grátis: preço por mês e primeira cobrança prevista", () => {
     STATUS = {
       ...BASE, status: "trial", effectiveStatus: "trial", canceladoAcessoAte: null,
-      ciclosPagos: 0, trialEndsAt: "2026-11-09T00:00:00.000Z",
+      ciclosPagos: 0, trialEndsAt: "2026-11-09T15:00:00.000Z",
     };
     render(<AssinaturaPage />);
     expect(text()).toContain("/ mês");

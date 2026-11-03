@@ -41,6 +41,7 @@ import {
 import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
+import { formatDateBR } from "@/lib/date-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
