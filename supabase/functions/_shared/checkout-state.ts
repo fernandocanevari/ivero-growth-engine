@@ -1,5 +1,6 @@
 import { brDay } from "./reconcile-decision.ts";
 import { effectiveTrialEndsAt, trialEligibility, PAID_HISTORY_STATUSES, type HistoryRow } from "./trial-eligibility.ts";
+import { isPenaltyPending, type PenaltyRow } from "./penalty.ts";
 
 export type CheckoutContext = {
   prev: Record<string, unknown>;
@@ -12,6 +13,13 @@ export type CheckoutContext = {
    * a linha volta a 'trial' com este mesmo trial_ends_at.
    */
   resumeTrialEndsAt?: string;
+  /**
+   * Retomada de uma assinatura PAGA cancelada que ainda tem dias de acesso: a
+   * 1ª cobrança do novo contrato fica no dia (Brasília) deste data_vencimento.
+   * Cartão registrado → asaas-webhook (resumeSubscriptionPatch) zera o
+   * contrato uma única vez e apaga esta marca na mesma gravação.
+   */
+  resumePaidUntil?: string;
 };
 
 /** Vida útil da Checkout Session criada em create-checkout (minutesToExpire: 60). */
@@ -29,7 +37,7 @@ export function checkoutSchedule(history: HistoryRow[], now = new Date()) {
 const RESUME_LIVE_STATUSES = ["ativo", "trial", "inadimplente", "atrasado", "pendente"];
 const RESUME_DEAD_STATUSES = ["expirado", "trial_expirado", "cancelado"];
 
-type ResumeRow = HistoryRow & { counted_payment_ids?: string[] | null };
+type ResumeRow = HistoryRow & PenaltyRow & { counted_payment_ids?: string[] | null; data_vencimento?: string | null };
 
 /**
  * Quem cancelou DURANTE o teste grátis e volta ANTES do fim original do teste:
@@ -51,6 +59,30 @@ export function resumableCancelledTrial(history: ResumeRow[], now = new Date()):
   if (!end || Number.isNaN(endMs) || endMs <= now.getTime()) return null;
   const nextDueDate = brDay(end);
   return nextDueDate ? { trialEndsAt: end, nextDueDate } : null;
+}
+
+export type ResumableAccess =
+  | { isPaid: false; trialEndsAt: string; nextDueDate: string }
+  | { isPaid: true; accessUntil: string; nextDueDate: string };
+
+/**
+ * Quem cancelou e volta com dias de acesso restantes não paga hoje.
+ * - Teste grátis: exatamente resumableCancelledTrial (comportamento inalterado).
+ * - Assinatura paga: nenhuma linha viva, linha morta mais recente 'cancelado'
+ *   com ciclos_pagos > 0, sem multa pendente e data_vencimento no futuro → a
+ *   1ª cobrança do novo contrato fica no dia (Brasília) do data_vencimento.
+ */
+export function resumableCancelledAccess(history: ResumeRow[], now = new Date()): ResumableAccess | null {
+  const trial = resumableCancelledTrial(history, now);
+  if (trial) return { isPaid: false, ...trial };
+  if (history.some((r) => RESUME_LIVE_STATUSES.includes(r.status ?? ""))) return null;
+  const row = history.find((r) => RESUME_DEAD_STATUSES.includes(r.status ?? ""));
+  if (!row || row.status !== "cancelado" || (row.ciclos_pagos ?? 0) <= 0 || isPenaltyPending(row)) return null;
+  const until = row.data_vencimento ?? null;
+  const untilMs = until ? Date.parse(until) : NaN;
+  if (!until || Number.isNaN(untilMs) || untilMs <= now.getTime()) return null;
+  const nextDueDate = brDay(until);
+  return nextDueDate ? { isPaid: true, accessUntil: until, nextDueDate } : null;
 }
 
 export type PreviousCheckoutAction = "blocked" | "reuse" | "cancel" | "skip";
@@ -86,21 +118,25 @@ export function previousCheckoutAction(
 const PREVIOUS_FIELDS = [
   "status", "trial_ends_at", "plano", "ciclo_contratado", "plano_pretendido", "ciclo_pretendido",
   "data_inicio", "data_vencimento", "asaas_subscription_id", "asaas_customer_id",
-  "compromisso_inicio", "compromisso_meses", "ciclos_pagos",
+  "compromisso_inicio", "compromisso_meses", "ciclos_pagos", "desconto_acumulado", "ciclos_no_upgrade",
 ] as const;
 
 export function preserveCheckoutState(
   row: Record<string, unknown> | null,
   requested: CheckoutContext["requested"],
   link: string,
-  extra: Pick<CheckoutContext, "resumeTrialEndsAt"> = {},
+  extra: Pick<CheckoutContext, "resumeTrialEndsAt" | "resumePaidUntil"> = {},
 ): CheckoutContext {
   const previous = row?.checkout_context as CheckoutContext | null | undefined;
   // Um contexto já CONCLUÍDO pertence a um checkout encerrado (ex.: teste com
   // cartão depois cancelado): o estado a restaurar é o atual da linha.
   const prev = (!previous?.completed && previous?.prev) ||
     Object.fromEntries(PREVIOUS_FIELDS.filter((k) => row && k in row).map((k) => [k, row?.[k]]));
-  return { prev, requested, link, ...(extra.resumeTrialEndsAt ? { resumeTrialEndsAt: extra.resumeTrialEndsAt } : {}) };
+  return {
+    prev, requested, link,
+    ...(extra.resumeTrialEndsAt ? { resumeTrialEndsAt: extra.resumeTrialEndsAt } : {}),
+    ...(extra.resumePaidUntil ? { resumePaidUntil: extra.resumePaidUntil } : {}),
+  };
 }
 
 export function restoreCheckoutState(row: HistoryRow & { checkout_context?: CheckoutContext | null }, now = new Date()): Record<string, unknown> {
