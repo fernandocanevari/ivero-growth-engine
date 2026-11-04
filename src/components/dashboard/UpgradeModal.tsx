@@ -25,6 +25,7 @@ import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
 import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
+import { formatDateBR } from "@/lib/date-display";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -75,8 +76,17 @@ export function UpgradeModal({
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   // P26: multa pendente devolvida pelo create-checkout (aviso fixo no modal).
   const [penaltyValor, setPenaltyValor] = useState<number | null>(null);
-  const { plano, isLoading, isAdmin, effectiveStatus, hasAsaasSubscription, cicloContratado } =
-    useSubscriptionStatus();
+  const {
+    plano,
+    isLoading,
+    isAdmin,
+    effectiveStatus,
+    hasAsaasSubscription,
+    cicloContratado,
+    ciclosPagos,
+    canceladoAcessoAte,
+    multaPendente,
+  } = useSubscriptionStatus();
   // Defesa: agência usa faturamento consolidado — nunca troca plano por aqui.
   const { isAgency, isLoading: accountLoading } = useAccountType();
   const go = useSafeNavigate();
@@ -112,6 +122,12 @@ export function UpgradeModal({
   // Trocar só o ciclo (mesmo plano) é mudança real de preço: o botão do plano
   // atual precisa ficar clicável nesse caso.
   const cicloChanged = !isLoading && (isAnnual ? "anual" : "mensal") !== cicloContratado;
+  // Cancelou uma assinatura paga e ainda tem dias de acesso: nada é cobrado
+  // hoje, a 1ª cobrança do novo contrato fica no fim do acesso atual.
+  const paidResumeUntil =
+    !isLoading && effectiveStatus === "cancelado" && (ciclosPagos ?? 0) > 0 && !multaPendente
+      ? canceladoAcessoAte ?? null
+      : null;
 
 
 
@@ -483,6 +499,13 @@ export function UpgradeModal({
                     ))}
                   </ul>
 
+                  {paidResumeUntil && (
+                    <p className="text-[11px] text-muted-foreground leading-snug mb-3">
+                      Sem cobrança hoje. Seu acesso atual vai até {formatDateBR(paidResumeUntil)} e a
+                      primeira cobrança do novo contrato será nesse dia.
+                      {plan.key !== plano ? ` O plano ${plan.name} começa nessa data.` : ""}
+                    </p>
+                  )}
                   <Button
                     variant={highlighted ? "default" : "outline"}
                     size="sm"

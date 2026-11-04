@@ -8,7 +8,7 @@ type MatchableRow = {
   asaas_checkout_created_at?: string | null;
   status?: string | null;
   asaas_subscription_id_anterior?: string | null;
-  checkout_context?: { resumeTrialEndsAt?: string; completed?: boolean } | null;
+  checkout_context?: { resumeTrialEndsAt?: string; resumePaidUntil?: string; completed?: boolean } | null;
 };
 
 export function checkoutEventMatches(event: string, eventDay: string | null, checkoutCreatedAt: string | null | undefined, hasPayment: boolean) {
@@ -18,15 +18,16 @@ export function checkoutEventMatches(event: string, eventDay: string | null, che
 /**
  * Vínculo pelo usuário (externalReference ou e-mail do cliente no Asaas).
  * - Nunca religa a assinatura que já foi removida (asaas_subscription_id_anterior).
- * - Linha 'cancelado' só aceita vínculo de uma retomada de teste em andamento
- *   (cartão sendo registrado agora): evento de vínculo, resumeTrialEndsAt
- *   gravado e checkout ainda não concluído. Cancelamento comum nunca reabre.
+ * - Linha 'cancelado' só aceita vínculo de uma retomada em andamento (cartão
+ *   sendo registrado agora): evento de vínculo, resumeTrialEndsAt (teste) ou
+ *   resumePaidUntil (assinatura paga) gravado e checkout ainda não concluído.
+ *   Cancelamento comum nunca reabre.
  */
 export function bindableByUser(event: string, row: MatchableRow, subscriptionId: string): boolean {
   if (subscriptionId && row.asaas_subscription_id_anterior === subscriptionId) return false;
   if (row.status !== "cancelado") return true;
   const ctx = row.checkout_context;
-  return isBindEvent(event) && !!ctx?.resumeTrialEndsAt && !ctx?.completed;
+  return isBindEvent(event) && (!!ctx?.resumeTrialEndsAt || !!ctx?.resumePaidUntil) && !ctx?.completed;
 }
 
 export type MatchPath = "subscription" | "checkout" | "externalReference" | "email";

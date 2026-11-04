@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { isBindEvent, matchWebhookRow } from "./matching.ts";
 import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
-import { overduePatch, resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
+import { overduePatch, resumeSubscriptionPatch, resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
@@ -166,6 +166,29 @@ Deno.serve(async (req) => {
       JSON.stringify({ subscriptionId, externalReference }),
     );
 
+    /**
+     * Retomada paga: aplica resumeSubscriptionPatch UMA vez. A gravação só vale
+     * se a linha ainda estiver 'cancelado' com a marca resumePaidUntil — o
+     * claim_subscription_payment apaga checkout_context ao contar a 1ª
+     * cobrança, então marca presente = nenhum pagamento da assinatura nova
+     * contado. Devolve false quando outro evento já consumiu a marca.
+     */
+    const applyPaidResume = async (row: MatchedRow, ids: Record<string, unknown>): Promise<boolean> => {
+      const patch = resumeSubscriptionPatch(row);
+      if (!patch) return false;
+      const ctx = event === "CHECKOUT_PAID" ? { checkout_context: { ...(patch.checkout_context as Record<string, unknown>), completed: true } } : {};
+      const { data, error } = await supabase.from("assinaturas")
+        .update({ ...patch, ...ids, ...ctx, updated_at: new Date().toISOString() })
+        .eq("id", row.id)
+        .eq("status", "cancelado")
+        .not("checkout_context->>resumePaidUntil", "is", null)
+        .select("id");
+      if (error) throw error;
+      const applied = (data?.length ?? 0) > 0;
+      console.log("[asaas-webhook] retomada paga", event, row.id, applied ? "novo contrato iniciado" : "marca já consumida, nada zerado");
+      return applied;
+    };
+
     const updateAssinatura = async (
       subscriptionId: string,
       customerId: string,
@@ -180,6 +203,15 @@ Deno.serve(async (req) => {
       if (customerId) bindIds.asaas_customer_id = customerId;
 
       const apply = async (row: MatchedRow & { asaas_checkout_created_at?: string | null }, matched: string) => {
+        if (isBindEvent(event) && resumeSubscriptionPatch(row)) {
+          if (await applyPaidResume(row, bindIds)) return { ok: true, matched, row };
+          // Marca já consumida por outro evento: segue com a linha ATUAL (nunca
+          // com a lida antes, que ainda traz a marca no checkout_context).
+          const { data: fresh, error: freshError } = await supabase.from("assinaturas").select(SELECT).eq("id", row.id).maybeSingle();
+          if (freshError) return { error: freshError.message };
+          if (!fresh || resumeSubscriptionPatch(fresh as MatchedRow)) return { ok: true, matched, row };
+          row = fresh as MatchedRow;
+        }
         const rowPatch = typeof patch === "function" ? patch(row) : patch;
         const { error } = await supabase
           .from("assinaturas")
@@ -283,6 +315,15 @@ Deno.serve(async (req) => {
         if (!isAvulsa && p.id) {
           const found = await findRow(paymentSubId);
           if (!found) { warnNoMatch(paymentSubId); break; }
+          // Retomada paga com 1ª cobrança no mesmo dia: o pagamento pode chegar
+          // ANTES de SUBSCRIPTION_CREATED/CHECKOUT_PAID. Zera o contrato antigo
+          // primeiro (uma vez só) para a cobrança contar como ciclo 1.
+          if (resumeSubscriptionPatch(found.row)) {
+            await applyPaidResume(found.row, {
+              ...(paymentSubId ? { asaas_subscription_id: paymentSubId } : {}),
+              ...(paymentCustomerId ? { asaas_customer_id: paymentCustomerId } : {}),
+            });
+          }
           const { data: claim, error: claimError } = await supabase.rpc("claim_subscription_payment", {
             _assinatura_id: found.row.id,
             _payment_id: p.id,

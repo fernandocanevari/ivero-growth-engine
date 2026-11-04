@@ -4,7 +4,7 @@ import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { normalizeCiclo, planValue, COMPROMISSO_MESES, type CicloContratado, type PlanoKey } from "../_shared/pricing.ts";
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
-import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resumableCancelledTrial } from "../_shared/checkout-state.ts";
+import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resumableCancelledAccess } from "../_shared/checkout-state.ts";
 import { isPenaltyPending, PENALTY_COLUMNS, penaltyBlockedMessage, type PenaltyRow } from "../_shared/penalty.ts";
 
 
@@ -316,12 +316,13 @@ Deno.serve(async (req) => {
 
     const schedule = checkoutSchedule(history ?? []);
     const trialEndsAt = schedule.trialEndsAt ? new Date(schedule.trialEndsAt) : null;
-    // Cancelou durante o teste e voltou antes do fim original (só conta
-    // individual): sem teste novo — a 1ª cobrança fica no fim do teste original.
-    const resume = !agencyQuote && !trialConcedido ? resumableCancelledTrial(history ?? []) : null;
+    // Cancelou e voltou com dias de acesso restantes (só conta individual):
+    // teste grátis → 1ª cobrança no fim do teste original; assinatura paga →
+    // 1ª cobrança do novo contrato no dia do data_vencimento. Nada cobrado hoje.
+    const resume = !agencyQuote && !trialConcedido ? resumableCancelledAccess(history ?? []) : null;
     const nextDueDate = resume ? resume.nextDueDate : schedule.nextDueDate;
     const value = agencyQuote ? agencyQuote.total : planValue(plano, ciclo);
-    console.log("create-checkout: nextDueDate =", nextDueDate, "trialConcedido =", trialConcedido, "retomaTeste =", !!resume);
+    console.log("create-checkout: nextDueDate =", nextDueDate, "trialConcedido =", trialConcedido, "retomaTeste =", !!resume && !resume.isPaid, "retomaAcesso =", !!resume?.isPaid);
     const anterior = (history ?? []).find((r) => r.asaas_checkout_id);
     if (anterior) {
       const action = previousCheckoutAction(anterior, { value, plano, ciclo });
@@ -509,6 +510,9 @@ Deno.serve(async (req) => {
         .eq("id", linhaViva.id);
       insertError = updateError;
     } else if (resume && linhaMorta) {
+      // Retomada (teste OU assinatura paga com dias restantes): mesma gravação.
+      // Na paga, data_vencimento e o contrato atual também ficam intactos até o
+      // cartão ser registrado (asaas-webhook/resumeSubscriptionPatch).
       // Retomada do teste cancelado: a linha CONTINUA 'cancelado' enquanto o
       // cliente está na tela do Asaas — acesso segue terminando no fim original
       // do teste (data_vencimento/trial_ends_at intactos, sem janela 'pendente').
@@ -525,7 +529,8 @@ Deno.serve(async (req) => {
           asaas_subscription_id: null,
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
-          checkout_context: preserveCheckoutState(base, { value, cycle: "MONTHLY", plano, ciclo }, checkoutUrl, { resumeTrialEndsAt: resume.trialEndsAt }),
+          checkout_context: preserveCheckoutState(base, { value, cycle: "MONTHLY", plano, ciclo }, checkoutUrl,
+            resume.isPaid ? { resumePaidUntil: resume.accessUntil } : { resumeTrialEndsAt: resume.trialEndsAt }),
         })
         .eq("id", linhaMorta.id)
         .eq("status", "cancelado");
@@ -535,11 +540,15 @@ Deno.serve(async (req) => {
         .from("assinaturas")
         .update({
           ...assinaturaPayload,
-          // Preserva o trial original e o histórico pago: 'pendente' nunca apaga
-          // trial_ends_at nem zera ciclos_pagos de quem já pagou.
+          // Preserva o trial original ('pendente' nunca apaga trial_ends_at).
+          // Acesso já encerrado: reativação começa um contrato NOVO (contagem
+          // zerada); os valores anteriores ficam em checkout_context.prev e
+          // voltam com restoreCheckoutState se o checkout for abandonado.
           trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : effectiveTrialEndsAt(linhaMorta),
-          ciclos_pagos: linhaMorta.ciclos_pagos ?? 0,
-          compromisso_inicio: linhaMorta.compromisso_inicio ?? null,
+          ciclos_pagos: 0,
+          compromisso_inicio: null,
+          desconto_acumulado: null,
+          ciclos_no_upgrade: null,
           plano_pretendido: plano,
           ciclo_pretendido: ciclo,
           checkout_context: checkoutContextFor(linhaMorta),
@@ -573,7 +582,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true, trialConcedido, checkoutUrl, asaasCheckoutId, agencyQuote,
-        ...(resume ? { retomaTeste: true, primeiraCobranca: resume.nextDueDate } : {}),
+        ...(resume && !resume.isPaid ? { retomaTeste: true, primeiraCobranca: resume.nextDueDate } : {}),
+        ...(resume?.isPaid ? { retomaAcesso: true, primeiraCobranca: resume.nextDueDate, acessoAte: resume.accessUntil } : {}),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

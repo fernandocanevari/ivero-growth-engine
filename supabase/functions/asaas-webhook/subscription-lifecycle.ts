@@ -21,6 +21,33 @@ export function resumeTrialPatch(
 }
 
 /**
+ * Retomada de assinatura PAGA cancelada (marca checkout_context.resumePaidUntil,
+ * gravada por create-checkout): cartão registrado → novo contrato de 12 meses.
+ * Vincula (os ids vêm do chamador), status 'ativo', contagem zerada, plano e
+ * ciclo_contratado mantidos (o escolhido segue em plano/ciclo_pretendido e só
+ * vale na 1ª cobrança, via claim_subscription_payment), data_vencimento
+ * intacta e a marca é APAGADA na mesma gravação — evento repetido não zera de
+ * novo. O chamador grava condicionado à marca ainda presente.
+ * Retorna null quando a linha não é uma retomada paga em andamento.
+ */
+export function resumeSubscriptionPatch(
+  row: { status?: string | null; checkout_context?: CheckoutContext | null },
+): Record<string, unknown> | null {
+  const ctx = row.checkout_context;
+  if (row.status !== "cancelado" || !ctx?.resumePaidUntil) return null;
+  const { resumePaidUntil: _consumed, ...rest } = ctx;
+  return {
+    status: "ativo",
+    carencia_ate: null,
+    ciclos_pagos: 0,
+    compromisso_inicio: null,
+    desconto_acumulado: null,
+    ciclos_no_upgrade: null,
+    checkout_context: rest,
+  };
+}
+
+/**
  * SUBSCRIPTION_DELETED / SUBSCRIPTION_INACTIVATED.
  * Só age sobre a linha que AINDA está vinculada exatamente a essa assinatura
  * (nunca casa por checkout/externalReference e nunca grava o id removido).
