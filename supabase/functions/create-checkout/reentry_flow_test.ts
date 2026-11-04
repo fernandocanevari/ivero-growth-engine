@@ -176,23 +176,98 @@ function paidCancelledRow(extra: Record<string, unknown> = {}) {
   };
 }
 
-Deno.test("g) pagou → cancelou → volta: checkout cobrado hoje, pendente, histórico pago preservado", async () => {
-  const r = await run(paidCancelledRow());
+Deno.test("g) pagou → cancelou → volta com dias restantes: 1ª cobrança no dia do data_vencimento, linha segue cancelada, nada cobrado hoje", async () => {
+  const row = paidCancelledRow();
+  const r = await run(row);
   assertEquals(r.status, 200, JSON.stringify(r.data));
   assertEquals(r.data.trialConcedido, false);
   assertEquals(r.data.retomaTeste, undefined);
-  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(new Date().toISOString()));
-  assertEquals(r.patch.status, "pendente");
-  assertEquals(r.patch.ciclos_pagos, 3);
-  assertEquals(r.patch.trial_ends_at, null);
+  assertEquals(r.data.retomaAcesso, true);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(row.data_vencimento));
+  assert(r.checkout!.body.subscription.nextDueDate !== brDay(new Date().toISOString()), "sem cobrança hoje");
+  assertEquals(r.data.primeiraCobranca, brDay(row.data_vencimento));
+  assertEquals(r.data.acessoAte, row.data_vencimento);
+  assert(!("status" in r.patch), "status continua 'cancelado' (sem 'pendente')");
+  assert(!("data_vencimento" in r.patch), "sem agora + 30 dias");
+  assert(!("ciclos_pagos" in r.patch), "contrato antigo só é zerado quando o cartão é registrado");
+  assertEquals(r.patch.checkout_context.resumePaidUntil, row.data_vencimento);
+  assertEquals(r.patch.checkout_context.resumeTrialEndsAt, undefined);
   assertEquals(r.patch.checkout_context.prev.status, "cancelado");
+  assertEquals(r.patch.checkout_context.prev.ciclos_pagos, 3);
 });
 
-Deno.test("g) pagou → cancelou com id removido regravado → volta sem 409", async () => {
+Deno.test("g) pagou → cancelou com id removido regravado → volta sem 409, vínculo antigo descartado", async () => {
   const r = await run(paidCancelledRow({ asaas_subscription_id: "sub_deleted" }));
   assertEquals(r.status, 200, JSON.stringify(r.data));
-  assertEquals(r.patch.status, "pendente");
+  assert(!("status" in r.patch));
   assertEquals(r.patch.asaas_subscription_id, null);
+  assertEquals(r.patch.checkout_context.prev.asaas_subscription_id, null);
+});
+
+Deno.test("P30 a) retomada paga: plano/ciclo escolhidos só como intenção; plano atual intacto", async () => {
+  const r = await run(paidCancelledRow(), { body: { ...REQ, plano: "autoridade", ciclo: "anual" } });
+  assertEquals(r.status, 200, JSON.stringify(r.data));
+  assertEquals(r.patch.plano_pretendido, "autoridade");
+  assertEquals(r.patch.ciclo_pretendido, "anual");
+  assert(!("plano" in r.patch), "plano pago continua até a 1ª cobrança");
+  assert(!("ciclo_contratado" in r.patch));
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(paidCancelledRow().data_vencimento));
+});
+
+Deno.test("P30 b) retomada paga abandonada → restoreCheckoutState devolve exatamente a linha cancelada", async () => {
+  const row = { ...paidCancelledRow(), desconto_acumulado: 120, ciclos_no_upgrade: 2, plano_pretendido: null, ciclo_pretendido: null };
+  const r = await run(row);
+  const after = { ...row, ...r.patch } as typeof row & { checkout_context: CheckoutContext };
+  const restored = { ...after, ...restoreCheckoutState(after) };
+  for (const k of ["status", "plano", "ciclo_contratado", "plano_pretendido", "ciclo_pretendido", "data_inicio", "data_vencimento",
+    "trial_ends_at", "asaas_customer_id", "compromisso_inicio", "compromisso_meses", "ciclos_pagos", "desconto_acumulado", "ciclos_no_upgrade",
+    "counted_payment_ids", "asaas_subscription_id"] as const) {
+    assertEquals(restored[k], row[k], k);
+  }
+  assertEquals(restored.checkout_context, null);
+  assertEquals(restored.asaas_checkout_id, null);
+});
+
+Deno.test("P30 f) acesso já encerrado → cobrança hoje, contrato novo (contagem zerada) e restauração no abandono", async () => {
+  const row = { ...paidCancelledRow({ data_vencimento: at(-1 * DAY) }), desconto_acumulado: 120, ciclos_no_upgrade: 2 };
+  const r = await run(row);
+  assertEquals(r.status, 200, JSON.stringify(r.data));
+  assertEquals(r.data.retomaAcesso, undefined);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(new Date().toISOString()));
+  assertEquals(r.patch.status, "pendente");
+  assertEquals(r.patch.ciclos_pagos, 0);
+  assertEquals(r.patch.compromisso_inicio, null);
+  assertEquals(r.patch.desconto_acumulado, null);
+  assertEquals(r.patch.ciclos_no_upgrade, null);
+  const prev = r.patch.checkout_context.prev;
+  assertEquals([prev.ciclos_pagos, prev.compromisso_inicio, prev.desconto_acumulado, prev.ciclos_no_upgrade], [3, row.compromisso_inicio, 120, 2]);
+  const after = { ...row, ...r.patch } as typeof row & { checkout_context: CheckoutContext };
+  const restored = restoreCheckoutState(after);
+  assertEquals(restored.status, "cancelado");
+  assertEquals(restored.ciclos_pagos, 3);
+  assertEquals(restored.compromisso_inicio, row.compromisso_inicio);
+  assertEquals(restored.desconto_acumulado, 120);
+  assertEquals(restored.ciclos_no_upgrade, 2);
+  assertEquals(restored.data_vencimento, row.data_vencimento);
+});
+
+Deno.test("P30 h) multa pendente continua bloqueando a retomada paga (sem trava e sem checkout)", async () => {
+  const r = await run(paidCancelledRow({ ciclo_contratado: "anual", multa_pendente_valor: 600, multa_pendente_ciclos: 3, multa_pendente_payment_id: "pay_multa", multa_ultimo_payment_id: null }));
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reason, "multa_pendente");
+  assertEquals(r.checkout, undefined);
+  assertEquals(r.patch, undefined);
+});
+
+Deno.test("P30 i) retomada do teste grátis inalterada: retomaTeste, sem retomaAcesso nem resumePaidUntil", async () => {
+  const trialEnd = at(4 * DAY);
+  const r = await run(cancelledTrialRow(trialEnd));
+  assertEquals(r.data.retomaTeste, true);
+  assertEquals(r.data.retomaAcesso, undefined);
+  assertEquals(r.data.acessoAte, undefined);
+  assertEquals(r.patch.checkout_context.resumeTrialEndsAt, trialEnd);
+  assertEquals(r.patch.checkout_context.resumePaidUntil, undefined);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(trialEnd));
 });
 
 Deno.test("restaura o ambiente do processo de teste", () => {
