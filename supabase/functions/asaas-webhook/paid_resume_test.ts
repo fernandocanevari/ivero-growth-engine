@@ -68,12 +68,8 @@ function rowMatches(url: URL): boolean {
   return true;
 }
 
-async function event(body: Record<string, unknown>) {
-  const h = handler;
-  if (!h) throw new Error("handler_not_captured");
-  const originalLog = console.log;
-  console.log = () => {};
-  globalThis.fetch = async (input, init) => {
+/** Banco simulado instalado uma vez por arquivo (eventos simultâneos usam o mesmo). */
+const mockedFetch: typeof fetch = async (input, init) => {
     const request = input instanceof Request ? input : new Request(input, init);
     const url = new URL(request.url);
     if (url.hostname !== "payments.example.test") throw new Error("unexpected_network");
@@ -118,7 +114,14 @@ async function event(body: Record<string, unknown>) {
       out = method === "GET" ? [] : null;
     } else throw new Error(`unexpected_table:${table}`);
     return new Response(out === null ? null : JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json" } });
-  };
+};
+
+async function event(body: Record<string, unknown>) {
+  const h = handler;
+  if (!h) throw new Error("handler_not_captured");
+  const originalLog = console.log;
+  console.log = () => {};
+  globalThis.fetch = mockedFetch;
   Deno.env.get = (key: string) => ENV[key];
   try {
     const result = await h(new Request("https://function.example.test", { method: "POST", headers: { "asaas-access-token": "fake-webhook", "Content-Type": "application/json" }, body: JSON.stringify(body) }));
@@ -126,10 +129,17 @@ async function event(body: Record<string, unknown>) {
     assertEquals(result.status, 200, JSON.stringify(out));
     return out as Record<string, unknown>;
   } finally {
-    globalThis.fetch = originalFetch;
-    Deno.env.get = originalGet;
     console.log = originalLog;
   }
+}
+
+/** Eventos simultâneos: mocks ficam instalados até o último terminar. */
+async function events(bodies: Record<string, unknown>[]) {
+  try { return await Promise.all(bodies.map(event)); } finally { restore(); }
+}
+function restore() {
+  globalThis.fetch = originalFetch;
+  Deno.env.get = originalGet;
 }
 
 const created = (extra: Record<string, unknown> = {}) => ({ event: "SUBSCRIPTION_CREATED", subscription: { id: "sub_new", customer: "cus_new", checkoutSession: CK, dateCreated: today(), externalReference: UID, ...extra } });
@@ -175,7 +185,7 @@ Deno.test({ ...T, name: "c) SUBSCRIPTION_CREATED → CHECKOUT_PAID duplicado →
 
 Deno.test({ ...T, name: "c) eventos de vínculo simultâneos (lidos com a marca) → zera uma vez e a marca não é regravada", fn: async () => {
   paidResumeRow(inDays(10));
-  await Promise.all([event(created()), event(checkoutPaid), event(created())]);
+  await events([created(), checkoutPaid, created()]);
   assertEquals(db.resets, 1);
   assertEquals((db.row.checkout_context as Record<string, unknown> | null)?.resumePaidUntil, undefined);
   assertEquals(db.row.status, "ativo");
@@ -249,3 +259,5 @@ Deno.test("5) resumeSubscriptionPatch: só para cancelado com marca; nunca mexe 
   for (const k of ["plano", "ciclo_contratado", "data_vencimento", "plano_pretendido", "ciclo_pretendido", "trial_ends_at"]) assert(!(k in patch), k);
   assertEquals(patch.checkout_context, { prev: { a: 1 }, requested: { value: 1, cycle: "MONTHLY", plano: "presenca", ciclo: "mensal" }, link: "l" });
 });
+
+Deno.test("restaura o ambiente do processo de teste", () => restore());
