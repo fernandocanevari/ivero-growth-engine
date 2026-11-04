@@ -306,3 +306,26 @@ Deno.test("P24 update_card sem pendente nem vencida → comportamento de hoje", 
   const r = await call("update_card", { status: "ativo", trial_ends_at: null }, { ...LIVE_SUB, payments: [] });
   assertEquals(r.data.reason, "sem_cobranca_pendente");
 });
+
+// ── P30 e) cancelar de novo na janela do novo contrato (R3) ─────────────────
+for (const trialEnd of [null, inDays(-40)]) {
+  Deno.test(`P30 e) ativo, ciclos_pagos 0, trial_ends_at ${trialEnd ? "no passado" : "nulo"}, acesso futuro: data_vencimento intacta, sem multa, assinatura removida`, async () => {
+    const due = inDays(9);
+    const r = await cancel({
+      status: "ativo", plano: "influencia", ciclo_contratado: "anual", trial_ends_at: trialEnd, data_vencimento: due,
+      ciclos_pagos: 0, counted_payment_ids: ["p1", "p2", "p3"], compromisso_inicio: null, desconto_acumulado: null, ciclos_no_upgrade: null,
+      asaas_subscription_id: "sub_test",
+    });
+    assertEquals(r.status, 200, JSON.stringify(r.data));
+    assertEquals(r.patch.status, "cancelado");
+    assertEquals("data_vencimento" in r.patch, false, "data_vencimento não é trocada por agora");
+    assertEquals(r.data.accessUntil, due);
+    assertEquals(r.data.acessoAte, due);
+    assertEquals(r.data.isTrial, false);
+    assertEquals(r.data.endsNow, false);
+    assertEquals(r.data.multa, null);
+    assertEquals(r.charges, 0, "nenhuma cobrança criada");
+    assertEquals("multa_pendente_valor" in r.patch, false);
+    assert(r.deleted, "assinatura do Asaas removida");
+  });
+}
