@@ -186,6 +186,8 @@ Deno.test({ ...T, name: "c) SUBSCRIPTION_CREATED → CHECKOUT_PAID duplicado →
 Deno.test({ ...T, name: "c) eventos de vínculo simultâneos (lidos com a marca) → zera uma vez e a marca não é regravada", fn: async () => {
   paidResumeRow(inDays(10));
   await events([created(), checkoutPaid, created()]);
+  const resetAttempts = db.patches.filter((p) => p.ciclos_pagos === 0 && p.status === "ativo").length;
+  assert(resetAttempts > 1, `os três eventos leram a marca antes da 1ª gravação (tentativas: ${resetAttempts})`);
   assertEquals(db.resets, 1);
   assertEquals((db.row.checkout_context as Record<string, unknown> | null)?.resumePaidUntil, undefined);
   assertEquals(db.row.status, "ativo");
