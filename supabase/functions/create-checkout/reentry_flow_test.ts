@@ -270,6 +270,105 @@ Deno.test("P30 i) retomada do teste grátis inalterada: retomaTeste, sem retomaA
   assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(trialEnd));
 });
 
+/** Fim do dia de HOJE em Brasília (23:59:59.999 -03:00), sempre no futuro. */
+function endOfTodayBR() {
+  return new Date(`${brDay(new Date().toISOString())}T23:59:59.999-03:00`).toISOString();
+}
+
+Deno.test("FIX1 a) acesso termina HOJE (Brasília) → checkout normal: cobrança hoje, linha 'pendente', contagem zerada e restaurável", async () => {
+  const until = endOfTodayBR();
+  const row = { ...paidCancelledRow({ data_vencimento: until }), desconto_acumulado: 120, ciclos_no_upgrade: 2 };
+  const r = await run(row);
+  assertEquals(r.status, 200, JSON.stringify(r.data));
+  assertEquals(r.data.retomaAcesso, undefined);
+  assertEquals(r.data.primeiraCobranca, undefined);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(new Date().toISOString()), "cobrança hoje");
+  assertEquals(r.patch.status, "pendente", "linha encontrável por pagamento que chegue antes do vínculo");
+  assertEquals(r.patch.ciclos_pagos, 0);
+  assertEquals(r.patch.compromisso_inicio, null);
+  assertEquals(r.patch.desconto_acumulado, null);
+  assertEquals(r.patch.ciclos_no_upgrade, null);
+  assertEquals(r.patch.checkout_context.resumePaidUntil, undefined);
+  const prev = r.patch.checkout_context.prev;
+  assertEquals([prev.status, prev.ciclos_pagos, prev.data_vencimento, prev.desconto_acumulado, prev.ciclos_no_upgrade], ["cancelado", 3, until, 120, 2]);
+  const restored = restoreCheckoutState({ ...row, ...r.patch } as typeof row & { checkout_context: CheckoutContext });
+  assertEquals(restored.status, "cancelado");
+  assertEquals(restored.ciclos_pagos, 3);
+  assertEquals(restored.data_vencimento, until);
+  assertEquals(restored.compromisso_inicio, row.compromisso_inicio);
+  assertEquals(restored.desconto_acumulado, 120);
+});
+
+/** Linha depois de: pagou 3 meses → cancelou → reativou (cartão registrado, contrato zerado) → cancelou de novo antes da 1ª cobrança. */
+function windowCancelledRow(accessUntil: string) {
+  return {
+    id: "row-3", user_id: "user-1", status: "cancelado", plano: "influencia", ciclo_contratado: "mensal",
+    trial_ends_at: null, data_vencimento: accessUntil, data_inicio: at(-90 * DAY),
+    ciclos_pagos: 0, counted_payment_ids: ["pay_1", "pay_2", "pay_3"], compromisso_inicio: null, compromisso_meses: 12,
+    desconto_acumulado: null, ciclos_no_upgrade: null, plano_pretendido: "influencia", ciclo_pretendido: "mensal",
+    asaas_subscription_id: null, asaas_subscription_id_anterior: "sub_resume1", asaas_customer_id: "cus_resume1",
+    asaas_checkout_id: "chk_resume1", asaas_checkout_created_at: at(-2 * DAY),
+    checkout_context: {
+      prev: { status: "cancelado", ciclos_pagos: 3, data_vencimento: accessUntil },
+      requested: { value: 997, cycle: "MONTHLY", plano: "influencia", ciclo: "mensal" },
+      link: "https://checkout.invalid/chk_resume1", completed: true,
+    },
+  };
+}
+
+Deno.test("FIX2 b) reativou → cancelou na janela → reativa de novo: 1ª cobrança no dia do data_vencimento, nada hoje, linha segue 'cancelado'", async () => {
+  const until = at(10 * DAY);
+  const row = windowCancelledRow(until);
+  const r = await run(row);
+  assertEquals(r.status, 200, JSON.stringify(r.data));
+  assertEquals(r.data.retomaAcesso, true);
+  assertEquals(r.data.acessoAte, until);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(until));
+  assert(r.checkout!.body.subscription.nextDueDate !== brDay(new Date().toISOString()), "sem cobrança hoje");
+  assertEquals(r.cancelCalls, 0, "sessão anterior concluída não é encerrada");
+  assert(!("status" in r.patch), "status continua 'cancelado'");
+  assert(!("data_vencimento" in r.patch), "data_vencimento intacta");
+  assert(!("ciclos_pagos" in r.patch));
+  assertEquals(r.patch.checkout_context.resumePaidUntil, until);
+  assertEquals(r.patch.checkout_context.prev.data_vencimento, until);
+  assertEquals(r.patch.checkout_context.prev.ciclos_pagos, 0, "estado a restaurar é o atual, não o do 1º checkout");
+});
+
+Deno.test("FIX2 b) abandono da 2ª reativação → volta exatamente à linha cancelada da janela", async () => {
+  const until = at(10 * DAY);
+  const row = windowCancelledRow(until);
+  const r = await run(row);
+  const after = { ...row, ...r.patch } as typeof row & { checkout_context: CheckoutContext };
+  const restored = { ...after, ...restoreCheckoutState(after) };
+  for (const k of ["status", "plano", "ciclo_contratado", "data_inicio", "data_vencimento", "trial_ends_at", "asaas_customer_id",
+    "compromisso_inicio", "compromisso_meses", "ciclos_pagos", "desconto_acumulado", "ciclos_no_upgrade", "counted_payment_ids", "asaas_subscription_id"] as const) {
+    assertEquals(restored[k], row[k], k);
+  }
+  assertEquals(restored.checkout_context, null);
+  assertEquals(restored.asaas_checkout_id, null);
+});
+
+Deno.test("FIX2 c) teste cancelado com data_vencimento = cadastro + 30 dias (futuro) segue o caminho do teste, nunca o pago", async () => {
+  const signup = at(-5 * DAY);
+  const trialEnd = at(2 * DAY);
+  const base = { ...cancelledTrialRow(trialEnd), data_inicio: signup, data_vencimento: at(25 * DAY), asaas_checkout_id: null, checkout_context: null };
+  const r = await run(base);
+  assertEquals(r.status, 200, JSON.stringify(r.data));
+  assertEquals(r.data.retomaTeste, true);
+  assertEquals(r.data.retomaAcesso, undefined);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, brDay(trialEnd));
+  assertEquals(r.patch.checkout_context.resumeTrialEndsAt, trialEnd);
+  assertEquals(r.patch.checkout_context.resumePaidUntil, undefined);
+  // Teste já encerrado: checkout normal (cobrança hoje), nunca retomada paga.
+  const ended = await run({ ...base, trial_ends_at: at(-1 * DAY) });
+  assertEquals(ended.status, 200, JSON.stringify(ended.data));
+  assertEquals(ended.data.retomaAcesso, undefined);
+  assertEquals(ended.data.retomaTeste, undefined);
+  assertEquals(ended.checkout!.body.subscription.nextDueDate, brDay(new Date().toISOString()));
+  assertEquals(ended.patch.status, "pendente");
+  assertEquals(ended.patch.checkout_context.resumePaidUntil, undefined);
+});
+
 Deno.test("restaura o ambiente do processo de teste", () => {
   envNames.forEach((key, i) => {
     const value = previousEnv[i];

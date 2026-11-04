@@ -69,20 +69,29 @@ export type ResumableAccess =
  * Quem cancelou e volta com dias de acesso restantes não paga hoje.
  * - Teste grátis: exatamente resumableCancelledTrial (comportamento inalterado).
  * - Assinatura paga: nenhuma linha viva, linha morta mais recente 'cancelado'
- *   com ciclos_pagos > 0, sem multa pendente e data_vencimento no futuro → a
- *   1ª cobrança do novo contrato fica no dia (Brasília) do data_vencimento.
+ *   com pagamento no histórico da linha (ciclos_pagos > 0 OU counted_payment_ids
+ *   não vazio — este cobre quem reativou e cancelou de novo antes da 1ª
+ *   cobrança do contrato novo), sem multa pendente e data_vencimento num dia
+ *   (Brasília) POSTERIOR a hoje → a 1ª cobrança do novo contrato fica nesse dia.
+ *   Acesso terminando hoje usa o checkout normal (cobrança hoje, linha
+ *   'pendente'): um pagamento que chegue antes do vínculo sempre encontra a
+ *   linha, e nenhum dia é perdido porque o acesso acabaria hoje de qualquer jeito.
  */
 export function resumableCancelledAccess(history: ResumeRow[], now = new Date()): ResumableAccess | null {
   const trial = resumableCancelledTrial(history, now);
   if (trial) return { isPaid: false, ...trial };
   if (history.some((r) => RESUME_LIVE_STATUSES.includes(r.status ?? ""))) return null;
   const row = history.find((r) => RESUME_DEAD_STATUSES.includes(r.status ?? ""));
-  if (!row || row.status !== "cancelado" || (row.ciclos_pagos ?? 0) <= 0 || isPenaltyPending(row)) return null;
+  if (!row || row.status !== "cancelado" || isPenaltyPending(row)) return null;
+  const hasPaid = (row.ciclos_pagos ?? 0) > 0 || (row.counted_payment_ids?.length ?? 0) > 0;
+  if (!hasPaid) return null;
   const until = row.data_vencimento ?? null;
   const untilMs = until ? Date.parse(until) : NaN;
   if (!until || Number.isNaN(untilMs) || untilMs <= now.getTime()) return null;
   const nextDueDate = brDay(until);
-  return nextDueDate ? { isPaid: true, accessUntil: until, nextDueDate } : null;
+  const today = brDay(now.toISOString());
+  if (!nextDueDate || !today || nextDueDate <= today) return null;
+  return { isPaid: true, accessUntil: until, nextDueDate };
 }
 
 export type PreviousCheckoutAction = "blocked" | "reuse" | "cancel" | "skip";
