@@ -6,6 +6,7 @@ import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.t
 import { bindableByUser } from "./matching.ts";
 import { resumeSubscriptionPatch } from "./subscription-lifecycle.ts";
 import { brDay } from "../_shared/reconcile-decision.ts";
+import { accessEndFromDueDate } from "../_shared/dates.ts";
 
 let handler: ((req: Request) => Promise<Response>) | undefined;
 const originalServe = Deno.serve;
@@ -261,5 +262,48 @@ Deno.test("5) resumeSubscriptionPatch: só para cancelado com marca; nunca mexe 
   for (const k of ["plano", "ciclo_contratado", "data_vencimento", "plano_pretendido", "ciclo_pretendido", "trial_ends_at"]) assert(!(k in patch), k);
   assertEquals(patch.checkout_context, { prev: { a: 1 }, requested: { value: 1, cycle: "MONTHLY", plano: "presenca", ciclo: "mensal" }, link: "l" });
 });
+
+/** Linha como create-checkout grava quando o acesso termina HOJE (FIX 1): checkout normal, 'pendente', contagem zerada. */
+function sameDayPendingRow() {
+  const prev = {
+    status: "cancelado", trial_ends_at: null, plano: "influencia", ciclo_contratado: "mensal",
+    plano_pretendido: null, ciclo_pretendido: null, data_inicio: inDays(-90), data_vencimento: new Date(Date.now() + 60_000).toISOString(),
+    asaas_subscription_id: null, asaas_customer_id: "cus_old", compromisso_inicio: inDays(-90), compromisso_meses: 12,
+    ciclos_pagos: 3, desconto_acumulado: 120, ciclos_no_upgrade: 2,
+  };
+  db.row = {
+    id: "row_today", user_id: UID, status: "pendente", plano: "influencia", ciclo_contratado: "mensal",
+    trial_ends_at: null, data_inicio: new Date().toISOString(), data_vencimento: inDays(30),
+    ciclos_pagos: 0, counted_payment_ids: ["p1", "p2", "p3"], compromisso_inicio: null, compromisso_meses: 12,
+    desconto_acumulado: null, ciclos_no_upgrade: null, carencia_ate: null,
+    plano_pretendido: "influencia", ciclo_pretendido: "mensal",
+    asaas_subscription_id: null, asaas_customer_id: null, asaas_subscription_id_anterior: "sub_removed",
+    asaas_checkout_id: CK, asaas_checkout_created_at: new Date().toISOString(),
+    checkout_context: { prev, requested: { value: 997, cycle: "MONTHLY", plano: "influencia", ciclo: "mensal" }, link: "https://checkout.invalid/chk_resume" },
+  };
+  db.resets = 0;
+  db.patches = [];
+}
+
+for (const withSession of [true, false]) {
+  Deno.test({ ...T, name: `FIX1 a) acesso terminava hoje: PAYMENT_CONFIRMED antes do vínculo ${withSession ? "com" : "sem"} checkoutSession → encontra a linha 'pendente' e conta 1 vez`, fn: async () => {
+    sameDayPendingRow();
+    const pay = confirmed("pay_today_1", today());
+    if (!withSession) delete (pay.payment as Record<string, unknown>).checkoutSession;
+    await event(pay);
+    assertEquals(db.row.ciclos_pagos, 1);
+    assertEquals(db.row.status, "ativo");
+    assertEquals(db.row.asaas_subscription_id, "sub_new");
+    assertEquals(db.row.data_vencimento, accessEndFromDueDate(today()).value, "data pelo vencimento da cobrança");
+    assertEquals(db.row.counted_payment_ids, ["p1", "p2", "p3", "pay_today_1"]);
+    await event(created(withSession ? {} : { checkoutSession: undefined }));
+    await event(checkoutPaid);
+    await event(pay); // reenvio
+    await event({ ...pay, event: "PAYMENT_RECEIVED" });
+    assertEquals(db.row.ciclos_pagos, 1, "mesmo pagamento nunca conta duas vezes");
+    assertEquals(db.resets, 0, "sem marca de retomada: nada é zerado depois");
+    assertEquals(db.row.data_vencimento, accessEndFromDueDate(today()).value);
+  }});
+}
 
 Deno.test("restaura o ambiente do processo de teste", () => restore());
