@@ -16,6 +16,7 @@ interface AssinaturaRow {
   asaas_subscription_id: string | null;
   ciclo_contratado: string | null;
   ciclos_pagos: number | null;
+  counted_payment_ids?: string[] | null;
   compromisso_inicio: string | null;
   compromisso_meses: number | null;
   multa_pendente_valor?: number | null;
@@ -87,7 +88,7 @@ export function useSubscriptionStatus() {
       .from("assinaturas")
       .select(
         "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id, " +
-          "ciclo_contratado, ciclos_pagos, compromisso_inicio, compromisso_meses, " +
+          "ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, " +
           "multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_ultimo_payment_id",
       )
       .eq("user_id", userId)
@@ -246,6 +247,7 @@ export function useSubscriptionStatus() {
       | "anual",
     /** Mensalidades já confirmadas — base da multa de fidelidade. */
     ciclosPagos: assinatura?.ciclos_pagos ?? 0,
+    countedPaymentIds: assinatura?.counted_payment_ids ?? [],
     compromissoMeses: assinatura?.compromisso_meses ?? 12,
     compromissoInicio: assinatura?.compromisso_inicio ?? null,
     /** P26 — multa de cancelamento em aberto (somente leitura). null = nenhuma. */

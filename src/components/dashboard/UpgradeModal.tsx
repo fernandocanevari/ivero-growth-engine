@@ -1,7 +1,7 @@
 import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2 } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2, Calendar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
 import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
 import { formatDateBR } from "@/lib/date-display";
+import { paidResumeAccessUntil } from "@/lib/billing-display";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -84,7 +85,8 @@ export function UpgradeModal({
     hasAsaasSubscription,
     cicloContratado,
     ciclosPagos,
-    canceladoAcessoAte,
+    countedPaymentIds,
+    dataVencimento,
     multaPendente,
   } = useSubscriptionStatus();
   // Defesa: agência usa faturamento consolidado — nunca troca plano por aqui.
@@ -125,9 +127,9 @@ export function UpgradeModal({
   // Cancelou uma assinatura paga e ainda tem dias de acesso: nada é cobrado
   // hoje, a 1ª cobrança do novo contrato fica no fim do acesso atual.
   const paidResumeUntil =
-    !isLoading && effectiveStatus === "cancelado" && (ciclosPagos ?? 0) > 0 && !multaPendente
-      ? canceladoAcessoAte ?? null
-      : null;
+    isLoading ? null : paidResumeAccessUntil({
+      status: effectiveStatus, ciclosPagos, countedPaymentIds, dataVencimento, multaPendente,
+    });
 
 
 
@@ -387,6 +389,14 @@ export function UpgradeModal({
             <PenaltyBlockedNotice valor={penaltyValor} />
           </div>
         )}
+        {paidResumeUntil && penaltyValor === null && (
+          <div className="mx-6 mt-4 sm:mx-8 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/10 p-4 text-foreground" role="status">
+            <Calendar className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden="true" />
+            <p className="text-base font-medium leading-relaxed min-w-0">
+              Você não paga nada hoje. Seu acesso atual vai até {formatDateBR(paidResumeUntil)} e a primeira cobrança do novo contrato será nesse dia.
+            </p>
+          </div>
+        )}
 
         {/* Cards */}
         <div className="px-6 py-6 sm:px-8 sm:py-8">
@@ -499,11 +509,9 @@ export function UpgradeModal({
                     ))}
                   </ul>
 
-                  {paidResumeUntil && (
+                  {paidResumeUntil && plan.key !== plano && (
                     <p className="text-[11px] text-muted-foreground leading-snug mb-3">
-                      Sem cobrança hoje. Seu acesso atual vai até {formatDateBR(paidResumeUntil)} e a
-                      primeira cobrança do novo contrato será nesse dia.
-                      {plan.key !== plano ? ` O plano ${plan.name} começa nessa data.` : ""}
+                      O plano {plan.name} começa nessa data.
                     </p>
                   )}
                   <Button

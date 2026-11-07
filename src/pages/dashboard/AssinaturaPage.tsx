@@ -42,6 +42,7 @@ import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
 import { formatDateBR } from "@/lib/date-display";
+import { nextChargeStatusLabel } from "@/lib/billing-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -584,7 +585,7 @@ function AssinaturaPageContent() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Status</span>
                   <span className="font-semibold text-foreground">
-                    {INVOICE_STATUS_LABEL[next.status] ?? next.status}
+                    {nextChargeStatusLabel(next, INVOICE_STATUS_LABEL[next.status] ?? next.status)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">

@@ -1,8 +1,8 @@
 /**
  * Retomada de assinatura paga cancelada com dias de acesso restantes:
- * o aviso "sem cobrança hoje" só aparece nesse caso, com a data em Brasília.
+ * o aviso único de retomada paga aparece com a data em Brasília.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
 
@@ -30,17 +30,31 @@ const PAID_CANCELLED = {
   hasAsaasSubscription: false,
   cicloContratado: "anual",
   ciclosPagos: 3,
+  countedPaymentIds: [],
+  dataVencimento: UNTIL,
   canceladoAcessoAte: UNTIL,
   multaPendente: null,
 };
 
-const notices = () => screen.queryAllByText(/Sem cobrança hoje/);
+const notices = () => screen.queryAllByText(/Você não paga nada hoje/);
 
 describe("UpgradeModal — retomada paga", () => {
-  it("mostra em cada plano o aviso com a data de Brasília e o início do plano diferente", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-07T13:36:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("mostra o aviso na segunda reativação mesmo com ciclos zerados", () => {
+    statusMock = { ...PAID_CANCELLED, ciclosPagos: 0, countedPaymentIds: ["pay_1"] };
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    expect(notices()).toHaveLength(1);
+  });
+
+  it("mostra um aviso com a data de Brasília e o início do plano diferente", () => {
     statusMock = PAID_CANCELLED;
     render(<UpgradeModal open onOpenChange={() => {}} />);
-    expect(notices()).toHaveLength(3);
+    expect(notices()).toHaveLength(1);
     for (const n of notices()) expect(n.textContent).toContain("10/12/2026");
     expect(screen.getByText(/O plano Autoridade começa nessa data\./)).toBeTruthy();
     expect(screen.getByText(/O plano Presença começa nessa data\./)).toBeTruthy();
@@ -51,7 +65,8 @@ describe("UpgradeModal — retomada paga", () => {
     for (const s of [
       { ...PAID_CANCELLED, ciclosPagos: 0 },
       { ...PAID_CANCELLED, multaPendente: { valor: 600, ciclos: 3, invoiceUrl: null } },
-      { ...PAID_CANCELLED, canceladoAcessoAte: null },
+      { ...PAID_CANCELLED, dataVencimento: null, canceladoAcessoAte: null },
+      { ...PAID_CANCELLED, dataVencimento: "2026-11-07T02:59:59.999Z" },
       { ...PAID_CANCELLED, effectiveStatus: "ativo", hasAsaasSubscription: true },
     ]) {
       statusMock = s;

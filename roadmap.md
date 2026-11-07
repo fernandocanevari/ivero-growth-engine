@@ -4,3 +4,4 @@
 - [x] Resetar somente agencia01/Bimbo e conferir os valores gravados.
 - [ ] Verificação real de checkout/pagamento: depende do teste do fundador no painel Asaas e dos novos logs; não alterar a cobrança pendente existente.
 - [x] Corrigir e testar decisão de pró-rata nas duas funções, publicar somente agency-manage-brand e manage-subscription.
+- [x] Ajustar aviso único de retomada paga e status de cobrança futura; executar testes do site sem assinatura-routing.
