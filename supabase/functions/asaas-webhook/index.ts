@@ -7,6 +7,7 @@ import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
 import { FIDELIDADE_EVENTS, handleFidelidadePayment, parseFidelidadeRef } from "./fidelidade-payment.ts";
 import { accessEndFromDueDate } from "../_shared/dates.ts";
+import { bindCheckoutIds, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
 import {
   asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
 } from "../_shared/reconcile-decision.ts";
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
     const eventDay: string | null = body?.payment
       ? paymentProofDay(p)
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
-    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context, carencia_ate";
+    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context, carencia_ate, asaas_subscription_id, asaas_checkout_id";
     const USER_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"];
     // Retomada de teste: a linha fica 'cancelado' durante a tela do Asaas, então
     // os eventos de vínculo também a enxergam (bindableByUser restringe o caso).
@@ -398,6 +399,27 @@ Deno.serve(async (req) => {
         // o mesmo trial_ends_at original (demais linhas: só vínculo, como antes).
         const res = await updateAssinatura(checkoutSubId, checkoutCustomerId, (row) => resumeTrialPatch(row));
         if (res.error) return json(500, res);
+        console.log("[asaas-webhook] CHECKOUT_PAID customer shape", JSON.stringify({
+          "checkout.customer": payloadKeys(checkout.customer), "checkout.customerData": payloadKeys(checkout.customerData),
+        }));
+        if (!checkoutSubId && res.ok && res.row) {
+          // Additional discovery is best-effort; never changes the webhook response.
+          try {
+            const { data: current, error } = await supabase.from("assinaturas").select(SELECT).eq("id", res.row.id).maybeSingle();
+            if (error) throw error;
+            const key = asaasApiKey();
+            if (!key) throw new Error("missing_key");
+            if (current) {
+              const ids = await discoverCheckoutBinding(current, checkoutCustomerId || null, async (path) => {
+                const response = await fetch(`${asaasBaseUrl()}${path}`, { headers: { access_token: key } });
+                return { ok: response.ok, data: await response.json() };
+              });
+              if (ids) await bindCheckoutIds(supabase, current, ids);
+            }
+          } catch {
+            console.warn("[asaas-webhook] checkout-binding WARNING", JSON.stringify({ reason: "best_effort_failed" }));
+          }
+        }
         break;
       }
 

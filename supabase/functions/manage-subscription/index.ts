@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts";
+import { bindCheckoutIds, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { decideProration, listProrationPayments, prorationDay } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
@@ -199,7 +200,7 @@ Deno.serve(async (req) => {
     const { data: assinatura } = await supabaseAdmin
       .from("assinaturas")
       .select(
-        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id, desconto_acumulado, ciclos_no_upgrade",
+        "id, plano, status, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, asaas_checkout_id, asaas_checkout_created_at, checkout_context, data_vencimento, trial_ends_at, ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_diferenca, upgrade_pendente_payment_id, upgrade_pendente_invoice_url, upgrade_pendente_em, upgrade_ultimo_payment_id, multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_pendente_em, multa_ultimo_payment_id, desconto_acumulado, ciclos_no_upgrade",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -294,7 +295,7 @@ Deno.serve(async (req) => {
      * O Asaas cria um cliente NOVO a cada checkout: se o cliente gravado não
      * trouxer assinatura viva, procuramos também em TODOS os clientes com o
      * e-mail da conta. (GET /checkouts/{id} não existe no Asaas; e
-     * /payments?checkoutSession= devolve 0 para checkout de assinatura — não usamos.)
+     * /payments?checkoutSession= é a última pista se os clientes não resolverem.)
      * Retorna o id resolvido (ou null quando realmente não existe nada lá).
      */
     const resolveSubId = async (): Promise<string | null> => {
@@ -312,7 +313,7 @@ Deno.serve(async (req) => {
         ? null
         : (assinatura.asaas_checkout_id as string | null);
       const storedCustomer = assinatura.asaas_customer_id as string | null;
-      if (!checkoutId && !storedCustomer) return null;
+      if (!checkoutId && !storedCustomer && !(assinatura.checkout_context?.completed && assinatura.asaas_checkout_id)) return null;
 
       requireAsaas();
 
@@ -352,6 +353,12 @@ Deno.serve(async (req) => {
       const pick = candidates.find(isLiveSubscription) ?? candidates[0] ?? null;
       if (!pick) {
         console.log("resolveSubId: nenhuma assinatura do usuário é posterior ao checkout", assinatura.asaas_checkout_created_at ?? null);
+        const ids = await discoverCheckoutBinding(assinatura, null, async (path) => {
+          const result = await fetchAsaas(path);
+          return { ok: result.ok, data: result.json };
+        });
+        if (ids) subId = await bindCheckoutIds(supabaseAdmin, assinatura, ids);
+        if (subId) return subId;
         return null;
       }
       subId = String(pick.id);

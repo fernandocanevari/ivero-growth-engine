@@ -4,6 +4,7 @@ import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { accessEndFromDueDate } from "../_shared/dates.ts";
+import { bindCheckoutIds, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
 import {
   evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay, isCountedPayment,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
@@ -128,7 +129,7 @@ Deno.serve(async (req) => {
     const { data: row } = await supabase
       .from("assinaturas")
       .select(
-        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_customer_id, trial_ends_at, checkout_context, counted_payment_ids",
+        "id, status, plano, plano_pretendido, ciclo_pretendido, asaas_checkout_id, asaas_checkout_created_at, asaas_subscription_id, asaas_subscription_id_anterior, asaas_customer_id, trial_ends_at, checkout_context, counted_payment_ids",
       )
       .eq("user_id", userId)
       .in("status", LIVE_STATUSES)
@@ -141,6 +142,15 @@ Deno.serve(async (req) => {
       // Só o aviso do Asaas (pagamento da cobrança vencida) reativa cliente em atraso.
       console.log("reconcile: ignorado, cliente em atraso (só o webhook reativa)", JSON.stringify({ row: row.id, status: row.status }));
       return json(200, { reconciled: false, status: row.status, reason: "overdue_requires_webhook" });
+    }
+    if (row.status === "ativo" && !row.asaas_subscription_id && (row.checkout_context as CheckoutContext | null)?.completed === true) {
+      // Isolated repair: no payment evaluation, restoration or access writes.
+      const ids = await discoverCheckoutBinding(row, null, async (path) => {
+        const result = await getJson(path);
+        return { ok: result.status === 200, data: result.data };
+      });
+      const bound = ids ? await bindCheckoutIds(supabase, row, ids) : null;
+      return json(200, { reconciled: false, status: "ativo", bound: !!bound });
     }
     if (row.status === "ativo") return json(200, { reconciled: false, status: "ativo" });
     const counted: string[] = Array.isArray(row.counted_payment_ids) ? row.counted_payment_ids as string[] : [];
