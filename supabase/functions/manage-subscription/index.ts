@@ -353,7 +353,7 @@ Deno.serve(async (req) => {
       const pick = candidates.find(isLiveSubscription) ?? candidates[0] ?? null;
       if (!pick) {
         console.log("resolveSubId: nenhuma assinatura do usuário é posterior ao checkout", assinatura.asaas_checkout_created_at ?? null);
-        const ids = await discoverCheckoutBinding({ ...assinatura, user_id: userId }, null, async (path) => {
+        const ids = await discoverCheckoutBinding(assinatura, null, async (path) => {
           const result = await fetchAsaas(path);
           return { ok: result.ok, data: result.json };
         }, undefined, boundElsewhereIn(supabaseAdmin, assinatura.id));

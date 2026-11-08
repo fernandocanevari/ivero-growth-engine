@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
     }
     if (row.status === "ativo" && !row.asaas_subscription_id && (row.checkout_context as CheckoutContext | null)?.completed === true) {
       // Isolated repair: no payment evaluation, restoration or access writes.
-      const ids = await discoverCheckoutBinding({ ...row, user_id: userId }, null, async (path) => {
+      const ids = await discoverCheckoutBinding(row, null, async (path) => {
         const result = await getJson(path);
         return { ok: result.status === 200, data: result.data };
       }, undefined, boundElsewhereIn(supabase, row.id));

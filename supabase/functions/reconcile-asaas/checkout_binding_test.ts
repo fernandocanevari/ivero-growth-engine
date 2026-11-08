@@ -12,7 +12,9 @@ for (const extra of [{ asaas_subscription_id: "sub_existing" }, { checkout_conte
 });
 Deno.test("non-ativo overdue behavior unchanged", async () => {
   const r = await run(handler, {}, row({ status: "inadimplente" })); assertEquals(r.body.reason, "overdue_requires_webhook"); assertEquals(r.patches, []); assertEquals(r.calls, []);
-});Deno.test("reconcile repair: realistic session [] binds via externalReference", async () => {
-  const state = row(); const r = await run(handler, {}, state, { subscriptions: [subscription({ id: "sub_ref", customer: "cus_ref" })], payments: [] });
+});Deno.test("reconcile repair: realistic session [] binds via CPF route", async () => {
+  const old = { id: "cus_old", cpfCnpj: "00000000191" }, ref = { id: "cus_ref", cpfCnpj: "00000000191" };
+  const state = row();
+  const r = await run(handler, {}, state, { customers: [old, ref], subscriptions: [subscription({ id: "sub_ref", customer: "cus_ref" })], payments: [] });
   assertEquals(r.status, 200); assertEquals(state.asaas_subscription_id, "sub_ref"); assertEquals(state.asaas_customer_id, "cus_ref");
 });

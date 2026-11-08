@@ -3,8 +3,6 @@ import { asaasDay, evaluateCheckoutPayments, onOrAfterCheckoutDay, type AsaasPay
 // Binding only: never decides access, payment confirmation or plan promotion.
 export interface BindingRow {
   id: string;
-  /** Same value create-checkout sends as POST /checkouts externalReference (the user id). */
-  user_id?: string | null;
   asaas_subscription_id?: string | null;
   asaas_subscription_id_anterior?: string | null;
   asaas_checkout_id?: string | null;
@@ -16,10 +14,10 @@ export type BindingGet = (path: string) => Promise<{ ok: boolean; data: Record<s
 type Warning = (message: string, details: { count?: number; reason: string; stages?: Record<string, number> }) => void;
 export type BindingIds = { asaas_subscription_id: string; asaas_customer_id: string };
 
-async function pages(get: BindingGet, path: string): Promise<Record<string, any>[]> {
+async function pages(get: BindingGet, path: string, maxPages = 100): Promise<Record<string, any>[]> {
   const rows: Record<string, any>[] = [];
-  for (let offset = 0; offset < 10000; offset += 100) {
-    const result = await get(`${path}&limit=100&offset=${offset}`);
+  for (let page = 0; page < maxPages; page++) {
+    const result = await get(`${path}&limit=100&offset=${page * 100}`);
     if (!result.ok || !Array.isArray(result.data?.data)) throw new Error("incomplete_lookup");
     rows.push(...result.data.data);
     if (!result.data.hasMore) return rows;
@@ -61,27 +59,47 @@ export async function discoverCheckoutBinding(
       warn("checkout-binding WARNING", { count: candidates.length, reason: "customer_candidates" });
       if (candidates.length > 1) return null;
     }
-    // Route 2: subscriptions carrying create-checkout's externalReference (user id).
-    // Recurring charges in the real Asaas do not carry checkoutSession.
-    if (row.user_id && isBoundElsewhere) {
-      const ref = row.user_id;
-      const returned = await pages(get, `/subscriptions?externalReference=${encodeURIComponent(ref)}`);
-      const stages: Record<string, number> = { returned: returned.length };
-      let list = [...new Map(returned.filter((s) => s.externalReference === ref).map((s) => [s.id, s])).values()];
-      stages.reference = list.length;
-      list = list.filter((s) => s.status === "ACTIVE" && s.deleted !== true); stages.active = list.length;
-      list = list.filter((s) => !!s.id && s.id !== row.asaas_subscription_id_anterior); stages.not_previous = list.length;
-      list = list.filter((s) => onOrAfterCheckoutDay(asaasDay(s.dateCreated), row.asaas_checkout_created_at)); stages.date = list.length;
-      const value = row.checkout_context?.requested?.value;
-      list = list.filter((s) => typeof value === "number" && Number.isFinite(value) && Number(s.value) === value); stages.value = list.length;
-      list = list.filter((s) => s.cycle === "MONTHLY"); stages.cycle = list.length;
-      list = list.filter((s) => typeof s.customer === "string" && !!s.customer); stages.customer = list.length;
-      const free: Record<string, any>[] = [];
-      for (const s of list) if (!(await isBoundElsewhere(String(s.id)))) free.push(s);
-      stages.unbound = free.length;
-      if (free.length === 1 && valid(free[0], row)) return { asaas_subscription_id: free[0].id, asaas_customer_id: free[0].customer };
-      warn("checkout-binding WARNING", { count: free.length, reason: "reference_candidates", stages });
-      if (free.length > 1) return null;
+    // Route 2: customers sharing the stored customer's CPF/CNPJ. The checkout
+    // creates a NEW customer (buyer-typed email), but the CPF/CNPJ stays the
+    // same. The real Asaas proved a checkout's subscription does NOT inherit
+    // the checkout's externalReference, so the old reference route was removed.
+    if (row.asaas_customer_id && isBoundElsewhere) {
+      const stored = row.asaas_customer_id;
+      const me = await get(`/customers/${encodeURIComponent(stored)}`);
+      const cpf = me.ok && typeof me.data?.cpfCnpj === "string" ? me.data.cpfCnpj.trim() : "";
+      if (!cpf) {
+        warn("checkout-binding WARNING", { reason: "cpf_missing" });
+      } else {
+        const customers = await pages(get, `/customers?cpfCnpj=${encodeURIComponent(cpf)}`, 3);
+        const others = [...new Set(customers.map((c) => c?.id).filter((id): id is string => typeof id === "string" && !!id && id !== stored))];
+        const stages: Record<string, number> = { customers: customers.length, other_customers: others.length };
+        if (others.length > 10) {
+          warn("checkout-binding WARNING", { count: others.length, reason: "cpf_candidates", stages });
+        } else {
+          let list: Subscription[] = [];
+          for (const id of others) {
+            list.push(...(await pages(get, `/subscriptions?customer=${encodeURIComponent(id)}`)) as Subscription[]);
+          }
+          stages.returned = list.length;
+          list = [...new Map(list.map((s) => [s.id, s])).values()];
+          stages.unique = list.length;
+          list = list.filter((s) => s.status === "ACTIVE" && s.deleted !== true); stages.active = list.length;
+          list = list.filter((s) => !!s.id && s.id !== row.asaas_subscription_id_anterior); stages.not_previous = list.length;
+          list = list.filter((s) => onOrAfterCheckoutDay(asaasDay(s.dateCreated), row.asaas_checkout_created_at)); stages.date = list.length;
+          const value = row.checkout_context?.requested?.value;
+          list = list.filter((s) => typeof value === "number" && Number.isFinite(value) && Number(s.value) === value); stages.value = list.length;
+          list = list.filter((s) => s.cycle === "MONTHLY"); stages.cycle = list.length;
+          list = list.filter((s) => typeof s.customer === "string" && !!s.customer); stages.customer = list.length;
+          const free: Subscription[] = [];
+          for (const s of list) if (!(await isBoundElsewhere(String(s.id)))) free.push(s);
+          stages.unbound = free.length;
+          if (free.length === 1 && valid(free[0], row)) {
+            return { asaas_subscription_id: free[0].id, asaas_customer_id: free[0].customer as string };
+          }
+          warn("checkout-binding WARNING", { count: free.length, reason: "cpf_candidates", stages });
+          if (free.length > 1) return null;
+        }
+      }
     }
     const ck = row.asaas_checkout_id;
     const payments = (await pages(get, `/payments?checkoutSession=${encodeURIComponent(ck)}`))

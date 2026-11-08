@@ -63,14 +63,13 @@ Deno.test("same-plan paid-resume 397: exact final row preserved", async () => {
   const event = { event: "CHECKOUT_PAID", checkout: { id: CK, customer, externalReference: UID, customerData: { email: "outro-email@checkout.invalid" } } };
   const r = await run(handler, event, state, { subscriptions: [subscription()], payments: customer ? [] : session });
   assertEquals(r.status, 200); assertEquals(state.asaas_subscription_id, "sub_new"); assertEquals(state.asaas_customer_id, "cus_new");
-  for (const c of r.calls) {
-    assert(!/email|%40|@/i.test(c.path), `email used in provider call: ${c.path}`);
-    assert(!c.path.startsWith("/customers"), `customer lookup used: ${c.path}`);
-  }
+  for (const c of r.calls) assert(!/email|%40|@/i.test(c.path), `email used in provider call: ${c.path}`);
 });
-Deno.test("CHECKOUT_PAID customer null, realistic session [] -> binds via externalReference", async () => {
-  const state = row(); const r = await run(handler, paid(null), state, { subscriptions: [subscription({ id: "sub_ref", customer: "cus_ref" })], payments: [] });
+Deno.test("CHECKOUT_PAID customer null, realistic session [] -> binds via CPF route", async () => {
+  const old = { id: "cus_old", cpfCnpj: "00000000191" }, ref = { id: "cus_ref", cpfCnpj: "00000000191", email: "outro@fixture.invalid" };
+  const state = row();
+  const r = await run(handler, paid(null), state, { customers: [old, ref], subscriptions: [subscription({ id: "sub_ref", customer: "cus_ref" })], payments: [] });
   assertEquals(r.status, 200); assertEquals(state.asaas_subscription_id, "sub_ref"); assertEquals(state.asaas_customer_id, "cus_ref");
-  assert(r.calls.some((c) => c.path.includes(`externalReference=${UID}`)));
-  assert(!r.calls.some((c) => c.path.includes("@") || c.path.startsWith("/customers")));
+  assert(r.calls.some((c) => c.path.startsWith("/customers?cpfCnpj=")));
+  assert(!r.calls.some((c) => c.path.includes("externalReference") || c.path.includes("@")));
 });
