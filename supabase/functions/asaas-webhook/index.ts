@@ -7,7 +7,7 @@ import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
 import { FIDELIDADE_EVENTS, handleFidelidadePayment, parseFidelidadeRef } from "./fidelidade-payment.ts";
 import { accessEndFromDueDate } from "../_shared/dates.ts";
-import { bindCheckoutIds, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
+import { bindCheckoutIds, boundElsewhereIn, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
 import {
   asaasDay, decideWebhookEvent, isOneOffPayment, onOrAfterCheckoutDay, paymentProofDay, payloadKeys, type AsaasPayment,
 } from "../_shared/reconcile-decision.ts";
@@ -405,7 +405,7 @@ Deno.serve(async (req) => {
         if (!checkoutSubId && res.ok && res.row) {
           // Additional discovery is best-effort; never changes the webhook response.
           try {
-            const { data: current, error } = await supabase.from("assinaturas").select(SELECT).eq("id", res.row.id).maybeSingle();
+            const { data: current, error } = await supabase.from("assinaturas").select(`${SELECT}, user_id`).eq("id", res.row.id).maybeSingle();
             if (error) throw error;
             const key = asaasApiKey();
             if (!key) throw new Error("missing_key");
@@ -413,7 +413,7 @@ Deno.serve(async (req) => {
               const ids = await discoverCheckoutBinding(current, checkoutCustomerId || null, async (path) => {
                 const response = await fetch(`${asaasBaseUrl()}${path}`, { headers: { access_token: key } });
                 return { ok: response.ok, data: await response.json() };
-              });
+              }, undefined, boundElsewhereIn(supabase, current.id));
               if (ids) await bindCheckoutIds(supabase, current, ids);
             }
           } catch {

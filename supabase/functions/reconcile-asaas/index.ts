@@ -4,7 +4,7 @@ import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { accessEndFromDueDate } from "../_shared/dates.ts";
-import { bindCheckoutIds, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
+import { bindCheckoutIds, boundElsewhereIn, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
 import {
   evaluateCheckoutPayments, evaluateSubscriptionPayments, selectFallbackSubscription, paymentProofDay, onOrAfterCheckoutDay, isCountedPayment,
   type AsaasPayment, type AsaasSubscription, type CheckoutEvaluation,
@@ -145,10 +145,10 @@ Deno.serve(async (req) => {
     }
     if (row.status === "ativo" && !row.asaas_subscription_id && (row.checkout_context as CheckoutContext | null)?.completed === true) {
       // Isolated repair: no payment evaluation, restoration or access writes.
-      const ids = await discoverCheckoutBinding(row, null, async (path) => {
+      const ids = await discoverCheckoutBinding({ ...row, user_id: userId }, null, async (path) => {
         const result = await getJson(path);
         return { ok: result.status === 200, data: result.data };
-      });
+      }, undefined, boundElsewhereIn(supabase, row.id));
       const bound = ids ? await bindCheckoutIds(supabase, row, ids) : null;
       return json(200, { reconciled: false, status: "ativo", bound: !!bound });
     }

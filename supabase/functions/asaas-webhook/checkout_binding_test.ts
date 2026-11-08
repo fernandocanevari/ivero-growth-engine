@@ -68,3 +68,9 @@ Deno.test("same-plan paid-resume 397: exact final row preserved", async () => {
     assert(!c.path.startsWith("/customers"), `customer lookup used: ${c.path}`);
   }
 });
+Deno.test("CHECKOUT_PAID customer null, realistic session [] -> binds via externalReference", async () => {
+  const state = row(); const r = await run(handler, paid(null), state, { subscriptions: [subscription({ id: "sub_ref", customer: "cus_ref" })], payments: [] });
+  assertEquals(r.status, 200); assertEquals(state.asaas_subscription_id, "sub_ref"); assertEquals(state.asaas_customer_id, "cus_ref");
+  assert(r.calls.some((c) => c.path.includes(`externalReference=${UID}`)));
+  assert(!r.calls.some((c) => c.path.includes("@") || c.path.startsWith("/customers")));
+});

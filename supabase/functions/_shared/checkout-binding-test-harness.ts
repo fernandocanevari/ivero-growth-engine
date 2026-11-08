@@ -5,7 +5,7 @@ GoTrueClient.prototype.startAutoRefresh = async () => {};
 export const UID = "ba97500d-53c6-426b-b5e6-7015bfcf4395";
 export const CK = "ck_binding";
 export const AT = "2026-11-08T02:00:00Z"; // Brasília: Nov 7
-export const subscription = (extra: Record<string, unknown> = {}) => ({ id: "sub_new", customer: "cus_new", status: "ACTIVE", dateCreated: "2026-11-07", value: 717, ...extra });
+export const subscription = (extra: Record<string, unknown> = {}) => ({ id: "sub_new", customer: "cus_new", status: "ACTIVE", dateCreated: "2026-11-07", value: 717, cycle: "MONTHLY", externalReference: UID, ...extra });
 export const row = (extra: Record<string, unknown> = {}): Record<string, any> => ({
   id: "local", user_id: UID, status: "ativo", plano: "presenca", plano_pretendido: "influencia", ciclo_contratado: "anual",
   asaas_subscription_id: null, asaas_subscription_id_anterior: "sub_old", asaas_customer_id: "cus_old",
@@ -23,7 +23,7 @@ export async function capture(path: string): Promise<Handler> {
   return handler;
 }
 export async function run(handler: Handler, body: unknown, state: Record<string, any>, options: {
-  subscriptions?: Record<string, any>[]; payments?: Record<string, any>[]; fail?: boolean; race?: string;
+  subscriptions?: Record<string, any>[]; payments?: Record<string, any>[]; fail?: boolean; race?: string; boundElsewhere?: string[];
 } = {}) {
   const oldFetch = globalThis.fetch, oldGet = Deno.env.get, oldWarn = console.warn, oldLog = console.log;
   const env: Record<string, string> = { SUPABASE_URL: "https://binding.invalid", SUPABASE_ANON_KEY: "fake", SUPABASE_SERVICE_ROLE_KEY: "fake", ASAAS_WEBHOOK_TOKEN: "fake", ASAAS_ENV: "sandbox", ASAAS_API_KEY_SANDBOX: "fake" };
@@ -38,7 +38,11 @@ export async function run(handler: Handler, body: unknown, state: Record<string,
     if (url.hostname === "binding.invalid") {
       if (url.pathname === "/auth/v1/user") out = { id: UID, aud: "authenticated", role: "authenticated" };
       else if (url.pathname.endsWith("profiles")) out = { email: "test@example.invalid" };
-      else if (url.pathname.endsWith("assinaturas")) {
+      else if (url.pathname.endsWith("assinaturas") && url.searchParams.get("id")?.startsWith("neq.")) {
+        // Other rows holding a subscription id.
+        const sub = url.searchParams.get("asaas_subscription_id")?.slice(3);
+        out = (options.boundElsewhere ?? []).includes(sub ?? "") ? [{ id: "other" }] : [];
+      } else if (url.pathname.endsWith("assinaturas")) {
         const matches = [...url.searchParams].every(([k, v]) => {
           if (["select", "order", "limit", "offset"].includes(k)) return true;
           const value = k.startsWith("checkout_context->>") ? state.checkout_context?.[k.split("->>")[1]] : state[k];
@@ -62,7 +66,12 @@ export async function run(handler: Handler, body: unknown, state: Record<string,
       const path = url.pathname.replace("/api/v3", ""); calls.push({ path: path + url.search, method: req.method });
       if (options.fail) throw new Error("network_failure");
       if (path === "/customers") out = { data: [], hasMore: false };
-      else if (path === "/subscriptions") out = { data: (options.subscriptions ?? []).filter((s) => s.customer === url.searchParams.get("customer")), hasMore: false };
+      else if (path === "/subscriptions") {
+        // Server-side filters, as the real Asaas: proves the code sends them.
+        const customer = url.searchParams.get("customer"), ref = url.searchParams.get("externalReference");
+        if (!customer && !ref) throw new Error("unfiltered_subscriptions");
+        out = { data: (options.subscriptions ?? []).filter((s) => (!customer || s.customer === customer) && (!ref || s.externalReference === ref)), hasMore: false };
+      }
       else if (path === "/payments") out = { data: options.payments ?? [], hasMore: false };
       else if (/^\/subscriptions\/[^/]+\/payments$/.test(path)) out = { data: options.payments ?? [], hasMore: false };
       else if (path.startsWith("/subscriptions/")) out = (options.subscriptions ?? []).find((s) => s.id === path.split("/").pop()) ?? null;

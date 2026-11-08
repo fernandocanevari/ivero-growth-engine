@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { asaasDay, onOrAfterCheckoutDay } from "../_shared/reconcile-decision.ts";
-import { bindCheckoutIds, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
+import { bindCheckoutIds, boundElsewhereIn, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { decideProration, listProrationPayments, prorationDay } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
@@ -353,10 +353,10 @@ Deno.serve(async (req) => {
       const pick = candidates.find(isLiveSubscription) ?? candidates[0] ?? null;
       if (!pick) {
         console.log("resolveSubId: nenhuma assinatura do usuário é posterior ao checkout", assinatura.asaas_checkout_created_at ?? null);
-        const ids = await discoverCheckoutBinding(assinatura, null, async (path) => {
+        const ids = await discoverCheckoutBinding({ ...assinatura, user_id: userId }, null, async (path) => {
           const result = await fetchAsaas(path);
           return { ok: result.ok, data: result.json };
-        });
+        }, undefined, boundElsewhereIn(supabaseAdmin, assinatura.id));
         if (ids) subId = await bindCheckoutIds(supabaseAdmin, assinatura, ids);
         if (subId) return subId;
         return null;
