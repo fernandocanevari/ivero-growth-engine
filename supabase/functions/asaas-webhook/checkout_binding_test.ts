@@ -58,4 +58,13 @@ Deno.test("same-plan paid-resume 397: exact final row preserved", async () => {
   await run(handler, paid(), discovered, { subscriptions: [subscription({ value: 397 })] });
   delete explicit.updated_at; delete discovered.updated_at;
   assertEquals(discovered, explicit); assertEquals(discovered.ciclos_pagos, 0); assertEquals(discovered.plano, "presenca");
+});for (const customer of ["cus_new", null]) Deno.test(`checkout email differs from account (customer ${customer ?? "absent"}): binds without email`, async () => {
+  const state = row();
+  const event = { event: "CHECKOUT_PAID", checkout: { id: CK, customer, externalReference: UID, customerData: { email: "outro-email@checkout.invalid" } } };
+  const r = await run(handler, event, state, { subscriptions: [subscription()], payments: customer ? [] : session });
+  assertEquals(r.status, 200); assertEquals(state.asaas_subscription_id, "sub_new"); assertEquals(state.asaas_customer_id, "cus_new");
+  for (const c of r.calls) {
+    assert(!/email|%40|@/i.test(c.path), `email used in provider call: ${c.path}`);
+    assert(!c.path.startsWith("/customers"), `customer lookup used: ${c.path}`);
+  }
 });
