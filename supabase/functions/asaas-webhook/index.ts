@@ -4,7 +4,7 @@ import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
 import { overduePatch, resumeSubscriptionPatch, resumeTrialPatch, subscriptionRemovalPatch } from "./subscription-lifecycle.ts";
 import { restoreCheckoutState, type CheckoutContext } from "../_shared/checkout-state.ts";
 import { promoteAgencyIntent } from "../_shared/agency-promote.ts";
-import { handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
+import { closeStaleUpgrade, handleUpgradePayment, parseUpgradeRef, UPGRADE_EVENTS } from "./upgrade-payment.ts";
 import { FIDELIDADE_EVENTS, handleFidelidadePayment, parseFidelidadeRef } from "./fidelidade-payment.ts";
 import { accessEndFromDueDate } from "../_shared/dates.ts";
 import { bindCheckoutIds, boundElsewhereIn, discoverCheckoutBinding } from "../_shared/checkout-binding.ts";
@@ -343,6 +343,7 @@ Deno.serve(async (req) => {
           const { data: owner } = await supabase.from("assinaturas").select("user_id").eq("id", found.row.id).maybeSingle();
           if (owner?.user_id) await promoteAgencyIntent(supabase, owner.user_id as string, found.row.id);
           console.log("[asaas-webhook] ciclos_pagos =", result.ciclos_pagos, "assinatura:", found.row.id);
+          await closeStaleUpgrade(supabase, found.row.id);
           break;
         }
 

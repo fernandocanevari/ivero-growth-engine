@@ -302,6 +302,9 @@ Deno.serve(async (req) => {
      */
     const resolveSubId = async (): Promise<string | null> => {
       if (subId) return subId;
+      // Linha cancelada nunca precisa de vínculo: a retomada paga só vira
+      // "ativo" depois do pagamento. Zero chamadas ao Asaas aqui.
+      if (assinatura.status === "cancelado") return subId;
       // Checkout com mais de 24h sem confirmação = tentativa abandonada. Não
       // serve de pista para localizar assinatura no provedor (e não deve
       // classificar a conta como "órfã"); o customer, sim, é dado estável.
@@ -411,10 +414,15 @@ Deno.serve(async (req) => {
       }
 
       // Ciclo: o enviado agora ou, na ausência, o já contratado.
-      const ciclo = body.ciclo || body.billing_cycle
-        ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
-        : normalizeCiclo(assinatura.ciclo_contratado);
+      // Linha com compromisso anual continua anual em qualquer caminho: o
+      // UpgradeModal envia "mensal" quando o seletor está em Mensal, e isso
+      // gravava ciclo_contratado "mensal" numa linha anual.
       const cicloAtual = normalizeCiclo(assinatura.ciclo_contratado);
+      const ciclo = cicloAtual === "anual"
+        ? cicloAtual
+        : body.ciclo || body.billing_cycle
+          ? normalizeCiclo(body.ciclo ?? body.billing_cycle)
+          : cicloAtual;
       const value = planValue(plano, ciclo);
 
       // Só é "nada a fazer" quando plano E ciclo são idênticos. Trocar apenas o
@@ -527,7 +535,14 @@ Deno.serve(async (req) => {
         console.error("change_plan get sub error:", cur.status, cur.text.slice(0, 500));
         return json(502, { error: "Não foi possível ler a assinatura no provedor de pagamentos." });
       }
-      const oldValue = Number(cur.json?.value ?? 0);
+      // Valor-base = preço do plano que a linha TEM no banco, no ciclo da
+      // própria linha. Após reativação com plano maior o Asaas já guarda o
+      // valor novo, e usá-lo zerava a diferença (upgrade de graça).
+      const asaasValue = Number(cur.json?.value ?? 0);
+      const oldValue = planValue(String(assinatura.plano), cicloAtual);
+      if (asaasValue !== oldValue) {
+        console.warn("change_plan: valor do Asaas difere do plano no banco", JSON.stringify({ plano: assinatura.plano, ciclo: cicloAtual, valorAsaas: asaasValue, valorBanco: oldValue }));
+      }
       const cycle = String(cur.json?.cycle ?? "MONTHLY");
       const nextDue: string | null = cur.json?.nextDueDate ?? null;
       const customerId: string | null = cur.json?.customer ?? assinatura.asaas_customer_id ?? null;

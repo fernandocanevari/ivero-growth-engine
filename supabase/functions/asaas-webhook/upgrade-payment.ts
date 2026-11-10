@@ -26,8 +26,12 @@ const CLEAR_PENDING = {
   upgrade_pendente_em: null,
 };
 
+// Ordem dos planos (mesma de _shared/agency-pricing.ts).
+const PLAN_RANK: Record<string, number> = { presenca: 1, influencia: 2, autoridade: 3 };
+
 type PendingRow = DescontoRow & {
   id: string;
+  plano_pretendido?: string | null;
   asaas_subscription_id: string | null;
   upgrade_pendente_plano: string | null;
   upgrade_pendente_ciclo: string | null;
@@ -45,7 +49,7 @@ export async function handleUpgradePayment(
   ref: { assinaturaId: string; plano: string },
 ): Promise<UpgradeResult> {
   const { data, error } = await supabase.from("assinaturas")
-    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id, plano, ciclo_contratado, ciclos_pagos, compromisso_meses, desconto_acumulado, ciclos_no_upgrade")
+    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id, plano, plano_pretendido, ciclo_contratado, ciclos_pagos, compromisso_meses, desconto_acumulado, ciclos_no_upgrade")
     .eq("id", ref.assinaturaId).maybeSingle();
   if (error) {
     console.error("[asaas-webhook] upgrade: erro ao ler assinatura", ref.assinaturaId, error.message);
@@ -78,10 +82,37 @@ export async function handleUpgradePayment(
       console.error("ALERTA upgrade pago sem promoção:", pending.id, paymentId, reason);
       return { status: 200, body: { received: true, ignored: "upgrade_not_applied" } };
     };
+    // Rede de segurança: o plano já foi liberado (igual ou maior) antes deste
+    // pagamento chegar. Não promove nem altera o Asaas; limpa a pendência e
+    // registra para estorno manual. Nunca 500.
+    const atual = PLAN_RANK[String(pending.plano ?? "")] ?? 0;
+    const pedido = PLAN_RANK[String(pending.upgrade_pendente_plano ?? "")] ?? 0;
+    if (atual > 0 && pedido > 0 && atual >= pedido) {
+      console.error("ALERTA upgrade: pago depois do plano já liberado", pending.id, paymentId);
+      const { error: clrErr } = await supabase.from("assinaturas").update({ ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId })
+        .eq("id", pending.id).eq("upgrade_pendente_payment_id", paymentId);
+      if (clrErr) console.error("ALERTA upgrade: pendência não limpa", pending.id, paymentId, clrErr.message);
+      return { status: 200, body: { received: true, ignored: "upgrade_plan_already_held" } };
+    }
     if (!pending.asaas_subscription_id) return permanent("assinatura_sem_asaas_subscription_id");
     if (!Number.isFinite(valor)) return permanent("sem_upgrade_pendente_valor_novo");
     if (!key) return permanent("chave_asaas_ausente");
+    // Assinatura no Asaas já com o valor novo (ex.: reativação com plano
+    // maior): não envia o PUT. Leitura falhou → segue com o PUT, como antes.
+    let skipPut = false;
     try {
+      const cur = await fetch(`${asaasBaseUrl()}/subscriptions/${encodeURIComponent(pending.asaas_subscription_id)}`, {
+        headers: { "Content-Type": "application/json", access_token: key },
+      });
+      if (cur.ok) {
+        const curJson = await cur.json().catch(() => null) as { value?: unknown } | null;
+        skipPut = curJson?.value != null && Number(curJson.value) === valor;
+      } else {
+        await cur.body?.cancel().catch(() => {});
+      }
+    } catch { skipPut = false; }
+    if (skipPut) console.log("[asaas-webhook] upgrade: valor do Asaas já igual ao novo, PUT não enviado", pending.id, valor);
+    if (!skipPut) try {
       const res = await fetch(`${asaasBaseUrl()}/subscriptions/${encodeURIComponent(pending.asaas_subscription_id)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", access_token: key },
@@ -104,6 +135,10 @@ export async function handleUpgradePayment(
     // reenvio do mesmo pagamento não casa (pendência já limpa) e não soma de novo.
     const patch: Record<string, unknown> = { plano: pending.upgrade_pendente_plano, ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId, ...snapshotDesconto(pending) };
     if (pending.upgrade_pendente_ciclo) patch.ciclo_contratado = pending.upgrade_pendente_ciclo;
+    if (pending.plano_pretendido && pending.plano_pretendido === pending.upgrade_pendente_plano) {
+      patch.plano_pretendido = null;
+      patch.ciclo_pretendido = null;
+    }
     const { data: updated, error: upError } = await supabase.from("assinaturas").update(patch)
       .eq("id", pending.id).eq("upgrade_pendente_payment_id", paymentId).select("id");
     if (upError) {
@@ -148,4 +183,41 @@ export async function handleUpgradePayment(
   }
   console.log("upgrade expirado", pending.id, pending.upgrade_pendente_plano);
   return { status: 200, body: { received: true, upgrade: "expired" } };
+}
+
+/**
+ * Mensalidade recorrente confirmada (já contada por claim_subscription_payment):
+ * se ainda há pedido de upgrade para plano igual ou menor que o atual, remove a
+ * cobrança da diferença no Asaas e limpa a pendência. Best-effort: nunca lança.
+ */
+export async function closeStaleUpgrade(supabase: SupabaseClient, assinaturaId: string): Promise<void> {
+  try {
+    const { data, error } = await supabase.from("assinaturas")
+      .select("id, plano, upgrade_pendente_plano, upgrade_pendente_payment_id")
+      .eq("id", assinaturaId).maybeSingle();
+    if (error) { console.error("ALERTA upgrade: leitura para fechar pendência falhou", assinaturaId, error.message); return; }
+    const row = data as { id: string; plano: string | null; upgrade_pendente_plano: string | null; upgrade_pendente_payment_id: string | null } | null;
+    const pid = row?.upgrade_pendente_payment_id;
+    if (!row || !pid) return;
+    const atual = PLAN_RANK[String(row.plano ?? "")] ?? 0;
+    const pedido = PLAN_RANK[String(row.upgrade_pendente_plano ?? "")] ?? 0;
+    if (!(atual > 0 && pedido > 0 && pedido <= atual)) return;
+    const key = asaasApiKey();
+    if (!key) { console.error("ALERTA upgrade: chave do Asaas ausente, cobrança de upgrade não removida", row.id, pid); return; }
+    const res = await fetch(`${asaasBaseUrl()}/payments/${encodeURIComponent(pid)}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", access_token: key },
+    });
+    await res.body?.cancel().catch(() => {});
+    if (!res.ok && res.status !== 404) {
+      console.error("ALERTA upgrade: DELETE da cobrança de upgrade falhou", row.id, pid, res.status);
+      return;
+    }
+    const { error: clrErr } = await supabase.from("assinaturas").update({ ...CLEAR_PENDING, upgrade_ultimo_payment_id: pid })
+      .eq("id", row.id).eq("upgrade_pendente_payment_id", pid);
+    if (clrErr) { console.error("ALERTA upgrade: pendência não limpa", row.id, pid, clrErr.message); return; }
+    console.log("[asaas-webhook] upgrade pendente encerrado pela mensalidade:", row.id, pid);
+  } catch (err) {
+    console.error("ALERTA upgrade: falha ao encerrar pendência", assinaturaId, err instanceof Error ? err.message : String(err));
+  }
 }

@@ -42,6 +42,7 @@ interface World {
   calls: { url: string; method: string; body: any }[];
   patches: Row[];
   errors: string[];
+  warns: string[];
 }
 
 function world(row: Row = {}, over: Partial<World> = {}): World {
@@ -58,7 +59,7 @@ function world(row: Row = {}, over: Partial<World> = {}): World {
     sub: { id: "sub_test", value: 497, cycle: "MONTHLY", customer: "cus_test", nextDueDate: plusDays(50), status: "ACTIVE" },
     subPayments: [{ id: "pay_next", status: "PENDING", dueDate: plusDays(20), value: 497 }],
     charges: new Map(),
-    calls: [], patches: [], errors: [],
+    calls: [], patches: [], errors: [], warns: [],
     ...over,
   };
 }
@@ -108,7 +109,7 @@ async function call(w: World, body: Record<string, unknown>) {
   const previous = envNames.map((key) => Deno.env.get(key));
   ["https://database.invalid", "test-anon", "test-service", "test-provider", "sandbox"].forEach((v, i) => Deno.env.set(envNames[i], v));
   const originalLog = console.log; const originalError = console.error; const originalWarn = console.warn;
-  console.log = () => {}; console.warn = () => {};
+  console.log = () => {}; console.warn = (...a: unknown[]) => { w.warns.push(a.map(String).join(" ")); };
   console.error = (...a: unknown[]) => { w.errors.push(a.map(String).join(" ")); };
   let seq = 0;
   const reply = (data: unknown, status = 200) =>
@@ -321,20 +322,17 @@ Deno.test("upgrade diferente: DELETE da anterior falha (500) → erro e NADA mud
   assertEquals(w.row, before);
 });
 
-Deno.test("abaixo do mínimo (< R$ 5): aplica na hora como hoje (PUT e plano/ciclo)", async () => {
-  // Anual 397 → mensal 497 no mesmo plano, 1 dia restante: 100 x 1/30 = 3,33.
+Deno.test("d) linha anual com o seletor em Mensal: ciclo continua anual (antes gravava \"mensal\")", async () => {
+  // Antes: Anual 397 → Mensal 497 no mesmo plano aplicava na hora e gravava ciclo "mensal".
   const w = world({ ciclo_contratado: "anual" });
   w.sub.value = 397;
   w.subPayments = [{ id: "pay_next", status: "PENDING", dueDate: plusDays(1), value: 397 }];
   const r = await upgrade(w, "presenca", "mensal");
   assertEquals(r.status, 200);
-  assertEquals(r.data.mode, "asaas");
-  assertEquals(r.data.proRata, null);
-  assertEquals(posts(w).length, 0);
-  assertEquals(puts(w).length, 1);
-  assertEquals(puts(w)[0].body, { value: 497, updatePendingPayments: true, description: "Ivero — Plano presenca" });
-  assertEquals([w.row.plano, w.row.ciclo_contratado], ["presenca", "mensal"]);
-  assertEquals(pending(w.row), NO_PENDING);
+  assertEquals(r.data.mode, "noop");
+  assertEquals(posts(w).length + puts(w).length, 0);
+  assertEquals(w.row.ciclo_contratado, "anual");
+  assert(!w.patches.some((p) => p.ciclo_contratado === "mensal"));
 });
 
 Deno.test("diferença exigida sem customer no Asaas → erro e NADA muda (nunca de graça)", async () => {
@@ -538,4 +536,70 @@ Deno.test("P26-fix2: troca imediata em linha mensal não grava desconto", async 
   assertEquals(w.row.plano, "presenca");
   assertEquals(w.row.desconto_acumulado, undefined);
   assertEquals(w.row.ciclos_no_upgrade, undefined);
+});
+
+// ── Valor-base do change_plan vem do plano no banco (não do Asaas) ───────────
+const reativada = (over: Row = {}) => world({
+  plano: "presenca", plano_pretendido: "influencia", ciclo_contratado: "anual", ciclos_pagos: 0, counted_payment_ids: [], ...over,
+});
+
+Deno.test("a) reativada adiantada (cliente78): Asaas já em 717 → cobra 320 pendente, não aplica na hora, ciclo anual", async () => {
+  const w = reativada();
+  w.sub.value = 717;
+  w.sub.nextDueDate = plusDays(31);
+  w.subPayments = [{ id: "pay_first", status: "PENDING", dueDate: plusDays(31), value: 717 }];
+  const r = await upgrade(w, "influencia", "mensal");
+  assertEquals(r.status, 200);
+  assertEquals(r.data.mode, "pending_payment");
+  assertEquals(r.data.diferenca, 320);
+  assertEquals(puts(w).length, 0);
+  assertEquals(posts(w).length, 1);
+  const post = posts(w)[0].body;
+  assertEquals([post.billingType, post.value, post.dueDate, post.customer], ["CREDIT_CARD", 320, plusDays(3), "cus_test"]);
+  assertMatch(post.description, /30 dia\(s\) restantes/);
+  assertMatch(post.externalReference, UPGRADE_REF_RE);
+  assertEquals([w.row.plano, w.row.ciclo_contratado, w.row.upgrade_pendente_plano, w.row.upgrade_pendente_ciclo, w.row.upgrade_pendente_valor_novo], ["presenca", "anual", "influencia", "anual", 717]);
+  assert(!w.patches.some((p) => "ciclo_contratado" in p));
+  assert(w.warns.some((l) => l.startsWith("change_plan: valor do Asaas difere do plano no banco")));
+});
+
+Deno.test("b) caso já comprovado (Asaas 397, Presença anual, 30 dias) continua 320 com o mesmo payload", async () => {
+  const w = world({ ciclo_contratado: "anual" });
+  w.sub.value = 397;
+  w.sub.nextDueDate = plusDays(30);
+  w.subPayments = [{ id: "pay_next", status: "PENDING", dueDate: plusDays(30), value: 397 }];
+  const r = await upgrade(w, "influencia", "anual");
+  assertEquals(r.data.mode, "pending_payment");
+  const post = posts(w)[0].body;
+  assertEquals([post.billingType, post.value, post.dueDate, post.customer], ["CREDIT_CARD", 320, plusDays(3), "cus_test"]);
+  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para influencia (30 dia(s) restantes do ciclo atual)");
+  assertEquals(w.warns.filter((l) => l.includes("difere do plano")).length, 0, "sem aviso quando os valores batem");
+  assertEquals(w.row.ciclo_contratado, "anual");
+});
+
+Deno.test("c) valor do Asaas diferente do banco: banco vence, uma linha de aviso sem dados pessoais", async () => {
+  const w = world({ ciclo_contratado: "anual" });
+  w.sub.value = 450;
+  w.sub.nextDueDate = plusDays(30);
+  w.subPayments = [{ id: "pay_next", status: "PENDING", dueDate: plusDays(30), value: 450 }];
+  const r = await upgrade(w, "influencia", "anual");
+  assertEquals(posts(w)[0].body.value, 320);
+  assertEquals(r.data.diferenca, 320);
+  const lines = w.warns.filter((l) => l.startsWith("change_plan: valor do Asaas difere do plano no banco"));
+  assertEquals(lines.length, 1);
+  assertEquals(lines[0], 'change_plan: valor do Asaas difere do plano no banco {"plano":"presenca","ciclo":"anual","valorAsaas":450,"valorBanco":397}');
+  for (const l of [...w.warns, ...w.errors]) assert(!l.includes("@") && !l.includes("cus_test") && !l.includes(ROW_ID) && !l.includes("test-user"), l);
+});
+
+Deno.test("i) resolveSubId: linha cancelada sem id não faz nenhuma chamada ao Asaas", async () => {
+  const w = world({ status: "cancelado", asaas_subscription_id: null, asaas_checkout_id: "chk_x", asaas_checkout_created_at: new Date().toISOString(), checkout_context: { completed: true } });
+  const r = await call(w, { action: "list_invoices" });
+  assertEquals(r.status, 200);
+  assertEquals(w.calls.filter((c) => c.url.includes("sandbox.asaas.com")).length, 0);
+});
+
+Deno.test("i) resolveSubId: linha ativa sem id continua buscando o vínculo como antes", async () => {
+  const w = world({ asaas_subscription_id: null });
+  await call(w, { action: "list_invoices" });
+  assert(w.calls.some((c) => c.url.includes("sandbox.asaas.com") && c.url.includes("/subscriptions?customer=cus_test")));
 });

@@ -2,6 +2,7 @@
 // Supabase e Asaas simulados em memória.
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { parseUpgradeRef } from "./upgrade-payment.ts";
+import { calcularMultaCancelamento } from "../_shared/penalty.ts";
 
 let handler: ((req: Request) => Promise<Response>) | undefined;
 const originalServe = Deno.serve;
@@ -32,6 +33,8 @@ const memory = {
   putThrow: false,
   dbReadError: false,
   dbUpdateError: false,
+  subValue: 897 as number,
+  deleteThrow: false,
 };
 
 function reset() {
@@ -58,6 +61,8 @@ function reset() {
   memory.putThrow = false;
   memory.dbReadError = false;
   memory.dbUpdateError = false;
+  memory.subValue = 897;
+  memory.deleteThrow = false;
 }
 
 const CLEARED = {
@@ -98,6 +103,10 @@ async function send(body: Record<string, unknown>): Promise<{ status: number; ou
         if (memory.clearOnPut) memory.row.upgrade_pendente_payment_id = null;
         return new Response(JSON.stringify(memory.putStatus === 200 ? { id: SUB } : { errors: [{ description: "falha" }] }), { status: memory.putStatus });
       }
+      if (request.method === "GET" && /^\/api\/v3\/subscriptions\/[^/]+$/.test(url.pathname)) {
+        return new Response(JSON.stringify({ id: SUB, value: memory.subValue, cycle: "MONTHLY", status: "ACTIVE" }), { status: 200 });
+      }
+      if (request.method === "DELETE" && memory.deleteThrow) throw new TypeError("network timeout");
       if (request.method === "DELETE" && /^\/api\/v3\/payments\/[^/]+$/.test(url.pathname)) {
         return new Response(JSON.stringify({ deleted: memory.deleteStatus === 200 }), { status: memory.deleteStatus });
       }
@@ -167,7 +176,7 @@ Deno.test({ ...opts, name: "1) CONFIRMED com upgrade pendente: PUT primeiro, dep
   const { status, out } = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
   assertEquals(status, 200);
   assertEquals(out, { received: true, upgrade: "applied" });
-  assertEquals(memory.asaasCalls, [`PUT /subscriptions/${SUB}`]);
+  assertEquals(memory.asaasCalls, [`GET /subscriptions/${SUB}`, `PUT /subscriptions/${SUB}`]);
   assertEquals(memory.asaasBodies[0], { value: 997, updatePendingPayments: true, description: "Ivero — Plano autoridade" });
   assertEquals(memory.row.plano, "autoridade");
   assertEquals(memory.row.ciclo_contratado, "anual");
@@ -232,7 +241,7 @@ for (const [label, setup, reason, callsPut] of PERMANENT) {
       assertEquals(out, { received: true, ignored: "upgrade_not_applied" });
       assertEquals(memory.row, snapshot);
       assertEquals(memory.dbWrites, 0);
-      assertEquals(memory.asaasCalls, callsPut ? [`PUT /subscriptions/${SUB}`] : []);
+      assertEquals(memory.asaasCalls, callsPut ? [`GET /subscriptions/${SUB}`, `PUT /subscriptions/${SUB}`] : []);
       assert(logs.some((l) => l.startsWith(`ALERTA upgrade pago sem promoção: ${RID} pay_up ${reason}`)), logs.join("\n"));
     }});
   }
@@ -404,3 +413,76 @@ Deno.test({ ...opts, name: "P26-fix2 d) linha mensal: promoção não grava desc
   assertEquals(memory.row.desconto_acumulado, undefined);
   assertEquals(memory.row.ciclos_no_upgrade, undefined);
 }});
+
+// ── Reativação adiantada (forma real do cliente78) ───────────────────────────
+const reativada = () => Object.assign(memory.row, {
+  plano: "presenca", plano_pretendido: "influencia", ciclo_pretendido: "anual", ciclo_contratado: "anual",
+  ciclos_pagos: 0, counted_payment_ids: [], compromisso_meses: 12, desconto_acumulado: null, ciclos_no_upgrade: null,
+  upgrade_pendente_plano: "influencia", upgrade_pendente_ciclo: "anual", upgrade_pendente_valor_novo: 717, upgrade_pendente_diferenca: 320,
+});
+const REF_INF = `prorata:${RID}:influencia`;
+
+Deno.test({ ...opts, name: "e) reativada: upgrade pago promove Influência sem PUT; 1ª mensalidade conta 1 ciclo; multa = 180", fn: async () => {
+  reset(); reativada(); memory.subValue = 717;
+  const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment("pay_up", { externalReference: REF_INF, value: 320 }) });
+  assertEquals(r.status, 200);
+  assertEquals(r.out, { received: true, upgrade: "applied" });
+  assertEquals(memory.asaasCalls, [`GET /subscriptions/${SUB}`], "nenhum PUT");
+  assertEquals([memory.row.plano, memory.row.plano_pretendido, memory.row.ciclo_pretendido, memory.row.ciclo_contratado], ["influencia", null, null, "anual"]);
+  for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
+  assertEquals(memory.row.ciclos_pagos, 0);
+  assertEquals([memory.row.desconto_acumulado, memory.row.ciclos_no_upgrade], [0, 0]);
+
+  memory.asaasCalls.length = 0;
+  const m = await send({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_mes1", subscription: SUB, customer: "cus_live", confirmedDate: "2026-12-10", dueDate: "2026-12-10", externalReference: UID } });
+  assertEquals(m.status, 200);
+  assertEquals([memory.row.ciclos_pagos, memory.row.plano], [1, "influencia"]);
+  assertEquals(memory.asaasCalls, [], "sem segunda promoção nem chamadas extras");
+  assertEquals(calcularMultaCancelamento(memory.row as never).valor, 180);
+}});
+
+Deno.test({ ...opts, name: "f) linha normal: valor do Asaas diferente → PUT enviado como antes", fn: async () => {
+  reset(); memory.subValue = 897;
+  const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+  assertEquals(r.out, { received: true, upgrade: "applied" });
+  assertEquals(memory.asaasCalls, [`GET /subscriptions/${SUB}`, `PUT /subscriptions/${SUB}`]);
+  assertEquals(memory.asaasBodies[0], { value: 997, updatePendingPayments: true, description: "Ivero — Plano autoridade" });
+}});
+
+for (const plano of ["influencia", "autoridade"]) {
+  Deno.test({ ...opts, name: `g) rede de segurança: plano já ${plano} quando o upgrade p/ Influência é pago → não promove, sem PUT, limpa, ALERTA, 200`, fn: async () => {
+    reset(); reativada(); memory.row.plano = plano;
+    const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment("pay_up", { externalReference: REF_INF }) });
+    assertEquals(r.status, 200);
+    assertEquals(r.out, { received: true, ignored: "upgrade_plan_already_held" });
+    assertEquals(memory.asaasCalls, []);
+    assertEquals(memory.row.plano, plano);
+    for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
+    assertEquals(memory.row.upgrade_ultimo_payment_id, "pay_up");
+    assert(r.logs.some((l) => l === `ALERTA upgrade: pago depois do plano já liberado ${RID} pay_up`), r.logs.join("\n"));
+    assert(!r.logs.some((l) => l.includes("@")));
+  }});
+}
+
+for (const [label, setup, expectCleared] of [
+  ["DELETE 200", () => {}, true],
+  ["DELETE 404 (já removida)", () => { memory.deleteStatus = 404; }, true],
+  ["DELETE 500", () => { memory.deleteStatus = 500; }, false],
+  ["DELETE erro de rede", () => { memory.deleteThrow = true; }, false],
+] as Array<[string, () => void, boolean]>) {
+  Deno.test({ ...opts, name: `h) 1ª mensalidade com upgrade pendente p/ plano já detido: ${label}`, fn: async () => {
+    reset(); reativada(); setup();
+    memory.row.upgrade_pendente_payment_id = "pay_up";
+    const m = await send({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_mes1", subscription: SUB, customer: "cus_live", confirmedDate: "2026-12-10", dueDate: "2026-12-10", externalReference: UID } });
+    assertEquals(m.status, 200);
+    assertEquals(m.out, { received: true });
+    assertEquals([memory.row.ciclos_pagos, memory.row.plano], [1, "influencia"]);
+    assertEquals(memory.asaasCalls, ["DELETE /payments/pay_up"]);
+    if (expectCleared) {
+      for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
+    } else {
+      assertEquals(memory.row.upgrade_pendente_payment_id, "pay_up");
+      assert(m.logs.some((l) => l.startsWith("ALERTA upgrade:")), m.logs.join("\n"));
+    }
+  }});
+}
