@@ -18,10 +18,14 @@ const EMAIL = "cliente@teste.com.br";
 const OTHER_USER = "0f5b2b8e-8c55-4c39-9a3a-2a0f2f6f9d11";
 const UNVERIFIED = "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.";
 
-type Sub = { id: string; customer: string; status: string; externalReference?: string; dateCreated?: string; deleted?: boolean };
+type Sub = { id: string; customer: string; status: string; externalReference?: string; dateCreated?: string; deleted?: boolean; value?: number; cycle?: string };
 interface Provider {
   /** Clientes do Asaas com o e-mail da conta (paginados de 1 em 1 no mock). */
-  customers?: { id: string; email: string }[];
+  customers?: { id: string; email: string; cpfCnpj?: string }[];
+  /** HTTP forçado no GET /subscriptions/{id}. */
+  lookupStatus?: Record<string, number>;
+  /** Simula queda de rede (timeout) em qualquer chamada ao Asaas. */
+  networkDown?: boolean;
   subs?: Sub[];
   /** status HTTP forçado no DELETE de uma assinatura. */
   deleteStatus?: Record<string, number>;
@@ -69,14 +73,28 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
       if (url.pathname === "/auth/v1/user") data = { id: "test-user", aud: "authenticated", role: "authenticated" };
       // PATCH com return=representation (gravação condicional) devolve a linha casada.
       else if (req.method === "PATCH") data = (req.headers.get("Prefer") ?? "").includes("return=representation") ? [{ id: assinatura.id }] : null;
+      // boundElsewhereIn: nenhuma outra linha segura a assinatura.
+      else if (url.pathname === "/rest/v1/assinaturas" && url.search.includes("neq.")) data = [];
       else if (url.pathname === "/rest/v1/assinaturas") data = assinatura;
       else if (url.pathname === "/rest/v1/profiles") data = { email: EMAIL };
       else throw new Error(`Unexpected mocked database path: ${url.pathname}`);
     } else if (url.hostname === "sandbox.asaas.com") {
+      if (provider.networkDown) throw new TypeError("network timeout");
       const p = url.pathname.replace("/api/v3", "");
       const subMatch = p.match(/^\/subscriptions\/([^/]+)$/);
-      if (p === "/customers" && req.method === "GET") {
+      const custMatch = p.match(/^\/customers\/([^/]+)$/);
+      if (custMatch && req.method === "GET") {
+        const c = customers.find((x) => x.id === decodeURIComponent(custMatch[1]));
+        if (!c) { status = 404; data = { errors: [] }; } else data = c;
+      } else if (p === "/payments" && req.method === "GET") {
+        // Cobrança recorrente real não traz checkoutSession: lista vazia.
+        data = page([], url);
+      } else if (p === "/customers" && req.method === "GET") {
         if (provider.customersStatus) { status = provider.customersStatus; data = { errors: [{ description: "boom" }] }; }
+        else if (url.searchParams.has("cpfCnpj")) {
+          const list = customers.filter((c) => c.cpfCnpj === url.searchParams.get("cpfCnpj"));
+          data = { object: "list", hasMore: false, totalCount: list.length, data: list };
+        }
         else data = page(customers.filter((c) => c.email === url.searchParams.get("email")), url);
       } else if (p === "/subscriptions" && req.method === "GET") {
         data = page(subs.filter((s) => s.customer === url.searchParams.get("customer") && !s.deleted), url);
@@ -87,6 +105,8 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
         if (forced) { status = forced; data = { errors: [{ description: "provider down" }] }; }
         else if (!sub) { status = 404; data = { errors: [{ description: "not found" }] }; }
         else { if (!provider.deleteIgnored?.has(id)) sub.deleted = true; data = { deleted: true, id }; }
+      } else if (subMatch && req.method === "GET" && provider.lookupStatus?.[decodeURIComponent(subMatch[1])]) {
+        status = provider.lookupStatus[decodeURIComponent(subMatch[1])]; data = { errors: [{ description: "provider down" }] };
       } else if (subMatch && req.method === "GET") {
         const sub = subs.find((s) => s.id === decodeURIComponent(subMatch[1]));
         if (!sub) { status = 404; data = { errors: [] }; } else data = sub;
@@ -209,31 +229,37 @@ Deno.test("b) dois clientes com o mesmo e-mail, assinatura no segundo (paginaç�
   assertEquals(r.patch.status, "cancelado");
 });
 
-Deno.test("c) DELETE 5xx → 502, linha intacta, mensagem exata", async () => {
+Deno.test("c) DELETE 5xx → provider_unavailable, linha intacta, mensagem exata", async () => {
   const r = await cancel(resumedRow, {
     customers: [{ id: "cus_new", email: EMAIL }],
     subs: [{ id: "sub_live", customer: "cus_new", status: "ACTIVE" }],
     deleteStatus: { sub_live: 503 },
   });
-  assertEquals(r.status, 502);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.ok, false);
+  assertEquals(r.data.reason, "provider_unavailable");
   assertEquals(r.data.error, UNVERIFIED);
   assertEquals(r.patch, undefined, "linha não pode mudar");
 });
 
-Deno.test("c) verificação ainda vê assinatura ACTIVE → 502, linha intacta, mensagem exata", async () => {
+Deno.test("c) verificação ainda vê assinatura ACTIVE → provider_unavailable, linha intacta, mensagem exata", async () => {
   const r = await cancel(resumedRow, {
     customers: [{ id: "cus_new", email: EMAIL }],
     subs: [{ id: "sub_live", customer: "cus_new", status: "ACTIVE" }],
     deleteIgnored: new Set(["sub_live"]),
   });
-  assertEquals(r.status, 502);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.ok, false);
+  assertEquals(r.data.reason, "provider_unavailable");
   assertEquals(r.data.error, UNVERIFIED);
   assertEquals(r.patch, undefined);
 });
 
-Deno.test("c) busca de clientes por e-mail falha → 502, linha intacta", async () => {
+Deno.test("c) busca de clientes por e-mail falha → provider_unavailable, linha intacta", async () => {
   const r = await cancel(resumedRow, { customersStatus: 500 });
-  assertEquals(r.status, 502);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.ok, false);
+  assertEquals(r.data.reason, "provider_unavailable");
   assertEquals(r.data.error, UNVERIFIED);
   assertEquals(r.patch, undefined);
 });
@@ -329,3 +355,129 @@ for (const trialEnd of [null, inDays(-40)]) {
     assert(r.deleted, "assinatura do Asaas removida");
   });
 }
+
+// ── Fail-closed com vínculo / e-mail divergente (P29) ────────────────────────
+// Fixtures realistas: assinatura recorrente de checkout SEM checkoutSession e
+// SEM externalReference; o cliente do checkout tem o e-mail digitado na página.
+const TYPED = "digitado-no-checkout@fixture.invalid";
+const CPF = "00000000191";
+const paidRow = {
+  status: "ativo", plano: "influencia", ciclos_pagos: 1, counted_payment_ids: ["pay_1"],
+  asaas_subscription_id: "sub_bound", asaas_customer_id: "cus_typed", asaas_checkout_id: "ck_1",
+  asaas_checkout_created_at: new Date().toISOString(),
+  checkout_context: { completed: true, requested: { value: 397 } },
+};
+const recurring = (id: string, customer: string): Sub => ({ id, customer, status: "ACTIVE", value: 397, cycle: "MONTHLY", dateCreated: new Date().toISOString().slice(0, 10) });
+const noPII = (r: { calls: { url: string }[] }) => {
+  for (const c of r.calls) assert(!c.url.includes("fixture.invalid") || !c.url.includes("sandbox"), "e-mail digitado nunca é consultado");
+};
+
+Deno.test("P29 a) id vinculado, e-mail do cliente ≠ conta, varredura vazia → remove pelo id e cancela", async () => {
+  const r = await cancel(paidRow, { customers: [{ id: "cus_typed", email: TYPED }], subs: [recurring("sub_bound", "cus_typed")] });
+  assertEquals(r.status, 200);
+  assertEquals(r.deletes, ["sub_bound"]);
+  assertEquals(r.patch.status, "cancelado");
+  assertEquals(r.patch.asaas_subscription_id_anterior, "sub_bound");
+  noPII(r);
+});
+
+Deno.test("P29 b) id vinculado + varredura acha a mesma → removida uma vez só", async () => {
+  const r = await cancel({ ...paidRow, asaas_customer_id: "cus_acct" }, {
+    customers: [{ id: "cus_acct", email: EMAIL }], subs: [recurring("sub_bound", "cus_acct")],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(r.deletes, ["sub_bound"]);
+  assertEquals(r.patch.status, "cancelado");
+});
+
+Deno.test("P29 c) id vinculado + varredura acha segunda viva → ambas removidas", async () => {
+  const r = await cancel(paidRow, {
+    customers: [{ id: "cus_acct", email: EMAIL }],
+    subs: [recurring("sub_bound", "cus_typed"), recurring("sub_extra", "cus_acct")],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(r.deletes.sort(), ["sub_bound", "sub_extra"]);
+  assertEquals(r.patch.status, "cancelado");
+});
+
+Deno.test("P29 d) sem id, checkout concluído, descoberta por CPF vincula → removida e cancelada", async () => {
+  const r = await cancel({ ...paidRow, asaas_subscription_id: null, asaas_customer_id: "cus_old" }, {
+    customers: [{ id: "cus_old", email: EMAIL, cpfCnpj: CPF }, { id: "cus_typed", email: TYPED, cpfCnpj: CPF }],
+    subs: [recurring("sub_real", "cus_typed")],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(r.deletes, ["sub_real"]);
+  assertEquals(r.patch.status, "cancelado");
+  assertEquals(r.patch.asaas_subscription_id_anterior, "sub_real");
+  noPII(r);
+});
+
+Deno.test("P29 e) sem id, checkout concluído, nada encontrado → subscription_not_confirmed, linha intacta, sem multa", async () => {
+  const r = await cancel({ ...paidRow, asaas_subscription_id: null, asaas_customer_id: "cus_old", ciclo_contratado: "anual", compromisso_inicio: inDays(-60) }, {
+    customers: [{ id: "cus_old", email: EMAIL, cpfCnpj: CPF }], subs: [],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(r.data.ok, false);
+  assertEquals(r.data.reason, "subscription_not_confirmed");
+  assertEquals(r.data.message, "Não conseguimos confirmar a sua assinatura no sistema de pagamento, então ainda não cancelamos para você não continuar sendo cobrado. Tente de novo em alguns minutos.");
+  assertEquals(r.data.error, r.data.message, "tela mostra o aviso de falha");
+  assertEquals(r.patch, undefined, "linha não muda");
+  assertEquals(r.charges, 0, "nenhuma multa criada");
+  assertEquals(r.deletes, []);
+});
+
+Deno.test("P29 f) trial sem cartão e sem id → cancela como antes, sem Asaas", async () => {
+  const trialEnd = inDays(5);
+  const r = await cancel({ asaas_subscription_id: null, asaas_customer_id: null, asaas_checkout_id: null, trial_ends_at: trialEnd }, {});
+  assertEquals(r.status, 200);
+  assertEquals(r.asaasCalls.length, 0);
+  assertEquals(r.patch.status, "cancelado");
+  assertEquals(r.patch.data_vencimento, trialEnd);
+});
+
+Deno.test("P29 g) GET /subscriptions/{id} 404 → confirmada inexistente, cancela", async () => {
+  const r = await cancel(paidRow, { customers: [], subs: [] });
+  assertEquals(r.status, 200);
+  assertEquals(r.deletes, []);
+  assertEquals(r.patch.status, "cancelado");
+  assert(r.calls.some((c) => c.method === "GET" && c.url.includes("/subscriptions/sub_bound")));
+});
+
+Deno.test("P29 h) Asaas 5xx na consulta → provider_unavailable, linha intacta", async () => {
+  const r = await cancel(paidRow, { subs: [recurring("sub_bound", "cus_typed")], lookupStatus: { sub_bound: 503 } });
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reason, "provider_unavailable");
+  assertEquals(r.patch, undefined);
+  assertEquals(r.deletes, []);
+});
+
+Deno.test("P29 h) Asaas 5xx no DELETE → provider_unavailable, linha intacta", async () => {
+  const r = await cancel(paidRow, { subs: [recurring("sub_bound", "cus_typed")], deleteStatus: { sub_bound: 500 } });
+  assertEquals(r.data.reason, "provider_unavailable");
+  assertEquals(r.patch, undefined);
+});
+
+Deno.test("P29 h) timeout de rede → provider_unavailable, linha intacta", async () => {
+  const r = await cancel(paidRow, { subs: [recurring("sub_bound", "cus_typed")], networkDown: true });
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reason, "provider_unavailable");
+  assertEquals(r.patch, undefined);
+});
+
+Deno.test("P29 i) anual com multa: multa criada só depois da remoção confirmada", async () => {
+  const r = await cancel({ ...paidRow, ciclo_contratado: "anual", ciclos_pagos: 3, compromisso_inicio: inDays(-90) }, {
+    customers: [], subs: [recurring("sub_bound", "cus_typed")],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(r.charges, 1);
+  const chargeIdx = r.calls.findIndex((c) => c.method === "POST" && c.url.includes("/payments"));
+  assert(r.lastDeleteIndex >= 0 && r.lastDeleteIndex < chargeIdx, "DELETE antes da cobrança da multa");
+  assert(Number(r.patch.multa_pendente_valor) > 0);
+});
+
+Deno.test("P29 j) linha já cancelada → mesmo comportamento (reused, sem fail-closed)", async () => {
+  const r = await cancel({ ...paidRow, status: "cancelado", asaas_subscription_id: null }, { customers: [], subs: [] });
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, true);
+  assertEquals(r.charges, 0);
+});

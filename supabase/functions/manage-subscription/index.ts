@@ -24,6 +24,8 @@ import {
 } from "./provider-discovery.ts";
 
 /** Única mensagem quando não dá para confirmar o cancelamento no Asaas. */
+export const SUBSCRIPTION_NOT_CONFIRMED_MESSAGE =
+  "Não conseguimos confirmar a sua assinatura no sistema de pagamento, então ainda não cancelamos para você não continuar sendo cobrado. Tente de novo em alguns minutos.";
 export const CANCEL_UNVERIFIED_MESSAGE =
   "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.";
 
@@ -769,14 +771,32 @@ Deno.serve(async (req) => {
       // usuário continua no Asaas. Teste sem cartão (sem checkout, cliente nem
       // assinatura) cancela como antes, sem chamar o Asaas.
       // Devolve a resposta de erro (linha intacta) ou as assinaturas removidas.
-      const registeredWithProvider = !!(
+      // Evidência de que uma assinatura com cartão TEM de existir no Asaas
+      // (linha ainda não cancelada): checkout concluído, status ativo, ciclo
+      // pago/pagamento contado ou marcador de retomada paga.
+      const ctx = (assinatura.checkout_context ?? {}) as Record<string, unknown>;
+      const mustHaveSubscription = assinatura.status !== "cancelado" && (
+        ctx.completed === true ||
+        assinatura.status === "ativo" ||
+        Number(assinatura.ciclos_pagos ?? 0) > 0 ||
+        (Array.isArray(assinatura.counted_payment_ids) && assinatura.counted_payment_ids.length > 0) ||
+        !!ctx.resumePaidUntil
+      );
+      const registeredWithProvider = mustHaveSubscription || !!(
         assinatura.asaas_subscription_id || assinatura.asaas_checkout_id || assinatura.asaas_customer_id
       );
       const providerCleanup = async (): Promise<Response | { deleted: string[] }> => {
         if (!registeredWithProvider) return { deleted: [] };
         const unverified = (why: string) => {
-          console.error("cancel não confirmado no Asaas, linha intacta:", userId, why);
-          return json(502, { error: CANCEL_UNVERIFIED_MESSAGE, code: "cancel_unverified" });
+          console.error("cancel não confirmado no Asaas, linha intacta:", assinatura.id, why);
+          // `error` + `code` mantêm o aviso de falha na tela de Assinatura.
+          return json(200, {
+            ok: false,
+            reason: "provider_unavailable",
+            message: CANCEL_UNVERIFIED_MESSAGE,
+            error: CANCEL_UNVERIFIED_MESSAGE,
+            code: "cancel_unverified",
+          });
         };
         if (!asaasKey) return unverified(`${asaasKeyName()} ausente`);
         const email = await accountEmail();
@@ -787,13 +807,42 @@ Deno.serve(async (req) => {
           return unverified(`customers: ${err instanceof Error ? err.message : String(err)}`);
         }
         if (!email && !customerIds.length && !subId) return unverified("sem e-mail, cliente ou assinatura para verificar");
+        // 1c: linha com evidência e sem vínculo → tenta descobrir a assinatura
+        // do checkout (cliente, CPF/CNPJ, sessão) antes de desistir.
+        let knownId = subId;
+        let discovered = false;
+        if (!knownId && mustHaveSubscription) {
+          const ids = await discoverCheckoutBinding(assinatura, assinatura.asaas_customer_id as string | null, async (path) => {
+            const result = await fetchAsaas(path);
+            return { ok: result.ok, data: result.json };
+          }, undefined, boundElsewhereIn(supabaseAdmin, assinatura.id));
+          if (ids) {
+            knownId = ids.asaas_subscription_id;
+            discovered = true;
+            if (!customerIds.includes(ids.asaas_customer_id)) customerIds.push(ids.asaas_customer_id);
+          }
+        }
         const outcome = await cancelProviderSubscriptions(fetchAsaas, {
           userId,
-          knownSubscriptionId: subId,
+          knownSubscriptionId: knownId,
           customerIds,
         });
         if (!outcome.ok) return unverified(outcome.reason);
-        console.log("cancel: Asaas confirmado sem assinatura viva", userId, JSON.stringify({ customerIds, deleted: outcome.deleted }));
+        // Fail-closed: havia assinatura com cartão e nada foi removido nem
+        // confirmado como inexistente → não cancela, não gera multa.
+        if (mustHaveSubscription && outcome.deleted.length === 0 && !(knownId && outcome.knownGone)) {
+          console.error("ALERTA cancel: assinatura não confirmada no Asaas, linha intacta", assinatura.id, JSON.stringify({
+            vinculada: subId ? 1 : 0, descoberta: discovered ? 1 : 0, clientes: customerIds.length, removidas: 0,
+          }));
+          return json(200, {
+            ok: false,
+            reason: "subscription_not_confirmed",
+            message: SUBSCRIPTION_NOT_CONFIRMED_MESSAGE,
+            error: SUBSCRIPTION_NOT_CONFIRMED_MESSAGE,
+          });
+        }
+        if (!subId && knownId && outcome.deleted.includes(knownId)) subId = knownId;
+        console.log("cancel: Asaas confirmado sem assinatura viva", assinatura.id, JSON.stringify({ clientes: customerIds.length, deleted: outcome.deleted }));
         return { deleted: outcome.deleted };
       };
 

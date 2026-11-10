@@ -383,7 +383,7 @@ Deno.test("pay_penalty: Asaas recusa criar a cobrança → cobranca_indisponivel
 });
 
 // ── P26-fix1: cancelamento repetido ainda limpa o Asaas ──────────────────────
-const UNVERIFIED = { error: "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.", code: "cancel_unverified" };
+const UNVERIFIED = { ok: false, reason: "provider_unavailable", message: "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.", error: "Não conseguimos confirmar o cancelamento agora e, por isso, nada foi alterado. Tente de novo em instantes.", code: "cancel_unverified" };
 const deletes = (w: World) => w.calls.filter((c) => c.method === "DELETE" && c.path.startsWith("/subscriptions/")).map((c) => c.path.split("/").pop());
 
 Deno.test("fix1: já cancelada com assinatura viva sobrando no Asaas → removida, sem nova cobrança, multa gravada devolvida", async () => {
@@ -413,14 +413,14 @@ Deno.test("fix1: já cancelada sem nada a limpar → nada removido, sem cobranç
   assertEquals(w.row, before);
 });
 
-Deno.test("fix1: já cancelada e limpeza não confirmada → mesmo 502 do 1º cancelamento, linha intacta", async () => {
+Deno.test("fix1: já cancelada e limpeza não confirmada → mesmo provider_unavailable do 1º cancelamento, linha intacta", async () => {
   const first = await cancel(world({}, { deleteSubStatus: 503 }));
   const w = world(pendingRow("pay_x"), { deleteSubStatus: 503 });
   const before = structuredClone(w.row);
   const r = await cancel(w);
-  assertEquals(r.status, 502);
+  assertEquals(r.status, 200);
   assertEquals(r.data, UNVERIFIED);
-  assertEquals(first.status, 502);
+  assertEquals(first.status, 200);
   assertEquals(r.data, first.data, "mesmo resultado do primeiro cancelamento");
   assertEquals(posts(w).length, 0);
   assertEquals(w.row, before);

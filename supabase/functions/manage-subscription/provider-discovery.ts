@@ -69,7 +69,7 @@ export async function customerIdsForUser(
 }
 
 export type CancelOutcome =
-  | { ok: true; deleted: string[]; customerIds: string[] }
+  | { ok: true; deleted: string[]; customerIds: string[]; knownGone: boolean }
   | { ok: false; reason: string; deleted: string[] };
 
 /**
@@ -99,7 +99,16 @@ export async function cancelProviderSubscriptions(
     return live;
   };
   try {
-    if (args.knownSubscriptionId) await remove(args.knownSubscriptionId);
+    // 1a: consulta a assinatura vinculada antes de remover. 404 ou deleted
+    // (ou status que já não cobra) = já não existe no Asaas, verificado.
+    let knownGone = false;
+    if (args.knownSubscriptionId) {
+      const res = await fetchAsaas(`/subscriptions/${encodeURIComponent(args.knownSubscriptionId)}`);
+      if (res.status === 404) knownGone = true;
+      else if (!res.ok) throw new Error(`lookup_failed:${args.knownSubscriptionId}:${res.status}`);
+      else if (isLiveSubscription(res.json as AsaasSubscription)) await remove(args.knownSubscriptionId);
+      else knownGone = true;
+    }
     for (const id of await ownLive()) if (!deleted.includes(id)) await remove(id);
 
     // Verificação: relista tudo antes de liberar a mudança local.
@@ -114,7 +123,7 @@ export async function cancelProviderSubscriptions(
         }
       }
     }
-    return { ok: true, deleted, customerIds: args.customerIds };
+    return { ok: true, deleted, customerIds: args.customerIds, knownGone };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err), deleted };
   }
