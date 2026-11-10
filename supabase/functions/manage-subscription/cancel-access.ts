@@ -47,3 +47,25 @@ export function decideCancelAccess(row: CancelAccessRow, now: Date = new Date())
   const nowIso = now.toISOString();
   return { isTrial: true, accessUntil: nowIso, dataVencimento: nowIso, endsNow: true };
 }
+
+/**
+ * Evidência de que a linha (não cancelada) passou por um checkout pago e,
+ * portanto, TEM de existir uma assinatura com cartão no Asaas: checkout
+ * concluído, status ativo, ciclo pago/pagamento contado ou marcador de
+ * retomada paga. Usada pelo cancelamento fail-closed e pelo change_plan.
+ */
+export function hasPaidCheckoutEvidence(row: {
+  status: string | null;
+  checkout_context?: unknown;
+  ciclos_pagos?: number | null;
+  counted_payment_ids?: string[] | null;
+}): boolean {
+  const ctx = (row.checkout_context ?? {}) as Record<string, unknown>;
+  return row.status !== "cancelado" && (
+    ctx.completed === true ||
+    row.status === "ativo" ||
+    Number(row.ciclos_pagos ?? 0) > 0 ||
+    (Array.isArray(row.counted_payment_ids) && row.counted_payment_ids.length > 0) ||
+    !!ctx.resumePaidUntil
+  );
+}

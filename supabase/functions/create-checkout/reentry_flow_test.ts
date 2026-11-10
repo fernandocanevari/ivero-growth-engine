@@ -69,7 +69,7 @@ async function run(row: Record<string, unknown>, opts: { cancelOk?: boolean; bod
     const checkout = calls.find((c) => c.method === "POST" && c.url.endsWith("/api/v3/checkouts"));
     const patch = calls.find((c) => c.method === "PATCH" && c.url.includes("/rest/v1/assinaturas"))?.body;
     const cancelCalls = calls.filter((c) => c.url.includes("/cancel")).length;
-    return { status: response.status, data: await response.json(), checkout, patch, cancelCalls };
+    return { status: response.status, data: await response.json(), checkout, patch, cancelCalls, calls };
   } finally {
     globalThis.fetch = originalFetch;
     console.log = originalLog;
@@ -368,6 +368,39 @@ Deno.test("FIX2 c) teste cancelado com data_vencimento = cadastro + 30 dias (fut
   assertEquals(ended.patch.status, "pendente");
   assertEquals(ended.patch.checkout_context.resumePaidUntil, undefined);
 });
+
+// ── Assinatura viva vinculada nunca recebe a cobrança recorrente como checkout ──
+const liveRow = (status: string) => ({
+  id: "row-live", user_id: "user-1", status, plano: "presenca", ciclo_contratado: "mensal",
+  trial_ends_at: at(3 * DAY), data_vencimento: at(20 * DAY), ciclos_pagos: status === "ativo" ? 1 : 0, counted_payment_ids: [],
+  asaas_subscription_id: "sub_live", asaas_customer_id: "cus_live", asaas_checkout_id: null, checkout_context: null,
+});
+const recurringLookups = (urls: string[]) => urls.filter((u) => u.includes("/api/v3/payments?subscription="));
+
+for (const status of ["ativo", "inadimplente"]) {
+  Deno.test(`g') ${status} com assinatura vinculada e mesmo plano → 409, sem invoiceUrl e sem buscar a cobrança recorrente`, async () => {
+    {
+      const r = await run(liveRow(status));
+      assertEquals(r.status, 409);
+      assertEquals(r.data.error, "assinatura_ativa_use_troca_de_plano");
+      assertEquals(r.data.checkoutUrl, undefined);
+      assertEquals(r.data.invoiceUrl, undefined);
+      assertEquals(r.checkout, undefined);
+      assertEquals(recurringLookups(r.calls.map((c) => c.url)).length, 0);
+    }
+  });
+}
+
+for (const status of ["pendente", "trial"]) {
+  Deno.test(`g') ${status} com assinatura vinculada → reaproveitamento inalterado (reused, busca a cobrança PENDING)`, async () => {
+    {
+      const r = await run(liveRow(status));
+      assertEquals(r.status, 200);
+      assertEquals([r.data.reused, r.data.status], [true, status]);
+      assertEquals(recurringLookups(r.calls.map((c) => c.url)).length, 1);
+    }
+  });
+}
 
 Deno.test("restaura o ambiente do processo de teste", () => {
   envNames.forEach((key, i) => {

@@ -4,7 +4,7 @@ import { bindCheckoutIds, boundElsewhereIn, discoverCheckoutBinding } from "../_
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { decideProration, listProrationPayments, prorationDay } from "../_shared/proration.ts";
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
-import { decideCancelAccess } from "./cancel-access.ts";
+import { decideCancelAccess, hasPaidCheckoutEvidence } from "./cancel-access.ts";
 import { handlePayPenalty } from "./penalty.ts";
 import {
   calcularMultaCancelamento,
@@ -448,6 +448,17 @@ Deno.serve(async (req) => {
       // cobrança correta nasce depois, no create-checkout. Antes tentamos o
       // auto-vínculo — a linha pode estar órfã por falha de webhook.
       if (!(await resolveSubId())) {
+        // Linha com evidência de checkout pago TEM assinatura no Asaas: sem
+        // confirmá-la, nada muda (a troca local promoveria o plano de graça).
+        if (hasPaidCheckoutEvidence(assinatura)) {
+          console.error("ALERTA change_plan: assinatura não confirmada no Asaas", assinatura.id);
+          return json(200, {
+            ok: false,
+            reason: "assinatura_nao_confirmada",
+            message:
+              "Não conseguimos confirmar a sua assinatura no sistema de pagamento agora, então ainda não trocamos o plano. Tente de novo em alguns minutos.",
+          });
+        }
         const { error } = await supabaseAdmin
           .from("assinaturas")
           .update({ plano, ciclo_contratado: ciclo, ...snapshotDesconto(assinatura) })
@@ -789,14 +800,7 @@ Deno.serve(async (req) => {
       // Evidência de que uma assinatura com cartão TEM de existir no Asaas
       // (linha ainda não cancelada): checkout concluído, status ativo, ciclo
       // pago/pagamento contado ou marcador de retomada paga.
-      const ctx = (assinatura.checkout_context ?? {}) as Record<string, unknown>;
-      const mustHaveSubscription = assinatura.status !== "cancelado" && (
-        ctx.completed === true ||
-        assinatura.status === "ativo" ||
-        Number(assinatura.ciclos_pagos ?? 0) > 0 ||
-        (Array.isArray(assinatura.counted_payment_ids) && assinatura.counted_payment_ids.length > 0) ||
-        !!ctx.resumePaidUntil
-      );
+      const mustHaveSubscription = hasPaidCheckoutEvidence(assinatura);
       const registeredWithProvider = mustHaveSubscription || !!(
         assinatura.asaas_subscription_id || assinatura.asaas_checkout_id || assinatura.asaas_customer_id
       );

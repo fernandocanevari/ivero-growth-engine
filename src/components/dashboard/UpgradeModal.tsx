@@ -180,6 +180,16 @@ export function UpgradeModal({
       });
       return;
     }
+    if (data?.ok === false && data?.reason === "assinatura_nao_confirmada") {
+      toast({
+        title: "Não foi possível concluir",
+        description:
+          (data?.message as string) ??
+          "Não conseguimos confirmar a sua assinatura no sistema de pagamento agora, então ainda não trocamos o plano. Tente de novo em alguns minutos.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (data?.ok === false) {
       // Condição de negócio (ex.: assinatura cancelada) → segue pro checkout.
       throw new Error(
@@ -238,8 +248,10 @@ export function UpgradeModal({
       // 2) TRIAL em curso sem vínculo no provedor, quando o intent não é
       //    "contratar" — troca local e gratuita.
       // Cancelado e trial expirado seguem sendo contratação real → checkout.
+      // O servidor decide: o vínculo em memória pode estar desatualizado
+      // (resolveSubId pode ter vinculado a assinatura depois do carregamento).
       const hasLivePaidSubscription =
-        hasAsaasSubscription && (effectiveStatus === "ativo" || effectiveStatus === "inadimplente");
+        effectiveStatus === "ativo" || effectiveStatus === "inadimplente";
       const canChangePlan =
         !isAdmin &&
         (hasLivePaidSubscription ||

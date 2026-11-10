@@ -203,6 +203,21 @@ Deno.serve(async (req) => {
           plano_atual: existing.plano,
         }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      // Assinatura PAGA viva (ativo/inadimplente) com vínculo: a cobrança
+      // PENDING é a próxima mensalidade recorrente, nunca um link de checkout.
+      // Faturamento consolidado da agência fica fora.
+      if (
+        !body?.agency &&
+        (existing.status === "ativo" || existing.status === "inadimplente") &&
+        existing.asaas_subscription_id
+      ) {
+        console.log("create-checkout: assinatura viva vinculada — sem reaproveitar cobrança recorrente", existing.id, existing.status);
+        return new Response(JSON.stringify({
+          error: "assinatura_ativa_use_troca_de_plano",
+          message: "Você já tem uma assinatura ativa. A mudança de plano é feita pela troca de plano, com cobrança só da diferença.",
+          plano_atual: existing.plano,
+        }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       // Mesmo plano → devolve o checkout da cobrança pendente existente (se houver).
       let checkoutUrl = "";
       if (existing.asaas_subscription_id) {

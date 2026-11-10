@@ -603,3 +603,53 @@ Deno.test("i) resolveSubId: linha ativa sem id continua buscando o vínculo como
   await call(w, { action: "list_invoices" });
   assert(w.calls.some((c) => c.url.includes("sandbox.asaas.com") && c.url.includes("/subscriptions?customer=cus_test")));
 });
+
+// ── change_plan sem assinatura confirmada no Asaas ────────────────────────────
+Deno.test("a') ativo com evidência de checkout pago e resolveSubId nulo → assinatura_nao_confirmada, nada escrito, zero Asaas, ALERTA", async () => {
+  const w = world({
+    plano: "influencia", plano_pretendido: "autoridade", ciclo_contratado: "anual", ciclos_pagos: 0, counted_payment_ids: [],
+    asaas_subscription_id: null, asaas_customer_id: null, asaas_checkout_id: null, checkout_context: { completed: true },
+  });
+  const r = await upgrade(w, "autoridade", "anual");
+  assertEquals(r.status, 200);
+  assertEquals([r.data.ok, r.data.reason], [false, "assinatura_nao_confirmada"]);
+  assertEquals(r.data.message, "Não conseguimos confirmar a sua assinatura no sistema de pagamento agora, então ainda não trocamos o plano. Tente de novo em alguns minutos.");
+  assertEquals(w.row.plano, "influencia");
+  assertEquals(w.patches.length, 0);
+  assertEquals(w.calls.filter((c) => c.url.includes("/rest/v1/assinaturas") && c.method !== "GET").length, 0);
+  assertEquals(w.calls.filter((c) => c.url.includes("sandbox.asaas.com")).length, 0);
+  const alerta = w.errors.filter((l) => l.startsWith("ALERTA change_plan:"));
+  assertEquals(alerta.length, 1);
+  assert(alerta[0].includes(ROW_ID) && !alerta[0].includes("@") && !alerta[0].includes("test-user"));
+});
+
+Deno.test("b') trial sem cartão e sem id → mode local exatamente como antes", async () => {
+  const w = world({
+    status: "trial", trial_ends_at: new Date(Date.now() + 3 * DAY).toISOString(), ciclos_pagos: 0, counted_payment_ids: [],
+    asaas_subscription_id: null, asaas_customer_id: null, asaas_checkout_id: null, checkout_context: null,
+  });
+  const r = await upgrade(w, "influencia", "mensal");
+  assertEquals(r.data, { ok: true, success: true, mode: "local", plano: "influencia", ciclo: "mensal" });
+  assertEquals(w.row.plano, "influencia");
+  assertEquals(w.calls.filter((c) => c.url.includes("sandbox.asaas.com")).length, 0);
+});
+
+Deno.test("c') reativada adiantada Influência → Autoridade (Asaas 1197, PENDING 1197 em ~61 dias) → avulsa de R$ 480", async () => {
+  const w = world({ plano: "influencia", plano_pretendido: "autoridade", ciclo_contratado: "anual", ciclos_pagos: 0, counted_payment_ids: [] });
+  w.sub.value = 1197;
+  w.sub.nextDueDate = plusDays(61);
+  w.subPayments = [{ id: "pay_first", status: "PENDING", dueDate: plusDays(61), value: 1197, description: null }];
+  const r = await upgrade(w, "autoridade", "anual");
+  assertEquals(r.data.mode, "pending_payment");
+  assertEquals(r.data.diferenca, 480);
+  assertEquals(posts(w).length, 1);
+  const post = posts(w)[0].body;
+  assertEquals([post.billingType, post.value], ["CREDIT_CARD", 480]);
+  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para autoridade (30 dia(s) restantes do ciclo atual)");
+  assertMatch(post.externalReference, new RegExp(`^prorata:${ROW_ID}:autoridade:\\d+$`));
+  const created = [...w.charges.values()][0];
+  assertEquals(r.data.invoiceUrl, created.invoiceUrl);
+  assert(r.data.invoiceUrl !== undefined && !String(r.data.invoiceUrl).includes("pay_first"));
+  assertEquals(w.row.plano, "influencia");
+  assertEquals(puts(w).length, 0);
+});

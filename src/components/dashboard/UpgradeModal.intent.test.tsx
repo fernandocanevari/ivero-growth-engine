@@ -224,4 +224,34 @@ describe("UpgradeModal — roteamento por intenção", () => {
       expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
     });
   }
+
+  it("ativo com vínculo ainda não carregado (hasAsaasSubscription=false) chama change_plan, nunca create-checkout", async () => {
+    statusMock = { ...PAGANTE, hasAsaasSubscription: false };
+    invoke.mockResolvedValue({ data: { ok: true, mode: "pending_payment", planoPendente: "influencia", diferenca: 480 }, error: null });
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    await clickPlano(/Ampliar influência/i);
+    await waitFor(() => expect(invoke).toHaveBeenCalled());
+    const [fn, opts] = invoke.mock.calls[0] as [string, { body: Record<string, unknown> }];
+    expect(fn).toBe("manage-subscription");
+    expect(opts.body.action).toBe("change_plan");
+    expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
+    expect(window.location.href).toBe("");
+  });
+
+  it("assinatura_nao_confirmada: toast destrutivo com a mensagem do servidor e modal aberto", async () => {
+    const message = "Não conseguimos confirmar a sua assinatura no sistema de pagamento agora, então ainda não trocamos o plano. Tente de novo em alguns minutos.";
+    statusMock = { ...PAGANTE, hasAsaasSubscription: false };
+    invoke.mockResolvedValue({ data: { ok: false, reason: "assinatura_nao_confirmada", message }, error: null });
+    const onOpenChange = vi.fn();
+    render(<UpgradeModal open onOpenChange={onOpenChange} />);
+    await clickPlano(/Ampliar influência/i);
+    await waitFor(() => expect(toastMock).toHaveBeenCalled());
+    expect(toastMock).toHaveBeenCalledTimes(1);
+    const arg = toastMock.mock.calls[0][0] as { description: string; variant?: string };
+    expect(arg.description).toBe(message);
+    expect(arg.variant).toBe("destructive");
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(invoke.mock.calls.some(([n]) => n === "create-checkout")).toBe(false);
+    expect(window.location.href).toBe("");
+  });
 });
