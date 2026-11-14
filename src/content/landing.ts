@@ -33,7 +33,7 @@ export const HERO = {
     pill3: "💡 plano de ação",
     p4: "pra virar referência.",
   },
-  inputPlaceholder: "Ex.: www.suaempresa.com.br",
+  inputPlaceholder: "www.suamarca.com.br",
   ctaLabel: "Descobrir minha visibilidade agora",
   note: "Diagnóstico instantâneo. Sem cadastro, sem enrolação.",
 } as const;
