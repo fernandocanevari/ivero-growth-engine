@@ -42,7 +42,7 @@ import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
 import { formatDateBR } from "@/lib/date-display";
-import { nextChargeStatusLabel } from "@/lib/billing-display";
+import { nextChargeStatusLabel, upgradePendingDueDay } from "@/lib/billing-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -84,7 +84,19 @@ function AssinaturaPageContent() {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
     cicloContratado, ciclosPagos, compromissoMeses, carenciaAte, isPaid, multaPendente,
+    upgradePendente, planoPretendido,
   } = useSubscriptionStatus();
+  // Pedido de upgrade aguardando a diferença: só para conta individual ativa,
+  // dentro do prazo e com link de pagamento.
+  const upgradeDueDay =
+    effectiveStatus === "ativo" && upgradePendente?.invoiceUrl ? upgradePendingDueDay(upgradePendente.em) : null;
+  const upgradeCard = upgradeDueDay && upgradePendente
+    ? {
+      ...upgradePendente,
+      dueDay: upgradeDueDay,
+      name: PLANOS[upgradePendente.plano as keyof typeof PLANOS]?.name ?? upgradePendente.plano,
+    }
+    : null;
   // P26: multa de cancelamento em aberto bloqueia "Reativar plano".
   const penaltyBlocksReactivation = status === "cancelado" && !!multaPendente;
   const [payingPenalty, setPayingPenalty] = useState(false);
@@ -377,6 +389,35 @@ function AssinaturaPageContent() {
 
       {isOverdue && overdue && (
         <OverdueNoticeView overdue={overdue} carenciaAte={carenciaAte} inGrace={overdueInGrace} />
+      )}
+
+      {upgradeCard && (
+        <Card className="p-6 border-primary/30 bg-primary/5" data-testid="upgrade-pending-card">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="space-y-2 min-w-0">
+              <h2 className="font-display text-lg font-bold text-foreground">
+                Upgrade para {upgradeCard.name} em andamento
+              </h2>
+              <p className="text-sm text-foreground">
+                Falta pagar R$ {upgradeCard.diferenca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} até {formatDateBR(upgradeCard.dueDay).slice(0, 5)} para liberar o {upgradeCard.name} agora.
+              </p>
+              {planoPretendido === upgradeCard.plano && ciclosPagos === 0 && dataVencimento && (
+                <p className="text-sm text-foreground">
+                  Se preferir esperar, o {upgradeCard.name} começa sozinho em {formatDateBR(dataVencimento).slice(0, 5)}, na primeira cobrança.
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Se o pagamento não for feito até lá, o pedido expira e você continua no plano {planoInfo?.name ?? "atual"}.
+              </p>
+            </div>
+            <Button
+              className="shrink-0"
+              onClick={() => window.open(upgradeCard.invoiceUrl as string, "_blank", "noopener")}
+            >
+              Pagar diferença
+            </Button>
+          </div>
+        </Card>
       )}
 
       {/* Top: Plano atual + Próxima cobrança */}

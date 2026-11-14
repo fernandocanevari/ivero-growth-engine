@@ -24,6 +24,11 @@ interface AssinaturaRow {
   multa_pendente_payment_id?: string | null;
   multa_pendente_invoice_url?: string | null;
   multa_ultimo_payment_id?: string | null;
+  plano_pretendido?: string | null;
+  upgrade_pendente_plano?: string | null;
+  upgrade_pendente_diferenca?: number | null;
+  upgrade_pendente_invoice_url?: string | null;
+  upgrade_pendente_em?: string | null;
 }
 
 
@@ -89,7 +94,8 @@ export function useSubscriptionStatus() {
       .select(
         "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id, " +
           "ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, " +
-          "multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_ultimo_payment_id",
+          "multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_ultimo_payment_id, " +
+          "plano_pretendido, upgrade_pendente_plano, upgrade_pendente_diferenca, upgrade_pendente_invoice_url, upgrade_pendente_em",
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -256,6 +262,17 @@ export function useSubscriptionStatus() {
         valor: Number(assinatura!.multa_pendente_valor),
         ciclos: Number(assinatura!.multa_pendente_ciclos ?? 0),
         invoiceUrl: assinatura!.multa_pendente_invoice_url ?? null,
+      }
+      : null,
+    /** Plano pedido para o próximo ciclo (somente leitura). */
+    planoPretendido: assinatura?.plano_pretendido ?? null,
+    /** Pedido de upgrade aguardando pagamento da diferença (somente leitura). null = nenhum. */
+    upgradePendente: assinatura?.upgrade_pendente_plano
+      ? {
+        plano: assinatura.upgrade_pendente_plano,
+        diferenca: Number(assinatura.upgrade_pendente_diferenca ?? 0),
+        invoiceUrl: assinatura.upgrade_pendente_invoice_url ?? null,
+        em: assinatura.upgrade_pendente_em ?? null,
       }
       : null,
     /** Recarrega a assinatura do banco (usado após upgrade/retorno de checkout). */

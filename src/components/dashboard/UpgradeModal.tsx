@@ -93,7 +93,17 @@ export function UpgradeModal({
   const { isAgency, isLoading: accountLoading } = useAccountType();
   const go = useSafeNavigate();
   // Default do toggle segue o ciclo real do cliente — nunca assume "anual".
-  const [isAnnual, setIsAnnual] = useState(false);
+  const [isAnnualPicked, setIsAnnual] = useState(false);
+  // Contrato anual vivo: o servidor ignora o ciclo enviado, então não há seletor.
+  const lockAnnual =
+    !isLoading &&
+    (effectiveStatus === "ativo" || effectiveStatus === "inadimplente") &&
+    cicloContratado === "anual";
+  const isAnnual = lockAnnual || isAnnualPicked;
+  // Confirmação do pedido de upgrade (substitui toast + abertura automática).
+  const [upgradeConfirm, setUpgradeConfirm] = useState<{
+    title: string; planName: string; currentName: string; diferenca: number; dueDate: string | null; invoiceUrl: string;
+  } | null>(null);
   // Escolha manual do cliente nunca é sobrescrita pela sincronização tardia.
   const userPickedCiclo = useRef(false);
   // Ressincroniza a cada abertura do modal (e quando o dado da assinatura chega),
@@ -140,6 +150,18 @@ export function UpgradeModal({
     return "Próximo passo";
   };
 
+  const planNameOf = (key: unknown) => PLANOS_ARRAY.find((p) => p.key === key)?.name;
+  const showUpgradeConfirm = (data: Record<string, unknown>, planName: string, title: string) => {
+    setUpgradeConfirm({
+      title,
+      planName: planNameOf(data.planoPendente) ?? planName,
+      currentName: planNameOf(data.plano) ?? planNameOf(plano) ?? "atual",
+      diferenca: Number(data.diferenca ?? 0),
+      dueDate: (data.dueDate as string | null | undefined) ?? null,
+      invoiceUrl: data.invoiceUrl as string,
+    });
+  };
+
   /** Troca de plano sem checkout (trial local ou assinatura viva no provedor). */
   const changePlanLocalOrProvider = async (planKey: PlanoSugerido, planName: string) => {
     const { data, error } = await supabase.functions.invoke("manage-subscription", {
@@ -159,11 +181,16 @@ export function UpgradeModal({
       return;
     }
     if (data?.ok === false && data?.reason === "pedido_em_andamento") {
+      if (data?.invoiceUrl) {
+        showUpgradeConfirm(data, planName, "Você já tem um pedido em andamento");
+        return;
+      }
       toast({
         title: "Pedido em andamento",
-        description:
+        description: `${
           (data?.message as string) ??
-          "Já existe um pedido de mudança de plano sendo processado. Aguarde alguns instantes e tente de novo.",
+          "Já existe um pedido de mudança de plano sendo processado. Aguarde alguns instantes e tente de novo."
+        } Você acompanha o pedido na página Assinatura.`,
       });
       return;
     }
@@ -199,16 +226,14 @@ export function UpgradeModal({
     }
     // P25b: o plano novo só vale depois do pagamento da diferença.
     if (data?.mode === "pending_payment") {
-      const pendingKey = data?.planoPendente as string | undefined;
-      const pendingName = PLANOS_ARRAY.find((p) => p.key === pendingKey)?.name ?? planName;
-      const diferenca = Number(data?.diferenca ?? 0).toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-      toast({
-        description: `Pedido registrado. O plano ${pendingName} será liberado assim que o pagamento da diferença de R$ ${diferenca} for confirmado. Você continua no seu plano atual.`,
-      });
-      if (data?.invoiceUrl) window.open(data.invoiceUrl as string, "_blank", "noopener");
+      if (data?.invoiceUrl) {
+        showUpgradeConfirm(data, planName, data?.reused ? "Você já tem um pedido em andamento" : "Pedido registrado");
+      } else {
+        toast({
+          title: data?.reused ? "Você já tem um pedido em andamento" : "Pedido registrado",
+          description: "Acompanhe e pague a diferença pela página Assinatura.",
+        });
+      }
       onPlanChanged?.();
       onOpenChange(false);
       return;
@@ -350,6 +375,7 @@ export function UpgradeModal({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto p-0">
         {/* Header */}
@@ -362,10 +388,13 @@ export function UpgradeModal({
           <DialogDescription className="text-sm sm:text-base text-muted-foreground">
             {intent === "contratar"
               ? "Escolha o plano e finalize o pagamento para garantir que sua marca continue sendo vista pelas IAs que o mundo usa."
-              : "Escolha o novo plano. O ajuste vale a partir da sua próxima cobrança."}
+              : effectiveStatus === "ativo" || effectiveStatus === "inadimplente"
+                ? "Escolha o novo plano. Se for um plano maior, ele vale assim que você pagar a diferença dos dias que faltam."
+                : "Escolha o novo plano. O ajuste vale a partir da sua próxima cobrança."}
           </DialogDescription>
 
           {/* Mensal / Anual */}
+          {!lockAnnual && (
           <div className="pt-3">
             <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1">
               <button
@@ -395,6 +424,7 @@ export function UpgradeModal({
               </button>
             </div>
           </div>
+          )}
         </DialogHeader>
         {penaltyValor !== null && (
           <div className="px-6 pt-4 sm:px-8">
@@ -556,6 +586,36 @@ export function UpgradeModal({
       </DialogContent>
 
     </Dialog>
+    <Dialog open={upgradeConfirm !== null} onOpenChange={(o) => { if (!o) setUpgradeConfirm(null); }}>
+      {upgradeConfirm && (
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold">{upgradeConfirm.title}</DialogTitle>
+            <DialogDescription className="text-base text-foreground leading-relaxed">
+              Para liberar o plano {upgradeConfirm.planName} agora, você paga só a diferença dos dias que faltam:{" "}
+              R$ {upgradeConfirm.diferenca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {upgradeConfirm.dueDate ? `, até ${formatDateBR(upgradeConfirm.dueDate).slice(0, 5)}` : ""}. Vamos abrir a
+              página segura de pagamento, onde você digita o cartão. Até o pagamento ser confirmado, você continua no
+              plano {upgradeConfirm.currentName}, sem nenhuma outra cobrança.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button variant="outline" onClick={() => setUpgradeConfirm(null)}>
+              Pagar depois
+            </Button>
+            <Button
+              onClick={() => {
+                window.open(upgradeConfirm.invoiceUrl, "_blank", "noopener");
+                setUpgradeConfirm(null);
+              }}
+            >
+              Ir para o pagamento
+            </Button>
+          </div>
+        </DialogContent>
+      )}
+    </Dialog>
+    </>
   );
 }
 

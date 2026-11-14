@@ -25,3 +25,17 @@ export function nextChargeStatusLabel(invoice: { status: string; dueDate: string
   }
   return fallback;
 }
+/**
+ * Prazo do pedido de upgrade. Espelha UPGRADE_DUE_DAYS de
+ * supabase/functions/manage-subscription/index.ts (vencimento = dia de hoje em
+ * Brasília + 3 dias). Só exibição; o servidor é quem cria e expira o pedido.
+ */
+export const UPGRADE_DUE_DAYS_FRONT = 3;
+
+/** "YYYY-MM-DD" do vencimento do pedido, ou null quando já passou (hoje em Brasília). */
+export function upgradePendingDueDay(requestedAt: string | null | undefined, now = new Date()): string | null {
+  if (!requestedAt || !Number.isFinite(Date.parse(requestedAt))) return null;
+  const start = dayBR(requestedAt);
+  const due = new Date(Date.parse(`${start}T00:00:00Z`) + UPGRADE_DUE_DAYS_FRONT * 86_400_000).toISOString().slice(0, 10);
+  return due >= dayBR(now.toISOString()) ? due : null;
+}
