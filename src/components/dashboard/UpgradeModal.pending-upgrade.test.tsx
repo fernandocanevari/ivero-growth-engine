@@ -112,7 +112,14 @@ describe("subtítulo e seletor de ciclo", () => {
       expect(screen.queryByRole("button", { name: "Mensal" })).toBeNull();
     });
   }
-  for (const st of ["trial", "cancelado"]) {
+  it("(P37 5b) cancelado: título e subtítulo de reativação", () => {
+    statusMock = { ...ATIVO, effectiveStatus: "cancelado" };
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    expect(text()).toContain("Reativar plano");
+    expect(text()).toContain("Escolha o plano com que você quer voltar.");
+    expect(text()).not.toContain(OLD);
+  });
+  for (const st of ["trial"]) {
     it(`(g) ${st}: texto de hoje`, () => {
       statusMock = { ...ATIVO, effectiveStatus: st };
       render(<UpgradeModal open onOpenChange={() => {}} />);
@@ -134,5 +141,39 @@ describe("subtítulo e seletor de ciclo", () => {
     r2.unmount();
     render(<UpgradeModal open onOpenChange={() => {}} intent="contratar" />);
     expect(screen.getByRole("button", { name: "Mensal" })).toBeTruthy();
+  });
+});
+
+describe("P37 item 5", () => {
+  it("(5a) ativo: card do plano atual mostra 'Seu plano atual' sem botão", () => {
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    expect(screen.getByTestId("current-plan-label").textContent).toBe("Seu plano atual");
+    expect(screen.queryByRole("button", { name: /Garantir presença/i })).toBeNull();
+  });
+  for (const st of ["cancelado", "trial", "inadimplente"]) {
+    it(`(5a) ${st}: botão do plano atual continua`, () => {
+      statusMock = { ...ATIVO, effectiveStatus: st };
+      render(<UpgradeModal open onOpenChange={() => {}} />);
+      expect(screen.queryByTestId("current-plan-label")).toBeNull();
+      expect(screen.getByRole("button", { name: /Garantir presença/i })).toBeTruthy();
+    });
+  }
+  it("(5c) contrato anual: rodapé de compromisso", () => {
+    statusMock = { ...ATIVO, cicloContratado: "anual" };
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    expect(text()).toContain("Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional");
+    expect(text()).not.toContain("Sem contrato");
+  });
+  it("(5c) mensal: rodapé de hoje", () => {
+    render(<UpgradeModal open onOpenChange={() => {}} />);
+    expect(text()).toContain("Sem contrato · Cancele quando quiser");
+  });
+  it("(item 2) autoSelectPlan dispara o mesmo change_plan e abre 'Pedido registrado'", async () => {
+    invoke.mockResolvedValue({ data: PENDING, error: null });
+    render(<UpgradeModal open onOpenChange={() => {}} autoSelectPlan="influencia" />);
+    await screen.findByText("Pedido registrado");
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke.mock.calls[0][0]).toBe("manage-subscription");
+    expect((invoke.mock.calls[0][1] as { body: { action: string; plano: string } }).body).toMatchObject({ action: "change_plan", plano: "influencia" });
   });
 });

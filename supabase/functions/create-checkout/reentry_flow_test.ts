@@ -402,6 +402,29 @@ for (const status of ["pendente", "trial"]) {
   });
 }
 
+const brDMY = (day: string) => day.split("-").reverse().join("/");
+const OLD_MENSAL = "Plano presenca — mensalidade sem compromisso";
+
+Deno.test("P37 4) retomada paga: descrição do item ganha a frase com a data da 1ª cobrança; resto do item igual", async () => {
+  const row = paidCancelledRow();
+  const r = await run(row);
+  const item = r.checkout!.body.items[0];
+  const due = brDay(row.data_vencimento)!;
+  assertEquals(item.description, `${OLD_MENSAL} Nada é cobrado hoje. A primeira cobrança é em ${brDMY(due)}.`);
+  assertEquals(item.name, "Ivero — Plano Presença");
+  assertEquals(item.value, 497);
+  assertEquals(r.checkout!.body.subscription.nextDueDate, due);
+});
+
+Deno.test("P37 4) demais ramos: descrição exatamente igual à de antes", async () => {
+  const trial = await run(cancelledTrialRow(at(4 * DAY)));
+  assertEquals(trial.checkout!.body.items[0].description, OLD_MENSAL);
+  const expired = await run(cancelledTrialRow(at(-2 * DAY)));
+  assertEquals(expired.checkout!.body.items[0].description, OLD_MENSAL);
+  const today = await run(paidCancelledRow({ data_vencimento: endOfTodayBR() }));
+  assertEquals(today.checkout!.body.items[0].description, OLD_MENSAL);
+});
+
 Deno.test("restaura o ambiente do processo de teste", () => {
   envNames.forEach((key, i) => {
     const value = previousEnv[i];

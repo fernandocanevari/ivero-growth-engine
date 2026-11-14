@@ -66,6 +66,11 @@ interface UpgradeModalProps {
    * Default "trocar_plano" preserva o comportamento da página de Assinatura.
    */
   intent?: "contratar" | "trocar_plano";
+  /**
+   * Plano escolhido fora do modal ("Liberar o {plano} agora" na Assinatura):
+   * ao abrir, dispara o mesmo handleSelectPlan do clique no card desse plano.
+   */
+  autoSelectPlan?: PlanoSugerido | null;
 }
 
 export function UpgradeModal({
@@ -73,6 +78,7 @@ export function UpgradeModal({
   onOpenChange,
   onPlanChanged,
   intent = "trocar_plano",
+  autoSelectPlan = null,
 }: UpgradeModalProps) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   // P26: multa pendente devolvida pelo create-checkout (aviso fixo no modal).
@@ -150,6 +156,8 @@ export function UpgradeModal({
     return "Próximo passo";
   };
 
+  // Conta ativa: o card do plano atual não vira botão de compra.
+  const isCurrentActive = (key: PlanoSugerido) => !isLoading && effectiveStatus === "ativo" && key === plano;
   const planNameOf = (key: unknown) => PLANOS_ARRAY.find((p) => p.key === key)?.name;
   const showUpgradeConfirm = (data: Record<string, unknown>, planName: string, title: string) => {
     setUpgradeConfirm({
@@ -347,6 +355,16 @@ export function UpgradeModal({
     }
   };
 
+  // Dispara uma vez por abertura, só depois de o estado da conta carregar.
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (!open) { autoSelectedRef.current = false; return; }
+    if (!autoSelectPlan || autoSelectedRef.current || isLoading || accountLoading || isAgency) return;
+    autoSelectedRef.current = true;
+    void handleSelectPlan(autoSelectPlan, planNameOf(autoSelectPlan) ?? autoSelectPlan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoSelectPlan, isLoading, accountLoading, isAgency]);
+
   if (isAgency) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -383,11 +401,15 @@ export function UpgradeModal({
           <DialogTitle className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
             {intent === "contratar"
               ? "Assine seu plano e mantenha o acesso"
-              : "Trocar de plano"}
+              : effectiveStatus === "cancelado"
+                ? "Reativar plano"
+                : "Trocar de plano"}
           </DialogTitle>
           <DialogDescription className="text-sm sm:text-base text-muted-foreground">
             {intent === "contratar"
               ? "Escolha o plano e finalize o pagamento para garantir que sua marca continue sendo vista pelas IAs que o mundo usa."
+              : effectiveStatus === "cancelado"
+                ? "Escolha o plano com que você quer voltar."
               : effectiveStatus === "ativo" || effectiveStatus === "inadimplente"
                 ? "Escolha o novo plano. Se for um plano maior, ele vale assim que você pagar a diferença dos dias que faltam."
                 : "Escolha o novo plano. O ajuste vale a partir da sua próxima cobrança."}
@@ -556,6 +578,14 @@ export function UpgradeModal({
                       O plano {plan.name} começa nessa data.
                     </p>
                   )}
+                  {isCurrentActive(plan.key) ? (
+                    <div
+                      className="mt-auto w-full rounded-md border border-border bg-muted px-3 py-2 text-center text-xs font-medium text-muted-foreground"
+                      data-testid="current-plan-label"
+                    >
+                      Seu plano atual
+                    </div>
+                  ) : (
                   <Button
                     variant={highlighted ? "default" : "outline"}
                     size="sm"
@@ -574,13 +604,16 @@ export function UpgradeModal({
                       CTA_BY_PLAN[plan.key]
                     )}
                   </Button>
+                  )}
                 </motion.div>
               );
             })}
           </div>
 
           <p className="text-center text-[11px] text-muted-foreground mt-6">
-            ✦ Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser
+            {lockAnnual
+              ? "✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional"
+              : "✦ Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser"}
           </p>
         </div>
       </DialogContent>

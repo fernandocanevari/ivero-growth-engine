@@ -22,6 +22,21 @@ const PLAN_LABELS: Record<string, string> = {
   autoridade: "Ivero — Plano Autoridade",
 };
 
+/** Limite usado para a descrição do item do checkout (texto exibido ao cliente). */
+const ITEM_DESCRIPTION_MAX = 150;
+
+/**
+ * Só a retomada paga com dias restantes (1ª cobrança no futuro) recebe a frase;
+ * sem data, devolve a descrição original intacta.
+ */
+export function resumeItemDescription(base: string, resumeDueDay: string | null): string {
+  if (!resumeDueDay) return base;
+  const [y, m, d] = resumeDueDay.slice(0, 10).split("-");
+  const sentence = `Nada é cobrado hoje. A primeira cobrança é em ${d}/${m}/${y}.`;
+  const combined = base ? `${base} ${sentence}` : sentence;
+  return combined.length > ITEM_DESCRIPTION_MAX ? sentence : combined;
+}
+
 interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
@@ -402,11 +417,14 @@ Deno.serve(async (req) => {
           name: agencyQuote
             ? `Ivero — Agência (${agencyQuote.items.length} marcas)`
             : PLAN_LABELS[plano] ?? `Ivero — Plano ${plano}`,
-          description: agencyQuote
-            ? `${agencyQuote.items.length} marcas${agencyQuote.discountPct ? ` com ${agencyQuote.discountPct}% de desconto por volume` : ""}`
-            : ciclo === "anual"
-              ? `Plano ${plano} — mensalidade promocional com compromisso de ${COMPROMISSO_MESES} meses`
-              : `Plano ${plano} — mensalidade sem compromisso`,
+          description: resumeItemDescription(
+            agencyQuote
+              ? `${agencyQuote.items.length} marcas${agencyQuote.discountPct ? ` com ${agencyQuote.discountPct}% de desconto por volume` : ""}`
+              : ciclo === "anual"
+                ? `Plano ${plano} — mensalidade promocional com compromisso de ${COMPROMISSO_MESES} meses`
+                : `Plano ${plano} — mensalidade sem compromisso`,
+            resume?.isPaid ? nextDueDate : null,
+          ),
           quantity: 1,
           value,
         },

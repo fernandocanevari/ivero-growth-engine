@@ -85,6 +85,8 @@ import {
 const ASAAS_BASE_URL = asaasBaseUrl();
 
 const PLANOS_VALIDOS = ["presenca", "influencia", "autoridade"];
+/** Nome do plano como o cliente vê (descrição da cobrança da diferença). */
+const PLAN_DISPLAY_NAMES: Record<string, string> = { presenca: "Presença", influencia: "Influência", autoridade: "Autoridade" };
 
 type Plano = "presenca" | "influencia" | "autoridade";
 type Action = "change_plan" | "cancel" | "update_card" | "list_invoices" | "pay_penalty" | "preview_cancel";
@@ -695,7 +697,7 @@ Deno.serve(async (req) => {
             value: proRataValue,
             dueDate,
             description:
-              `Ivero — diferença proporcional do upgrade para ${plano} ` +
+              `Ivero — diferença proporcional do upgrade para ${PLAN_DISPLAY_NAMES[plano] ?? plano} ` +
               `(${daysLeft} dia(s) restantes do ciclo atual)`,
             externalReference,
           }),

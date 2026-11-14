@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 import {
   CreditCard, Download, Sparkles, Calendar, Loader2,
-  ArrowUpRight, HelpCircle, ExternalLink, Lock, Flag,
+  ArrowUpRight, HelpCircle, ExternalLink, Lock, Flag, Clock, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,7 +42,7 @@ import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
 import { formatDateBR } from "@/lib/date-display";
-import { nextChargeStatusLabel, upgradePendingDueDay } from "@/lib/billing-display";
+import { nextChargeStatusLabel, upgradePendingDueDay, upgradeDueChipText, showChosenPlanNotice } from "@/lib/billing-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -97,6 +97,11 @@ function AssinaturaPageContent() {
       name: PLANOS[upgradePendente.plano as keyof typeof PLANOS]?.name ?? upgradePendente.plano,
     }
     : null;
+  // Conta reativada com plano maior escolhido e sem upgrade pendente.
+  const chosenPlanInfo =
+    showChosenPlanNotice({ status: effectiveStatus, plano, planoPretendido, hasUpgradePending: !!upgradePendente }) && planoPretendido
+      ? PLANOS[planoPretendido as keyof typeof PLANOS] ?? null
+      : null;
   // P26: multa de cancelamento em aberto bloqueia "Reativar plano".
   const penaltyBlocksReactivation = status === "cancelado" && !!multaPendente;
   const [payingPenalty, setPayingPenalty] = useState(false);
@@ -106,12 +111,17 @@ function AssinaturaPageContent() {
   const overdueInGrace = isOverdue && isPaid;
   const [searchParams] = useSearchParams();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // "Liberar o {plano} agora": abre o mesmo fluxo de troca de plano do modal.
+  const [releasePlan, setReleasePlan] = useState<"presenca" | "influencia" | "autoridade" | null>(null);
   const { openUpgrade } = useUpgradeEntry(useCallback(() => setUpgradeOpen(true), []));
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [busy, setBusy] = useState<"cancel" | "card" | null>(null);
 
   const planoInfo = plano ? PLANOS[plano] : null;
+  // Mesma data que o card de próxima cobrança mostra como "Agendada para dd/MM".
+  const chosenStartDay =
+    next?.dueDate && nextChargeStatusLabel(next, "").startsWith("Agendada") ? next.dueDate : null;
 
   // Compromisso anual: valor promocional em troca de 12 ciclos. Cancelar antes
   // gera cobrança da diferença dos meses já usufruídos com desconto.
@@ -392,29 +402,72 @@ function AssinaturaPageContent() {
       )}
 
       {upgradeCard && (
-        <Card className="p-6 border-primary/30 bg-primary/5" data-testid="upgrade-pending-card">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="space-y-2 min-w-0">
-              <h2 className="font-display text-lg font-bold text-foreground">
+        <Card className="p-6 border-amber-300 bg-amber-50" data-testid="upgrade-pending-card">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-3 min-w-0">
+              <h2 className="flex items-center gap-2 font-display text-lg font-medium text-amber-800">
+                <Clock className="h-5 w-5 shrink-0" aria-hidden="true" />
                 Upgrade para {upgradeCard.name} em andamento
               </h2>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-amber-200 bg-background px-3 py-1 text-xs text-foreground" data-testid="upgrade-chip-valor">
+                  Falta pagar <strong>R$ {upgradeCard.diferenca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                </span>
+                <span className="rounded-full border border-amber-200 bg-background px-3 py-1 text-xs text-foreground" data-testid="upgrade-chip-prazo">
+                  {upgradeDueChipText(upgradeCard.dueDay)}
+                </span>
+              </div>
               <p className="text-sm text-foreground">
-                Falta pagar R$ {upgradeCard.diferenca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} até {formatDateBR(upgradeCard.dueDay).slice(0, 5)} para liberar o {upgradeCard.name} agora.
+                Pague a diferença e o {upgradeCard.name} é liberado na hora.
               </p>
               {planoPretendido === upgradeCard.plano && ciclosPagos === 0 && dataVencimento && (
-                <p className="text-sm text-foreground">
-                  Se preferir esperar, o {upgradeCard.name} começa sozinho em {formatDateBR(dataVencimento).slice(0, 5)}, na primeira cobrança.
+                <p className="text-sm text-muted-foreground">
+                  Se preferir esperar, ele começa sozinho em {formatDateBR(dataVencimento).slice(0, 5)}, na primeira cobrança.
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Se o pagamento não for feito até lá, o pedido expira e você continua no plano {planoInfo?.name ?? "atual"}.
+                Sem o pagamento até {formatDateBR(upgradeCard.dueDay).slice(0, 5)}, o pedido expira e você continua no plano {planoInfo?.name ?? "atual"}.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Você digita o cartão de novo na página segura do pagamento.
               </p>
             </div>
             <Button
-              className="shrink-0"
+              className="w-full sm:w-auto shrink-0"
               onClick={() => window.open(upgradeCard.invoiceUrl as string, "_blank", "noopener")}
             >
               Pagar diferença
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {chosenPlanInfo && (
+        <Card className="p-6 border-primary/30 bg-primary/5" data-testid="chosen-plan-card">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-2 min-w-0">
+              <h2 className="flex items-center gap-2 font-display text-lg font-medium text-foreground">
+                <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                Você escolheu o plano {chosenPlanInfo.name}
+              </h2>
+              <p className="text-sm text-foreground">
+                {chosenStartDay
+                  ? `Ele começa em ${formatDateBR(chosenStartDay).slice(0, 5)}, na primeira cobrança.`
+                  : "Ele começa na sua próxima cobrança."}
+              </p>
+              <p className="text-sm text-foreground">Quer usar agora? Pague só a diferença dos dias que faltam.</p>
+              <p className="text-xs text-muted-foreground">
+                Você digita o cartão de novo na página segura do pagamento. Até o pagamento ser confirmado, você continua no plano {planoInfo?.name ?? "atual"}, sem outra cobrança.
+              </p>
+            </div>
+            <Button
+              className="w-full sm:w-auto shrink-0"
+              onClick={() => {
+                setReleasePlan(chosenPlanInfo.key);
+                setUpgradeOpen(true);
+              }}
+            >
+              Liberar o {chosenPlanInfo.name} agora
             </Button>
           </div>
         </Card>
@@ -931,7 +984,12 @@ function AssinaturaPageContent() {
       </Card>
 
       {/* Upgrade modal (planos reais) */}
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} onPlanChanged={refreshBilling} />
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={(o) => { setUpgradeOpen(o); if (!o) setReleasePlan(null); }}
+        onPlanChanged={refreshBilling}
+        autoSelectPlan={releasePlan}
+      />
 
       {/* Confirmação de cancelamento */}
       <Dialog open={cancelOpen} onOpenChange={(o) => !o && setCancelOpen(false)}>

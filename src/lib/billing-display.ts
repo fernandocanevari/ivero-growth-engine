@@ -39,3 +39,25 @@ export function upgradePendingDueDay(requestedAt: string | null | undefined, now
   const due = new Date(Date.parse(`${start}T00:00:00Z`) + UPGRADE_DUE_DAYS_FRONT * 86_400_000).toISOString().slice(0, 10);
   return due >= dayBR(now.toISOString()) ? due : null;
 }
+
+/** Dias de calendário (Brasília) entre hoje e o vencimento do pedido. */
+export function upgradeDueChipText(dueDay: string, now = new Date()): string {
+  const ddmm = formatDateBR(dueDay).slice(0, 5);
+  const today = dayBR(now.toISOString());
+  const diff = Math.round((Date.parse(`${dueDay}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+  if (diff < 0) return `Até ${ddmm}`;
+  if (diff === 0) return `Vence hoje, ${ddmm}`;
+  return `Até ${ddmm} (${diff} ${diff === 1 ? "dia" : "dias"})`;
+}
+
+const PLAN_ORDER = ["presenca", "influencia", "autoridade"];
+/** Card "Liberar agora": conta ativa com plano escolhido maior e sem upgrade pendente. */
+export function showChosenPlanNotice(row: {
+  status: string | null | undefined;
+  plano: string | null | undefined;
+  planoPretendido: string | null | undefined;
+  hasUpgradePending: boolean;
+}): boolean {
+  if (row.status !== "ativo" || row.hasUpgradePending || !row.planoPretendido) return false;
+  return PLAN_ORDER.indexOf(row.planoPretendido) > PLAN_ORDER.indexOf(row.plano ?? "");
+}

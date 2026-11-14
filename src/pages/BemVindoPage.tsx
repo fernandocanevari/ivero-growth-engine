@@ -16,6 +16,13 @@ import {
 
 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { toast } from "@/hooks/use-toast";
+import { PLANOS } from "@/lib/pricing-rules";
+import { formatDateBR } from "@/lib/date-display";
+import { showChosenPlanNotice } from "@/lib/billing-display";
+
+const REACTIVATION_TOAST_KEY = "ivero_reactivation_toast_shown";
 
 /**
  * BemVindoPage — reservada ao retorno real do Asaas (?from=asaas).
@@ -47,6 +54,28 @@ const BemVindoPage = () => {
   // true = cliente já concluiu o onboarding (ou voltou de um upgrade):
   // mostramos apenas a confirmação de pagamento, sem a jornada de 3 passos.
   const [leanConfirm, setLeanConfirm] = useState(false);
+
+  // Reativação com plano maior escolhido: aviso único (não mexe no polling).
+  const sub = useSubscriptionStatus();
+  const { refresh: refreshSub } = sub;
+  useEffect(() => {
+    if (status === "active") void refreshSub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+  useEffect(() => {
+    if (status !== "active" || sub.isLoading || !sub.dataVencimento) return;
+    if (!showChosenPlanNotice({ status: sub.effectiveStatus, plano: sub.plano, planoPretendido: sub.planoPretendido, hasUpgradePending: false })) return;
+    try {
+      if (sessionStorage.getItem(REACTIVATION_TOAST_KEY)) return;
+      sessionStorage.setItem(REACTIVATION_TOAST_KEY, "1");
+    } catch {
+      return;
+    }
+    const nome = PLANOS[sub.planoPretendido as keyof typeof PLANOS]?.name ?? sub.planoPretendido;
+    toast({
+      description: `Pronto, sua assinatura voltou. Nada foi cobrado hoje. A primeira cobrança é em ${formatDateBR(sub.dataVencimento).slice(0, 5)}, e o ${nome} que você escolheu começa nessa data.`,
+    });
+  }, [status, sub.isLoading, sub.effectiveStatus, sub.plano, sub.planoPretendido, sub.dataVencimento]);
 
   useEffect(() => {
     try {

@@ -201,7 +201,7 @@ Deno.test("upgrade cria pedido pendente: plano, ciclo e valor no Asaas intactos 
   assertEquals([post.billingType, post.value, post.dueDate, post.customer], ["CREDIT_CARD", 266.67, plusDays(3), "cus_test"]);
   assertMatch(post.externalReference, new RegExp(`^prorata:${ROW_ID}:influencia:\\d{10}$`));
   assert(UPGRADE_REF_RE.test(post.externalReference), "referência casa com o padrão do webhook");
-  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para influencia (20 dia(s) restantes do ciclo atual)");
+  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para Influência (20 dia(s) restantes do ciclo atual)");
   assertEquals([w.row.plano, w.row.ciclo_contratado], ["presenca", "mensal"]);
   const chargeId = [...w.charges.keys()][0];
   assertEquals(w.row.upgrade_pendente_plano, "influencia");
@@ -572,7 +572,7 @@ Deno.test("b) caso já comprovado (Asaas 397, Presença anual, 30 dias) continua
   assertEquals(r.data.mode, "pending_payment");
   const post = posts(w)[0].body;
   assertEquals([post.billingType, post.value, post.dueDate, post.customer], ["CREDIT_CARD", 320, plusDays(3), "cus_test"]);
-  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para influencia (30 dia(s) restantes do ciclo atual)");
+  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para Influência (30 dia(s) restantes do ciclo atual)");
   assertEquals(w.warns.filter((l) => l.includes("difere do plano")).length, 0, "sem aviso quando os valores batem");
   assertEquals(w.row.ciclo_contratado, "anual");
 });
@@ -645,7 +645,7 @@ Deno.test("c') reativada adiantada Influência → Autoridade (Asaas 1197, PENDI
   assertEquals(posts(w).length, 1);
   const post = posts(w)[0].body;
   assertEquals([post.billingType, post.value], ["CREDIT_CARD", 480]);
-  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para autoridade (30 dia(s) restantes do ciclo atual)");
+  assertEquals(post.description, "Ivero — diferença proporcional do upgrade para Autoridade (30 dia(s) restantes do ciclo atual)");
   assertMatch(post.externalReference, new RegExp(`^prorata:${ROW_ID}:autoridade:\\d+$`));
   const created = [...w.charges.values()][0];
   assertEquals(r.data.invoiceUrl, created.invoiceUrl);
