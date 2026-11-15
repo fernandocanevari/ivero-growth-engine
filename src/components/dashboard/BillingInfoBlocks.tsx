@@ -14,7 +14,7 @@ export function BillingInfoBlocks({ blocks, borderClassName, testIdPrefix }: {
       {blocks.map((b) => (
         <div key={b.id} className={`rounded-lg border ${borderClassName} bg-background px-4 py-3`} data-testid={`${testIdPrefix}-${b.id}`}>
           <p className="text-xs text-muted-foreground">{b.label}</p>
-          <p className="text-base font-medium text-foreground">{b.value}</p>
+          <p className="text-lg font-semibold text-foreground">{b.value}</p>
         </div>
       ))}
     </div>

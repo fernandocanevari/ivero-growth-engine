@@ -416,7 +416,7 @@ function AssinaturaPageContent() {
         return (
         <Card className="p-6 border-amber-300 bg-amber-50 space-y-4" data-testid="upgrade-pending-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="flex items-center gap-2 font-display text-lg font-medium text-amber-800 min-w-0">
+            <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-amber-800 min-w-0">
               <Clock className="h-5 w-5 shrink-0" aria-hidden="true" />
               Upgrade para {upgradeCard.name} em andamento
             </h2>
@@ -439,7 +439,7 @@ function AssinaturaPageContent() {
       {chosenPlanInfo && (
         <Card className="p-6 border-primary/30 bg-primary/5 space-y-4" data-testid="chosen-plan-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="flex items-center gap-2 font-display text-lg font-medium text-foreground min-w-0">
+            <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground min-w-0">
               <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
               Você escolheu o plano {chosenPlanInfo.name}
             </h2>
