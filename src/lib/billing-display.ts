@@ -50,6 +50,16 @@ export function upgradeDueChipText(dueDay: string, now = new Date()): string {
   return `Até ${ddmm} (${diff} ${diff === 1 ? "dia" : "dias"})`;
 }
 
+/** Valor do bloco "Prazo" do card âmbar: "até dd/MM · N dias", "até dd/MM · 1 dia" ou "hoje, dd/MM". */
+export function upgradeDueBlockText(dueDay: string, now = new Date()): string {
+  const ddmm = formatDateBR(dueDay).slice(0, 5);
+  const today = dayBR(now.toISOString());
+  const diff = Math.round((Date.parse(`${dueDay}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+  if (diff < 0) return `até ${ddmm}`;
+  if (diff === 0) return `hoje, ${ddmm}`;
+  return `até ${ddmm} · ${diff} ${diff === 1 ? "dia" : "dias"}`;
+}
+
 const PLAN_ORDER = ["presenca", "influencia", "autoridade"];
 /** Card "Liberar agora": conta ativa com plano escolhido maior e sem upgrade pendente. */
 export function showChosenPlanNotice(row: {

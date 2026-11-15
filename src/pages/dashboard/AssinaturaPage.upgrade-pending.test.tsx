@@ -35,7 +35,8 @@ vi.mock("@/hooks/useBillingInvoices", () => ({
   INVOICE_STATUS_LABEL: {},
 }));
 vi.mock("@/hooks/useUpgradeEntry", () => ({ useUpgradeEntry: () => ({ openUpgrade: vi.fn() }) }));
-vi.mock("@/components/dashboard/UpgradeModal", () => ({ UpgradeModal: () => null }));
+const MODAL: { props: Record<string, unknown> | null } = { props: null };
+vi.mock("@/components/dashboard/UpgradeModal", () => ({ UpgradeModal: (p: Record<string, unknown>) => { MODAL.props = p; return null; } }));
 vi.mock("@/lib/analytics", () => ({ track: () => {} }));
 vi.mock("@/lib/reconcile-pending", () => ({ reconcilePendingPayment: async () => null }));
 vi.mock("@/hooks/use-toast", () => ({ toast: vi.fn() }));
@@ -70,12 +71,12 @@ describe("Card de upgrade em andamento", () => {
     render(<AssinaturaPage />);
     expect(card()).not.toBeNull();
     expect(text()).toContain("Upgrade para Influência em andamento");
-    expect(text()).toContain("Falta pagar R$ 266,67");
-    expect(screen.getByTestId("upgrade-chip-prazo").textContent).toBe("Até 16/11 (2 dias)");
-    expect(text()).toContain("Pague a diferença e o Influência é liberado na hora.");
-    expect(text()).toContain("Sem o pagamento até 16/11, o pedido expira e você continua no plano Presença.");
-    expect(text()).toContain("Você digita o cartão de novo na página segura do pagamento.");
-    expect(text()).not.toContain("começa sozinho");
+    expect(screen.getByTestId("upgrade-block-valor").textContent).toBe("Falta pagarR$ 266,67");
+    expect(screen.getByTestId("upgrade-block-prazo").textContent).toBe("Prazoaté 16/11 · 2 dias");
+    expect(screen.queryByTestId("upgrade-block-comeca")).toBeNull();
+    expect(text()).toContain("Pagando agora, o Influência vale na hora. Passou o prazo, o pedido expira e você segue no Presença. O cartão é digitado de novo na página segura do pagamento.");
+    expect(text()).not.toContain("Pague a diferença e o");
+    expect(text()).not.toContain("Se preferir esperar");
     fireEvent.click(screen.getByRole("button", { name: "Pagar diferença" }));
     expect(open).toHaveBeenCalledWith("https://asaas.test/i/dif", "_blank", "noopener");
     open.mockRestore();
@@ -84,8 +85,20 @@ describe("Card de upgrade em andamento", () => {
   it("(e) linha extra só para reativação com plano maior, data em Brasília", () => {
     STATUS = { ...ATIVO, ciclosPagos: 0, planoPretendido: "influencia", dataVencimento: "2027-01-11T02:59:59.999Z" } as unknown as typeof BASE;
     render(<AssinaturaPage />);
-    expect(text()).toContain("Se preferir esperar, ele começa sozinho em 10/01, na primeira cobrança.");
+    expect(screen.getByTestId("upgrade-block-comeca").textContent).toBe("Se não pagar, começa em10/01");
   });
+
+  const prazoAt = (now: string) => {
+    vi.setSystemTime(new Date(now));
+    render(<AssinaturaPage />);
+    return screen.getByTestId("upgrade-block-prazo").textContent;
+  };
+  it("prazo 3 dias", () => {
+    STATUS = { ...ATIVO, upgradePendente: { ...ATIVO.upgradePendente!, em: "2026-11-14T15:00:00Z" } } as unknown as typeof BASE;
+    expect(prazoAt("2026-11-14T15:00:00Z")).toBe("Prazoaté 17/11 · 3 dias");
+  });
+  it("prazo 1 dia", () => expect(prazoAt("2026-11-15T12:00:00Z")).toBe("Prazoaté 16/11 · 1 dia"));
+  it("prazo hoje", () => expect(prazoAt("2026-11-16T12:00:00Z")).toBe("Prazohoje, 16/11"));
 
   it("(e) sem pedido, sem link ou prazo vencido: nada", () => {
     STATUS = { ...ATIVO, upgradePendente: null } as unknown as typeof BASE;
@@ -120,13 +133,26 @@ describe("P37 card 'Você escolheu o plano'", () => {
     render(<AssinaturaPage />);
     expect(chosen()).not.toBeNull();
     expect(text()).toContain("Você escolheu o plano Influência");
-    expect(text()).toContain("Ele começa em 03/12, na primeira cobrança.");
+    expect(screen.getByTestId("chosen-plan-pill").textContent).toBe("Começa em 03/12, na primeira cobrança");
+    expect(text()).toContain("O cartão é digitado de novo na página segura do pagamento. Até a confirmação, você segue no Presença.");
+    expect(text()).not.toContain("Ele começa");
     expect(screen.getByRole("button", { name: "Liberar o Influência agora" })).toBeTruthy();
     expect(card()).toBeNull();
   });
   it("sem data agendada → texto genérico", () => {
     render(<AssinaturaPage />);
-    expect(text()).toContain("Ele começa na sua próxima cobrança.");
+    expect(screen.getByTestId("chosen-plan-pill").textContent).toBe("Começa na sua próxima cobrança");
+  });
+  it("botão: spinner e travado até o pedido terminar; dois cliques = um pedido", async () => {
+    render(<AssinaturaPage />);
+    const btn = screen.getByRole("button", { name: "Liberar o Influência agora" });
+    fireEvent.click(btn); fireEvent.click(btn);
+    const busy = screen.getByRole("button", { name: /Gerando o pedido…/ });
+    expect((busy as HTMLButtonElement).disabled).toBe(true);
+    expect(MODAL.props?.autoSelectPlan).toBe("influencia");
+    const { act } = await import("@testing-library/react");
+    act(() => { (MODAL.props?.onAutoSelectSettled as () => void)(); });
+    expect((screen.getByRole("button", { name: "Liberar o Influência agora" }) as HTMLButtonElement).disabled).toBe(false);
   });
   it("ativo sem pretendido → esconde", () => {
     STATUS = { ...ATIVO, upgradePendente: null, planoPretendido: null } as unknown as typeof BASE;

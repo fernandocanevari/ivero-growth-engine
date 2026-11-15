@@ -42,7 +42,7 @@ import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
 import { formatDateBR } from "@/lib/date-display";
-import { nextChargeStatusLabel, upgradePendingDueDay, upgradeDueChipText, showChosenPlanNotice } from "@/lib/billing-display";
+import { nextChargeStatusLabel, upgradePendingDueDay, upgradeDueBlockText, showChosenPlanNotice } from "@/lib/billing-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
 /**
@@ -113,6 +113,9 @@ function AssinaturaPageContent() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   // "Liberar o {plano} agora": abre o mesmo fluxo de troca de plano do modal.
   const [releasePlan, setReleasePlan] = useState<"presenca" | "influencia" | "autoridade" | null>(null);
+  // Do clique até o pedido terminar (diálogo ou erro): botão travado, sem duplo envio.
+  const [releasing, setReleasing] = useState(false);
+  const releasingRef = useRef(false);
   const { openUpgrade } = useUpgradeEntry(useCallback(() => setUpgradeOpen(true), []));
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState("");
@@ -401,46 +404,43 @@ function AssinaturaPageContent() {
         <OverdueNoticeView overdue={overdue} carenciaAte={carenciaAte} inGrace={overdueInGrace} />
       )}
 
-      {upgradeCard && (
-        <Card className="p-6 border-amber-300 bg-amber-50" data-testid="upgrade-pending-card">
+      {upgradeCard && (() => {
+        const startsOn = planoPretendido === upgradeCard.plano && ciclosPagos === 0 && dataVencimento
+          ? formatDateBR(dataVencimento).slice(0, 5) : null;
+        const blocks: { label: string; value: string; id: string }[] = [
+          { id: "valor", label: "Falta pagar", value: `R$ ${upgradeCard.diferenca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+          { id: "prazo", label: "Prazo", value: upgradeDueBlockText(upgradeCard.dueDay) },
+          ...(startsOn ? [{ id: "comeca", label: "Se não pagar, começa em", value: startsOn }] : []),
+        ];
+        return (
+        <Card className="p-6 border-amber-300 bg-amber-50 space-y-4" data-testid="upgrade-pending-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-3 min-w-0">
-              <h2 className="flex items-center gap-2 font-display text-lg font-medium text-amber-800">
-                <Clock className="h-5 w-5 shrink-0" aria-hidden="true" />
-                Upgrade para {upgradeCard.name} em andamento
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full border border-amber-200 bg-background px-3 py-1 text-xs text-foreground" data-testid="upgrade-chip-valor">
-                  Falta pagar <strong>R$ {upgradeCard.diferenca.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-                </span>
-                <span className="rounded-full border border-amber-200 bg-background px-3 py-1 text-xs text-foreground" data-testid="upgrade-chip-prazo">
-                  {upgradeDueChipText(upgradeCard.dueDay)}
-                </span>
-              </div>
-              <p className="text-sm text-foreground">
-                Pague a diferença e o {upgradeCard.name} é liberado na hora.
-              </p>
-              {planoPretendido === upgradeCard.plano && ciclosPagos === 0 && dataVencimento && (
-                <p className="text-sm text-muted-foreground">
-                  Se preferir esperar, ele começa sozinho em {formatDateBR(dataVencimento).slice(0, 5)}, na primeira cobrança.
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Sem o pagamento até {formatDateBR(upgradeCard.dueDay).slice(0, 5)}, o pedido expira e você continua no plano {planoInfo?.name ?? "atual"}.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Você digita o cartão de novo na página segura do pagamento.
-              </p>
-            </div>
+            <h2 className="flex items-center gap-2 font-display text-lg font-medium text-amber-800 min-w-0">
+              <Clock className="h-5 w-5 shrink-0" aria-hidden="true" />
+              Upgrade para {upgradeCard.name} em andamento
+            </h2>
             <Button
-              className="w-full sm:w-auto shrink-0"
+              className="w-full sm:w-auto shrink-0 h-11 px-6 font-semibold shadow-md"
               onClick={() => window.open(upgradeCard.invoiceUrl as string, "_blank", "noopener")}
             >
+              <CreditCard className="h-4 w-4 mr-2" aria-hidden="true" />
               Pagar diferença
             </Button>
           </div>
+          <div className={`grid grid-cols-1 gap-3 ${blocks.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            {blocks.map((b) => (
+              <div key={b.id} className="rounded-lg border border-amber-200 bg-background px-4 py-3" data-testid={`upgrade-block-${b.id}`}>
+                <p className="text-xs text-muted-foreground">{b.label}</p>
+                <p className="text-base font-medium text-foreground">{b.value}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Pagando agora, o {upgradeCard.name} vale na hora. Passou o prazo, o pedido expira e você segue no {planoInfo?.name ?? "plano atual"}. O cartão é digitado de novo na página segura do pagamento.
+          </p>
         </Card>
-      )}
+        );
+      })()}
 
       {chosenPlanInfo && (
         <Card className="p-6 border-primary/30 bg-primary/5" data-testid="chosen-plan-card">
@@ -450,24 +450,32 @@ function AssinaturaPageContent() {
                 <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 Você escolheu o plano {chosenPlanInfo.name}
               </h2>
-              <p className="text-sm text-foreground">
+              <span className="inline-block rounded-full border border-border bg-background px-3 py-1 text-xs text-foreground" data-testid="chosen-plan-pill">
                 {chosenStartDay
-                  ? `Ele começa em ${formatDateBR(chosenStartDay).slice(0, 5)}, na primeira cobrança.`
-                  : "Ele começa na sua próxima cobrança."}
-              </p>
+                  ? <>Começa em <strong className="font-semibold">{formatDateBR(chosenStartDay).slice(0, 5)}</strong>, na primeira cobrança</>
+                  : "Começa na sua próxima cobrança"}
+              </span>
               <p className="text-sm text-foreground">Quer usar agora? Pague só a diferença dos dias que faltam.</p>
               <p className="text-xs text-muted-foreground">
-                Você digita o cartão de novo na página segura do pagamento. Até o pagamento ser confirmado, você continua no plano {planoInfo?.name ?? "atual"}, sem outra cobrança.
+                O cartão é digitado de novo na página segura do pagamento. Até a confirmação, você segue no {planoInfo?.name ?? "plano atual"}.
               </p>
             </div>
             <Button
-              className="w-full sm:w-auto shrink-0"
+              className="w-full sm:w-auto shrink-0 h-11 px-5 font-semibold whitespace-nowrap"
+              disabled={releasing}
               onClick={() => {
+                if (releasingRef.current) return;
+                releasingRef.current = true;
+                setReleasing(true);
                 setReleasePlan(chosenPlanInfo.key);
                 setUpgradeOpen(true);
               }}
             >
-              Liberar o {chosenPlanInfo.name} agora
+              {releasing ? (
+                <><Loader2 className="h-5 w-5 mr-2 animate-spin" aria-hidden="true" />Gerando o pedido…</>
+              ) : (
+                <><Sparkles className="h-5 w-5 mr-2" aria-hidden="true" />Liberar o {chosenPlanInfo.name} agora</>
+              )}
             </Button>
           </div>
         </Card>
@@ -989,6 +997,7 @@ function AssinaturaPageContent() {
         onOpenChange={(o) => { setUpgradeOpen(o); if (!o) setReleasePlan(null); }}
         onPlanChanged={refreshBilling}
         autoSelectPlan={releasePlan}
+        onAutoSelectSettled={() => { releasingRef.current = false; setReleasing(false); }}
       />
 
       {/* Confirmação de cancelamento */}

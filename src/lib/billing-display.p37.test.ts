@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { upgradeDueChipText, showChosenPlanNotice } from "./billing-display";
+import { upgradeDueBlockText, upgradeDueChipText, showChosenPlanNotice } from "./billing-display";
 
 // 14/11/2026 12:00 em Brasília
 const NOW = new Date("2026-11-14T15:00:00Z");
@@ -25,4 +25,11 @@ describe("aviso 'Você escolheu o plano'", () => {
   for (const status of ["cancelado", "trial", "inadimplente"]) {
     it(`${status} → esconde`, () => expect(showChosenPlanNotice({ ...base, status })).toBe(false));
   }
+});
+
+describe("upgradeDueBlockText", () => {
+  const NOW2 = new Date("2026-11-14T12:00:00Z");
+  it("3 dias", () => expect(upgradeDueBlockText("2026-11-17", NOW2)).toBe("até 17/11 · 3 dias"));
+  it("1 dia", () => expect(upgradeDueBlockText("2026-11-15", NOW2)).toBe("até 15/11 · 1 dia"));
+  it("hoje", () => expect(upgradeDueBlockText("2026-11-14", NOW2)).toBe("hoje, 14/11"));
 });

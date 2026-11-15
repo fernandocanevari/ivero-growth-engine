@@ -71,6 +71,8 @@ interface UpgradeModalProps {
    * ao abrir, dispara o mesmo handleSelectPlan do clique no card desse plano.
    */
   autoSelectPlan?: PlanoSugerido | null;
+  /** Chamado quando o pedido disparado por autoSelectPlan termina (sucesso ou erro). */
+  onAutoSelectSettled?: () => void;
 }
 
 export function UpgradeModal({
@@ -79,6 +81,7 @@ export function UpgradeModal({
   onPlanChanged,
   intent = "trocar_plano",
   autoSelectPlan = null,
+  onAutoSelectSettled,
 }: UpgradeModalProps) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   // P26: multa pendente devolvida pelo create-checkout (aviso fixo no modal).
@@ -357,11 +360,17 @@ export function UpgradeModal({
 
   // Dispara uma vez por abertura, só depois de o estado da conta carregar.
   const autoSelectedRef = useRef(false);
+  // Enquanto o pedido automático roda, o modal de planos não é pintado (sem "piscar").
+  const [autoDone, setAutoDone] = useState(false);
+  const hideForAuto = !!autoSelectPlan && !autoDone;
   useEffect(() => {
-    if (!open) { autoSelectedRef.current = false; return; }
+    if (!open) { autoSelectedRef.current = false; setAutoDone(false); return; }
     if (!autoSelectPlan || autoSelectedRef.current || isLoading || accountLoading || isAgency) return;
     autoSelectedRef.current = true;
-    void handleSelectPlan(autoSelectPlan, planNameOf(autoSelectPlan) ?? autoSelectPlan);
+    void handleSelectPlan(autoSelectPlan, planNameOf(autoSelectPlan) ?? autoSelectPlan).finally(() => {
+      setAutoDone(true);
+      onAutoSelectSettled?.();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, autoSelectPlan, isLoading, accountLoading, isAgency]);
 
@@ -394,7 +403,7 @@ export function UpgradeModal({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && !hideForAuto} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto p-0">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 sm:px-8 sm:pt-8 border-b border-border">
@@ -493,6 +502,14 @@ export function UpgradeModal({
                       : "border border-border bg-card hover:border-primary/20 opacity-95"
                   }`}
                 >
+                  {!badge && isCurrentActive(plan.key) && (
+                    <span
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full whitespace-nowrap shadow-md border border-primary/30 bg-accent text-accent-foreground"
+                      data-testid="current-plan-badge"
+                    >
+                      SEU PLANO
+                    </span>
+                  )}
                   {badge && (
                     <span
                       className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full whitespace-nowrap shadow-md ${
@@ -580,9 +597,10 @@ export function UpgradeModal({
                   )}
                   {isCurrentActive(plan.key) ? (
                     <div
-                      className="mt-auto w-full rounded-md border border-border bg-muted px-3 py-2 text-center text-xs font-medium text-muted-foreground"
+                      className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"
                       data-testid="current-plan-label"
                     >
+                      <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       Seu plano atual
                     </div>
                   ) : (

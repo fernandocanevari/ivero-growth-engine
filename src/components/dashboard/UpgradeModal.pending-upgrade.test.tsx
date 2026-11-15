@@ -149,12 +149,15 @@ describe("P37 item 5", () => {
     render(<UpgradeModal open onOpenChange={() => {}} />);
     expect(screen.getByTestId("current-plan-label").textContent).toBe("Seu plano atual");
     expect(screen.queryByRole("button", { name: /Garantir presença/i })).toBeNull();
+    expect(screen.getAllByTestId("current-plan-badge")).toHaveLength(1);
+    expect(screen.getByTestId("current-plan-badge").textContent).toBe("SEU PLANO");
   });
   for (const st of ["cancelado", "trial", "inadimplente"]) {
     it(`(5a) ${st}: botão do plano atual continua`, () => {
       statusMock = { ...ATIVO, effectiveStatus: st };
       render(<UpgradeModal open onOpenChange={() => {}} />);
       expect(screen.queryByTestId("current-plan-label")).toBeNull();
+      expect(screen.queryByTestId("current-plan-badge")).toBeNull();
       expect(screen.getByRole("button", { name: /Garantir presença/i })).toBeTruthy();
     });
   }
@@ -175,5 +178,17 @@ describe("P37 item 5", () => {
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke.mock.calls[0][0]).toBe("manage-subscription");
     expect((invoke.mock.calls[0][1] as { body: { action: string; plano: string } }).body).toMatchObject({ action: "change_plan", plano: "influencia" });
+  });
+  it("autoSelectPlan: modal de planos não aparece durante o pedido e avisa ao terminar", async () => {
+    let resolve!: (v: unknown) => void;
+    invoke.mockReturnValue(new Promise((r) => { resolve = r; }));
+    const settled = vi.fn();
+    render(<UpgradeModal open onOpenChange={() => {}} autoSelectPlan="influencia" onAutoSelectSettled={settled} />);
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("Trocar de plano")).toBeNull();
+    resolve({ data: PENDING, error: null });
+    await screen.findByText("Pedido registrado");
+    await waitFor(() => expect(settled).toHaveBeenCalledTimes(1));
+    expect(invoke).toHaveBeenCalledTimes(1);
   });
 });
