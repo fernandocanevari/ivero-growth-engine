@@ -42,6 +42,7 @@ import { OverdueNoticeView } from "@/components/dashboard/OverdueNotice";
 import { overdueNextChargeText, PAYMENT_PENDING_BADGE, PAY_NOW_LABEL } from "@/lib/overdue-copy";
 import { formatPenaltyBRL } from "@/lib/penalty";
 import { formatDateBR } from "@/lib/date-display";
+import { BillingInfoBlocks, BILLING_CARD_CTA_CLASS } from "@/components/dashboard/BillingInfoBlocks";
 import { nextChargeStatusLabel, upgradePendingDueDay, upgradeDueBlockText, showChosenPlanNotice } from "@/lib/billing-display";
 import { payPenaltyAndOpen } from "@/lib/penalty-flow";
 
@@ -420,21 +421,14 @@ function AssinaturaPageContent() {
               Upgrade para {upgradeCard.name} em andamento
             </h2>
             <Button
-              className="w-full sm:w-auto shrink-0 h-11 px-6 font-semibold shadow-md"
+              className={BILLING_CARD_CTA_CLASS}
               onClick={() => window.open(upgradeCard.invoiceUrl as string, "_blank", "noopener")}
             >
               <CreditCard className="h-4 w-4 mr-2" aria-hidden="true" />
               Pagar diferença
             </Button>
           </div>
-          <div className={`grid grid-cols-1 gap-3 ${blocks.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-            {blocks.map((b) => (
-              <div key={b.id} className="rounded-lg border border-amber-200 bg-background px-4 py-3" data-testid={`upgrade-block-${b.id}`}>
-                <p className="text-xs text-muted-foreground">{b.label}</p>
-                <p className="text-base font-medium text-foreground">{b.value}</p>
-              </div>
-            ))}
-          </div>
+          <BillingInfoBlocks blocks={blocks} borderClassName="border-amber-200" testIdPrefix="upgrade-block" />
           <p className="text-xs text-muted-foreground">
             Pagando agora, o {upgradeCard.name} vale na hora. Passou o prazo, o pedido expira e você segue no {planoInfo?.name ?? "plano atual"}. O cartão é digitado de novo na página segura do pagamento.
           </p>
@@ -443,25 +437,14 @@ function AssinaturaPageContent() {
       })()}
 
       {chosenPlanInfo && (
-        <Card className="p-6 border-primary/30 bg-primary/5" data-testid="chosen-plan-card">
+        <Card className="p-6 border-primary/30 bg-primary/5 space-y-4" data-testid="chosen-plan-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-2 min-w-0">
-              <h2 className="flex items-center gap-2 font-display text-lg font-medium text-foreground">
-                <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                Você escolheu o plano {chosenPlanInfo.name}
-              </h2>
-              <span className="inline-block rounded-full border border-border bg-background px-3 py-1 text-xs text-foreground" data-testid="chosen-plan-pill">
-                {chosenStartDay
-                  ? <>Começa em <strong className="font-semibold">{formatDateBR(chosenStartDay).slice(0, 5)}</strong>, na primeira cobrança</>
-                  : "Começa na sua próxima cobrança"}
-              </span>
-              <p className="text-sm text-foreground">Quer usar agora? Pague só a diferença dos dias que faltam.</p>
-              <p className="text-xs text-muted-foreground">
-                O cartão é digitado de novo na página segura do pagamento. Até a confirmação, você segue no {planoInfo?.name ?? "plano atual"}.
-              </p>
-            </div>
+            <h2 className="flex items-center gap-2 font-display text-lg font-medium text-foreground min-w-0">
+              <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              Você escolheu o plano {chosenPlanInfo.name}
+            </h2>
             <Button
-              className="w-full sm:w-auto shrink-0 h-11 px-5 font-semibold whitespace-nowrap"
+              className={`${BILLING_CARD_CTA_CLASS} whitespace-nowrap`}
               disabled={releasing}
               onClick={() => {
                 if (releasingRef.current) return;
@@ -478,6 +461,18 @@ function AssinaturaPageContent() {
               )}
             </Button>
           </div>
+          <BillingInfoBlocks
+            borderClassName="border-border"
+            testIdPrefix="chosen-block"
+            blocks={[
+              { id: "atual", label: "Seu plano hoje", value: planoInfo?.name ?? "plano atual" },
+              { id: "escolhido", label: "Plano escolhido", value: chosenPlanInfo.name },
+              { id: "comeca", label: "Começa em", value: chosenStartDay ? formatDateBR(chosenStartDay).slice(0, 5) : "na próxima cobrança" },
+            ]}
+          />
+          <p className="text-xs text-muted-foreground">
+            Quer usar agora? Pague só a diferença dos dias que faltam. O cartão é digitado de novo na página segura do pagamento.
+          </p>
         </Card>
       )}
 

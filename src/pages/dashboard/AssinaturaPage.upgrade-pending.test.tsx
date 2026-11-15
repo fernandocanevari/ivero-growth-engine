@@ -133,15 +133,21 @@ describe("P37 card 'Você escolheu o plano'", () => {
     render(<AssinaturaPage />);
     expect(chosen()).not.toBeNull();
     expect(text()).toContain("Você escolheu o plano Influência");
-    expect(screen.getByTestId("chosen-plan-pill").textContent).toBe("Começa em 03/12, na primeira cobrança");
-    expect(text()).toContain("O cartão é digitado de novo na página segura do pagamento. Até a confirmação, você segue no Presença.");
+    const blk = (id: string) => screen.getByTestId(`chosen-block-${id}`).textContent;
+    expect(blk("atual")).toBe("Seu plano hojePresença");
+    expect(blk("escolhido")).toBe("Plano escolhidoInfluência");
+    expect(blk("comeca")).toBe("Começa em03/12");
+    expect(text()).toContain("Quer usar agora? Pague só a diferença dos dias que faltam. O cartão é digitado de novo na página segura do pagamento.");
+    expect(screen.queryByTestId("chosen-plan-pill")).toBeNull();
+    expect(text()).not.toContain("na primeira cobrança");
+    expect(text()).not.toContain("Até a confirmação");
     expect(text()).not.toContain("Ele começa");
     expect(screen.getByRole("button", { name: "Liberar o Influência agora" })).toBeTruthy();
     expect(card()).toBeNull();
   });
-  it("sem data agendada → texto genérico", () => {
+  it("sem data agendada → terceiro bloco 'na próxima cobrança'", () => {
     render(<AssinaturaPage />);
-    expect(screen.getByTestId("chosen-plan-pill").textContent).toBe("Começa na sua próxima cobrança");
+    expect(screen.getByTestId("chosen-block-comeca").textContent).toBe("Começa emna próxima cobrança");
   });
   it("botão: spinner e travado até o pedido terminar; dois cliques = um pedido", async () => {
     render(<AssinaturaPage />);
@@ -150,6 +156,7 @@ describe("P37 card 'Você escolheu o plano'", () => {
     const busy = screen.getByRole("button", { name: /Gerando o pedido…/ });
     expect((busy as HTMLButtonElement).disabled).toBe(true);
     expect(MODAL.props?.autoSelectPlan).toBe("influencia");
+    expect(screen.queryByRole("button", { name: "Liberar o Influência agora" })).toBeNull();
     const { act } = await import("@testing-library/react");
     act(() => { (MODAL.props?.onAutoSelectSettled as () => void)(); });
     expect((screen.getByRole("button", { name: "Liberar o Influência agora" }) as HTMLButtonElement).disabled).toBe(false);
