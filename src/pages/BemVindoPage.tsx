@@ -38,6 +38,35 @@ const REACTIVATION_TOAST_KEY = "ivero_reactivation_toast_shown";
 
 type Status = "loading" | "active" | "pending";
 
+// Reativação paga com dias restantes: create-checkout grava
+// checkout_context.resumePaidUntil antes do redirect; o webhook põe a linha em
+// "ativo" alguns segundos depois. Enquanto não vira "ativo", esperamos (~10s)
+// mostrando "Confirmando seu cartão…" — nunca "Pagamento confirmado".
+const RESUME_MAX_ATTEMPTS = 4; // 4 x 3s ≈ 10-12s
+const RESUME_PLAN_ORDER = ["presenca", "influencia", "autoridade"];
+
+export interface ResumeInfo {
+  plano: string;
+  planoEscolhido: string;
+  dataVencimento: string;
+}
+
+const planName = (p: string) => PLANOS[p as keyof typeof PLANOS]?.name ?? p;
+
+/** Textos do bloco "Sua assinatura voltou" (cópia exata aprovada, P40). */
+export function resumeNoticeCopy(info: ResumeInfo): { body: string; extra: string | null } {
+  const data = formatDateBR(info.dataVencimento).slice(0, 5);
+  if (info.planoEscolhido === info.plano) {
+    return { body: `Nada foi cobrado hoje. A primeira cobrança é em ${data}. Até lá, tudo segue como está.`, extra: null };
+  }
+  const escolhido = planName(info.planoEscolhido);
+  const higher = RESUME_PLAN_ORDER.indexOf(info.planoEscolhido) > RESUME_PLAN_ORDER.indexOf(info.plano);
+  return {
+    body: `Nada foi cobrado hoje. A primeira cobrança é em ${data}, e o plano ${escolhido} que você escolheu começa nessa data. Até lá, você continua no ${planName(info.plano)}.`,
+    extra: higher ? `Quer usar o ${escolhido} agora? Na página de Assinatura você paga só a diferença dos dias que faltam.` : null,
+  };
+}
+
 // Com Checkout Session do Asaas, a assinatura só é criada (e o webhook só
 // roda) depois que o cliente conclui o pagamento na tela do Asaas — por isso a
 // janela de espera é maior: 40 x 3s = 2 minutos.
@@ -54,6 +83,9 @@ const BemVindoPage = () => {
   // true = cliente já concluiu o onboarding (ou voltou de um upgrade):
   // mostramos apenas a confirmação de pagamento, sem a jornada de 3 passos.
   const [leanConfirm, setLeanConfirm] = useState(false);
+  // Reativação paga com dias restantes (null = qualquer outro fluxo).
+  const [resumeInfo, setResumeInfo] = useState<ResumeInfo | null>(null);
+  const [resumeWaiting, setResumeWaiting] = useState(false);
 
   // Reativação com plano maior escolhido: aviso único (não mexe no polling).
   const sub = useSubscriptionStatus();
@@ -63,7 +95,7 @@ const BemVindoPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
   useEffect(() => {
-    if (status !== "active" || sub.isLoading || !sub.dataVencimento) return;
+    if (status !== "active" || resumeInfo || sub.isLoading || !sub.dataVencimento) return;
     if (!showChosenPlanNotice({ status: sub.effectiveStatus, plano: sub.plano, planoPretendido: sub.planoPretendido, hasUpgradePending: false })) return;
     try {
       if (sessionStorage.getItem(REACTIVATION_TOAST_KEY)) return;
@@ -75,7 +107,7 @@ const BemVindoPage = () => {
     toast({
       description: `Pronto, sua assinatura voltou. Nada foi cobrado hoje. A primeira cobrança é em ${formatDateBR(sub.dataVencimento).slice(0, 5)}, e o ${nome} que você escolheu começa nessa data.`,
     });
-  }, [status, sub.isLoading, sub.effectiveStatus, sub.plano, sub.planoPretendido, sub.dataVencimento]);
+  }, [status, resumeInfo, sub.isLoading, sub.effectiveStatus, sub.plano, sub.planoPretendido, sub.dataVencimento]);
 
   useEffect(() => {
     try {
@@ -88,6 +120,7 @@ const BemVindoPage = () => {
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
+    let resumeAttempts = 0;
 
     const params = new URLSearchParams(window.location.search);
     const fromAsaas = params.get("from") === "asaas";
@@ -137,11 +170,40 @@ const BemVindoPage = () => {
         if (cancelled) return;
         const { data } = await supabase
           .from("assinaturas")
-          .select("status, asaas_subscription_id")
+          .select("status, asaas_subscription_id, plano, plano_pretendido, data_vencimento, checkout_context")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        // Reativação paga com dias restantes: só libera quando a linha já está
+        // "ativo"; até lá, estado neutro. Nunca cai no bloco genérico.
+        const ctx = (data?.checkout_context ?? null) as Record<string, unknown> | null;
+        if (ctx && ctx.resumePaidUntil) {
+          if (data?.status === "ativo" && data.data_vencimento) {
+            if (!cancelled) {
+              setResumeInfo({
+                plano: data.plano ?? "",
+                planoEscolhido: data.plano_pretendido ?? data.plano ?? "",
+                dataVencimento: data.data_vencimento,
+              });
+              setResumeWaiting(false);
+              setStatus("active");
+            }
+            try {
+              sessionStorage.removeItem("ivero_checkout_url");
+            } catch { /* noop */ }
+            return;
+          }
+          if (!cancelled) setResumeWaiting(true);
+          resumeAttempts++;
+          if (resumeAttempts >= RESUME_MAX_ATTEMPTS) {
+            if (!cancelled) setStatus("pending");
+            return;
+          }
+          setTimeout(poll, POLL_INTERVAL_MS);
+          return;
+        }
 
         // Libera quando o status já está vivo OU quando o webhook do Asaas já
         // vinculou a assinatura (asaas_subscription_id preenchido).
@@ -194,6 +256,7 @@ const BemVindoPage = () => {
   }, [navigate, recheckToken]);
 
   const handleRecheck = () => {
+    setResumeWaiting(false);
     setStatus("loading");
     setRecheckToken((t) => t + 1);
   };
@@ -222,7 +285,7 @@ const BemVindoPage = () => {
             >
               <Loader2 className="h-12 w-12 text-accent animate-spin mb-5" />
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2">
-                Confirmando seu pagamento...
+                {resumeWaiting ? "Confirmando seu cartão…" : "Confirmando seu pagamento..."}
               </h2>
               <p className="text-muted-foreground">Isso pode levar alguns segundos.</p>
             </motion.div>
@@ -279,7 +342,48 @@ const BemVindoPage = () => {
           </div>
         )}
 
-        {status === "active" && leanConfirm && (
+        {status === "active" && resumeInfo && (() => {
+          const copy = resumeNoticeCopy(resumeInfo);
+          return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-center max-w-lg"
+              >
+                <CheckCircle2 className="mx-auto text-ivero-purple mb-6" size={56} />
+                <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#1A1A2E] mb-3">
+                  Sua assinatura voltou
+                </h1>
+                <p className="text-base sm:text-lg text-muted-foreground mb-3 leading-relaxed">
+                  {copy.body}
+                </p>
+                {copy.extra && (
+                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{copy.extra}</p>
+                )}
+                <div className="mt-5 flex flex-col items-center gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() => navigate("/dashboard")}
+                    className="text-base px-10 py-6 h-auto rounded-full bg-gradient-to-r from-ivero-purple to-accent hover:opacity-95 text-white shadow-lg shadow-ivero-purple/25"
+                  >
+                    Acessar Dashboard
+                  </Button>
+                  <Button
+                    variant="link"
+                    onClick={() => navigate("/dashboard/assinatura")}
+                    className="text-ivero-purple"
+                  >
+                    Ver minha assinatura
+                  </Button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+
+        {status === "active" && !resumeInfo && leanConfirm && (
           <div className="min-h-[60vh] flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -305,7 +409,7 @@ const BemVindoPage = () => {
           </div>
         )}
 
-        {status === "active" && !leanConfirm && (
+        {status === "active" && !resumeInfo && !leanConfirm && (
           <div className="max-w-4xl mx-auto space-y-16 sm:space-y-20">
             <motion.section
               initial={{ opacity: 0, y: 16 }}
