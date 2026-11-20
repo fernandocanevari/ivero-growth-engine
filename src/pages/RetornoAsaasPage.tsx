@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AGENCY_BILLING_ROUTE } from "@/lib/subscription-status";
 import { invalidateAccessCache } from "@/lib/access-cache";
 
-type Outcome = "success" | "upgrade" | "cancelado" | "expirado";
+type Outcome = "success" | "upgrade" | "retomada" | "cancelado" | "expirado";
 
 /**
  * RetornoAsaasPage — landing das URLs de callback da Checkout Session.
@@ -24,6 +24,8 @@ const RetornoAsaasPage = ({ outcome }: { outcome: Outcome }) => {
       navigate("/bem-vindo?from=asaas", { replace: true });
     } else if (outcome === "upgrade") {
       navigate("/bem-vindo?from=asaas&tipo=upgrade", { replace: true });
+    } else if (outcome === "retomada") {
+      navigate("/bem-vindo?from=asaas&tipo=upgrade&retomada=1", { replace: true });
     } else {
       // Agência volta ao faturamento consolidado, nunca aos planos individuais.
       (async () => {
@@ -44,7 +46,7 @@ const RetornoAsaasPage = ({ outcome }: { outcome: Outcome }) => {
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
       <Loader2 className="h-10 w-10 text-accent animate-spin" />
       <p className="text-muted-foreground">
-        {outcome === "success" || outcome === "upgrade"
+        {outcome === "success" || outcome === "upgrade" || outcome === "retomada"
           ? "Voltando para o Ivero..."
           : "Checkout encerrado. Levando você de volta aos planos..."}
       </p>

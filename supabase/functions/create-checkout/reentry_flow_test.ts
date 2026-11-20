@@ -432,3 +432,19 @@ Deno.test("restaura o ambiente do processo de teste", () => {
     else Deno.env.set(key, value);
   });
 });
+
+Deno.test("P40-fix1: retomada paga volta por /retorno-asaas-retomada; demais URLs idênticas", async () => {
+  const paid = await run(paidCancelledRow());
+  assertEquals(paid.data.retomaAcesso, true);
+  assertEquals(paid.checkout!.body.callback.successUrl, "https://ivero.com.br/retorno-asaas-retomada");
+  const ended = await run(paidCancelledRow({ data_vencimento: at(-1 * DAY) }));
+  assertEquals(ended.data.retomaAcesso, undefined);
+  assertEquals(ended.checkout!.body.callback, {
+    successUrl: "https://ivero.com.br/retorno-asaas", cancelUrl: "https://ivero.com.br/retorno-asaas-cancelado",
+    expiredUrl: "https://ivero.com.br/retorno-asaas-expirado", autoRedirect: true,
+  });
+  const up = await run(paidCancelledRow({ data_vencimento: at(-1 * DAY) }), { body: { ...REQ, tipo: "upgrade" } });
+  assertEquals(up.checkout!.body.callback.successUrl, "https://ivero.com.br/retorno-asaas-upgrade");
+  const paidUp = await run(paidCancelledRow(), { body: { ...REQ, tipo: "upgrade" } });
+  assertEquals(paidUp.checkout!.body.callback.successUrl, "https://ivero.com.br/retorno-asaas-retomada");
+});

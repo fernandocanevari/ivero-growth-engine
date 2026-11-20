@@ -38,11 +38,11 @@ const REACTIVATION_TOAST_KEY = "ivero_reactivation_toast_shown";
 
 type Status = "loading" | "active" | "pending";
 
-// Reativação paga com dias restantes: create-checkout grava
-// checkout_context.resumePaidUntil antes do redirect; o webhook põe a linha em
-// "ativo" alguns segundos depois. Enquanto não vira "ativo", esperamos (~10s)
+// Reativação paga com dias restantes: reconhecida só pela flag ?retomada=1
+// (rota /retorno-asaas-retomada). O webhook limpa resumePaidUntil ao pôr a
+// linha em "ativo", então a marca da linha não serve. Espera até ~60s
 // mostrando "Confirmando seu cartão…" — nunca "Pagamento confirmado".
-const RESUME_MAX_ATTEMPTS = 4; // 4 x 3s ≈ 10-12s
+const RESUME_MAX_ATTEMPTS = 20; // 20 x 3s ≈ 60s
 const RESUME_PLAN_ORDER = ["presenca", "influencia", "autoridade"];
 
 export interface ResumeInfo {
@@ -86,6 +86,7 @@ const BemVindoPage = () => {
   // Reativação paga com dias restantes (null = qualquer outro fluxo).
   const [resumeInfo, setResumeInfo] = useState<ResumeInfo | null>(null);
   const [resumeWaiting, setResumeWaiting] = useState(false);
+  const [resumeFlow] = useState(() => new URLSearchParams(window.location.search).get("retomada") === "1");
 
   // Reativação com plano maior escolhido: aviso único (não mexe no polling).
   const sub = useSubscriptionStatus();
@@ -95,7 +96,7 @@ const BemVindoPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
   useEffect(() => {
-    if (status !== "active" || resumeInfo || sub.isLoading || !sub.dataVencimento) return;
+    if (status !== "active" || resumeFlow || resumeInfo || sub.isLoading || !sub.dataVencimento) return;
     if (!showChosenPlanNotice({ status: sub.effectiveStatus, plano: sub.plano, planoPretendido: sub.planoPretendido, hasUpgradePending: false })) return;
     try {
       if (sessionStorage.getItem(REACTIVATION_TOAST_KEY)) return;
@@ -107,7 +108,7 @@ const BemVindoPage = () => {
     toast({
       description: `Pronto, sua assinatura voltou. Nada foi cobrado hoje. A primeira cobrança é em ${formatDateBR(sub.dataVencimento).slice(0, 5)}, e o ${nome} que você escolheu começa nessa data.`,
     });
-  }, [status, resumeInfo, sub.isLoading, sub.effectiveStatus, sub.plano, sub.planoPretendido, sub.dataVencimento]);
+  }, [status, resumeFlow, resumeInfo, sub.isLoading, sub.effectiveStatus, sub.plano, sub.planoPretendido, sub.dataVencimento]);
 
   useEffect(() => {
     try {
@@ -125,6 +126,7 @@ const BemVindoPage = () => {
     const params = new URLSearchParams(window.location.search);
     const fromAsaas = params.get("from") === "asaas";
     const isUpgrade = params.get("tipo") === "upgrade";
+    const isResume = params.get("retomada") === "1";
 
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -170,7 +172,7 @@ const BemVindoPage = () => {
         if (cancelled) return;
         const { data } = await supabase
           .from("assinaturas")
-          .select("status, asaas_subscription_id, plano, plano_pretendido, data_vencimento, checkout_context")
+          .select("status, asaas_subscription_id, plano, plano_pretendido, data_vencimento, ciclos_pagos")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -178,11 +180,11 @@ const BemVindoPage = () => {
 
         // Reativação paga com dias restantes: só libera quando a linha já está
         // "ativo"; até lá, estado neutro. Nunca cai no bloco genérico.
-        const ctx = (data?.checkout_context ?? null) as Record<string, unknown> | null;
-        if (ctx && ctx.resumePaidUntil) {
-          if (data?.status === "ativo" && data.data_vencimento) {
+        if (isResume) {
+          if (data?.status === "ativo") {
             if (!cancelled) {
-              setResumeInfo({
+              // Já houve cobrança (ex.: recarregou após a 1ª) → bloco genérico.
+              if ((data.ciclos_pagos ?? 0) === 0 && data.data_vencimento) setResumeInfo({
                 plano: data.plano ?? "",
                 planoEscolhido: data.plano_pretendido ?? data.plano ?? "",
                 dataVencimento: data.data_vencimento,
@@ -292,7 +294,34 @@ const BemVindoPage = () => {
           </div>
         )}
 
-        {status === "pending" && (
+        {status === "pending" && resumeFlow && (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-center max-w-lg">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-6">
+                Ainda estamos confirmando seu cartão. Isso pode levar alguns instantes.
+              </h1>
+              <div className="flex flex-col items-center gap-3">
+                <Button
+                  size="lg"
+                  onClick={handleRecheck}
+                  className="text-base px-8 py-5 h-auto rounded-full bg-gradient-to-r from-ivero-purple to-accent text-white hover:opacity-95"
+                >
+                  <RefreshCw className="mr-2" size={18} /> Verificar novamente
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="text-base px-8 py-5 h-auto rounded-full text-ivero-purple hover:bg-ivero-purple/5 hover:text-ivero-purple"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  Ir para o Dashboard
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {status === "pending" && !resumeFlow && (
           <div className="min-h-[60vh] flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
