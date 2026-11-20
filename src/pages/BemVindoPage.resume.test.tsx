@@ -57,20 +57,31 @@ beforeEach(() => {
   setUrl(FLAG);
 });
 
-const BODY_HIGHER = "Nada foi cobrado hoje. A primeira cobrança é em 26/11, e o plano Influência que você escolheu começa nessa data. Até lá, você continua no Presença.";
+const BODY_HIGHER = "A primeira cobrança é em 26/11. Até lá, você continua no Presença.";
+const noStars = (c: HTMLElement) =>
+  expect(c.querySelector(".lucide-sparkles, .lucide-stars, .lucide-star, .lucide-wand, .lucide-wand-sparkles")).toBeNull();
 
 describe("BemVindoPage — reativação (?retomada=1)", () => {
-  it("linha real de cliente73: 'Sua assinatura voltou', 26/11, linha extra, sem toast", async () => {
+  it("plano maior (cliente73): selo, frase, 3 blocos, convite e dois botões, sem toast", async () => {
     row = REAL;
-    render(<BemVindoPage />);
+    const { container } = render(<BemVindoPage />);
     expect(await screen.findByText("Sua assinatura voltou")).toBeTruthy();
+    expect(screen.getByTestId("resume-pill").textContent).toBe("Nada foi cobrado hoje");
     expect(screen.getByText(BODY_HIGHER)).toBeTruthy();
     expect(screen.queryByText(/27\/11/)).toBeNull();
-    expect(screen.getByText("Quer usar o Influência agora? Na página de Assinatura você paga só a diferença dos dias que faltam.")).toBeTruthy();
+    expect(screen.getByTestId("resume-block-atual").textContent).toBe("Seu plano hojePresença");
+    expect(screen.getByTestId("resume-block-escolhido").textContent).toBe("Plano escolhidoInfluência");
+    expect(screen.getByTestId("resume-block-inicio").textContent).toBe("Começa em26/11");
+    expect(screen.getByText("Dá para começar agora")).toBeTruthy();
+    expect(screen.getByText("Quer usar o Influência já?")).toBeTruthy();
+    expect(screen.queryByText(/Na página de Assinatura/)).toBeNull();
+    expect(screen.queryByText("Ver minha assinatura")).toBeNull();
     expect(screen.queryByText("Pagamento confirmado")).toBeNull();
-    expect(screen.getByText("Acessar Dashboard")).toBeTruthy();
-    fireEvent.click(screen.getByText("Ver minha assinatura"));
+    noStars(container);
+    fireEvent.click(screen.getByRole("button", { name: "Já quero usar o plano Influência" }));
     expect(navigateMock).toHaveBeenCalledWith("/dashboard/assinatura");
+    fireEvent.click(screen.getByRole("button", { name: "Acessar Dashboard" }));
+    expect(navigateMock).toHaveBeenCalledWith("/dashboard");
     await new Promise((r) => setTimeout(r, 20));
     expect(toastMock).not.toHaveBeenCalled();
   });
@@ -84,18 +95,26 @@ describe("BemVindoPage — reativação (?retomada=1)", () => {
     expect(screen.getByText(BODY_HIGHER)).toBeTruthy();
   }, 10000);
 
-  it("mesmo plano: sem linha extra", async () => {
+  it("mesmo plano: sem blocos nem convite, Dashboard principal e link da assinatura", async () => {
     row = { ...REAL, plano: "influencia", plano_pretendido: null };
-    render(<BemVindoPage />);
-    expect(await screen.findByText("Nada foi cobrado hoje. A primeira cobrança é em 26/11. Até lá, tudo segue como está.")).toBeTruthy();
-    expect(screen.queryByText(/Quer usar o/)).toBeNull();
+    const { container } = render(<BemVindoPage />);
+    expect(await screen.findByText("A primeira cobrança é em 26/11. Até lá, tudo segue como está.")).toBeTruthy();
+    expect(screen.getByText("Nada foi cobrado hoje")).toBeTruthy();
+    expect(screen.queryByTestId("resume-block-atual")).toBeNull();
+    expect(screen.queryByTestId("resume-invite")).toBeNull();
+    expect(screen.getByRole("button", { name: "Acessar Dashboard" })).toBeTruthy();
+    noStars(container);
+    fireEvent.click(screen.getByText("Ver minha assinatura"));
+    expect(navigateMock).toHaveBeenCalledWith("/dashboard/assinatura");
   });
 
-  it("plano menor: frase do plano escolhido, sem linha extra", async () => {
+  it("plano menor: blocos, sem convite", async () => {
     row = { ...REAL, plano: "autoridade", plano_pretendido: "presenca" };
     render(<BemVindoPage />);
-    expect(await screen.findByText("Nada foi cobrado hoje. A primeira cobrança é em 26/11, e o plano Presença que você escolheu começa nessa data. Até lá, você continua no Autoridade.")).toBeTruthy();
-    expect(screen.queryByText(/Quer usar o/)).toBeNull();
+    expect(await screen.findByText("A primeira cobrança é em 26/11. Até lá, você continua no Autoridade.")).toBeTruthy();
+    expect(screen.getByTestId("resume-block-escolhido").textContent).toBe("Plano escolhidoPresença");
+    expect(screen.queryByTestId("resume-invite")).toBeNull();
+    expect(screen.getByText("Ver minha assinatura")).toBeTruthy();
   });
 
   it("ciclos_pagos > 0 com a flag: bloco genérico", async () => {

@@ -5,7 +5,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import {
-  CreditCard, Download, Sparkles, Calendar, Loader2,
+  CreditCard, Download, Sparkles, ArrowRight, Calendar, Loader2,
   ArrowUpRight, HelpCircle, ExternalLink, Lock, Flag, Clock, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -457,7 +457,7 @@ function AssinaturaPageContent() {
               {releasing ? (
                 <><Loader2 className="h-5 w-5 mr-2 animate-spin" aria-hidden="true" />Gerando o pedido…</>
               ) : (
-                <><Sparkles className="h-5 w-5 mr-2" aria-hidden="true" />Liberar o {chosenPlanInfo.name} agora</>
+                <>Já quero usar o plano {chosenPlanInfo.name}<ArrowRight className="h-5 w-5 ml-2" aria-hidden="true" /></>
               )}
             </Button>
           </div>

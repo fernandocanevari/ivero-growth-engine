@@ -142,7 +142,9 @@ describe("P37 card 'Você escolheu o plano'", () => {
     expect(text()).not.toContain("na primeira cobrança");
     expect(text()).not.toContain("Até a confirmação");
     expect(text()).not.toContain("Ele começa");
-    expect(screen.getByRole("button", { name: "Liberar o Influência agora" })).toBeTruthy();
+    const cta = screen.getByRole("button", { name: "Já quero usar o plano Influência" });
+    expect(cta.querySelector(".lucide-arrow-right")).toBeTruthy();
+    expect(cta.querySelector(".lucide-sparkles")).toBeNull();
     expect(card()).toBeNull();
   });
   it("sem data agendada → terceiro bloco 'na próxima cobrança'", () => {
@@ -151,15 +153,16 @@ describe("P37 card 'Você escolheu o plano'", () => {
   });
   it("botão: spinner e travado até o pedido terminar; dois cliques = um pedido", async () => {
     render(<AssinaturaPage />);
-    const btn = screen.getByRole("button", { name: "Liberar o Influência agora" });
+    const btn = screen.getByRole("button", { name: "Já quero usar o plano Influência" });
     fireEvent.click(btn); fireEvent.click(btn);
     const busy = screen.getByRole("button", { name: /Gerando o pedido…/ });
     expect((busy as HTMLButtonElement).disabled).toBe(true);
+    expect(busy.querySelector(".animate-spin")).toBeTruthy();
     expect(MODAL.props?.autoSelectPlan).toBe("influencia");
-    expect(screen.queryByRole("button", { name: "Liberar o Influência agora" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Já quero usar o plano Influência" })).toBeNull();
     const { act } = await import("@testing-library/react");
     act(() => { (MODAL.props?.onAutoSelectSettled as () => void)(); });
-    expect((screen.getByRole("button", { name: "Liberar o Influência agora" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Já quero usar o plano Influência" }) as HTMLButtonElement).disabled).toBe(false);
   });
   it("ativo sem pretendido → esconde", () => {
     STATUS = { ...ATIVO, upgradePendente: null, planoPretendido: null } as unknown as typeof BASE;

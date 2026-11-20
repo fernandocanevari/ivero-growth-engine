@@ -13,6 +13,10 @@ import {
   Mail,
   CheckCircle2,
   RefreshCw,
+  ShieldCheck,
+  ArrowRight,
+  LayoutDashboard,
+  Check,
 
 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -21,6 +25,7 @@ import { toast } from "@/hooks/use-toast";
 import { PLANOS } from "@/lib/pricing-rules";
 import { formatDateBR } from "@/lib/date-display";
 import { showChosenPlanNotice } from "@/lib/billing-display";
+import { BillingInfoBlocks } from "@/components/dashboard/BillingInfoBlocks";
 
 const REACTIVATION_TOAST_KEY = "ivero_reactivation_toast_shown";
 
@@ -53,18 +58,19 @@ export interface ResumeInfo {
 
 const planName = (p: string) => PLANOS[p as keyof typeof PLANOS]?.name ?? p;
 
-/** Textos do bloco "Sua assinatura voltou" (cópia exata aprovada, P40). */
-export function resumeNoticeCopy(info: ResumeInfo): { body: string; extra: string | null } {
-  const data = formatDateBR(info.dataVencimento).slice(0, 5);
-  if (info.planoEscolhido === info.plano) {
-    return { body: `Nada foi cobrado hoje. A primeira cobrança é em ${data}. Até lá, tudo segue como está.`, extra: null };
-  }
+/** Textos do bloco "Sua assinatura voltou" (cópia exata aprovada, P41). */
+export function resumeNoticeCopy(info: ResumeInfo): {
+  sentence: string; date: string; same: boolean; higher: boolean; atual: string; escolhido: string;
+} {
+  const date = formatDateBR(info.dataVencimento).slice(0, 5);
+  const same = info.planoEscolhido === info.plano;
+  const atual = planName(info.plano);
   const escolhido = planName(info.planoEscolhido);
-  const higher = RESUME_PLAN_ORDER.indexOf(info.planoEscolhido) > RESUME_PLAN_ORDER.indexOf(info.plano);
-  return {
-    body: `Nada foi cobrado hoje. A primeira cobrança é em ${data}, e o plano ${escolhido} que você escolheu começa nessa data. Até lá, você continua no ${planName(info.plano)}.`,
-    extra: higher ? `Quer usar o ${escolhido} agora? Na página de Assinatura você paga só a diferença dos dias que faltam.` : null,
-  };
+  const higher = !same && RESUME_PLAN_ORDER.indexOf(info.planoEscolhido) > RESUME_PLAN_ORDER.indexOf(info.plano);
+  const sentence = same
+    ? `A primeira cobrança é em ${date}. Até lá, tudo segue como está.`
+    : `A primeira cobrança é em ${date}. Até lá, você continua no ${atual}.`;
+  return { sentence, date, same, higher, atual, escolhido };
 }
 
 // Com Checkout Session do Asaas, a assinatura só é criada (e o webhook só
@@ -379,34 +385,72 @@ const BemVindoPage = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-center max-w-lg"
+                className="w-full max-w-[520px] text-center flex flex-col items-center"
+                data-testid="resume-notice"
               >
-                <CheckCircle2 className="mx-auto text-ivero-purple mb-6" size={56} />
-                <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#1A1A2E] mb-3">
+                <div className="h-16 w-16 rounded-full border-2 border-primary flex items-center justify-center mb-5">
+                  <Check className="h-8 w-8 text-primary" aria-hidden="true" />
+                </div>
+                <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-3">
                   Sua assinatura voltou
                 </h1>
-                <p className="text-base sm:text-lg text-muted-foreground mb-3 leading-relaxed">
-                  {copy.body}
-                </p>
-                {copy.extra && (
-                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{copy.extra}</p>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 text-sm font-medium mb-4" data-testid="resume-pill">
+                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                  Nada foi cobrado hoje
+                </span>
+                <p className="text-base sm:text-lg text-muted-foreground mb-5 leading-relaxed">{copy.sentence}</p>
+                {!copy.same && (
+                  <div className="w-full mb-5 text-left">
+                    <BillingInfoBlocks
+                      testIdPrefix="resume-block"
+                      borderClassName="border-border"
+                      blocks={[
+                        { id: "atual", label: "Seu plano hoje", value: copy.atual },
+                        { id: "escolhido", label: "Plano escolhido", value: copy.escolhido },
+                        { id: "inicio", label: "Começa em", value: copy.date },
+                      ]}
+                    />
+                  </div>
                 )}
-                <div className="mt-5 flex flex-col items-center gap-3">
+                {copy.higher && (
+                  <div className="w-full rounded-xl border-2 border-primary/30 bg-primary/5 p-5 mb-4 text-left" data-testid="resume-invite">
+                    <p className="text-xs font-medium text-primary mb-1">Dá para começar agora</p>
+                    <p className="text-xl font-medium text-foreground mb-2">Quer usar o {copy.escolhido} já?</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Libere o plano hoje pagando só a diferença dos dias que faltam. Você vê o valor antes de pagar.
+                    </p>
+                    <Button
+                      onClick={() => navigate("/dashboard/assinatura")}
+                      className="w-full h-[46px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Já quero usar o plano {copy.escolhido}
+                      <ArrowRight className="h-4 w-4 ml-2" aria-hidden="true" />
+                    </Button>
+                  </div>
+                )}
+                {copy.higher ? (
                   <Button
-                    size="lg"
+                    variant="outline"
                     onClick={() => navigate("/dashboard")}
-                    className="text-base px-10 py-6 h-auto rounded-full bg-gradient-to-r from-ivero-purple to-accent hover:opacity-95 text-white shadow-lg shadow-ivero-purple/25"
+                    className="w-full h-[46px] font-semibold bg-background border-[1.5px] border-primary text-primary hover:bg-primary/5 hover:text-primary"
                   >
+                    <LayoutDashboard className="h-4 w-4 mr-2" aria-hidden="true" />
                     Acessar Dashboard
                   </Button>
-                  <Button
-                    variant="link"
-                    onClick={() => navigate("/dashboard/assinatura")}
-                    className="text-ivero-purple"
-                  >
-                    Ver minha assinatura
-                  </Button>
-                </div>
+                ) : (
+                  <div className="w-full flex flex-col items-center gap-2">
+                    <Button
+                      onClick={() => navigate("/dashboard")}
+                      className="w-full h-[46px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      <LayoutDashboard className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Acessar Dashboard
+                    </Button>
+                    <Button variant="link" onClick={() => navigate("/dashboard/assinatura")} className="text-primary">
+                      Ver minha assinatura
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             </div>
           );
