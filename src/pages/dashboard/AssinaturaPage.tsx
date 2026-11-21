@@ -5,7 +5,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import {
-  CreditCard, Download, Sparkles, ArrowRight, Calendar, Loader2,
+  CreditCard, Download, Layers, ArrowRight, Calendar, Loader2,
   ArrowUpRight, HelpCircle, ExternalLink, Lock, Flag, Clock, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -482,7 +482,7 @@ function AssinaturaPageContent() {
         <Card className={status === "cancelado" ? "p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent flex flex-col" : "p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent"}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
+              <Layers className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Plano Atual
               </span>
