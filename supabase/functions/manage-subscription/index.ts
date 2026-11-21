@@ -6,6 +6,7 @@ import { decideProration, listProrationPayments, prorationDay } from "../_shared
 import { asaasApiKey, asaasBaseUrl, asaasKeyName } from "../_shared/asaas.ts";
 import { decideCancelAccess, hasPaidCheckoutEvidence } from "./cancel-access.ts";
 import { handlePayPenalty } from "./penalty.ts";
+import { planDisplayName } from "../_shared/plan-names.ts";
 import {
   calcularMultaCancelamento,
   isPenaltyPending,
@@ -567,7 +568,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             value,
             updatePendingPayments: true,
-            description: `Ivero — Plano ${plano}`,
+            description: `Ivero — Plano ${planDisplayName(plano)}`,
           }),
         });
         if (!upd.ok) {

@@ -5,6 +5,7 @@ import { normalizeCiclo, planValue, COMPROMISSO_MESES, type CicloContratado, typ
 import { quoteAgency, highestPlan, type AgencyQuote } from "../_shared/agency-pricing.ts";
 import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_shared/trial-eligibility.ts";
 import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resumableCancelledAccess } from "../_shared/checkout-state.ts";
+import { planDisplayName } from "../_shared/plan-names.ts";
 import { isPenaltyPending, PENALTY_COLUMNS, penaltyBlockedMessage, type PenaltyRow } from "../_shared/penalty.ts";
 
 
@@ -32,9 +33,9 @@ const ITEM_DESCRIPTION_MAX = 150;
 export function resumeItemDescription(base: string, resumeDueDay: string | null): string {
   if (!resumeDueDay) return base;
   const [y, m, d] = resumeDueDay.slice(0, 10).split("-");
-  const sentence = `Nada é cobrado hoje. A primeira cobrança é em ${d}/${m}/${y}.`;
-  const combined = base ? `${base} ${sentence}` : sentence;
-  return combined.length > ITEM_DESCRIPTION_MAX ? sentence : combined;
+  const sentences = `Nada é cobrado hoje. A primeira cobrança é em ${d}/${m}/${y}.`;
+  const combined = base ? `${sentences} ${base}` : sentences;
+  return combined.length > ITEM_DESCRIPTION_MAX ? sentences : combined;
 }
 
 interface CheckoutBody {
@@ -425,8 +426,8 @@ Deno.serve(async (req) => {
             agencyQuote
               ? `${agencyQuote.items.length} marcas${agencyQuote.discountPct ? ` com ${agencyQuote.discountPct}% de desconto por volume` : ""}`
               : ciclo === "anual"
-                ? `Plano ${plano} — mensalidade promocional com compromisso de ${COMPROMISSO_MESES} meses`
-                : `Plano ${plano} — mensalidade sem compromisso`,
+                ? `Plano ${planDisplayName(plano)} com mensalidade promocional e compromisso de ${COMPROMISSO_MESES} meses.`
+                : `Plano ${planDisplayName(plano)} com mensalidade sem compromisso.`,
             resume?.isPaid ? nextDueDate : null,
           ),
           quantity: 1,

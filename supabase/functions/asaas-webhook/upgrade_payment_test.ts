@@ -177,7 +177,7 @@ Deno.test({ ...opts, name: "1) CONFIRMED com upgrade pendente: PUT primeiro, dep
   assertEquals(status, 200);
   assertEquals(out, { received: true, upgrade: "applied" });
   assertEquals(memory.asaasCalls, [`GET /subscriptions/${SUB}`, `PUT /subscriptions/${SUB}`]);
-  assertEquals(memory.asaasBodies[0], { value: 997, updatePendingPayments: true, description: "Ivero — Plano autoridade" });
+  assertEquals(memory.asaasBodies[0], { value: 997, updatePendingPayments: true, description: "Ivero — Plano Autoridade" });
   assertEquals(memory.row.plano, "autoridade");
   assertEquals(memory.row.ciclo_contratado, "anual");
   for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
@@ -446,7 +446,7 @@ Deno.test({ ...opts, name: "f) linha normal: valor do Asaas diferente → PUT en
   const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
   assertEquals(r.out, { received: true, upgrade: "applied" });
   assertEquals(memory.asaasCalls, [`GET /subscriptions/${SUB}`, `PUT /subscriptions/${SUB}`]);
-  assertEquals(memory.asaasBodies[0], { value: 997, updatePendingPayments: true, description: "Ivero — Plano autoridade" });
+  assertEquals(memory.asaasBodies[0], { value: 997, updatePendingPayments: true, description: "Ivero — Plano Autoridade" });
 }});
 
 for (const plano of ["influencia", "autoridade"]) {

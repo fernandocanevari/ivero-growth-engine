@@ -629,7 +629,7 @@ export function UpgradeModal({
           </div>
 
           <p className="text-center text-[11px] text-muted-foreground mt-6">
-            {lockAnnual
+            {isAnnual
               ? "✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional"
               : "✦ Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser"}
           </p>

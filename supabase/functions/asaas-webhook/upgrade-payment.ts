@@ -4,6 +4,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { asaasApiKey, asaasBaseUrl } from "../_shared/asaas.ts";
 import { snapshotDesconto, type DescontoRow } from "../_shared/penalty.ts";
+import { planDisplayName } from "../_shared/plan-names.ts";
 
 // Referências de agência ("prorata:<id>:agency:<marca>") e de fidelidade não casam.
 export const UPGRADE_REF_RE = /^prorata:([0-9a-f-]{36}):(presenca|influencia|autoridade)(?::\d+)?$/;
@@ -116,7 +117,7 @@ export async function handleUpgradePayment(
       const res = await fetch(`${asaasBaseUrl()}/subscriptions/${encodeURIComponent(pending.asaas_subscription_id)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", access_token: key },
-        body: JSON.stringify({ value: valor, updatePendingPayments: true, description: `Ivero — Plano ${pending.upgrade_pendente_plano}` }),
+        body: JSON.stringify({ value: valor, updatePendingPayments: true, description: `Ivero — Plano ${planDisplayName(pending.upgrade_pendente_plano)}` }),
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");

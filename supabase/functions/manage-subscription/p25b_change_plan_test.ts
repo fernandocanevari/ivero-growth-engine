@@ -358,7 +358,7 @@ Deno.test("trial com vínculo: aplica na hora, SEM cobrança proporcional nem pe
   assertEquals(r.data.proRata, null);
   assertEquals(posts(w).length, 0, "nenhuma cobrança da diferença no trial");
   assertEquals(puts(w).length, 1);
-  assertEquals(puts(w)[0].body, { value: 897, updatePendingPayments: true, description: "Ivero — Plano influencia" });
+  assertEquals(puts(w)[0].body, { value: 897, updatePendingPayments: true, description: "Ivero — Plano Influência" });
   assertEquals([w.row.plano, w.row.ciclo_contratado], ["influencia", "mensal"]);
   assertEquals(pending(w.row), NO_PENDING);
 });
@@ -385,7 +385,7 @@ Deno.test("downgrade: inalterado (PUT com valor menor e plano na hora, sem cobra
   assertEquals(r.data.previousValue, 897);
   assertEquals(r.data.value, 497);
   assertEquals(posts(w).length, 0);
-  assertEquals(puts(w)[0].body, { value: 497, updatePendingPayments: true, description: "Ivero — Plano presenca" });
+  assertEquals(puts(w)[0].body, { value: 497, updatePendingPayments: true, description: "Ivero — Plano Presença" });
   assertEquals(w.row.plano, "presenca");
 });
 
@@ -511,7 +511,7 @@ for (const [label, due] of [["S2: cobrança em aberto vence HOJE", plusDays(0)],
     assertEquals(r.data.proRata, null);
     assertEquals(posts(w).length, 0);
     assertEquals(puts(w).length, 1);
-    assertEquals(puts(w)[0].body, { value: 897, updatePendingPayments: true, description: "Ivero — Plano influencia" });
+    assertEquals(puts(w)[0].body, { value: 897, updatePendingPayments: true, description: "Ivero — Plano Influência" });
     assertEquals(w.row.plano, "influencia");
     assertEquals(pending(w.row), NO_PENDING);
   });

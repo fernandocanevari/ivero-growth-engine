@@ -3,6 +3,7 @@
 // manage-subscription (cancel / pay_penalty), create-checkout (bloqueio) e
 // asaas-webhook (quitação / perdão). Espelhada em src/lib/penalty.ts.
 
+import { planDisplayName } from "./plan-names.ts";
 import { COMPROMISSO_MESES, descontoMensal, normalizeCiclo } from "./pricing.ts";
 
 /** Colunas da multa pendente em public.assinaturas. */
@@ -45,7 +46,7 @@ export const penaltyRef = (assinaturaId: string, plano: string | null | undefine
   `fidelidade:${assinaturaId}:${plano ?? ""}`.replace(/:$/, "");
 
 export const penaltyDescription = (plano: string | null | undefined, ciclos: number) =>
-  `Ivero — diferença de fidelidade (plano ${plano ?? "—"}, ${ciclos} mês(es) com desconto anual)`;
+  `Ivero — diferença de fidelidade (plano ${planDisplayName(plano)}, ${ciclos} mês(es) com desconto anual)`;
 
 /** "R$ 1.234,50" */
 export const formatPenaltyBRL = (valor: number) =>
