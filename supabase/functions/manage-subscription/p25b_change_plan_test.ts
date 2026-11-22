@@ -653,3 +653,24 @@ Deno.test("c') reativada adiantada Influência → Autoridade (Asaas 1197, PENDI
   assertEquals(w.row.plano, "influencia");
   assertEquals(puts(w).length, 0);
 });
+
+// ── P43: troca imediata supera intenção guardada (pretendido) ─────────────────
+Deno.test("P43 redução imediata com pretendido preenchido → pretendido e ciclo_pretendido nulos no MESMO update do plano", async () => {
+  const w = world({ plano: "influencia", plano_pretendido: "influencia", ciclo_pretendido: "mensal", ciclos_pagos: 0, counted_payment_ids: [] });
+  w.sub.value = 897;
+  const r = await upgrade(w, "presenca");
+  assertEquals(r.status, 200);
+  assertEquals(r.data.mode, "asaas");
+  const planWrite = w.patches.find((p) => "plano" in p)!;
+  assertEquals([planWrite.plano, planWrite.plano_pretendido, planWrite.ciclo_pretendido], ["presenca", null, null]);
+  assertEquals([w.row.plano, w.row.plano_pretendido, w.row.ciclo_pretendido], ["presenca", null, null]);
+});
+
+Deno.test("P43 trial com cartão (checkout guardou pretendido) → troca imediata zera pretendido no mesmo update", async () => {
+  const w = world({ status: "trial", plano: "presenca", plano_pretendido: "presenca", ciclo_pretendido: "mensal", ciclos_pagos: 0, counted_payment_ids: [], trial_ends_at: plusDays(5) });
+  const r = await upgrade(w, "influencia");
+  assertEquals(r.status, 200);
+  assertEquals(posts(w).length, 0);
+  const planWrite = w.patches.find((p) => "plano" in p)!;
+  assertEquals([planWrite.plano, planWrite.plano_pretendido, planWrite.ciclo_pretendido], ["influencia", null, null]);
+});

@@ -582,7 +582,7 @@ Deno.serve(async (req) => {
         // P26-fix2: desconto dos ciclos já pagos fica com o plano ANTIGO.
         const { error } = await supabaseAdmin
           .from("assinaturas")
-          .update({ plano, ciclo_contratado: ciclo, ...snapshotDesconto(assinatura) })
+          .update({ plano, ciclo_contratado: ciclo, plano_pretendido: null, ciclo_pretendido: null, ...snapshotDesconto(assinatura) })
           .eq("id", assinatura.id);
         if (error) return json(500, { error: error.message });
         return json(200, {

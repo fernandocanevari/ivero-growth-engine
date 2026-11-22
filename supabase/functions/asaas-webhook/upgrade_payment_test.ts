@@ -486,3 +486,40 @@ for (const [label, setup, expectCleared] of [
     }
   }});
 }
+
+// ── P43: a última escolha paga vence qualquer pretendido ─────────────────────
+Deno.test({ ...opts, name: "P43 b) plano influencia, pretendido influencia, upgrade pago p/ autoridade → plano autoridade, pretendidos nulos, PUT 1197", fn: async () => {
+  reset();
+  Object.assign(memory.row, { plano: "influencia", plano_pretendido: "influencia", ciclo_pretendido: "anual", ciclo_contratado: "anual", ciclos_pagos: 0, counted_payment_ids: [], compromisso_meses: 12, desconto_acumulado: null, ciclos_no_upgrade: null, upgrade_pendente_plano: "autoridade", upgrade_pendente_ciclo: "anual", upgrade_pendente_valor_novo: 1197, upgrade_pendente_diferenca: 480 });
+  memory.subValue = 717;
+  const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment("pay_up", { value: 480 }) });
+  assertEquals(r.out, { received: true, upgrade: "applied" });
+  assertEquals(memory.asaasCalls, [`GET /subscriptions/${SUB}`, `PUT /subscriptions/${SUB}`]);
+  assertEquals(memory.asaasBodies[0], { value: 1197, updatePendingPayments: true, description: "Ivero — Plano Autoridade" });
+  assertEquals([memory.row.plano, memory.row.plano_pretendido, memory.row.ciclo_pretendido, memory.row.ciclo_contratado], ["autoridade", null, null, "anual"]);
+  // 1ª mensalidade (RPC simulada no teste: plano = coalesce(pretendido, plano)) não rebaixa.
+  await send({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_mes1", subscription: SUB, customer: "cus_live", value: 1197, dueDate: "2026-11-24", confirmedDate: "2026-11-24", externalReference: RID } });
+  assertEquals(memory.row.plano, "autoridade");
+}});
+
+Deno.test({ ...opts, name: "P43 d) plano presenca, pretendido autoridade, upgrade pago p/ influencia → plano influencia, pretendido nulo, PUT 717", fn: async () => {
+  reset();
+  Object.assign(memory.row, { plano: "presenca", plano_pretendido: "autoridade", ciclo_pretendido: "anual", ciclo_contratado: "anual", ciclos_pagos: 0, counted_payment_ids: [], compromisso_meses: 12, desconto_acumulado: null, ciclos_no_upgrade: null, upgrade_pendente_plano: "influencia", upgrade_pendente_ciclo: "anual", upgrade_pendente_valor_novo: 717, upgrade_pendente_diferenca: 320 });
+  memory.subValue = 397;
+  const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment("pay_up", { externalReference: REF_INF, value: 320 }) });
+  assertEquals(r.out, { received: true, upgrade: "applied" });
+  assertEquals(memory.asaasBodies[0], { value: 717, updatePendingPayments: true, description: "Ivero — Plano Influência" });
+  assertEquals([memory.row.plano, memory.row.plano_pretendido, memory.row.ciclo_pretendido], ["influencia", null, null]);
+}});
+
+Deno.test({ ...opts, name: "P43 linha sem pretendido: patch de promoção não inclui plano_pretendido/ciclo_pretendido", fn: async () => {
+  reset();
+  // Chaves ausentes: se o patch as enviasse (mesmo null), Object.assign do mock as criaria.
+  delete memory.row.plano_pretendido; delete memory.row.ciclo_pretendido;
+  const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
+  assertEquals(r.out, { received: true, upgrade: "applied" });
+  assertEquals(memory.row.plano, "autoridade");
+  assertEquals("plano_pretendido" in memory.row, false);
+  assertEquals("ciclo_pretendido" in memory.row, false);
+  assertEquals(memory.dbWrites, 1);
+}});
