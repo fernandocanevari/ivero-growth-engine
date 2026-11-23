@@ -44,6 +44,10 @@ interface World {
   raceWriteFailures?: number;
   /** P27: número de gravações da correção pós-webhook recebidas. */
   raceWrites?: number;
+  /** P44: simula o que o webhook/outra chamada grava logo antes da gravação principal do cancel. */
+  raceHook?: (row: Row) => void;
+  /** P44: captura console.log quando definido. */
+  logs?: string[];
 }
 
 function world(row: Row = {}, over: Partial<World> = {}): World {
@@ -111,7 +115,7 @@ async function callMany(w: World, bodies: Record<string, unknown>[]) {
   const previous = envNames.map((k) => Deno.env.get(k));
   ["https://database.invalid", "test-anon", "test-service", "test-provider", "sandbox"].forEach((v, i) => Deno.env.set(envNames[i], v));
   const orig = { log: console.log, warn: console.warn, error: console.error };
-  console.log = () => {}; console.warn = () => {};
+  console.log = (...a: unknown[]) => { w.logs?.push(a.map(String).join(" ")); }; console.warn = () => {};
   console.error = (...a: unknown[]) => { w.errors.push(a.map(String).join(" ")); };
   let seq = w.charges.size;
   const reply = (data: unknown, status = 200) =>
@@ -134,6 +138,9 @@ async function callMany(w: World, bodies: Record<string, unknown>[]) {
         // P27: webhook SUBSCRIPTION_DELETED (subscriptionRemovalPatch) chega antes da gravação do cancel.
         if (w.webhookWinsOnCancel && url.searchParams.get("status") === "neq.cancelado" && w.row.status !== "cancelado" && w.row.asaas_subscription_id) {
           Object.assign(w.row, { status: "cancelado", carencia_ate: null, asaas_subscription_id: null, asaas_subscription_id_anterior: w.row.asaas_subscription_id });
+        }
+        if (w.raceHook && url.searchParams.get("status") === "neq.cancelado" && w.row.status !== "cancelado") {
+          const hook = w.raceHook; w.raceHook = undefined; hook(w.row);
         }
         if (url.searchParams.has("multa_ultimo_payment_id")) {
           w.raceWrites = (w.raceWrites ?? 0) + 1;
@@ -611,4 +618,97 @@ Deno.test("P27 erro de banco persistente na correção pós-webhook: ALERTA, cob
   assertEquals(w.charges.get("pay_m1")?.deleted, undefined, "cobrança NÃO removida");
   assert(w.errors.some((e) => e.includes("ALERTA cancel: multa criada mas não gravada") && e.includes("pay_m1") && e.includes(String(MULTA))), w.errors.join("\n"));
   assertEquals(w.row.multa_pendente_valor, null, "não gravada (banco fora)");
+});
+
+// ── P44: corrida real (PAYMENT_DELETED antes do SUBSCRIPTION_DELETED) ──────────
+const OLD_FINE = "pay_gefwwd1zs3wsoy7t";
+const MULTA_INF1 = multaFidelidade("influencia", 1);
+const paymentDeleted = (row: Row) => Object.assign(row, { status: "cancelado", carencia_ate: null });
+const alerta = (w: World) => w.errors.filter((e) => e.includes("ALERTA cancel: corrida sem multa persistida"));
+const payDeletes = (w: World) => w.calls.filter((c) => c.method === "DELETE" && c.path.startsWith("/payments/"));
+
+Deno.test("P44 a) incidente real (PAYMENT_DELETED, multa antiga paga): multa gravada, sem DELETE /payments", async () => {
+  const w = world({ plano: "influencia", ciclos_pagos: 1, counted_payment_ids: ["p1"], multa_ultimo_payment_id: OLD_FINE },
+    { raceHook: paymentDeleted, logs: [] });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(r.data.multa?.value, MULTA_INF1);
+  assertEquals(w.row.multa_pendente_valor, MULTA_INF1);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.row.multa_pendente_invoice_url, "https://invoice.invalid/pay_m1");
+  assertEquals(w.row.asaas_subscription_id, null);
+  assertEquals(w.row.asaas_subscription_id_anterior, "sub_test");
+  assertEquals(payDeletes(w).length, 0);
+  assert(w.logs!.some((l) => l.includes("corrida com webhook, cancelamento completado e multa persistida")));
+  assertEquals(alerta(w).length, 0);
+});
+
+Deno.test("P44 b) anterior de contrato mais antigo: ainda completa", async () => {
+  const w = world({ asaas_subscription_id_anterior: "sub_old", multa_ultimo_payment_id: OLD_FINE }, { raceHook: paymentDeleted });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(payDeletes(w).length, 0);
+});
+
+Deno.test("P44 c) SUBSCRIPTION_DELETED com multa_ultimo_payment_id preenchido: completa", async () => {
+  const w = world({ multa_ultimo_payment_id: OLD_FINE }, { webhookWinsOnCancel: true });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.row.multa_ultimo_payment_id, OLD_FINE);
+  assertEquals(payDeletes(w).length, 0);
+});
+
+Deno.test("P44 d) duplo clique, outra chamada já gravou a multa: cobrança desta removida, reused, sem ALERTA", async () => {
+  const w = world({}, { raceHook: (row) => Object.assign(row, {
+    status: "cancelado", asaas_subscription_id: null, asaas_subscription_id_anterior: "sub_test",
+    multa_pendente_valor: MULTA, multa_pendente_ciclos: 3, multa_pendente_payment_id: "pay_other", multa_pendente_invoice_url: "https://invoice.invalid/pay_other",
+  }) });
+  const r = await cancel(w);
+  assertEquals(r.data.reused, true);
+  assertEquals(w.charges.get("pay_m1")?.deleted, true);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_other");
+  assertEquals(alerta(w).length, 0);
+});
+
+Deno.test("P44 e) cancelada por OUTRA assinatura e sem multa: não completa, ALERTA, cobrança removida", async () => {
+  const w = world({}, { raceHook: (row) => Object.assign(row, { status: "cancelado", asaas_subscription_id: "sub_outra", asaas_subscription_id_anterior: "sub_velha" }) });
+  const r = await cancel(w);
+  assertEquals(r.data.reused, true);
+  assertEquals(w.charges.get("pay_m1")?.deleted, true);
+  assertEquals(w.row.multa_pendente_valor, null);
+  assertEquals(w.raceWrites ?? 0, 0);
+  assertEquals(alerta(w).length, 1);
+  assert(alerta(w)[0].includes("pay_m1") && alerta(w)[0].includes(String(MULTA)) && alerta(w)[0].includes("subMatch: false"), alerta(w)[0]);
+  assert(!alerta(w)[0].includes(EMAIL));
+});
+
+Deno.test("P44 f) sem corrida, multa_ultimo_payment_id preenchido: caminho normal", async () => {
+  const w = world({ multa_ultimo_payment_id: OLD_FINE }, { logs: [] });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, undefined);
+  assertEquals(w.row.multa_pendente_payment_id, "pay_m1");
+  assertEquals(w.raceWrites ?? 0, 0);
+  assertEquals(w.logs!.some((l) => l.includes("corrida")), false);
+  assertEquals(alerta(w).length, 0);
+});
+
+Deno.test("P44 g) duplo clique com multa da outra chamada já paga: não completa, cobrança removida, reused, sem ALERTA", async () => {
+  const w = world({}, { raceHook: (row) => Object.assign(row, {
+    status: "cancelado", asaas_subscription_id: null, asaas_subscription_id_anterior: "sub_test",
+    multa_pendente_valor: null, multa_pendente_payment_id: null, multa_ultimo_payment_id: "pay_A_paga",
+  }) });
+  const r = await cancel(w);
+  assertEquals(r.status, 200);
+  assertEquals(r.data.reused, true);
+  assertEquals(w.charges.get("pay_m1")?.deleted, true);
+  assertEquals(w.raceWrites ?? 0, 0);
+  assertEquals(w.row.multa_pendente_payment_id, null);
+  assertEquals(w.row.multa_ultimo_payment_id, "pay_A_paga");
+  assertEquals(alerta(w).length, 0);
 });

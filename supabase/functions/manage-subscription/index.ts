@@ -999,30 +999,38 @@ Deno.serve(async (req) => {
           return (data as (CancelRow & Record<string, unknown>) | null) ?? null;
         };
         const fresh = await readFresh();
+        // P44: multa paga/apagada DURANTE esta chamada muda multa_ultimo_payment_id → duplicata.
+        const startMultaUltimo = (assinatura as Record<string, unknown>).multa_ultimo_payment_id as string | null | undefined;
         // P27: o webhook SUBSCRIPTION_DELETED da assinatura que ESTA chamada
         // removeu marcou a linha 'cancelado' antes da gravação acima. Nenhuma
         // multa foi gravada ainda → completa o cancelamento (multa incluída)
         // em vez de desfazer a cobrança.
         const webhookWon = !!fresh && !!removedSubId &&
           fresh.status === "cancelado" &&
-          fresh.asaas_subscription_id_anterior === removedSubId &&
+          (fresh.asaas_subscription_id === removedSubId || fresh.asaas_subscription_id_anterior === removedSubId) &&
           fresh.multa_pendente_valor == null &&
-          fresh.multa_ultimo_payment_id == null;
+          fresh.multa_pendente_payment_id == null &&
+          (fresh.multa_ultimo_payment_id ?? null) === (startMultaUltimo ?? null);
         let completed = false;
         if (webhookWon) {
           const patch = Object.fromEntries(Object.entries(cancelPatch).filter(([k, v]) => fresh![k] !== v));
           if (Object.keys(patch).length === 0) {
             completed = true;
           } else {
-            const completeAfterWebhook = () => supabaseAdmin
-              .from("assinaturas")
-              .update(patch)
-              .eq("id", assinatura.id)
-              .eq("status", "cancelado")
-              .eq("asaas_subscription_id_anterior", removedSubId as string)
-              .is("multa_pendente_valor", null)
-              .is("multa_ultimo_payment_id", null)
-              .select("id");
+            const completeAfterWebhook = () => {
+              const q = supabaseAdmin
+                .from("assinaturas")
+                .update(patch)
+                .eq("id", assinatura.id)
+                .eq("status", "cancelado")
+                .or(`asaas_subscription_id.eq.${removedSubId},asaas_subscription_id_anterior.eq.${removedSubId}`)
+                .is("multa_pendente_valor", null)
+                .is("multa_pendente_payment_id", null);
+              return (startMultaUltimo == null
+                ? q.is("multa_ultimo_payment_id", null)
+                : q.eq("multa_ultimo_payment_id", startMultaUltimo)
+              ).select("id");
+            };
             let res = await completeAfterWebhook();
             if (res.error) res = await completeAfterWebhook();
             if (res.error) {
@@ -1039,6 +1047,17 @@ Deno.serve(async (req) => {
           }
         }
         if (!completed) {
+          if (
+            multaValue > 0 && !!fresh &&
+            fresh.multa_pendente_valor == null && fresh.multa_pendente_payment_id == null &&
+            (fresh.multa_ultimo_payment_id ?? null) === (startMultaUltimo ?? null)
+          ) {
+            console.error(
+              "ALERTA cancel: corrida sem multa persistida",
+              userId, assinatura.id, multaValue, chargeId, fresh.status,
+              "subMatch:", !!removedSubId && (fresh.asaas_subscription_id === removedSubId || fresh.asaas_subscription_id_anterior === removedSubId),
+            );
+          }
           // Outra chamada simultânea já cancelou: a cobrança desta é desfeita.
           await undoCharge();
           const again = webhookWon ? await readFresh() : fresh;
