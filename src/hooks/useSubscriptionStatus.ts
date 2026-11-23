@@ -31,12 +31,20 @@ interface AssinaturaRow {
   upgrade_pendente_em?: string | null;
 }
 
-
+// Aviso compartilhado: uma tela que recarregou a assinatura avisa as outras
+// instâncias do hook (sidebar, layout) para relerem a própria linha em segundo
+// plano. Quem reage ao aviso não avisa de novo (sem laço).
+const subscriptionListeners = new Set<() => void>();
+export function notifySubscriptionChanged() {
+  for (const fn of Array.from(subscriptionListeners)) fn();
+}
 
 export function useSubscriptionStatus() {
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [assinaturaLoading, setAssinaturaLoading] = useState(true);
-  const [assinatura, setAssinatura] = useState<AssinaturaRow | null>(null);
+  const [assinaturaState, setAssinaturaState] = useState<{ owner: string | null; row: AssinaturaRow | null }>(
+    { owner: null, row: null },
+  );
   // undefined = conta individual (usa o plano da assinatura, como sempre).
   const [brandPlan, setBrandPlan] = useState<
     { plano: string | null; pretendido: string | null } | undefined
@@ -75,15 +83,22 @@ export function useSubscriptionStatus() {
   // Já houve uma resposta do servidor? Recargas seguintes são revalidação em
   // segundo plano: não voltam ao estado "carregando" (evita skeleton piscando).
   const hasLoadedRef = useRef(false);
+  // Só a última leitura iniciada grava estado (leituras sobrepostas fora de ordem).
+  const requestSeqRef = useRef(0);
+  // Usuário atual, para descartar respostas de outra conta após troca.
+  const currentUserRef = useRef<string | null>(null);
+  currentUserRef.current = userId;
 
   // Extraído do effect para permitir recarga sob demanda (ex.: após troca de
   // plano ou retorno do checkout) sem forçar F5.
   const fetchAssinatura = useCallback(async () => {
     if (!authResolved) return; // mantém loading até a sessão resolver
+    const seq = ++requestSeqRef.current;
+    const isStale = () => seq !== requestSeqRef.current || currentUserRef.current !== userId;
     if (!hasLoadedRef.current) setAssinaturaLoading(true);
 
     if (!userId) {
-      setAssinatura(null);
+      setAssinaturaState({ owner: null, row: null });
       hasLoadedRef.current = true;
       setAssinaturaLoading(false);
       return;
@@ -102,15 +117,17 @@ export function useSubscriptionStatus() {
       .limit(1)
       .maybeSingle();
 
+    if (isStale()) return;
     if (error) {
       // Erro em revalidação não apaga o que já está em tela.
-      if (!hasLoadedRef.current) setAssinatura(null);
+      if (!hasLoadedRef.current) setAssinaturaState({ owner: userId, row: null });
     } else {
-      setAssinatura((data as unknown as AssinaturaRow | null) ?? null);
+      setAssinaturaState({ owner: userId, row: (data as unknown as AssinaturaRow | null) ?? null });
     }
 
     // Agência: o gating segue o plano da MARCA ATIVA, não o da conta.
     const scope = await getBrandScope();
+    if (isStale()) return;
     if (scope?.isAgency) {
       if (scope.brandId) {
         const { data: link } = await supabase
@@ -119,6 +136,7 @@ export function useSubscriptionStatus() {
           .eq("agency_user_id", userId)
           .eq("brand_id", scope.brandId)
           .maybeSingle();
+        if (isStale()) return;
         setBrandPlan({
           plano: (link?.plano as string | null) ?? null,
           pretendido: (link?.plano_pretendido as string | null) ?? null,
@@ -153,9 +171,23 @@ export function useSubscriptionStatus() {
     };
   }, [fetchAssinatura]);
 
+  // Outra tela recarregou a assinatura: relê a linha do usuário atual em
+  // segundo plano (sem voltar ao "carregando") e não avisa de novo.
+  useEffect(() => {
+    const onNotice = () => {
+      if (!hasLoadedRef.current) return;
+      void fetchAssinatura();
+    };
+    subscriptionListeners.add(onNotice);
+    return () => {
+      subscriptionListeners.delete(onNotice);
+    };
+  }, [fetchAssinatura]);
 
-
-  const isLoading = roleLoading || !authResolved || assinaturaLoading;
+  // Linha de outra conta (troca de usuário ainda sem leitura nova) nunca é usada.
+  const rowOwnedByCurrent = assinaturaState.owner === userId;
+  const assinatura = rowOwnedByCurrent ? assinaturaState.row : null;
+  const isLoading = roleLoading || !authResolved || assinaturaLoading || (!!userId && !rowOwnedByCurrent);
 
   let isTrial = false;
   let isPaid = false;

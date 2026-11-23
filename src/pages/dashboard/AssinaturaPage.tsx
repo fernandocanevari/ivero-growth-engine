@@ -24,6 +24,7 @@ import { UpgradeModal } from "@/components/dashboard/UpgradeModal";
 import { track } from "@/lib/analytics";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import * as subscriptionStatusModule from "@/hooks/useSubscriptionStatus";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useBillingInvoices, INVOICE_STATUS_LABEL } from "@/hooks/useBillingInvoices";
 import { PLANOS, formatBRL } from "@/lib/pricing-rules";
@@ -78,6 +79,15 @@ export default function AssinaturaPage() {
   }
   if (isAgency) return <Navigate to={AGENCY_BILLING_ROUTE} replace />;
   return <AssinaturaPageContent />;
+}
+
+// Avisa as outras telas (sidebar, layout) para relerem a assinatura. Lido pelo
+// namespace porque testes antigos simulam o hook sem esta função.
+function notifyOthers() {
+  const mod = subscriptionStatusModule as Record<string, unknown>;
+  if ("notifySubscriptionChanged" in mod && typeof mod.notifySubscriptionChanged === "function") {
+    (mod.notifySubscriptionChanged as () => void)();
+  }
 }
 
 function AssinaturaPageContent() {
@@ -198,14 +208,19 @@ function AssinaturaPageContent() {
     void reloadRef.current();
   }, [returnedFromCheckout]);
 
-  // P26: ao voltar para a aba (depois de pagar a multa), relê a assinatura para
-  // o card sumir e "Reativar plano" liberar sozinho.
-  const penaltyPendingRef = useRef(false);
-  penaltyPendingRef.current = penaltyBlocksReactivation;
+  // Ao voltar para a aba (pagou a multa ou a diferença em outra aba), relê a
+  // assinatura e as cobranças em qualquer estado. No máximo uma vez a cada 10 s:
+  // focus + visibilitychange juntos contam como um retorno só.
+  const lastReturnReloadRef = useRef(0);
   useEffect(() => {
     const onReturn = () => {
-      if (!penaltyPendingRef.current || document.visibilityState === "hidden") return;
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (lastReturnReloadRef.current && now - lastReturnReloadRef.current < 10_000) return;
+      lastReturnReloadRef.current = now;
       void refreshRef.current();
+      void reloadRef.current();
+      notifyOthers();
     };
     window.addEventListener("focus", onReturn);
     document.addEventListener("visibilitychange", onReturn);
@@ -213,6 +228,49 @@ function AssinaturaPageContent() {
       window.removeEventListener("focus", onReturn);
       document.removeEventListener("visibilitychange", onReturn);
     };
+  }, []);
+
+  // Upgrade aguardando a diferença: relê a linha a cada 8 s até o pedido sumir
+  // (aí recarrega as cobranças uma vez), por no máximo 10 min por pedido. Mesmo
+  // padrão do intervalo de 20 s: criado UMA vez, estado lido por ref.
+  const upgradePollKey =
+    !statusLoading && effectiveStatus === "ativo" && upgradePendente?.invoiceUrl
+      ? `${upgradePendente.plano}|${upgradePendente.em ?? ""}|${upgradePendente.invoiceUrl}`
+      : null;
+  const upgradePollKeyRef = useRef<string | null>(null);
+  upgradePollKeyRef.current = upgradePollKey;
+  const upgradePollStartRef = useRef<Map<string, number>>(new Map());
+  const upgradePolledRef = useRef<Set<string>>(new Set());
+  const upgradePollBusyRef = useRef(false);
+  useEffect(() => {
+    if (upgradePollKey && !upgradePollStartRef.current.has(upgradePollKey)) {
+      upgradePollStartRef.current.set(upgradePollKey, Date.now());
+    }
+  }, [upgradePollKey]);
+  const prevUpgradeKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevUpgradeKeyRef.current;
+    prevUpgradeKeyRef.current = upgradePollKey;
+    if (prev && prev !== upgradePollKey && upgradePolledRef.current.has(prev)) {
+      upgradePolledRef.current.delete(prev);
+      void reloadRef.current();
+    }
+  }, [upgradePollKey]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const key = upgradePollKeyRef.current;
+      if (!key || upgradePollBusyRef.current) return;
+      if (document.visibilityState === "hidden") return;
+      const started = upgradePollStartRef.current.get(key) ?? Date.now();
+      if (Date.now() - started >= 600_000) return;
+      upgradePollBusyRef.current = true;
+      upgradePolledRef.current.add(key);
+      notifyOthers();
+      void Promise.resolve(refreshRef.current()).finally(() => {
+        upgradePollBusyRef.current = false;
+      });
+    }, 8_000);
+    return () => clearInterval(id);
   }, []);
 
   const handlePayPenalty = async () => {
@@ -225,6 +283,7 @@ function AssinaturaPageContent() {
   const refreshBilling = () => {
     void refreshStatus();
     void reload();
+    notifyOthers();
   };
 
   // Pagamento pendente: o webhook do Asaas pode não ter chegado. Consultamos o
