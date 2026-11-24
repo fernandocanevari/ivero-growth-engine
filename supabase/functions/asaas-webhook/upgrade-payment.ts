@@ -32,6 +32,7 @@ const PLAN_RANK: Record<string, number> = { presenca: 1, influencia: 2, autorida
 
 type PendingRow = DescontoRow & {
   id: string;
+  status?: string | null;
   plano_pretendido?: string | null;
   ciclo_pretendido?: string | null;
   asaas_subscription_id: string | null;
@@ -51,7 +52,7 @@ export async function handleUpgradePayment(
   ref: { assinaturaId: string; plano: string },
 ): Promise<UpgradeResult> {
   const { data, error } = await supabase.from("assinaturas")
-    .select("id, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id, plano, plano_pretendido, ciclo_pretendido, ciclo_contratado, ciclos_pagos, compromisso_meses, desconto_acumulado, ciclos_no_upgrade")
+    .select("id, status, asaas_subscription_id, upgrade_pendente_plano, upgrade_pendente_ciclo, upgrade_pendente_valor_novo, upgrade_pendente_payment_id, upgrade_ultimo_payment_id, plano, plano_pretendido, ciclo_pretendido, ciclo_contratado, ciclos_pagos, compromisso_meses, desconto_acumulado, ciclos_no_upgrade")
     .eq("id", ref.assinaturaId).maybeSingle();
   if (error) {
     console.error("[asaas-webhook] upgrade: erro ao ler assinatura", ref.assinaturaId, error.message);
@@ -137,6 +138,19 @@ export async function handleUpgradePayment(
     // reenvio do mesmo pagamento não casa (pendência já limpa) e não soma de novo.
     const patch: Record<string, unknown> = { plano: pending.upgrade_pendente_plano, ...CLEAR_PENDING, upgrade_ultimo_payment_id: paymentId, ...snapshotDesconto(pending) };
     if (pending.upgrade_pendente_ciclo) patch.ciclo_contratado = pending.upgrade_pendente_ciclo;
+    // P47 (finding 70): mensal JÁ PAGO → anual. Compromisso começa no pagamento da
+    // diferença; o mês já pago conta como o 1º e substitui o snapshot nesse caso.
+    if (
+      pending.status !== "trial" && pending.status !== "cancelado" &&
+      String(pending.ciclo_contratado ?? "mensal") === "mensal" &&
+      pending.upgrade_pendente_ciclo === "anual" &&
+      Number(pending.ciclos_pagos ?? 0) >= 1
+    ) {
+      patch.ciclos_pagos = 1;
+      patch.compromisso_inicio = new Date().toISOString();
+      patch.desconto_acumulado = 0;
+      patch.ciclos_no_upgrade = 1;
+    }
     // P43: a última escolha paga vence — qualquer intenção guardada (ex.: reativação
     // no mesmo plano) é superada, senão claim_subscription_payment a promoveria
     // na 1ª mensalidade e rebaixaria o plano pago.

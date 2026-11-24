@@ -674,3 +674,95 @@ Deno.test("P43 trial com cartão (checkout guardou pretendido) → troca imediat
   const planWrite = w.patches.find((p) => "plano" in p)!;
   assertEquals([planWrite.plano, planWrite.plano_pretendido, planWrite.ciclo_pretendido], ["influencia", null, null]);
 });
+
+// ── P47 (finding 70): mensal JÁ PAGO → anual inicia o compromisso na troca ────
+const P47_KEYS = ["ciclos_pagos", "compromisso_inicio", "desconto_acumulado", "ciclos_no_upgrade"] as const;
+const p47 = (row: Row) => Object.fromEntries(P47_KEYS.map((k) => [k, row[k]]));
+const preview = async (w: World) => (await call(w, { action: "preview_cancel" })).data;
+/** Mesmo efeito de claim_subscription_payment sobre os contadores: +1 por cobrança nova. */
+const claim = (w: World, id: string) => {
+  (w.row.counted_payment_ids as string[]).push(id);
+  w.row.ciclos_pagos = Number(w.row.ciclos_pagos) + 1;
+};
+
+for (const [plano, mensal, anual, desconto] of [["presenca", 497, 397, 100], ["influencia", 897, 717, 180], ["autoridade", 1497, 1197, 300]] as const) {
+  Deno.test(`P47 a) ${plano} mensal (3 ciclos) → mesmo plano anual: compromisso começa hoje; multa 0, ${desconto}, ${2 * desconto}, ${3 * desconto}; 0 após 11 anuais`, async () => {
+    const w = world({ plano, ciclos_pagos: 3, counted_payment_ids: ["pay_c1", "pay_c2", "pay_c3"], desconto_acumulado: null, ciclos_no_upgrade: null });
+    w.sub.value = mensal;
+    const r = await upgrade(w, plano, "anual");
+    assertEquals(r.data.mode, "asaas");
+    assertEquals(r.data.compromissoIniciado, true);
+    assertEquals(puts(w)[0].body.value, anual);
+    assertEquals(posts(w).length, 0, "troca sem cobrança");
+    assertEquals([w.row.plano, w.row.ciclo_contratado, w.row.compromisso_meses], [plano, "anual", 12]);
+    assertEquals([w.row.ciclos_pagos, w.row.desconto_acumulado, w.row.ciclos_no_upgrade], [1, 0, 1]);
+    assert(typeof w.row.compromisso_inicio === "string" && Math.abs(Date.parse(w.row.compromisso_inicio as string) - Date.now()) < 60_000);
+    assertEquals(await preview(w), { ok: true, multa: { valor: 0, ciclos: 1 }, emCompromisso: true });
+    for (let i = 1; i <= 3; i++) {
+      claim(w, `pay_an${i}`);
+      assertEquals((await preview(w)).multa.valor, i * desconto, `após ${i} anual(is)`);
+    }
+    for (let i = 4; i <= 11; i++) claim(w, `pay_an${i}`);
+    assertEquals(w.row.ciclos_pagos, 12);
+    assertEquals(await preview(w), { ok: true, multa: { valor: 0, ciclos: 0 }, emCompromisso: false });
+  });
+}
+
+Deno.test("P47 b) plano menor + anual (diferença <= 0): mesmas gravações", async () => {
+  const w = world({ plano: "influencia", ciclos_pagos: 2, counted_payment_ids: ["pay_c1", "pay_c2"] });
+  w.sub.value = 897;
+  const r = await upgrade(w, "presenca", "anual");
+  assertEquals(r.data.mode, "asaas");
+  assertEquals(puts(w)[0].body.value, 397);
+  assertEquals(posts(w).length, 0);
+  assertEquals([w.row.plano, w.row.ciclo_contratado], ["presenca", "anual"]);
+  assertEquals([w.row.ciclos_pagos, w.row.desconto_acumulado, w.row.ciclos_no_upgrade], [1, 0, 1]);
+  assert(typeof w.row.compromisso_inicio === "string");
+});
+
+Deno.test("P47 c) plano maior + anual: no clique só o pedido (110,00 com 15 dias), nada de compromisso", async () => {
+  const w = world({ ciclos_pagos: 3, counted_payment_ids: ["pay_c1", "pay_c2", "pay_c3"] });
+  w.subPayments = [{ id: "pay_next", status: "PENDING", dueDate: plusDays(15), value: 497 }];
+  const before = p47(w.row);
+  const r = await upgrade(w, "influencia", "anual");
+  assertEquals(r.data.mode, "pending_payment");
+  assertEquals(posts(w)[0].body.value, 110);
+  assertEquals([w.row.upgrade_pendente_ciclo, w.row.upgrade_pendente_valor_novo, w.row.upgrade_pendente_diferenca], ["anual", 717, 110]);
+  assertEquals([w.row.plano, w.row.ciclo_contratado], ["presenca", "mensal"]);
+  assertEquals(p47(w.row), before);
+});
+
+for (const [label, row, plano, ciclo] of [
+  ["trial com vínculo", { status: "trial", trial_ends_at: new Date(Date.now() + 5 * DAY).toISOString(), ciclos_pagos: 0, counted_payment_ids: [] }, "presenca", "anual"],
+  ["ativo com 0 ciclos", { ciclos_pagos: 0, counted_payment_ids: [] }, "presenca", "anual"],
+  ["linha anual", { ciclo_contratado: "anual", ciclos_pagos: 3 }, "presenca", "mensal"],
+  ["mensal que continua mensal (downgrade)", { plano: "influencia", ciclos_pagos: 3 }, "presenca", "mensal"],
+] as const) {
+  Deno.test(`P47 d) negativo (${label}): nenhuma gravação de compromisso`, async () => {
+    const w = world({ ...row, compromisso_inicio: null, desconto_acumulado: null, ciclos_no_upgrade: null } as Row);
+    if (w.row.plano === "influencia") w.sub.value = 897;
+    if (w.row.ciclo_contratado === "anual") w.sub.value = 397;
+    const before = p47(w.row);
+    const r = await upgrade(w, plano, ciclo);
+    assertEquals(r.status, 200);
+    assert(r.data.compromissoIniciado !== true);
+    assertEquals(w.row.ciclos_pagos, before.ciclos_pagos);
+    assertEquals(w.row.compromisso_inicio, null);
+  });
+}
+
+Deno.test("P47 d) negativo (caminho local, sem assinatura no Asaas): nenhuma gravação de compromisso", async () => {
+  const w = world({ status: "pendente", asaas_subscription_id: null, asaas_customer_id: null, ciclos_pagos: 0, counted_payment_ids: [] });
+  w.sub.customer = null;
+  const r = await upgrade(w, "presenca", "anual");
+  assertEquals(r.data.mode, "local");
+  assertEquals(w.row.ciclo_contratado, "anual");
+  assertEquals(p47(w.row), { ciclos_pagos: 0, compromisso_inicio: null, desconto_acumulado: undefined, ciclos_no_upgrade: undefined });
+});
+
+Deno.test("P47 f) troca imediata mensal → anual mantém a limpeza P43 de plano/ciclo pretendidos", async () => {
+  const w = world({ ciclos_pagos: 3, plano_pretendido: "presenca", ciclo_pretendido: "mensal" });
+  await upgrade(w, "presenca", "anual");
+  assertEquals([w.row.plano_pretendido, w.row.ciclo_pretendido], [null, null]);
+  assertEquals(w.row.ciclos_pagos, 1);
+});

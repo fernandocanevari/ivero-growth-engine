@@ -561,6 +561,18 @@ Deno.serve(async (req) => {
       const nextDue: string | null = cur.json?.nextDueDate ?? null;
       const customerId: string | null = cur.json?.customer ?? assinatura.asaas_customer_id ?? null;
 
+      // P47 (finding 70): mensal JÁ PAGO → anual. O compromisso de 12 meses começa
+      // na troca e o mês já pago conta como o 1º; meses a preço mensal nunca geram multa.
+      const compromissoNaTroca =
+        assinatura.status !== "trial" && assinatura.status !== "cancelado" &&
+        cicloAtual === "mensal" && ciclo === "anual" && Number(assinatura.ciclos_pagos ?? 0) >= 1;
+      const mensalParaAnualWrites = () => ({
+        ciclos_pagos: 1,
+        compromisso_inicio: new Date().toISOString(),
+        desconto_acumulado: 0,
+        ciclos_no_upgrade: 1,
+      });
+
       /** Troca imediata: novo valor no Asaas e, só depois, plano/ciclo no banco. */
       const applyImmediately = async () => {
         const upd = await fetchAsaas(`/subscriptions/${subId}`, {
@@ -582,13 +594,14 @@ Deno.serve(async (req) => {
         // P26-fix2: desconto dos ciclos já pagos fica com o plano ANTIGO.
         const { error } = await supabaseAdmin
           .from("assinaturas")
-          .update({ plano, ciclo_contratado: ciclo, plano_pretendido: null, ciclo_pretendido: null, ...snapshotDesconto(assinatura) })
+          .update({ plano, ciclo_contratado: ciclo, plano_pretendido: null, ciclo_pretendido: null, ...snapshotDesconto(assinatura), ...(compromissoNaTroca ? mensalParaAnualWrites() : {}) })
           .eq("id", assinatura.id);
         if (error) return json(500, { error: error.message });
         return json(200, {
           ok: true,
           success: true,
           mode: "asaas",
+          compromissoIniciado: compromissoNaTroca,
           plano,
           ciclo,
           value,

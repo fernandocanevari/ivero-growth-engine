@@ -109,6 +109,9 @@ export function UpgradeModal({
     (effectiveStatus === "ativo" || effectiveStatus === "inadimplente") &&
     cicloContratado === "anual";
   const isAnnual = lockAnnual || isAnnualPicked;
+  // P47: mensal já pago escolhendo Anual — o compromisso começa na troca.
+  const paidMonthlyToAnnual =
+    !isLoading && isAnnual && effectiveStatus === "ativo" && cicloContratado === "mensal" && (ciclosPagos ?? 0) >= 1;
   // Confirmação do pedido de upgrade (substitui toast + abertura automática).
   const [upgradeConfirm, setUpgradeConfirm] = useState<{
     title: string; planName: string; currentName: string; diferenca: number; dueDate: string | null; invoiceUrl: string;
@@ -252,7 +255,9 @@ export function UpgradeModal({
     const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
     toast({
       title: `Plano alterado para ${planName}`,
-      description: pr
+      description: data?.mode === "asaas" && data?.compromissoIniciado === true
+        ? "Pronto, você agora está no plano anual! Seus 12 meses começaram hoje."
+        : pr
         ? `Geramos uma cobrança de R$ ${pr.value.toFixed(2).replace(".", ",")} pela diferença proporcional aos ${pr.days} dia(s) restantes do ciclo atual. O novo valor vale integralmente a partir da próxima cobrança.`
         : data?.mode === "asaas"
           ? "O novo valor já vale para as próximas cobranças."
@@ -627,6 +632,12 @@ export function UpgradeModal({
               );
             })}
           </div>
+
+          {paidMonthlyToAnnual && (
+            <p className="text-center text-[11px] text-muted-foreground mt-4">
+              No Anual você paga menos por mês e fica 12 meses com a gente, contando a partir de hoje.
+            </p>
+          )}
 
           <p className="text-center text-[11px] text-muted-foreground mt-6">
             {isAnnual

@@ -182,7 +182,10 @@ Deno.test({ ...opts, name: "1) CONFIRMED com upgrade pendente: PUT primeiro, dep
   assertEquals(memory.row.ciclo_contratado, "anual");
   for (const [k, v] of Object.entries(CLEARED)) assertEquals(memory.row[k], v, k);
   assertEquals(memory.row.upgrade_ultimo_payment_id, "pay_up");
-  assertEquals(pick(memory.row), before);
+  // P47: esta linha é mensal paga (3 ciclos) indo para anual → compromisso começa no pagamento.
+  assertEquals(pick(memory.row), { ...before, ciclos_pagos: 1 });
+  assertEquals([memory.row.desconto_acumulado, memory.row.ciclos_no_upgrade], [0, 1]);
+  assert(typeof memory.row.compromisso_inicio === "string");
   assertEquals(memory.claims.length, 0);
 }});
 
@@ -408,6 +411,8 @@ Deno.test({ ...opts, name: "P26-fix2 c) segundo upgrade soma ao acumulado só os
 
 Deno.test({ ...opts, name: "P26-fix2 d) linha mensal: promoção não grava desconto", fn: async () => {
   reset();
+  // P47: linha que continua mensal (mensal → anual agora inicia o compromisso, ver P47).
+  memory.row.upgrade_pendente_ciclo = "mensal";
   await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment() });
   assertEquals(memory.row.plano, "autoridade");
   assertEquals(memory.row.desconto_acumulado, undefined);
@@ -523,3 +528,61 @@ Deno.test({ ...opts, name: "P43 linha sem pretendido: patch de promoção não i
   assertEquals("ciclo_pretendido" in memory.row, false);
   assertEquals(memory.dbWrites, 1);
 }});
+
+// ── P47 (finding 70): mensal JÁ PAGO → anual inicia o compromisso no pagamento ──
+const P47_KEYS = ["ciclos_pagos", "compromisso_inicio", "desconto_acumulado", "ciclos_no_upgrade"] as const;
+const p47 = () => Object.fromEntries(P47_KEYS.map((k) => [k, memory.row[k]]));
+const REF_INF47 = `prorata:${RID}:influencia`;
+const p47Row = (extra: Record<string, unknown> = {}) => Object.assign(memory.row, {
+  plano: "presenca", ciclo_contratado: "mensal", ciclos_pagos: 3, counted_payment_ids: ["pay_a", "pay_b", "pay_c"],
+  compromisso_inicio: null, compromisso_meses: 12, desconto_acumulado: null, ciclos_no_upgrade: null,
+  upgrade_pendente_plano: "influencia", upgrade_pendente_ciclo: "anual", upgrade_pendente_valor_novo: 717, upgrade_pendente_diferenca: 110,
+  ...extra,
+});
+
+Deno.test({ ...opts, name: "P47 c) Presença mensal (3 ciclos) → Influência anual, diferença 110 paga: compromisso começa; multa 0/180/360/540", fn: async () => {
+  reset(); p47Row({ plano_pretendido: "influencia", ciclo_pretendido: "anual" }); memory.subValue = 497;
+  const r = await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment("pay_up", { externalReference: REF_INF47, value: 110 }) });
+  assertEquals(r.out, { received: true, upgrade: "applied" });
+  assertEquals(memory.asaasBodies[0], { value: 717, updatePendingPayments: true, description: "Ivero — Plano Influência" });
+  assertEquals([memory.row.plano, memory.row.ciclo_contratado, memory.row.compromisso_meses], ["influencia", "anual", 12]);
+  assertEquals([memory.row.ciclos_pagos, memory.row.desconto_acumulado, memory.row.ciclos_no_upgrade], [1, 0, 1]);
+  assert(typeof memory.row.compromisso_inicio === "string");
+  // f) P43 continua: pretendidos limpos no mesmo patch.
+  assertEquals([memory.row.plano_pretendido, memory.row.ciclo_pretendido], [null, null]);
+  assertEquals(calcularMultaCancelamento(memory.row).valor, 0);
+  for (const [i, esperado] of [[1, 180], [2, 360], [3, 540]] as const) {
+    await send({ event: "PAYMENT_CONFIRMED", payment: { id: `pay_an${i}`, subscription: SUB, customer: "cus_live", value: 717, dueDate: "2026-11-26", confirmedDate: "2026-11-26" } });
+    assertEquals(memory.row.ciclos_pagos, 1 + i);
+    assertEquals(calcularMultaCancelamento(memory.row).valor, esperado, `após ${i} ciclo(s) anual(is)`);
+  }
+}});
+
+for (const [label, extra] of [
+  ["linha já anual", { ciclo_contratado: "anual" }],
+  ["mensal com 0 ciclos pagos", { ciclos_pagos: 0, counted_payment_ids: [] }],
+  ["trial", { status: "trial", ciclos_pagos: 0, counted_payment_ids: [] }],
+  ["mensal que continua mensal", { upgrade_pendente_ciclo: "mensal", upgrade_pendente_valor_novo: 897 }],
+] as const) {
+  Deno.test({ ...opts, name: `P47 d) negativo (${label}): promoção não grava o início do compromisso`, fn: async () => {
+    reset(); p47Row(extra as Record<string, unknown>);
+    const before = p47();
+    await send({ event: "PAYMENT_CONFIRMED", payment: upgradePayment("pay_up", { externalReference: REF_INF47, value: 110 }) });
+    assertEquals(memory.row.plano, "influencia");
+    assertEquals(memory.row.ciclos_pagos, before.ciclos_pagos);
+    assertEquals(memory.row.compromisso_inicio, null);
+    if (memory.row.ciclo_contratado !== "anual") {
+      assertEquals([memory.row.desconto_acumulado, memory.row.ciclos_no_upgrade], [null, null]);
+    }
+  }});
+}
+
+for (const ev of ["PAYMENT_OVERDUE", "PAYMENT_DELETED"]) {
+  Deno.test({ ...opts, name: `P47 e) pedido maior + anual não pago (${ev}): expira sem gravar compromisso`, fn: async () => {
+    reset(); p47Row();
+    await send({ event: ev, payment: upgradePayment("pay_up", { externalReference: REF_INF47, value: 110 }) });
+    assertEquals(memory.row.upgrade_pendente_payment_id, null);
+    assertEquals([memory.row.plano, memory.row.ciclo_contratado], ["presenca", "mensal"]);
+    assertEquals(p47(), { ciclos_pagos: 3, compromisso_inicio: null, desconto_acumulado: null, ciclos_no_upgrade: null });
+  }});
+}
