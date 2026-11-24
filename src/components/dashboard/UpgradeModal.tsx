@@ -162,8 +162,11 @@ export function UpgradeModal({
     return "Próximo passo";
   };
 
-  // Conta ativa: o card do plano atual não vira botão de compra.
+  // Conta ativa: o card do plano atual não vira botão de compra — exceto quando
+  // a conta é mensal e o cliente selecionou Anual: aí o mesmo plano vira
+  // "Passar para o anual" (change_plan com o mesmo plano e ciclo anual).
   const isCurrentActive = (key: PlanoSugerido) => !isLoading && effectiveStatus === "ativo" && key === plano;
+  const samePlanToAnnual = !isLoading && effectiveStatus === "ativo" && cicloContratado === "mensal" && isAnnual;
   const planNameOf = (key: unknown) => PLANOS_ARRAY.find((p) => p.key === key)?.name;
   const showUpgradeConfirm = (data: Record<string, unknown>, planName: string, title: string) => {
     setUpgradeConfirm({
@@ -600,7 +603,7 @@ export function UpgradeModal({
                       O plano {plan.name} começa nessa data.
                     </p>
                   )}
-                  {isCurrentActive(plan.key) ? (
+                  {isCurrentActive(plan.key) && !samePlanToAnnual ? (
                     <div
                       className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"
                       data-testid="current-plan-label"
@@ -610,7 +613,7 @@ export function UpgradeModal({
                     </div>
                   ) : (
                   <Button
-                    variant={highlighted ? "default" : "outline"}
+                    variant={isCurrentActive(plan.key) ? "outline" : highlighted ? "default" : "outline"}
                     size="sm"
                     className="w-full text-xs mt-auto"
                     onClick={() => void handleSelectPlan(plan.key, plan.name)}
@@ -621,6 +624,8 @@ export function UpgradeModal({
                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                         Processando...
                       </>
+                    ) : isCurrentActive(plan.key) ? (
+                      "Passar para o anual"
                     ) : isAtTop && highlighted && !cicloChanged ? (
                       "Plano atual"
                     ) : (
