@@ -110,6 +110,7 @@ describe("P48 mesmo plano mensal -> anual", () => {
     // O título antigo e a descrição antiga não são usados neste caso.
     expect(toastMock.mock.calls[0][0].title).not.toContain("Plano alterado para");
     expect(toastMock.mock.calls[0][0].description).not.toContain("12 meses");
+    console.log("TOAST:", JSON.stringify(toastMock.mock.calls[0][0].title), JSON.stringify(toastMock.mock.calls[0][0].description));
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 });
