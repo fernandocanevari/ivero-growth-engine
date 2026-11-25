@@ -23,7 +23,9 @@ vi.mock("@/hooks/useAccountType", () => ({
 import { UpgradeModal } from "./UpgradeModal";
 
 const LINE = "No Presença economiza R$ 1.200 por ano";
-const SUCCESS = "Pronto, você agora está no plano anual! Seus 12 meses começaram hoje.";
+// P51: aviso próprio da troca mensal -> anual com compromisso iniciado.
+const TITLE_NEW = "Parabéns, você ativou o plano anual!";
+const SUCCESS = "Seu plano começa hoje.";
 const base = { plano: "presenca", isLoading: false, isAdmin: false, countedPaymentIds: [], multaPendente: null, dataVencimento: "2026-12-15T02:59:59.999Z" };
 const paidMonthly = { ...base, effectiveStatus: "ativo", cicloContratado: "mensal", hasAsaasSubscription: true, ciclosPagos: 3, countedPaymentIds: ["p1", "p2", "p3"] };
 const has = () => (document.body.textContent ?? "").includes(LINE);
@@ -70,6 +72,33 @@ describe("P47 linha de compromisso no Anual", () => {
     fireEvent.click(btn!);
     await waitFor(() => expect(toastMock).toHaveBeenCalled());
     expect(invoke.mock.calls[0][1].body).toEqual({ action: "change_plan", plano: "presenca", ciclo: "anual" });
+    expect(toastMock.mock.calls.length).toBe(1);
+    expect(toastMock.mock.calls[0][0].title).toBe(TITLE_NEW);
     expect(toastMock.mock.calls[0][0].description).toBe(SUCCESS);
+    expect(toastMock.mock.calls[0][0].title).not.toContain("Plano alterado para");
+    expect(toastMock.mock.calls[0][0].description).not.toContain("12 meses");
   });
+
+  // (c) NEGATIVO: sem compromisso iniciado (ou fora do Asaas), o aviso é o de sempre.
+  const negativeToast: Array<[string, Record<string, unknown>, string]> = [
+    ["asaas com compromissoIniciado false", { ok: true, success: true, mode: "asaas", plano: "presenca", ciclo: "anual", compromissoIniciado: false, proRata: null }, "O novo valor já vale para as próximas cobranças."],
+    ["asaas sem o campo compromissoIniciado", { ok: true, success: true, mode: "asaas", plano: "presenca", ciclo: "anual", proRata: null }, "O novo valor já vale para as próximas cobranças."],
+    ["modo diferente de asaas", { ok: true, success: true, mode: "local", plano: "presenca", ciclo: "anual", compromissoIniciado: true, proRata: null }, "Seu plano foi atualizado."],
+  ];
+  for (const [label, data, expected] of negativeToast) {
+    it(`toast normal quando ${label}`, async () => {
+      statusMock = { ...paidMonthly, plano: "influencia" };
+      invoke.mockResolvedValueOnce({ data, error: null });
+      render(<UpgradeModal open onOpenChange={() => {}} />);
+      pickAnual();
+      const btns = screen.getAllByRole("button").filter((b) => !b.hasAttribute("disabled") && !/^(Mensal|Anual)/.test(b.textContent ?? ""));
+      const btn = btns[0];
+      expect(btn).toBeTruthy();
+      fireEvent.click(btn!);
+      await waitFor(() => expect(toastMock).toHaveBeenCalled());
+      expect(toastMock.mock.calls.length).toBe(1);
+      expect(toastMock.mock.calls[0][0].title).toBe("Plano alterado para Presença");
+      expect(toastMock.mock.calls[0][0].description).toBe(expected);
+    });
+  }
 });

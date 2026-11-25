@@ -24,7 +24,9 @@ import { UpgradeModal } from "./UpgradeModal";
 
 const BTN = "Passar para o anual";
 const LABEL = "Seu plano atual";
-const SUCCESS = "Pronto, você agora está no plano anual! Seus 12 meses começaram hoje.";
+// P51: aviso próprio da troca mensal -> anual com compromisso iniciado.
+const TITLE_NEW = "Parabéns, você ativou o plano anual!";
+const SUCCESS = "Seu plano começa hoje.";
 const base = { plano: "presenca", isLoading: false, isAdmin: false, countedPaymentIds: [], multaPendente: null, dataVencimento: "2026-12-15T02:59:59.999Z" };
 const paidMonthly = { ...base, effectiveStatus: "ativo", cicloContratado: "mensal", hasAsaasSubscription: true, ciclosPagos: 3, countedPaymentIds: ["p1", "p2", "p3"] };
 // Só alterna o seletor Mensal/Anual (nenhuma compra, nenhuma chamada de rede).
@@ -102,8 +104,12 @@ describe("P48 mesmo plano mensal -> anual", () => {
     await waitFor(() => expect(screen.getByText("Processando...")).toBeTruthy());
     resolveInvoke({ data: { ok: true, success: true, mode: "asaas", plano: "presenca", ciclo: "anual", compromissoIniciado: true, proRata: null }, error: null });
     await waitFor(() => expect(toastMock).toHaveBeenCalled());
-    expect(toastMock.mock.calls[0][0].title).toBe("Plano alterado para Presença");
+    expect(toastMock.mock.calls.length).toBe(1);
+    expect(toastMock.mock.calls[0][0].title).toBe(TITLE_NEW);
     expect(toastMock.mock.calls[0][0].description).toBe(SUCCESS);
+    // O título antigo e a descrição antiga não são usados neste caso.
+    expect(toastMock.mock.calls[0][0].title).not.toContain("Plano alterado para");
+    expect(toastMock.mock.calls[0][0].description).not.toContain("12 meses");
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 });

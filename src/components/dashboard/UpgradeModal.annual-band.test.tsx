@@ -22,7 +22,7 @@ vi.mock("@/hooks/useAccountType", () => ({
 
 import { UpgradeModal } from "./UpgradeModal";
 
-const SUCCESS = "Pronto, você agora está no plano anual! Seus 12 meses começaram hoje.";
+const TOAST_NEW = "Seu plano começa hoje.";
 const base = { plano: "presenca", isLoading: false, isAdmin: false, countedPaymentIds: [], multaPendente: null, dataVencimento: "2026-12-15T02:59:59.999Z" };
 const paidMonthly = { ...base, effectiveStatus: "ativo", cicloContratado: "mensal", hasAsaasSubscription: true, ciclosPagos: 3, countedPaymentIds: ["p1", "p2", "p3"] };
 // Só alterna o seletor Mensal/Anual (nenhuma compra, nenhuma chamada de rede).
@@ -71,7 +71,7 @@ describe("P50 faixa do Anual em uma linha", () => {
       expect(text().includes(OLD_P47)).toBe(false);
       expect(text().includes(OLD_P49_TITLE)).toBe(false);
       expect(text().includes(OLD_P49_BODY)).toBe(false);
-      expect(text().includes(SUCCESS)).toBe(false);
+      expect(text().includes(TOAST_NEW)).toBe(false);
       // A sub-linha do botão continua uma única vez.
       expect(count(SUB)).toBe(1);
       const btn = screen.getByRole("button", { name: "Passar para o anual" });

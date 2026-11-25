@@ -256,10 +256,14 @@ export function UpgradeModal({
       return;
     }
     const pr = data?.proRata as { value: number; days: number; invoiceUrl?: string } | null;
+    // P47/P51: troca mensal -> anual com compromisso iniciado tem aviso próprio.
+    const annualCommitment = data?.mode === "asaas" && data?.compromissoIniciado === true;
     toast({
-      title: `Plano alterado para ${planName}`,
-      description: data?.mode === "asaas" && data?.compromissoIniciado === true
-        ? "Pronto, você agora está no plano anual! Seus 12 meses começaram hoje."
+      title: annualCommitment
+        ? "Parabéns, você ativou o plano anual!"
+        : `Plano alterado para ${planName}`,
+      description: annualCommitment
+        ? "Seu plano começa hoje."
         : pr
         ? `Geramos uma cobrança de R$ ${pr.value.toFixed(2).replace(".", ",")} pela diferença proporcional aos ${pr.days} dia(s) restantes do ciclo atual. O novo valor vale integralmente a partir da próxima cobrança.`
         : data?.mode === "asaas"
