@@ -486,10 +486,7 @@ export function UpgradeModal({
             <div className="mx-6 mt-4 sm:mx-8 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/10 p-4 text-foreground" role="status" data-testid="annual-commitment-band">
               <Calendar className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="text-base font-medium leading-relaxed">No Anual você paga menos todo mês</p>
-                <p className="text-sm leading-relaxed">
-                  Você fica 12 meses com a gente, contando a partir de hoje. No {cur.name}, você paga {formatBRL(cur.annualPrice)} por mês em vez de {formatBRL(cur.monthlyPrice)} e economiza {annualSavingBRL(cur.key)} por ano.
-                </p>
+                <p className="text-base font-medium leading-relaxed">No {cur.name} economiza {annualSavingBRL(cur.key)} por ano</p>
               </div>
             </div>
           );
