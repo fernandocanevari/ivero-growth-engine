@@ -15,5 +15,11 @@ Deno.test("existing resolver candidate unchanged: no session fallback", async ()
 });
 Deno.test("stored subscription returns without discovery or writes", async () => {
   const r = await run(handler, { action: "list_invoices" }, row({ asaas_subscription_id: "sub_existing" }));
-  assertEquals(r.status, 200); assertEquals(r.patches, []); assertEquals(r.calls.filter((c) => c.path.startsWith("/subscriptions")).length, 1); // INVOICE-HISTORY: + avulsas
+  assertEquals(r.status, 200); assertEquals(r.patches, []);
+  const subscriptionCalls = r.calls.filter((c) => c.path.startsWith("/subscriptions"));
+  assertEquals(subscriptionCalls.length, 2); // INVOICE-HISTORY: + avulsas; NEXT-CHARGE: + subscription lookup
+  assertEquals(subscriptionCalls.filter((c) => c.method === "GET" && c.path.split("?")[0] === "/subscriptions/sub_existing/payments").length, 1);
+  assertEquals(subscriptionCalls.filter((c) => c.method === "GET" && c.path === "/subscriptions/sub_existing").length, 1);
+  assert(!r.calls.some((c) => c.path === "/subscriptions" || c.path.startsWith("/subscriptions?") || c.path.includes("checkoutSession") || c.path.includes("externalReference")));
+  assert(!subscriptionCalls.some((c) => c.method !== "GET"));
 });
