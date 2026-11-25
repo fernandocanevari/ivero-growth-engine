@@ -67,7 +67,7 @@ describe("NEXT-CHARGE scheduled next", () => {
   it("h) displays scheduled amount, due date, status and active credit card", () => {
     render(<AssinaturaPage />);
     const next = card("Próxima cobrança");
-    expect(next.getByText("R$ 497,00")).toBeTruthy();
+    expect(next.getByText("R$ 497")).toBeTruthy();
     expect(next.getByText("Vencimento em 10/12/2099")).toBeTruthy();
     expect(next.getByText("Agendada para 10/12")).toBeTruthy();
     expect(next.getByText("Cartão de crédito")).toBeTruthy();
