@@ -15,5 +15,5 @@ Deno.test("existing resolver candidate unchanged: no session fallback", async ()
 });
 Deno.test("stored subscription returns without discovery or writes", async () => {
   const r = await run(handler, { action: "list_invoices" }, row({ asaas_subscription_id: "sub_existing" }));
-  assertEquals(r.status, 200); assertEquals(r.patches, []); assertEquals(r.calls.length, 1);
+  assertEquals(r.status, 200); assertEquals(r.patches, []); assertEquals(r.calls.filter((c) => c.path.startsWith("/subscriptions")).length, 1); // INVOICE-HISTORY: + avulsas
 });

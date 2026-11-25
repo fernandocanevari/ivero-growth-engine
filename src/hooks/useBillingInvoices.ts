@@ -15,7 +15,10 @@ export interface BillingInvoice {
   invoiceUrl: string | null;
   receiptUrl: string | null;
   billingType: string | null;
+  /** Tipo da cobrança no histórico; ausente = "monthly". */
+  kind?: "monthly" | "difference" | "penalty";
 }
+
 
 /** Mensalidade vencida mais antiga (manage-subscription/list_invoices). */
 export interface OverdueInvoice {
@@ -96,7 +99,7 @@ export function useBillingInvoices() {
         setOverdue(null);
       }
     } else {
-      setInvoices((data?.invoices ?? []) as BillingInvoice[]);
+      setInvoices(((data?.invoices ?? []) as BillingInvoice[]).filter((i) => i.status !== "DELETED"));
       setNext((data?.next ?? null) as BillingInvoice | null);
       setOverdue((data?.overdue ?? null) as OverdueInvoice | null);
     }

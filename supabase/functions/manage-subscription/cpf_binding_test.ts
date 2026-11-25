@@ -18,7 +18,9 @@ const list = (state: Record<string, any>, subs: Record<string, any>[], extra: Re
 const noEmail = (r: { calls: { path: string }[] }) => {
   const from = r.calls.findIndex((c) => c.path.includes("cpfCnpj"));
   assert(from >= 0);
-  assert(!r.calls.slice(from).some((c) => c.path.includes("@") || c.path.includes("%40") || c.path.includes("email")));
+  // INVOICE-HISTORY: the history's one-off lookup (after the subscription payments list) is not part of the binding.
+  const end = r.calls.findIndex((c, i) => i > from && /^\/subscriptions\/[^/?]+\/payments/.test(c.path));
+  assert(!r.calls.slice(from, end >= 0 ? end : undefined).some((c) => c.path.includes("@") || c.path.includes("%40") || c.path.includes("email")));
 };
 
 Deno.test("cliente78: session [] and customer route empty -> binds via CPF route", async () => {

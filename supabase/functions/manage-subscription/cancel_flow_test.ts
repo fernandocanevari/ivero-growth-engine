@@ -35,6 +35,12 @@ interface Provider {
   customersStatus?: number;
   /** Cobranças da assinatura (GET /subscriptions/{id}/payments, filtra ?status=). */
   payments?: Record<string, unknown>[];
+  /** INVOICE-HISTORY: cobranças por assinatura (sobrepõe `payments` para o id listado). */
+  paymentsBySub?: Record<string, Record<string, unknown>[]>;
+  /** INVOICE-HISTORY: cobranças do cliente (GET /payments?customer=). */
+  customerPayments?: Record<string, unknown>[];
+  /** INVOICE-HISTORY: HTTP forçado em GET /payments?customer=. */
+  customerPaymentsStatus?: number;
 }
 
 async function call(action: string, row: Record<string, unknown>, provider: Provider = {}) {
@@ -86,6 +92,9 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
       if (custMatch && req.method === "GET") {
         const c = customers.find((x) => x.id === decodeURIComponent(custMatch[1]));
         if (!c) { status = 404; data = { errors: [] }; } else data = c;
+      } else if (p === "/payments" && req.method === "GET" && url.searchParams.has("customer") && (provider.customerPayments || provider.customerPaymentsStatus)) {
+        if (provider.customerPaymentsStatus) { status = provider.customerPaymentsStatus; data = { errors: [] }; }
+        else data = { object: "list", hasMore: false, data: provider.customerPayments!.filter((x) => x.customer === url.searchParams.get("customer")) };
       } else if (p === "/payments" && req.method === "GET") {
         // Cobrança recorrente real não traz checkoutSession: lista vazia.
         data = page([], url);
@@ -112,7 +121,8 @@ async function call(action: string, row: Record<string, unknown>, provider: Prov
         if (!sub) { status = 404; data = { errors: [] }; } else data = sub;
       } else if (/^\/subscriptions\/[^/]+\/payments$/.test(p) && req.method === "GET") {
         const st = url.searchParams.get("status");
-        data = { object: "list", hasMore: false, data: (provider.payments ?? []).filter((x) => !st || x.status === st) };
+        const sid = decodeURIComponent(p.split("/")[2]);
+        data = { object: "list", hasMore: false, data: (provider.paymentsBySub?.[sid] ?? provider.payments ?? []).filter((x) => !st || x.status === st) };
       } else if (p === "/payments" && req.method === "POST") data = { id: "pay_multa", invoiceUrl: "https://invoice.invalid/multa" };
       else throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
     } else throw new Error("Network escape forbidden");
@@ -480,4 +490,78 @@ Deno.test("P29 j) linha já cancelada → mesmo comportamento (reused, sem fail-
   assertEquals(r.status, 200);
   assertEquals(r.data.reused, true);
   assertEquals(r.charges, 0);
+});
+
+// ── INVOICE-HISTORY (findings 78 + 79) ───────────────────────────────────────
+const HID = "11111111-2222-4333-8444-555555555555";
+const OTHER_HID = "99999999-2222-4333-8444-555555555555";
+const pay = (id: string, status: string, extra: Record<string, unknown> = {}) =>
+  ({ id, status, value: 497, dueDate: "2026-11-10", billingType: "CREDIT_CARD", customer: "cus_test", ...extra });
+const ids = (r: { data: any }) => (r.data.invoices as any[]).map((i) => i.id);
+
+Deno.test("INVOICE-HISTORY 1) mensal cancelada lista a cobrança confirmada da assinatura anterior", async () => {
+  const r = await call("list_invoices", { id: HID, status: "cancelado", asaas_subscription_id: null, asaas_subscription_id_anterior: "sub_old", trial_ends_at: null }, {
+    paymentsBySub: { sub_old: [pay("pay_497", "CONFIRMED")] }, customerPayments: [],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(ids(r), ["pay_497"]);
+  assertEquals(r.data.invoices[0].kind, "monthly");
+  assertEquals(r.data.invoices[0].billingType, "CREDIT_CARD");
+  assertEquals(r.data.next, null);
+  assertEquals(r.data.overdue, null);
+});
+
+Deno.test("INVOICE-HISTORY 2) anual ativa: diferença paga e multa pendente entram com o tipo certo; next/overdue só da assinatura", async () => {
+  const r = await call("list_invoices", { id: HID, status: "ativo", ciclo_contratado: "anual", trial_ends_at: null }, {
+    paymentsBySub: { sub_test: [pay("pay_next", "PENDING", { dueDate: "2026-12-10", value: 1197 })] },
+    customerPayments: [
+      pay("pay_dif", "RECEIVED", { externalReference: `prorata:${HID}:autoridade:1764000000000`, value: 480, paymentDate: "2026-11-20" }),
+      pay("pay_mul", "PENDING", { externalReference: `fidelidade:${HID}:influencia`, value: 300, dueDate: "2026-11-01" }),
+    ],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(ids(r), ["pay_next", "pay_dif", "pay_mul"]);
+  const kind = Object.fromEntries((r.data.invoices as any[]).map((i) => [i.id, i.kind]));
+  assertEquals(kind, { pay_next: "monthly", pay_dif: "difference", pay_mul: "penalty" });
+  assertEquals(r.data.next.id, "pay_next");
+  assertEquals(r.data.overdue, null);
+});
+
+Deno.test("INVOICE-HISTORY 3) ref de agência e de outra assinatura ficam de fora", async () => {
+  const r = await call("list_invoices", { id: HID, status: "ativo", trial_ends_at: null }, {
+    paymentsBySub: { sub_test: [] },
+    customerPayments: [
+      pay("pay_ag", "RECEIVED", { externalReference: `prorata:${HID}:agency:brand-1:1764000000000` }),
+      pay("pay_o1", "RECEIVED", { externalReference: `prorata:${OTHER_HID}:presenca:1764000000000` }),
+      pay("pay_o2", "PENDING", { externalReference: `fidelidade:${OTHER_HID}:presenca` }),
+      pay("pay_free", "RECEIVED", { externalReference: null }),
+    ],
+  });
+  assertEquals(r.status, 200);
+  assertEquals(ids(r), []);
+});
+
+Deno.test("INVOICE-HISTORY 4) DELETED fica de fora (assinatura e avulsas)", async () => {
+  const r = await call("list_invoices", { id: HID, status: "ativo", trial_ends_at: null }, {
+    paymentsBySub: { sub_test: [pay("pay_ok", "CONFIRMED"), pay("pay_del", "DELETED")] },
+    customerPayments: [pay("pay_mdel", "DELETED", { externalReference: `fidelidade:${HID}:presenca` })],
+  });
+  assertEquals(ids(r), ["pay_ok"]);
+});
+
+Deno.test("INVOICE-HISTORY 5) falha na busca extra ainda devolve as cobranças da assinatura", async () => {
+  const r = await call("list_invoices", { id: HID, status: "ativo", trial_ends_at: null }, {
+    paymentsBySub: { sub_test: [pay("pay_ok", "CONFIRMED"), pay("pay_next", "PENDING", { dueDate: "2026-12-10" })] },
+    customerPaymentsStatus: 500,
+  });
+  assertEquals(r.status, 200);
+  assertEquals(ids(r), ["pay_next", "pay_ok"]);
+  assertEquals(r.data.next.id, "pay_next");
+});
+
+Deno.test("INVOICE-HISTORY 6) trial sem ids não faz nenhuma chamada ao Asaas", async () => {
+  const r = await call("list_invoices", { id: HID, status: "trial", asaas_subscription_id: null, asaas_subscription_id_anterior: null, asaas_customer_id: null });
+  assertEquals(r.status, 200);
+  assertEquals(r.data.invoices, []);
+  assertEquals(r.asaasCalls.length, 0);
 });

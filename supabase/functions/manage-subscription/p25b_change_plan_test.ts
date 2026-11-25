@@ -595,7 +595,8 @@ Deno.test("i) resolveSubId: linha cancelada sem id não faz nenhuma chamada ao A
   const w = world({ status: "cancelado", asaas_subscription_id: null, asaas_checkout_id: "chk_x", asaas_checkout_created_at: new Date().toISOString(), checkout_context: { completed: true } });
   const r = await call(w, { action: "list_invoices" });
   assertEquals(r.status, 200);
-  assertEquals(w.calls.filter((c) => c.url.includes("sandbox.asaas.com")).length, 0);
+  // INVOICE-HISTORY: com cliente gravado, o histórico busca cobranças avulsas; o vínculo continua sem chamadas.
+  assertEquals(w.calls.filter((c) => c.url.includes("sandbox.asaas.com") && (c.url.includes("/subscriptions") || c.url.includes("checkout"))).length, 0);
 });
 
 Deno.test("i) resolveSubId: linha ativa sem id continua buscando o vínculo como antes", async () => {

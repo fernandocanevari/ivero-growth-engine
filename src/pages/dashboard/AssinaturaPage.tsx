@@ -27,6 +27,12 @@ import { supabase } from "@/integrations/supabase/client";
 import * as subscriptionStatusModule from "@/hooks/useSubscriptionStatus";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useBillingInvoices, INVOICE_STATUS_LABEL } from "@/hooks/useBillingInvoices";
+
+const INVOICE_KIND_LABEL: Record<"monthly" | "difference" | "penalty", string> = {
+  monthly: "Mensalidade",
+  difference: "Diferença da mudança de plano",
+  penalty: "Multa do cancelamento",
+};
 import { PLANOS, formatBRL } from "@/lib/pricing-rules";
 import { reconcilePendingPayment } from "@/lib/reconcile-pending";
 import { useAccountType } from "@/hooks/useAccountType";
@@ -906,13 +912,18 @@ function AssinaturaPageContent() {
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((inv) => {
+                {invoices.filter((inv) => inv.status !== "DELETED").map((inv) => {
                   const link = PAID_STATUSES.includes(inv.status)
                     ? inv.receiptUrl ?? inv.invoiceUrl
                     : inv.invoiceUrl;
                   return (
                     <tr key={inv.id} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3 text-foreground">{formatDate(inv.dueDate)}</td>
+                      <td className="px-4 py-3 text-foreground">
+                        {formatDate(inv.dueDate)}
+                        <span className="block text-xs text-muted-foreground">
+                          {INVOICE_KIND_LABEL[inv.kind ?? "monthly"] ?? INVOICE_KIND_LABEL.monthly}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-foreground font-medium">
                         {formatBRL(inv.value)}
                       </td>

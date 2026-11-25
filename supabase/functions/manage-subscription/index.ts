@@ -1169,17 +1169,69 @@ Deno.serve(async (req) => {
 
     // list_invoices
     const resolvedForList = await resolveSubId();
-    if (!resolvedForList) {
+    // Conta cancelada: o id da assinatura mora em asaas_subscription_id_anterior.
+    const previousSubId = resolvedForList ? null : ((assinatura.asaas_subscription_id_anterior as string | null) ?? null);
+    const storedCustomerForList = (assinatura.asaas_customer_id as string | null) ?? null;
+    if (!resolvedForList && !previousSubId && !storedCustomerForList) {
       return json(200, { success: true, invoices: [], next: null });
     }
     requireAsaas();
-    const list = await fetchAsaas(`/subscriptions/${resolvedForList}/payments?limit=50`);
-    if (!list.ok) {
-      console.error("list_invoices asaas error:", list.status, list.text.slice(0, 500));
-      return json(502, { error: "Não foi possível carregar as faturas." });
+    // B1: cobranças da assinatura atual — a ÚNICA fonte de next/overdue.
+    let rows: any[] = [];
+    if (resolvedForList) {
+      const list = await fetchAsaas(`/subscriptions/${resolvedForList}/payments?limit=50`);
+      if (!list.ok) {
+        console.error("list_invoices asaas error:", list.status, list.text.slice(0, 500));
+        return json(502, { error: "Não foi possível carregar as faturas." });
+      }
+      rows = Array.isArray(list.json?.data) ? list.json!.data : [];
     }
-    const rows: any[] = Array.isArray(list.json?.data) ? list.json!.data : [];
-    const invoices = rows.map((p) => ({
+    // B2/B3: só entram no histórico; falha aqui nunca vira 502.
+    const extraRows: any[] = [];
+    if (previousSubId) {
+      try {
+        const prev = await fetchAsaas(`/subscriptions/${encodeURIComponent(previousSubId)}/payments?limit=50`);
+        if (prev.ok && Array.isArray(prev.json?.data)) extraRows.push(...prev.json!.data);
+        else console.error("list_invoices previous sub error:", prev.status, prev.text.slice(0, 300));
+      } catch (err) {
+        console.error("list_invoices previous sub error:", err instanceof Error ? err.message : String(err));
+      }
+    }
+    const assinaturaIdForList = String(assinatura.id);
+    const penaltyPrefix = penaltyRef(assinaturaIdForList, null); // "fidelidade:<id>"
+    const isPenaltyRef = (ref: string) => ref === penaltyPrefix || ref.startsWith(`${penaltyPrefix}:`);
+    // Mesmo formato de UPGRADE_REF_RE (asaas-webhook/upgrade-payment.ts), fixado nesta assinatura.
+    const isDifferenceRef = (ref: string) => {
+      const m = ref.match(/^prorata:([0-9a-f-]{36}):(presenca|influencia|autoridade)(?::\d+)?$/);
+      return !!m && m[1] === assinaturaIdForList;
+    };
+    try {
+      const customerIds = await customerIdsForUser(fetchAsaas, storedCustomerForList, await accountEmail());
+      for (const customerId of customerIds) {
+        try {
+          const res = await fetchAsaas(`/payments?customer=${encodeURIComponent(customerId)}&limit=100`);
+          if (!res.ok || !Array.isArray(res.json?.data)) {
+            console.error("list_invoices one-off error:", res.status, res.text.slice(0, 300));
+            continue;
+          }
+          for (const p of res.json!.data as any[]) {
+            const ref = String(p?.externalReference ?? "");
+            if (isPenaltyRef(ref) || isDifferenceRef(ref)) extraRows.push(p);
+          }
+        } catch (err) {
+          console.error("list_invoices one-off error:", err instanceof Error ? err.message : String(err));
+        }
+      }
+    } catch (err) {
+      console.error("list_invoices customer lookup error:", err instanceof Error ? err.message : String(err));
+    }
+    const kindOf = (p: any): "monthly" | "difference" | "penalty" => {
+      const ref = String(p?.externalReference ?? "");
+      if (isPenaltyRef(ref)) return "penalty";
+      if (isDifferenceRef(ref)) return "difference";
+      return "monthly";
+    };
+    const toInvoice = (p: any) => ({
       id: p.id as string,
       dueDate: (p.paymentDate ?? p.dueDate ?? null) as string | null,
       value: Number(p.value ?? 0),
@@ -1187,16 +1239,26 @@ Deno.serve(async (req) => {
       invoiceUrl: (p.invoiceUrl ?? null) as string | null,
       receiptUrl: (p.transactionReceiptUrl ?? null) as string | null,
       billingType: (p.billingType ?? null) as string | null,
-    }));
-    // Próxima cobrança = pendente com vencimento MAIS PRÓXIMO (a API devolve
-    // em ordem decrescente, então não podemos usar o primeiro que aparecer).
+      kind: kindOf(p),
+    });
+    const seen = new Set<string>();
+    const invoices = [...rows, ...extraRows]
+      .filter((p) => {
+        if (!p?.id || String(p.status ?? "") === "DELETED" || seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .map(toInvoice)
+      .sort((a, b) => (b.dueDate ?? "").localeCompare(a.dueDate ?? ""));
+    // Próxima cobrança = pendente com vencimento MAIS PRÓXIMO, só da assinatura atual.
     const next =
-      invoices
+      rows
+        .map(toInvoice)
         .filter((i) => i.status === "PENDING" || i.status === "AWAITING_RISK_ANALYSIS")
         .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))[0] ?? null;
 
     // Mensalidade vencida mais antiga: tem prioridade sobre "próxima cobrança" na tela.
-    const overdue = oldestOverdue(rows);
+    const overdue = resolvedForList ? oldestOverdue(rows) : null;
     return json(200, { success: true, invoices, next, overdue });
   } catch (err) {
     console.error("manage-subscription error:", err instanceof Error ? err.message : String(err));
