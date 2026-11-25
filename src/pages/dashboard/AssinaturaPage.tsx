@@ -811,7 +811,9 @@ function AssinaturaPageContent() {
                 Sem cobrança agendada
               </h2>
               <p className="text-sm text-muted-foreground">
-                Escolha um plano para ativar a cobrança recorrente.
+                {effectiveStatus === "ativo" || effectiveStatus === "inadimplente"
+                  ? "Assim que a próxima fatura for gerada, ela aparece aqui."
+                  : "Escolha um plano para ativar a cobrança recorrente."}
               </p>
             </>
           )}

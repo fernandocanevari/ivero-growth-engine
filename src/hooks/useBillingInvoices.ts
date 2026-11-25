@@ -17,6 +17,7 @@ export interface BillingInvoice {
   billingType: string | null;
   /** Tipo da cobrança no histórico; ausente = "monthly". */
   kind?: "monthly" | "difference" | "penalty";
+  scheduled?: boolean;
 }
 
 

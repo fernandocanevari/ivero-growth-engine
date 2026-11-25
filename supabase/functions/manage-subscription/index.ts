@@ -1251,7 +1251,7 @@ Deno.serve(async (req) => {
       .map(toInvoice)
       .sort((a, b) => (b.dueDate ?? "").localeCompare(a.dueDate ?? ""));
     // Próxima cobrança = pendente com vencimento MAIS PRÓXIMO, só da assinatura atual.
-    const next =
+    let next: ReturnType<typeof toInvoice> & { scheduled?: boolean } | null =
       rows
         .map(toInvoice)
         .filter((i) => i.status === "PENDING" || i.status === "AWAITING_RISK_ANALYSIS")
@@ -1259,6 +1259,34 @@ Deno.serve(async (req) => {
 
     // Mensalidade vencida mais antiga: tem prioridade sobre "próxima cobrança" na tela.
     const overdue = resolvedForList ? oldestOverdue(rows) : null;
+    if (resolvedForList && !next && !overdue) {
+      try {
+        const result = await fetchAsaas(`/subscriptions/${resolvedForList}`);
+        const sub = result.json;
+        const dueDay = typeof sub?.nextDueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sub.nextDueDate)
+          ? prorationDay(sub.nextDueDate)
+          : null;
+        const today = prorationDay(new Date());
+        const value = Number(sub?.value);
+        if (!result.ok || !sub || typeof sub !== "object" || Array.isArray(sub)) {
+          console.error(`list_invoices next-from-subscription error: ${result.status}`);
+        } else if (sub.status === "ACTIVE" && dueDay && today && dueDay >= today && Number.isFinite(value) && value > 0) {
+          next = {
+            id: `subscription:${resolvedForList}`,
+            dueDate: dueDay,
+            value,
+            status: "PENDING",
+            invoiceUrl: null,
+            receiptUrl: null,
+            billingType: sub.billingType ?? invoices[0]?.billingType ?? null,
+            kind: "monthly",
+            scheduled: true,
+          };
+        }
+      } catch {
+        console.error("list_invoices next-from-subscription error: network-or-body-error");
+      }
+    }
     return json(200, { success: true, invoices, next, overdue });
   } catch (err) {
     console.error("manage-subscription error:", err instanceof Error ? err.message : String(err));
