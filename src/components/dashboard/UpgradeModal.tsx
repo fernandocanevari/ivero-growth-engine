@@ -326,8 +326,9 @@ export function UpgradeModal({
       // 1) assinatura VIVA no provedor (ativo/inadimplente com id do Asaas) —
       //    SEMPRE, qualquer que seja o intent: quem já paga faz upgrade com
       //    pró-rata, nunca um checkout novo;
-      // 2) TRIAL em curso sem vínculo no provedor, quando o intent não é
-      //    "contratar" — troca local e gratuita.
+      // 2) TRIAL em curso, com ou sem assinatura/cartão no provedor, quando o
+      //    intent não é "contratar" — troca imediata e sem cobrança de
+      //    diferença (local sem vínculo; no Asaas com vínculo).
       // Cancelado e trial expirado seguem sendo contratação real → checkout.
       // O servidor decide: o vínculo em memória pode estar desatualizado
       // (resolveSubId pode ter vinculado a assinatura depois do carregamento).
@@ -336,7 +337,7 @@ export function UpgradeModal({
       const canChangePlan =
         !isAdmin &&
         (hasLivePaidSubscription ||
-          (intent !== "contratar" && effectiveStatus === "trial" && !hasAsaasSubscription));
+          (intent !== "contratar" && effectiveStatus === "trial"));
 
       if (canChangePlan) {
         await changePlanLocalOrProvider(planKey, planName);
