@@ -213,13 +213,10 @@ const BemVindoPage = () => {
           return;
         }
 
-        // Libera quando o status já está vivo OU quando o webhook do Asaas já
-        // vinculou a assinatura (asaas_subscription_id preenchido).
-        if (
-          data?.status === "ativo" ||
-          data?.status === "trial" ||
-          !!data?.asaas_subscription_id
-        ) {
+        // Libera só com status vivo. Ter asaas_subscription_id não basta: o
+        // webhook vincula o id no CHECKOUT_PAID/SUBSCRIPTION_CREATED, antes
+        // do pagamento confirmado (finding 45).
+        if (data?.status === "ativo" || data?.status === "trial") {
           if (!cancelled) setStatus("active");
           try {
             sessionStorage.removeItem("ivero_checkout_url");
