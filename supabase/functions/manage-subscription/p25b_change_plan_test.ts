@@ -518,15 +518,17 @@ for (const [label, due] of [["S2: cobrança em aberto vence HOJE", plusDays(0)],
 }
 
 // ── P26-fix2: troca imediata registra o desconto já usufruído (plano ANTIGO) ─
+// P38: redução anual em compromisso agora é bloqueada; o snapshot segue coberto
+// numa linha com o compromisso cumprido (12 pagos, 10 já registrados → 2 novos).
 Deno.test("P26-fix2: downgrade anual Influência → Presença grava desconto com o plano antigo (2 × 180 = 360)", async () => {
-  const w = world({ plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 2, counted_payment_ids: ["pay_c1", "pay_c2"], desconto_acumulado: null, ciclos_no_upgrade: null });
+  const w = world({ plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 12, counted_payment_ids: ["pay_c1", "pay_c2"], desconto_acumulado: 0, ciclos_no_upgrade: 10 });
   w.sub.value = 717;
   const r = await upgrade(w, "presenca", "anual");
   assertEquals(r.status, 200);
   assertEquals(r.data.mode, "asaas");
   assertEquals(w.row.plano, "presenca");
   assertEquals(w.row.desconto_acumulado, 360);
-  assertEquals(w.row.ciclos_no_upgrade, 2);
+  assertEquals(w.row.ciclos_no_upgrade, 12);
 });
 
 Deno.test("P26-fix2: troca imediata em linha mensal não grava desconto", async () => {
@@ -766,4 +768,88 @@ Deno.test("P47 f) troca imediata mensal → anual mantém a limpeza P43 de plano
   await upgrade(w, "presenca", "anual");
   assertEquals([w.row.plano_pretendido, w.row.ciclo_pretendido], [null, null]);
   assertEquals(w.row.ciclos_pagos, 1);
+});
+
+// ── P38: anual em compromisso não reduz o plano sozinho ───────────────────────
+const P38_REASON = {
+  ok: false, reason: "reducao_bloqueada_compromisso",
+  message: "Seu contrato tem compromisso de 12 meses. Para reduzir o plano, fale com a gente.",
+};
+const asaasCalls = (w: World) => w.calls.filter((c) => c.url.includes("asaas.com"));
+const VALUES: Record<string, number> = { presenca: 397, influencia: 717, autoridade: 1197 };
+for (const status of ["ativo", "inadimplente"] as const) {
+  for (const [from, to] of [["influencia", "presenca"], ["autoridade", "presenca"], ["autoridade", "influencia"]] as const) {
+    Deno.test(`P38 a/b) anual ${status} ciclos 1: ${from} → ${to} bloqueado, zero Asaas, zero gravação`, async () => {
+      const w = world({ status, plano: from, ciclo_contratado: "anual", ciclos_pagos: 1 });
+      w.sub.value = VALUES[from];
+      const before = structuredClone(w.row);
+      for (const ciclo of ["anual", "mensal"]) {
+        const r = await upgrade(w, to, ciclo);
+        assertEquals(r.status, 200);
+        assertEquals(r.data, P38_REASON);
+      }
+      assertEquals(asaasCalls(w).length, 0);
+      assertEquals(w.patches.length, 0);
+      assertEquals(w.row, before);
+    });
+  }
+}
+
+Deno.test("P38 c) anual ciclos 11 bloqueado; ciclos 12 reduz na hora", async () => {
+  const w11 = world({ plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 11 });
+  w11.sub.value = 717;
+  assertEquals((await upgrade(w11, "presenca", "anual")).data, P38_REASON);
+  assertEquals([asaasCalls(w11).length, w11.patches.length], [0, 0]);
+  const w12 = world({ plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 12 });
+  w12.sub.value = 717;
+  const r = await upgrade(w12, "presenca", "anual");
+  assertEquals(r.data.mode, "asaas");
+  assertEquals(w12.row.plano, "presenca");
+  assertEquals(puts(w12)[0].body.value, 397);
+});
+
+Deno.test("P38 d) mensal reduzindo: continua imediato", async () => {
+  const w = world({ plano: "autoridade", ciclos_pagos: 5 });
+  w.sub.value = 1497;
+  const r = await upgrade(w, "presenca");
+  assertEquals(r.data.mode, "asaas");
+  assertEquals(w.row.plano, "presenca");
+  assertEquals(posts(w).length, 0);
+});
+
+Deno.test("P38 e) trial anual com cartão reduzindo: inalterado (não bloqueia)", async () => {
+  const w = world({ status: "trial", plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 0, counted_payment_ids: [], trial_ends_at: plusDays(5) });
+  w.sub.value = 717;
+  const r = await upgrade(w, "presenca", "anual");
+  assertEquals(r.status, 200);
+  assert(r.data.reason !== "reducao_bloqueada_compromisso");
+  assertEquals(w.row.plano, "presenca");
+});
+
+Deno.test("P38 f) upgrade e mesmo plano em anual comprometido: inalterados", async () => {
+  const up = world({ plano: "presenca", ciclo_contratado: "anual", ciclos_pagos: 3 });
+  up.sub.value = 397;
+  const r1 = await upgrade(up, "influencia", "anual");
+  assertEquals(r1.data.mode, "pending_payment");
+  assertEquals(posts(up).length, 1);
+  const same = world({ plano: "influencia", ciclo_contratado: "anual", ciclos_pagos: 3 });
+  const r2 = await upgrade(same, "influencia", "anual");
+  assertEquals(r2.data.mode, "noop");
+  assertEquals(asaasCalls(same).length, 0);
+});
+
+Deno.test("P38 g) mensal → Anual com plano menor: P47 segue (compromisso começa)", async () => {
+  const w = world({ plano: "influencia", ciclos_pagos: 3 });
+  w.sub.value = 897;
+  const r = await upgrade(w, "presenca", "anual");
+  assertEquals(r.data.mode, "asaas");
+  assertEquals(r.data.compromissoIniciado, true);
+  assertEquals([w.row.plano, w.row.ciclo_contratado, w.row.ciclos_pagos], ["presenca", "anual", 1]);
+});
+
+Deno.test("P38 h) cancelado anual reduzindo: recusa de cancelado preservada", async () => {
+  const w = world({ status: "cancelado", plano: "autoridade", ciclo_contratado: "anual", ciclos_pagos: 3 });
+  const r = await upgrade(w, "presenca", "anual");
+  assertEquals(r.data.reason, "assinatura_cancelada");
+  assertEquals(asaasCalls(w).length, 0);
 });

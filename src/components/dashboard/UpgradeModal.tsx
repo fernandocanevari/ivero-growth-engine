@@ -1,7 +1,7 @@
 import { invalidateAccessCache } from "@/lib/access-cache";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2, Calendar } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Check, Bot, Loader2, Calendar, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
 import { formatDateBR } from "@/lib/date-display";
 import { paidResumeAccessUntil } from "@/lib/billing-display";
+import { getWhatsappMessageUrl } from "@/lib/support";
 
 /**
  * UpgradeModal — 3 planos (Presença / Influência / Autoridade) resumidos sobre
@@ -94,6 +95,7 @@ export function UpgradeModal({
     hasAsaasSubscription,
     cicloContratado,
     ciclosPagos,
+    compromissoMeses,
     countedPaymentIds,
     dataVencimento,
     multaPendente,
@@ -112,6 +114,26 @@ export function UpgradeModal({
   // P47: mensal já pago escolhendo Anual — o compromisso começa na troca.
   const paidMonthlyToAnnual =
     !isLoading && isAnnual && effectiveStatus === "ativo" && cicloContratado === "mensal" && (ciclosPagos ?? 0) >= 1;
+  // P38: anual em compromisso (mesma regra da multa) não reduz o plano sozinho.
+  const committedAnnual =
+    lockAnnual && (ciclosPagos ?? 0) > 0 && (ciclosPagos ?? 0) < (compromissoMeses ?? 12);
+  const tierOf = (key: unknown) => PLANOS_ARRAY.findIndex((p) => p.key === key);
+  const isLockedReduction = (key: PlanoSugerido) =>
+    committedAnnual && tierOf(plano) >= 0 && tierOf(key) < tierOf(plano);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open || !committedAnnual) return;
+    let alive = true;
+    void Promise.resolve().then(() => supabase.auth.getUser()).then(({ data }) => {
+      if (alive) setAccountEmail(data?.user?.email ?? null);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [open, committedAnnual]);
+  const reductionWhatsappUrl = (target: string) => {
+    const atual = PLANOS_ARRAY.find((p) => p.key === plano)?.name ?? "";
+    const msg = `Olá! Quero reduzir meu plano de ${atual} para ${target}.` + (accountEmail ? ` Minha conta: ${accountEmail}` : "");
+    return getWhatsappMessageUrl(msg);
+  };
   // Confirmação do pedido de upgrade (substitui toast + abertura automática).
   const [upgradeConfirm, setUpgradeConfirm] = useState<{
     title: string; planName: string; currentName: string; diferenca: number; dueDate: string | null; invoiceUrl: string;
@@ -620,7 +642,19 @@ export function UpgradeModal({
                       O plano {plan.name} começa nessa data.
                     </p>
                   )}
-                  {isCurrentActive(plan.key) && !samePlanToAnnual ? (
+                  {isLockedReduction(plan.key) ? (
+                  <Button asChild variant="outline" size="sm" className="w-full text-xs mt-auto">
+                    <a
+                      href={reductionWhatsappUrl(plan.name)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid={`locked-reduction-${plan.key}`}
+                    >
+                      <Lock className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+                      Falar com a gente
+                    </a>
+                  </Button>
+                  ) : isCurrentActive(plan.key) && !samePlanToAnnual ? (
                     <div
                       className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"
                       data-testid="current-plan-label"
@@ -657,6 +691,12 @@ export function UpgradeModal({
               );
             })}
           </div>
+
+          {committedAnnual && PLANOS_ARRAY.some((p) => isLockedReduction(p.key)) && (
+            <p className="text-center text-[11px] text-muted-foreground mt-4" data-testid="reduction-commitment-note">
+              Seu contrato tem compromisso de 12 meses. Para reduzir o plano, fale com a gente.
+            </p>
+          )}
 
           <p className="text-center text-[11px] text-muted-foreground mt-6">
             {isAnnual

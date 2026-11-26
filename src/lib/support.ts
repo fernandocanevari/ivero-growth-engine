@@ -36,3 +36,8 @@ export function getAgencyWhatsappUrl(message: string): string {
 export function getAgencyMailtoUrl(subject: string, body: string): string {
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+/** wa.me com uma mensagem pronta (texto livre, sempre codificado). */
+export function getWhatsappMessageUrl(message: string): string {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}

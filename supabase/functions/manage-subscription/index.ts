@@ -410,6 +410,24 @@ Deno.serve(async (req) => {
         });
       }
 
+      // P38: contrato anual em compromisso não reduz o plano sozinho (decisão
+      // de produto: a Ivero conversa com o cliente). Mesma regra de compromisso
+      // da multa (calcularMultaCancelamento). Por degrau, nunca por preço.
+      // Fica antes da recusa por atraso e de qualquer chamada ao Asaas/gravação.
+      const TIER: Record<string, number> = { presenca: 0, influencia: 1, autoridade: 2 };
+      if (
+        (assinatura.status === "ativo" || assinatura.status === "inadimplente") &&
+        calcularMultaCancelamento(assinatura).emCompromisso &&
+        (TIER[plano] ?? -1) < (TIER[String(assinatura.plano)] ?? -1)
+      ) {
+        console.log("change_plan: reducao bloqueada (compromisso)", assinatura.plano, plano, assinatura.ciclos_pagos);
+        return json(200, {
+          ok: false,
+          reason: "reducao_bloqueada_compromisso",
+          message: "Seu contrato tem compromisso de 12 meses. Para reduzir o plano, fale com a gente.",
+        });
+      }
+
       // P25b: com mensalidade em atraso não há mudança de plano — nada muda.
       // "atrasado" (status antigo) é tratado exatamente como "inadimplente".
       if (assinatura.status === "inadimplente" || assinatura.status === "atrasado") {
