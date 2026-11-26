@@ -22,7 +22,7 @@ Object.defineProperty(Deno, "serve", { configurable: true, value: originalServe 
 const DAY = 86_400_000;
 const at = (ms: number) => new Date(Date.now() + ms).toISOString();
 const LIVE = ["ativo", "trial", "inadimplente", "pendente"];
-const REQ = { plano: "presenca", nome: "Cliente Teste", email: "cliente@example.test", ciclo: "mensal" };
+const REQ = { plano: "presenca", nome: "Cliente Teste", email: "cliente@example.test", ciclo: "mensal", cpfCnpj: "52998224725" }; // P22: documento obrigatório
 
 type Call = { url: string; method: string; body: any };
 
@@ -44,7 +44,7 @@ async function run(row: Record<string, unknown>, opts: { cancelOk?: boolean; bod
       else if (url.pathname.startsWith("/rest/v1/rpc/")) data = true;
       else if (url.pathname === "/rest/v1/profiles") data = [{ account_type: "individual" }];
       else if (url.pathname === "/rest/v1/assinaturas") {
-        if (req.method !== "GET") data = null;
+        if (req.method !== "GET") data = url.searchParams.get("select") === "id" ? [{ id: "row" }] : null; // P22: gravação condicional do cliente
         else if (url.searchParams.get("asaas_subscription_id") === "not.is.null") {
           data = LIVE.includes(String(row.status)) && row.asaas_subscription_id ? [row] : [];
         } else data = [row];
@@ -53,13 +53,17 @@ async function run(row: Record<string, unknown>, opts: { cancelOk?: boolean; bod
       if (url.pathname === "/api/v3/checkouts" && req.method === "POST") data = { id: "chk_new", link: "https://checkout.invalid/chk_new" };
       else if (/^\/api\/v3\/checkouts\/[^/]+\/cancel$/.test(url.pathname)) { status = opts.cancelOk === false ? 500 : 200; data = {}; }
       else if (url.pathname === "/api/v3/payments" && req.method === "GET") data = { data: [] };
+      // P22: cliente do Asaas criado/reaproveitado antes do checkout.
+      else if (url.pathname === "/api/v3/customers" && req.method === "GET") data = { data: [] };
+      else if (url.pathname === "/api/v3/customers" && req.method === "POST") data = { id: "cus_new" };
+      else if (/^\/api\/v3\/customers\/[^/]+$/.test(url.pathname) && req.method === "GET") data = { id: url.pathname.split("/").pop(), cpfCnpj: "52998224725" };
       else throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
     } else throw new Error("Network escape forbidden");
     return new Response(data === null ? null : JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
   };
   try {
     const b64url = (v: unknown) => btoa(JSON.stringify(v)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
-    const token = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: "user-1", exp: 4102444800 })}.c2ln`;
+    const token = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: "user-1", email: "cliente@example.test", exp: 4102444800 })}.c2ln`;
     assert(handler);
     const response = await handler!(new Request("https://function.invalid", {
       method: "POST",
@@ -67,7 +71,9 @@ async function run(row: Record<string, unknown>, opts: { cancelOk?: boolean; bod
       body: JSON.stringify(opts.body ?? REQ),
     }));
     const checkout = calls.find((c) => c.method === "POST" && c.url.endsWith("/api/v3/checkouts"));
-    const patch = calls.find((c) => c.method === "PATCH" && c.url.includes("/rest/v1/assinaturas"))?.body;
+    // P22: ignora a gravação condicional só do asaas_customer_id (anterior ao checkout).
+    const patch = calls.find((c) => c.method === "PATCH" && c.url.includes("/rest/v1/assinaturas") &&
+      !(c.body && Object.keys(c.body).length === 1 && "asaas_customer_id" in c.body))?.body;
     const cancelCalls = calls.filter((c) => c.url.includes("/cancel")).length;
     return { status: response.status, data: await response.json(), checkout, patch, cancelCalls, calls };
   } finally {

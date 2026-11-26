@@ -19,6 +19,11 @@ vi.mock("@/lib/analytics", () => ({ track: () => {} }));
 vi.mock("@/lib/access-cache", () => ({ invalidateAccessCache: () => {} }));
 
 const session = { user: { id: "u1", email: "c@x.com", user_metadata: { display_name: "Cliente" } } };
+// P22: perfil já tem CPF/CNPJ salvo → o pedido do documento é pulado.
+vi.mock("@/components/checkout/CpfCnpjDialog", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/checkout/CpfCnpjDialog")>()),
+  loadOwnDocument: async () => "52998224725",
+}));
 vi.mock("@/integrations/supabase/client", () => {
   const q: Record<string, unknown> = {};
   for (const m of ["select", "eq", "order", "limit", "in"]) q[m] = () => q;

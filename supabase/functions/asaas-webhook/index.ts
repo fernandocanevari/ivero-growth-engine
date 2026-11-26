@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     const eventDay: string | null = body?.payment
       ? paymentProofDay(p)
       : asaasDay(body?.subscription?.dateCreated) ?? asaasDay(checkout?.dateCreated);
-    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context, carencia_ate, asaas_subscription_id, asaas_checkout_id";
+    const SELECT = "id, status, ciclo_contratado, ciclos_pagos, compromisso_inicio, plano_pretendido, ciclo_pretendido, asaas_checkout_created_at, asaas_subscription_id_anterior, checkout_context, carencia_ate, asaas_subscription_id, asaas_checkout_id, asaas_customer_id";
     const USER_STATUSES = ["ativo", "trial", "pendente", "inadimplente", "atrasado", "expirado"];
     // Retomada de teste: a linha fica 'cancelado' durante a tela do Asaas, então
     // os eventos de vínculo também a enxergam (bindableByUser restringe o caso).
@@ -403,6 +403,16 @@ Deno.serve(async (req) => {
         console.log("[asaas-webhook] CHECKOUT_PAID customer shape", JSON.stringify({
           "checkout.customer": payloadKeys(checkout.customer), "checkout.customerData": payloadKeys(checkout.customerData),
         }));
+        {
+          // P22: só NOMES de campos presentes (booleanos), nunca valores.
+          const present = (o: unknown) => o && typeof o === "object"
+            ? Object.fromEntries(Object.entries(o as Record<string, unknown>).map(([k, v]) => [k, v !== null && v !== undefined && v !== ""]))
+            : { _type: o === null ? "null" : typeof o };
+          console.log("[asaas-webhook] CHECKOUT_PAID customer fields", JSON.stringify({
+            customer: typeof checkout.customer === "string" ? { _id: true } : present(checkout.customer),
+            customerData: present(checkout.customerData),
+          }));
+        }
         if (!checkoutSubId && res.ok && res.row) {
           // Additional discovery is best-effort; never changes the webhook response.
           try {
@@ -411,7 +421,7 @@ Deno.serve(async (req) => {
             const key = asaasApiKey();
             if (!key) throw new Error("missing_key");
             if (current) {
-              const ids = await discoverCheckoutBinding(current, checkoutCustomerId || null, async (path) => {
+              const ids = await discoverCheckoutBinding(current, checkoutCustomerId || (current as { asaas_customer_id?: string | null }).asaas_customer_id || null, async (path) => {
                 const response = await fetch(`${asaasBaseUrl()}${path}`, { headers: { access_token: key } });
                 return { ok: response.ok, data: await response.json() };
               }, undefined, boundElsewhereIn(supabase, current.id));

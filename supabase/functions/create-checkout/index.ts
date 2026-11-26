@@ -7,6 +7,7 @@ import { trialEligibility, isUpgradeBlocked, effectiveTrialEndsAt } from "../_sh
 import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resumableCancelledAccess } from "../_shared/checkout-state.ts";
 import { planDisplayName } from "../_shared/plan-names.ts";
 import { isPenaltyPending, PENALTY_COLUMNS, penaltyBlockedMessage, type PenaltyRow } from "../_shared/penalty.ts";
+import { isValidCpfCnpj, onlyDigits } from "../_shared/document.ts";
 
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -41,7 +42,10 @@ export function resumeItemDescription(base: string, resumeDueDay: string | null)
 interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
-  email: string;
+  /** Ignorado no fluxo individual: vale sempre o e-mail da conta (JWT). */
+  email?: string;
+  /** P22: CPF/CNPJ de quem paga (individual). Ausente = usa profiles.cpf_cnpj. */
+  cpfCnpj?: string;
   /** "upgrade" = cliente existente trocando de plano (retorno próprio). */
   tipo?: "upgrade";
   /** Ciclo escolhido pelo cliente. Ausente = anual (comportamento legado). */
@@ -52,6 +56,79 @@ interface CheckoutBody {
   intent?: "contratar" | "trocar_plano";
   /** Modo agência: plano de cada marca ativa → 1 assinatura-mãe consolidada. */
   agency?: { brands: { brand_id: string; plano: PlanoKey }[] };
+}
+
+const DOC_MESSAGES = {
+  documento_necessario: "Para abrir o pagamento, precisamos do CPF ou CNPJ de quem vai pagar.",
+  documento_invalido: "Esse CPF ou CNPJ não parece válido. Confere os números e tenta de novo.",
+} as const;
+const CLIENTE_INDISPONIVEL_MSG =
+  "Não conseguimos preparar o seu pagamento agora. Tenta de novo em alguns minutos — se continuar, fala com a gente.";
+
+/** Log sem valores: só status HTTP, códigos de erro do Asaas e nomes de campos. */
+function logCustomerError(step: string, status: number, json: unknown) {
+  const errors = (json as { errors?: { code?: string }[] } | null)?.errors;
+  console.error("create-checkout: customer", JSON.stringify({
+    step, status, codes: Array.isArray(errors) ? errors.map((e) => e?.code ?? null) : [],
+  }));
+}
+
+async function readJson(res: Response): Promise<Record<string, any> | null> {
+  const text = await res.text();
+  try { return text ? JSON.parse(text) : null; } catch { return null; }
+}
+
+/**
+ * P22: cliente do Asaas criado/reaproveitado ANTES do checkout (individual).
+ * 1) id gravado na linha (GET; vazio de CPF → PUT só o cpfCnpj);
+ * 2) GET /customers?externalReference=<user_id>;
+ * 3) POST /customers { name, email, cpfCnpj, externalReference }.
+ * Qualquer erro do Asaas → { ok:false } (fail closed, sem checkout).
+ */
+export async function resolveAsaasCustomer(opts: {
+  baseUrl: string;
+  headers: Record<string, string>;
+  storedId: string | null | undefined;
+  userId: string;
+  name: string;
+  email: string;
+  cpfCnpj: string;
+}): Promise<{ ok: true; id: string; via: "stored" | "externalReference" | "created" } | { ok: false }> {
+  const { baseUrl, headers, storedId, userId, name, email, cpfCnpj } = opts;
+  if (storedId) {
+    const res = await fetch(`${baseUrl}/customers/${encodeURIComponent(storedId)}`, { method: "GET", headers });
+    const json = await readJson(res);
+    const stale = res.status === 404 || (res.ok && (json?.deleted === true || json?.removed === true));
+    if (!res.ok && !stale) { logCustomerError("get_stored", res.status, json); return { ok: false }; }
+    if (!stale) {
+      const current = onlyDigits(json?.cpfCnpj);
+      if (!current) {
+        const put = await fetch(`${baseUrl}/customers/${encodeURIComponent(storedId)}`, {
+          method: "PUT", headers, body: JSON.stringify({ cpfCnpj }),
+        });
+        if (!put.ok) { logCustomerError("put_document", put.status, await readJson(put)); return { ok: false }; }
+      } else if (current !== cpfCnpj) {
+        console.warn("create-checkout: customer", JSON.stringify({ step: "get_stored", field_differs: "cpfCnpj", kept: "asaas" }));
+      }
+      return { ok: true, id: storedId, via: "stored" };
+    }
+    console.log("create-checkout: customer", JSON.stringify({ step: "get_stored", stale: true, status: res.status }));
+  }
+  {
+    const res = await fetch(`${baseUrl}/customers?externalReference=${encodeURIComponent(userId)}`, { method: "GET", headers });
+    const json = await readJson(res);
+    if (!res.ok) { logCustomerError("find_external_reference", res.status, json); return { ok: false }; }
+    const found = (Array.isArray(json?.data) ? json!.data : []).find(
+      (c: Record<string, unknown>) => c?.id && c?.deleted !== true && c?.externalReference === userId,
+    );
+    if (found) return { ok: true, id: String(found.id), via: "externalReference" };
+  }
+  const res = await fetch(`${baseUrl}/customers`, {
+    method: "POST", headers, body: JSON.stringify({ name, email, cpfCnpj, externalReference: userId }),
+  });
+  const json = await readJson(res);
+  if (!res.ok || !json?.id) { logCustomerError("create", res.status, json); return { ok: false }; }
+  return { ok: true, id: String(json.id), via: "created" };
 }
 
 Deno.serve(async (req) => {
@@ -91,6 +168,7 @@ Deno.serve(async (req) => {
       });
     }
     const userId = claimsData.claims.sub as string;
+    const claimEmail = typeof claimsData.claims.email === "string" ? claimsData.claims.email : "";
     lockUser = userId;
 
     // 2. Parse + validate body
@@ -110,7 +188,7 @@ Deno.serve(async (req) => {
     // Tipo de conta vale para TODA chamada: agência só contrata pelo
     // faturamento consolidado (body.agency), nunca por checkout individual.
     const adm = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: prof } = await adm.from("profiles").select("account_type").eq("user_id", userId).maybeSingle();
+    const { data: prof } = await adm.from("profiles").select("account_type, cpf_cnpj, nome_completo").eq("user_id", userId).maybeSingle();
     const isAgencyAccount = prof?.account_type === "agency";
     if (isAgencyAccount && !body?.agency) {
       return new Response(JSON.stringify({
@@ -165,7 +243,7 @@ Deno.serve(async (req) => {
           .eq("agency_user_id", userId).eq("brand_id", b.brand_id);
       }
     }
-    console.log("create-checkout body:", JSON.stringify({ plano, nome, email, tipo, ciclo }));
+    console.log("create-checkout body:", JSON.stringify({ plano, nome, ...(body?.agency ? { email } : {}), tipo, ciclo }));
 
     if (!plano || !PLANOS_VALIDOS.includes(plano)) {
       return new Response(
@@ -173,11 +251,46 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    if (!nome || !email) {
+    if (body?.agency && (!nome || !email)) {
       return new Response(
         JSON.stringify({ error: "nome e email são obrigatórios." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // P22 (individual): documento e e-mail da CONTA, validados antes de
+    // qualquer chamada ao Asaas, trava ou gravação. body.email é ignorado.
+    let accountEmail = "";
+    let customerName = "";
+    let documento = "";
+    if (!body?.agency) {
+      const docResponse = (reason: keyof typeof DOC_MESSAGES) =>
+        new Response(JSON.stringify({ ok: false, reason, message: DOC_MESSAGES[reason] }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const docBody = onlyDigits(body?.cpfCnpj);
+      if (docBody) {
+        if (!isValidCpfCnpj(docBody)) return docResponse("documento_invalido");
+        documento = docBody;
+      } else if (isValidCpfCnpj(prof?.cpf_cnpj)) {
+        documento = onlyDigits(prof?.cpf_cnpj);
+      } else {
+        return docResponse(prof?.cpf_cnpj ? "documento_invalido" : "documento_necessario");
+      }
+      accountEmail = claimEmail;
+      if (!accountEmail) {
+        const { data: u } = await adm.auth.admin.getUserById(userId);
+        accountEmail = u?.user?.email ?? "";
+      }
+      if (!accountEmail) {
+        return new Response(JSON.stringify({ error: "Conta sem e-mail." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const clean = (v: unknown) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
+      customerName = clean(nome) || clean(prof?.nome_completo) || accountEmail.split("@")[0];
+      if (docBody && docBody !== prof?.cpf_cnpj) {
+        const { error: docError } = await adm.from("profiles").update({ cpf_cnpj: docBody }).eq("user_id", userId);
+        if (docError) throw new Error("Falha ao salvar o documento.");
+      }
     }
 
     // A trava vem ANTES de ler a linha: chamadas concorrentes nunca usam histórico antigo.
@@ -355,6 +468,7 @@ Deno.serve(async (req) => {
     const value = agencyQuote ? agencyQuote.total : planValue(plano, ciclo);
     console.log("create-checkout: nextDueDate =", nextDueDate, "trialConcedido =", trialConcedido, "retomaTeste =", !!resume && !resume.isPaid, "retomaAcesso =", !!resume?.isPaid);
     const anterior = (history ?? []).find((r) => r.asaas_checkout_id);
+    let cancelAnterior = false;
     if (anterior) {
       const action = previousCheckoutAction(anterior, { value, plano, ciclo });
       console.log("create-checkout: checkout anterior", anterior.asaas_checkout_id, "status:", anterior.status, "acao:", action);
@@ -367,14 +481,46 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ success: true, reused: true, trialConcedido, checkoutUrl: ctx?.link, asaasCheckoutId: anterior.asaas_checkout_id, agencyQuote }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (action === "cancel") {
+      cancelAnterior = action === "cancel";
+      // "skip": linha cancelada com sessão antiga concluída/expirada — nada a encerrar.
+    }
+
+    // P22: cliente do Asaas (individual), dentro da trava claim_checkout_creation.
+    let customerId: string | null = null;
+    if (!agencyQuote) {
+      const alvo = (history ?? []).find((r) => LIVE_STATUSES.includes(r.status ?? "")) ??
+        (history ?? []).find((r) => ["expirado", "trial_expirado", "cancelado"].includes(r.status ?? ""));
+      const storedId = (alvo?.asaas_customer_id as string | null | undefined) ?? null;
+      const resolved = await resolveAsaasCustomer({
+        baseUrl: ASAAS_BASE_URL, headers: asaasHeaders, storedId, userId,
+        name: customerName, email: accountEmail, cpfCnpj: documento,
+      });
+      const indisponivel = () => new Response(
+        JSON.stringify({ ok: false, reason: "cliente_indisponivel", message: CLIENTE_INDISPONIVEL_MSG }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!resolved.ok) return indisponivel();
+      customerId = resolved.id;
+      console.log("create-checkout: customer", JSON.stringify({ via: resolved.via }));
+      if (alvo && storedId !== customerId) {
+        // Gravação condicional: só onde ainda está o valor lido (ou nulo).
+        let q = supabaseAdmin.from("assinaturas").update({ asaas_customer_id: customerId }).eq("id", alvo.id);
+        q = storedId ? q.eq("asaas_customer_id", storedId) : q.is("asaas_customer_id", null);
+        const { data: bound, error: bindError } = await q.select("id");
+        if (bindError || !bound?.length) {
+          console.error("create-checkout: customer", JSON.stringify({ step: "persist", conflict: !bindError }));
+          return indisponivel();
+        }
+      }
+    }
+
+    if (anterior && cancelAnterior) {
+      {
         // Só uma confirmação HTTP bem-sucedida permite trocar a sessão; erros não são prova de cancelamento.
         const canceled = await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(anterior.asaas_checkout_id)}/cancel`, { method: "POST", headers: asaasHeaders });
         console.log("create-checkout: cancelar checkout anterior", anterior.asaas_checkout_id, canceled.status);
         if (!canceled.ok) return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "Não foi possível confirmar o encerramento do pagamento anterior." }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      // "skip": linha cancelada com sessão antiga concluída/expirada — nada a encerrar.
     }
 
     // 5. URLs de callback. O Asaas só aceita domínio público https cadastrado
@@ -409,9 +555,11 @@ Deno.serve(async (req) => {
     // 6. Checkout Session (POST /checkouts).
     // Diferente do fluxo antigo (customer + subscription + PUT /payments com
     // callback, que o Asaas responde 500 com corpo vazio), aqui o `callback`
-    // é aceito e o auto-redirect funciona. Não passamos `customer`: o Asaas
-    // coleta nome/CPF/endereço na própria tela do checkout.
+    // é aceito e o auto-redirect funciona. P22: no individual passamos o
+    // `customer` já criado/reaproveitado (nunca customerData junto); agência
+    // segue sem customer.
     const checkoutPayload: Record<string, unknown> = {
+      ...(customerId ? { customer: customerId } : {}),
       billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 60,
@@ -488,15 +636,15 @@ Deno.serve(async (req) => {
     );
 
     // 7. Persist in assinaturas (service role to bypass RLS for insert).
-    // asaas_customer_id / asaas_subscription_id ficam nulos aqui: a assinatura
-    // no Asaas só passa a existir depois que o cliente conclui o checkout, e o
-    // asaas-webhook grava esses IDs na confirmação do pagamento.
+    // asaas_subscription_id fica nulo aqui: a assinatura no Asaas só passa a
+    // existir depois que o cliente conclui o checkout (asaas-webhook grava).
+    // P22: o cliente do Asaas já é conhecido no individual (agência: nulo).
     const dataInicio = new Date();
     const dataVencimento = new Date(dataInicio.getTime() + 30 * 24 * 60 * 60 * 1000);
     const novoStatus = trialConcedido ? "trial" : "pendente";
 
     const assinaturaPayload = {
-      asaas_customer_id: null,
+      asaas_customer_id: customerId,
       asaas_subscription_id: null,
       // Guardamos o id da Checkout Session para permitir reconciliação ativa
       // (consulta direta ao Asaas) caso o webhook não chegue.

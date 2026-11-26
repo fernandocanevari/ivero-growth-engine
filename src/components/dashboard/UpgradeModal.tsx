@@ -25,6 +25,7 @@ import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
 import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
+import { CpfCnpjDialog, isDocumentReason, loadOwnDocument } from "@/components/checkout/CpfCnpjDialog";
 import { formatDateBR } from "@/lib/date-display";
 import { paidResumeAccessUntil } from "@/lib/billing-display";
 import { getWhatsappMessageUrl } from "@/lib/support";
@@ -297,12 +298,20 @@ export function UpgradeModal({
     onOpenChange(false);
   };
 
-  const handleSelectPlan = async (planKey: PlanoSugerido, planName: string) => {
+  // P22: CPF/CNPJ pedido antes do create-checkout quando o perfil não tem.
+  const [docRequest, setDocRequest] = useState<{ planKey: PlanoSugerido; planName: string } | null>(null);
+  const [docError, setDocError] = useState<string | null>(null);
+
+  const handleSelectPlan = async (
+    planKey: PlanoSugerido,
+    planName: string,
+    cpfCnpj?: string,
+  ): Promise<"awaiting_document" | void> => {
     // Estado da assinatura ainda não resolvido: não decidir rota com dado
     // incompleto (era o caminho que levava um trial pra tela de pagamento).
     if (isLoading || accountLoading || isAgency) return;
     // Funil de conversão: descobrir quais planos são clicados e onde param.
-    track("upgrade_plan_clicked", {
+    if (!cpfCnpj) track("upgrade_plan_clicked", {
       plan: planName,
       billing_cycle: isAnnual ? "annual" : "monthly",
       surface: "upgrade_modal",
@@ -333,6 +342,11 @@ export function UpgradeModal({
       }
 
 
+      if (!cpfCnpj && !(await loadOwnDocument())) {
+        setDocError(null);
+        setDocRequest({ planKey, planName });
+        return "awaiting_document";
+      }
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
@@ -349,6 +363,7 @@ export function UpgradeModal({
           // local (trial sem vínculo); com "contratar" abre normalmente.
           intent,
           ciclo: isAnnual ? "anual" : "mensal",
+          ...(cpfCnpj ? { cpfCnpj } : {}),
         },
       });
       invalidateAccessCache();
@@ -366,6 +381,19 @@ export function UpgradeModal({
       }
       // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
       // Modal fica aberto, com aviso fixo e "Pagar multa".
+      if (isDocumentReason(data)) {
+        setDocError(data?.message ?? null);
+        setDocRequest({ planKey, planName });
+        return "awaiting_document";
+      }
+      if (data?.reason === "cliente_indisponivel") {
+        toast({
+          title: "Não foi possível concluir",
+          description: data.message ?? "Tente novamente em instantes.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (isPenaltyBlocked(data)) {
         setPenaltyValor(Number(data.valor ?? 0));
         return;
@@ -397,14 +425,35 @@ export function UpgradeModal({
   // Enquanto o pedido automático roda, o modal de planos não é pintado (sem "piscar").
   const [autoDone, setAutoDone] = useState(false);
   const hideForAuto = !!autoSelectPlan && !autoDone;
+  // P22: com o pedido automático esperando o CPF/CNPJ, só encerra depois.
+  const autoPendingRef = useRef(false);
+  const settleAuto = () => {
+    if (!autoPendingRef.current) return;
+    autoPendingRef.current = false;
+    setAutoDone(true);
+    onAutoSelectSettled?.();
+  };
+  const confirmDocument = async (digits: string) => {
+    if (!docRequest) return;
+    const result = await handleSelectPlan(docRequest.planKey, docRequest.planName, digits);
+    if (result !== "awaiting_document") {
+      setDocRequest(null);
+      settleAuto();
+    }
+  };
+  const cancelDocument = () => {
+    setDocRequest(null);
+    settleAuto();
+  };
   useEffect(() => {
     if (!open) { autoSelectedRef.current = false; setAutoDone(false); return; }
     if (!autoSelectPlan || autoSelectedRef.current || isLoading || accountLoading || isAgency) return;
     autoSelectedRef.current = true;
-    void handleSelectPlan(autoSelectPlan, planNameOf(autoSelectPlan) ?? autoSelectPlan).finally(() => {
-      setAutoDone(true);
-      onAutoSelectSettled?.();
-    });
+    autoPendingRef.current = true;
+    void handleSelectPlan(autoSelectPlan, planNameOf(autoSelectPlan) ?? autoSelectPlan).then(
+      (result) => { if (result !== "awaiting_document") settleAuto(); },
+      () => settleAuto(),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, autoSelectPlan, isLoading, accountLoading, isAgency]);
 
@@ -736,6 +785,13 @@ export function UpgradeModal({
         </DialogContent>
       )}
     </Dialog>
+    <CpfCnpjDialog
+      open={docRequest !== null}
+      loading={pendingPlan !== null}
+      initialError={docError}
+      onConfirm={(digits) => void confirmDocument(digits)}
+      onCancel={cancelDocument}
+    />
     </>
   );
 }

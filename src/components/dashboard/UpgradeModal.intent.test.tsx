@@ -15,6 +15,11 @@ const getUser = vi.fn();
 const toastMock = vi.fn();
 let statusMock: Record<string, unknown>;
 
+// P22: perfil já tem CPF/CNPJ salvo → o pedido do documento é pulado.
+vi.mock("@/components/checkout/CpfCnpjDialog", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/checkout/CpfCnpjDialog")>()),
+  loadOwnDocument: async () => "52998224725",
+}));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getUser: () => getUser() },

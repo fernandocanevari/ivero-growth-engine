@@ -18,6 +18,7 @@ import { PRICING_COPY, AGENCY_COPY } from "@/content/landing";
 import { getAgencyWhatsappUrl } from "@/lib/support";
 import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
+import { CpfCnpjDialog, isDocumentReason, loadOwnDocument } from "@/components/checkout/CpfCnpjDialog";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 // O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
@@ -54,6 +55,9 @@ const InvestSection = () => {
   const [selectedPlano, setSelectedPlano] = useState<PlanoSlug | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  // P22: CPF/CNPJ pedido antes de abrir o pagamento (só se o perfil não tiver).
+  const [docOpen, setDocOpen] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
   
   const [submitting, setSubmitting] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
@@ -138,9 +142,9 @@ const InvestSection = () => {
 
 
 
-  const handleConfirmCheckout = async () => {
+  const handleConfirmCheckout = async (cpfCnpj?: string) => {
     if (!selectedPlano) return;
-    if (!nome.trim() || !email.trim()) {
+    if (!nome.trim()) {
       toast.error("Preencha todos os campos para continuar.");
       return;
     }
@@ -154,12 +158,27 @@ const InvestSection = () => {
         return;
       }
 
+      if (!cpfCnpj && !(await loadOwnDocument())) {
+        setDocError(null);
+        setDocOpen(true);
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plano: selectedPlano, nome, email, ciclo: isAnnual ? "anual" : "mensal" },
+        body: { plano: selectedPlano, nome, ciclo: isAnnual ? "anual" : "mensal", ...(cpfCnpj ? { cpfCnpj } : {}) },
       });
 
       if (error) {
         toast.error(error.message || "Erro ao criar assinatura.");
+        return;
+      }
+      if (isDocumentReason(data)) {
+        setDocError(data?.message ?? null);
+        setDocOpen(true);
+        return;
+      }
+      setDocOpen(false);
+      if (data?.reason === "cliente_indisponivel") {
+        toast.error(data.message || "Não foi possível preparar o pagamento agora.");
         return;
       }
       // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
@@ -538,15 +557,17 @@ const InvestSection = () => {
                 id="checkout-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                readOnly
+                aria-describedby="checkout-email-hint"
                 placeholder="seu@email.com"
                 disabled={submitting}
               />
+              <p id="checkout-email-hint" className="text-xs text-muted-foreground">É o e-mail da sua conta.</p>
             </div>
           </div>
           {penaltyValor !== null && <PenaltyBlockedNotice valor={penaltyValor} />}
           <DialogFooter>
-            <Button onClick={handleConfirmCheckout} disabled={submitting} className="w-full">
+            <Button onClick={() => handleConfirmCheckout()} disabled={submitting} className="w-full">
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -559,6 +580,13 @@ const InvestSection = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CpfCnpjDialog
+        open={docOpen}
+        loading={submitting}
+        initialError={docError}
+        onConfirm={(digits) => handleConfirmCheckout(digits)}
+        onCancel={() => setDocOpen(false)}
+      />
 
       <Dialog open={authPromptOpen} onOpenChange={setAuthPromptOpen}>
         <DialogContent className="sm:max-w-md">
