@@ -10,7 +10,7 @@ let storedDoc: string | null = null;
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: { id: "u1", email: "conta@x.com", user_metadata: {} } } }) },
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { cpf_cnpj: storedDoc } }) }) }) }),
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { cpf_cnpj: storedDoc, celular: "11987654321", cep: "01310100", logradouro: "Avenida Paulista", numero_endereco: "10", bairro: "Bela Vista", cidade: "São Paulo", uf: "SP" } }) }) }) }),
     functions: { invoke: (...a: unknown[]) => invoke(...a) },
   },
 }));
@@ -91,3 +91,22 @@ describe("CpfCnpjDialog no UpgradeModal", () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 });
+
+for (const [reason, label] of [
+  ["documento_necessario", "CPF ou CNPJ"],
+  ["documento_invalido", "CPF ou CNPJ"],
+  ["endereco_necessario", "CEP"],
+  ["endereco_invalido", "CEP"],
+  ["celular_necessario", "Celular (com DDD)"],
+]) {
+  it(`P22-fix: ${reason} reopens only matching group with initial server error`, async () => {
+    storedDoc = "52998224725";
+    invoke.mockResolvedValue({ data: { ok: false, reason, message: "Mensagem do servidor" }, error: null });
+    render(<UpgradeModal open onOpenChange={() => {}} intent="contratar" />);
+    await clickPlano();
+    expect(await screen.findByLabelText(label)).toBeInTheDocument();
+    expect(screen.getByText("Mensagem do servidor")).toBeInTheDocument();
+    for (const other of ["CPF ou CNPJ", "CEP", "Celular (com DDD)"].filter((s) => s !== label)) expect(screen.queryByLabelText(other)).toBeNull();
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
+}

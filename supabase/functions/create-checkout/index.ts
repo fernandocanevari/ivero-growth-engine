@@ -8,6 +8,7 @@ import { checkoutSchedule, preserveCheckoutState, previousCheckoutAction, resuma
 import { planDisplayName } from "../_shared/plan-names.ts";
 import { isPenaltyPending, PENALTY_COLUMNS, penaltyBlockedMessage, type PenaltyRow } from "../_shared/penalty.ts";
 import { isValidCpfCnpj, onlyDigits } from "../_shared/document.ts";
+import { BILLING_MESSAGES, isValidAddress, isValidPhone, normalizeAddress, type BillingAddress } from "../_shared/billing-profile.ts";
 
 
 const ASAAS_BASE_URL = asaasBaseUrl();
@@ -46,6 +47,8 @@ interface CheckoutBody {
   email?: string;
   /** P22: CPF/CNPJ de quem paga (individual). Ausente = usa profiles.cpf_cnpj. */
   cpfCnpj?: string;
+  celular?: string;
+  endereco?: BillingAddress;
   /** "upgrade" = cliente existente trocando de plano (retorno próprio). */
   tipo?: "upgrade";
   /** Ciclo escolhido pelo cliente. Ausente = anual (comportamento legado). */
@@ -63,7 +66,7 @@ const DOC_MESSAGES = {
   documento_invalido: "Esse CPF ou CNPJ não parece válido. Confere os números e tenta de novo.",
 } as const;
 const CLIENTE_INDISPONIVEL_MSG =
-  "Não conseguimos preparar o seu pagamento agora. Tenta de novo em alguns minutos — se continuar, fala com a gente.";
+  "Não conseguimos preparar o seu pagamento agora. Tente de novo em alguns minutos. Se continuar, fale com a gente.";
 
 /** Log sem valores: só status HTTP, códigos de erro do Asaas e nomes de campos. */
 function logCustomerError(step: string, status: number, json: unknown) {
@@ -78,13 +81,7 @@ async function readJson(res: Response): Promise<Record<string, any> | null> {
   try { return text ? JSON.parse(text) : null; } catch { return null; }
 }
 
-/**
- * P22: cliente do Asaas criado/reaproveitado ANTES do checkout (individual).
- * 1) id gravado na linha (GET; vazio de CPF → PUT só o cpfCnpj);
- * 2) GET /customers?externalReference=<user_id>;
- * 3) POST /customers { name, email, cpfCnpj, externalReference }.
- * Qualquer erro do Asaas → { ok:false } (fail closed, sem checkout).
- */
+/** Complete only missing Asaas customer fields, preserving all non-empty values. */
 export async function resolveAsaasCustomer(opts: {
   baseUrl: string;
   headers: Record<string, string>;
@@ -93,23 +90,48 @@ export async function resolveAsaasCustomer(opts: {
   name: string;
   email: string;
   cpfCnpj: string;
+  endereco: BillingAddress;
+  celular: string;
 }): Promise<{ ok: true; id: string; via: "stored" | "externalReference" | "created" } | { ok: false }> {
-  const { baseUrl, headers, storedId, userId, name, email, cpfCnpj } = opts;
+  const { baseUrl, headers, storedId, userId, name, email, cpfCnpj, endereco, celular } = opts;
+  const fields: Record<string, string> = {
+    cpfCnpj, postalCode: endereco.cep, address: endereco.logradouro,
+    addressNumber: endereco.numero, province: endereco.bairro,
+  };
+  const complete = async (id: string, customer: Record<string, any>) => {
+    const missing: Record<string, string> = {};
+    for (const [field, value] of Object.entries(fields)) {
+      const current = String(customer[field] ?? "").trim();
+      if (!current) missing[field] = value;
+      else if ((field === "cpfCnpj" || field === "postalCode" ? onlyDigits(current) : current) !== value) {
+        console.warn("create-checkout: customer", JSON.stringify({ field_differs: field, kept: "asaas" }));
+      }
+    }
+    if (!String(customer.phone ?? "").trim() && !String(customer.mobilePhone ?? "").trim()) {
+      missing.phone = celular;
+      missing.mobilePhone = celular;
+    } else {
+      for (const field of ["phone", "mobilePhone"]) {
+        if (String(customer[field] ?? "").trim() && onlyDigits(customer[field]) !== celular) {
+          console.warn("create-checkout: customer", JSON.stringify({ field_differs: field, kept: "asaas" }));
+        }
+      }
+    }
+    if (!Object.keys(missing).length) return true;
+    const put = await fetch(`${baseUrl}/customers/${encodeURIComponent(id)}`, {
+      method: "PUT", headers, body: JSON.stringify(missing),
+    });
+    if (!put.ok) { logCustomerError("put_missing_fields", put.status, await readJson(put)); return false; }
+    console.log("create-checkout: customer", JSON.stringify({ updated_fields: Object.keys(missing) }));
+    return true;
+  };
   if (storedId) {
     const res = await fetch(`${baseUrl}/customers/${encodeURIComponent(storedId)}`, { method: "GET", headers });
     const json = await readJson(res);
     const stale = res.status === 404 || (res.ok && (json?.deleted === true || json?.removed === true));
     if (!res.ok && !stale) { logCustomerError("get_stored", res.status, json); return { ok: false }; }
     if (!stale) {
-      const current = onlyDigits(json?.cpfCnpj);
-      if (!current) {
-        const put = await fetch(`${baseUrl}/customers/${encodeURIComponent(storedId)}`, {
-          method: "PUT", headers, body: JSON.stringify({ cpfCnpj }),
-        });
-        if (!put.ok) { logCustomerError("put_document", put.status, await readJson(put)); return { ok: false }; }
-      } else if (current !== cpfCnpj) {
-        console.warn("create-checkout: customer", JSON.stringify({ step: "get_stored", field_differs: "cpfCnpj", kept: "asaas" }));
-      }
+      if (!json || !(await complete(storedId, json))) return { ok: false };
       return { ok: true, id: storedId, via: "stored" };
     }
     console.log("create-checkout: customer", JSON.stringify({ step: "get_stored", stale: true, status: res.status }));
@@ -118,16 +140,38 @@ export async function resolveAsaasCustomer(opts: {
     const res = await fetch(`${baseUrl}/customers?externalReference=${encodeURIComponent(userId)}`, { method: "GET", headers });
     const json = await readJson(res);
     if (!res.ok) { logCustomerError("find_external_reference", res.status, json); return { ok: false }; }
-    const found = (Array.isArray(json?.data) ? json!.data : []).find(
-      (c: Record<string, unknown>) => c?.id && c?.deleted !== true && c?.externalReference === userId,
+    const found = (Array.isArray(json?.data) ? json?.data : []).find(
+      (c: Record<string, unknown>) => c?.id && c?.deleted !== true && c?.removed !== true && c?.externalReference === userId,
     );
-    if (found) return { ok: true, id: String(found.id), via: "externalReference" };
+    if (found) {
+      const id = String(found.id);
+      const get = await fetch(`${baseUrl}/customers/${encodeURIComponent(id)}`, { method: "GET", headers });
+      const customer = await readJson(get);
+      const stale = get.status === 404 || (get.ok && (customer?.deleted === true || customer?.removed === true));
+      if (!stale) {
+        if (!get.ok || !customer) { logCustomerError("get_found", get.status, customer); return { ok: false }; }
+        if (!(await complete(id, customer))) return { ok: false };
+        return { ok: true, id, via: "externalReference" };
+      }
+    }
   }
-  const res = await fetch(`${baseUrl}/customers`, {
-    method: "POST", headers, body: JSON.stringify({ name, email, cpfCnpj, externalReference: userId }),
-  });
-  const json = await readJson(res);
+  const payload: Record<string, unknown> = { name, email, ...fields, externalReference: userId, mobilePhone: celular, phone: celular };
+  let res = await fetch(`${baseUrl}/customers`, { method: "POST", headers, body: JSON.stringify(payload) });
+  let json = await readJson(res);
+  let variant = "phone+mobilePhone";
+  if (res.status === 400) {
+    const description = Array.isArray(json?.errors) ? json.errors.map((e: { description?: string }) => e.description ?? "").join(" ") : String(json?.message ?? "");
+    const omit = /mobilePhone/i.test(description) ? "mobilePhone" : /\bphone\b/i.test(description) ? "phone" : null;
+    if (omit) {
+      logCustomerError("create_retry", res.status, json);
+      delete payload[omit];
+      variant = omit === "phone" ? "mobilePhone" : "phone";
+      res = await fetch(`${baseUrl}/customers`, { method: "POST", headers, body: JSON.stringify(payload) });
+      json = await readJson(res);
+    }
+  }
   if (!res.ok || !json?.id) { logCustomerError("create", res.status, json); return { ok: false }; }
+  console.log("create-checkout: customer", JSON.stringify({ phone_variant: variant, worked: true }));
   return { ok: true, id: String(json.id), via: "created" };
 }
 
@@ -188,7 +232,7 @@ Deno.serve(async (req) => {
     // Tipo de conta vale para TODA chamada: agência só contrata pelo
     // faturamento consolidado (body.agency), nunca por checkout individual.
     const adm = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: prof } = await adm.from("profiles").select("account_type, cpf_cnpj, nome_completo").eq("user_id", userId).maybeSingle();
+    const { data: prof } = await adm.from("profiles").select("account_type, cpf_cnpj, nome_completo, celular, cep, logradouro, numero_endereco, bairro, cidade, uf").eq("user_id", userId).maybeSingle();
     const isAgencyAccount = prof?.account_type === "agency";
     if (isAgencyAccount && !body?.agency) {
       return new Response(JSON.stringify({
@@ -243,7 +287,7 @@ Deno.serve(async (req) => {
           .eq("agency_user_id", userId).eq("brand_id", b.brand_id);
       }
     }
-    console.log("create-checkout body:", JSON.stringify({ plano, nome, ...(body?.agency ? { email } : {}), tipo, ciclo }));
+    console.log("create-checkout body:", JSON.stringify({ plano, ...(body?.agency ? { nome, email } : {}), tipo, ciclo }));
 
     if (!plano || !PLANOS_VALIDOS.includes(plano)) {
       return new Response(
@@ -263,6 +307,8 @@ Deno.serve(async (req) => {
     let accountEmail = "";
     let customerName = "";
     let documento = "";
+    let endereco = normalizeAddress(null);
+    let celular = "";
     if (!body?.agency) {
       const docResponse = (reason: keyof typeof DOC_MESSAGES) =>
         new Response(JSON.stringify({ ok: false, reason, message: DOC_MESSAGES[reason] }),
@@ -276,6 +322,17 @@ Deno.serve(async (req) => {
       } else {
         return docResponse(prof?.cpf_cnpj ? "documento_invalido" : "documento_necessario");
       }
+      const billingResponse = (reason: keyof typeof BILLING_MESSAGES) =>
+        new Response(JSON.stringify({ ok: false, reason, message: BILLING_MESSAGES[reason] }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const addressSent = body.endereco !== undefined;
+      endereco = normalizeAddress(addressSent ? body.endereco : {
+        cep: prof?.cep, logradouro: prof?.logradouro, numero: prof?.numero_endereco,
+        bairro: prof?.bairro, cidade: prof?.cidade, uf: prof?.uf,
+      });
+      if (!isValidAddress(endereco)) return billingResponse(addressSent ? "endereco_invalido" : "endereco_necessario");
+      celular = onlyDigits(body.celular !== undefined ? body.celular : prof?.celular);
+      if (!isValidPhone(celular)) return billingResponse("celular_necessario");
       accountEmail = claimEmail;
       if (!accountEmail) {
         const { data: u } = await adm.auth.admin.getUserById(userId);
@@ -287,9 +344,19 @@ Deno.serve(async (req) => {
       }
       const clean = (v: unknown) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
       customerName = clean(nome) || clean(prof?.nome_completo) || accountEmail.split("@")[0];
-      if (docBody && docBody !== prof?.cpf_cnpj) {
-        const { error: docError } = await adm.from("profiles").update({ cpf_cnpj: docBody }).eq("user_id", userId);
-        if (docError) throw new Error("Falha ao salvar o documento.");
+      const changed: Record<string, string> = {};
+      if (docBody && docBody !== prof?.cpf_cnpj) changed.cpf_cnpj = docBody;
+      if (body.celular !== undefined && celular !== prof?.celular) changed.celular = celular;
+      if (addressSent) {
+        const columns = { cep: endereco.cep, logradouro: endereco.logradouro, numero_endereco: endereco.numero, bairro: endereco.bairro, cidade: endereco.cidade, uf: endereco.uf };
+        for (const [field, value] of Object.entries(columns)) {
+          if (value !== prof?.[field]) changed[field] = value;
+        }
+      }
+      if (Object.keys(changed).length) {
+        const { error: profileError } = await adm.from("profiles").update(changed).eq("user_id", userId);
+        if (profileError) throw new Error("Falha ao salvar os dados de cobrança.");
+        console.log("create-checkout: profile", JSON.stringify({ changed_fields: Object.keys(changed) }));
       }
     }
 
@@ -493,7 +560,7 @@ Deno.serve(async (req) => {
       const storedId = (alvo?.asaas_customer_id as string | null | undefined) ?? null;
       const resolved = await resolveAsaasCustomer({
         baseUrl: ASAAS_BASE_URL, headers: asaasHeaders, storedId, userId,
-        name: customerName, email: accountEmail, cpfCnpj: documento,
+        name: customerName, email: accountEmail, cpfCnpj: documento, endereco, celular,
       });
       const indisponivel = () => new Response(
         JSON.stringify({ ok: false, reason: "cliente_indisponivel", message: CLIENTE_INDISPONIVEL_MSG }),
@@ -601,23 +668,24 @@ Deno.serve(async (req) => {
     try {
       checkoutJson = checkoutText ? JSON.parse(checkoutText) : null;
     } catch { /* tratado abaixo */ }
-    console.log(
-      "create-checkout asaas checkout response:",
-      checkoutRes.status,
-      checkoutText.slice(0, 800),
-    );
-
+    if (agencyQuote) {
+      console.log("create-checkout asaas checkout response:", checkoutRes.status, checkoutText.slice(0, 800));
+    }
     const checkoutUrl: string = checkoutJson?.link || checkoutJson?.url || "";
     if (!checkoutRes.ok || !checkoutUrl) {
+      if (!agencyQuote) {
+        console.error("create-checkout: checkout", JSON.stringify({
+          status: checkoutRes.status,
+          errors: Array.isArray(checkoutJson?.errors) ? checkoutJson.errors.map((e: { code?: string; description?: string }) => ({ code: e.code, description: e.description })) : [],
+        }));
+        // No checkout-state write has occurred. Preserve the existing early-return cleanup.
+        return new Response(JSON.stringify({ ok: false, reason: "cliente_indisponivel", message: CLIENTE_INDISPONIVEL_MSG }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       console.error("create-checkout asaas checkout error:", checkoutRes.status, checkoutText);
-      const msg =
-        checkoutJson?.errors?.[0]?.description ||
-        checkoutJson?.message ||
-        "Erro ao criar checkout no Asaas.";
-      return new Response(
-        JSON.stringify({ error: msg, details: checkoutJson ?? checkoutText }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      const msg = checkoutJson?.errors?.[0]?.description || checkoutJson?.message || "Erro ao criar checkout no Asaas.";
+      return new Response(JSON.stringify({ error: msg, details: checkoutJson ?? checkoutText }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const asaasCheckoutId: string = checkoutJson?.id ?? "";
     createdCheckoutId = asaasCheckoutId || null;

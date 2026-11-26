@@ -25,7 +25,8 @@ import { useAccountType } from "@/hooks/useAccountType";
 import { AGENCY_BILLING_PATH, useSafeNavigate } from "@/hooks/useUpgradeEntry";
 import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
-import { CpfCnpjDialog, isDocumentReason, loadOwnDocument } from "@/components/checkout/CpfCnpjDialog";
+import type { BillingGroup, BillingInput } from "@/lib/billing-profile";
+import { CpfCnpjDialog, isDocumentReason, loadOwnDocument, billingGroupForReason, ALL_BILLING_GROUPS } from "@/components/checkout/CpfCnpjDialog";
 import { formatDateBR } from "@/lib/date-display";
 import { paidResumeAccessUntil } from "@/lib/billing-display";
 import { getWhatsappMessageUrl } from "@/lib/support";
@@ -301,17 +302,18 @@ export function UpgradeModal({
   // P22: CPF/CNPJ pedido antes do create-checkout quando o perfil não tem.
   const [docRequest, setDocRequest] = useState<{ planKey: PlanoSugerido; planName: string } | null>(null);
   const [docError, setDocError] = useState<string | null>(null);
+  const [docGroups, setDocGroups] = useState<BillingGroup[]>(ALL_BILLING_GROUPS);
 
   const handleSelectPlan = async (
     planKey: PlanoSugerido,
     planName: string,
-    cpfCnpj?: string,
+    collected?: BillingInput,
   ): Promise<"awaiting_document" | void> => {
     // Estado da assinatura ainda não resolvido: não decidir rota com dado
     // incompleto (era o caminho que levava um trial pra tela de pagamento).
     if (isLoading || accountLoading || isAgency) return;
     // Funil de conversão: descobrir quais planos são clicados e onde param.
-    if (!cpfCnpj) track("upgrade_plan_clicked", {
+    if (!collected) track("upgrade_plan_clicked", {
       plan: planName,
       billing_cycle: isAnnual ? "annual" : "monthly",
       surface: "upgrade_modal",
@@ -342,7 +344,9 @@ export function UpgradeModal({
       }
 
 
-      if (!cpfCnpj && !(await loadOwnDocument())) {
+      const missing = collected ? [] : await loadOwnDocument();
+      if (missing.length) {
+        setDocGroups(missing);
         setDocError(null);
         setDocRequest({ planKey, planName });
         return "awaiting_document";
@@ -363,7 +367,7 @@ export function UpgradeModal({
           // local (trial sem vínculo); com "contratar" abre normalmente.
           intent,
           ciclo: isAnnual ? "anual" : "mensal",
-          ...(cpfCnpj ? { cpfCnpj } : {}),
+          ...(collected ?? {}),
         },
       });
       invalidateAccessCache();
@@ -382,6 +386,8 @@ export function UpgradeModal({
       // P26: multa de cancelamento pendente — mensagem própria com "Pagar multa".
       // Modal fica aberto, com aviso fixo e "Pagar multa".
       if (isDocumentReason(data)) {
+        const group = billingGroupForReason(data);
+        if (group) setDocGroups((prev) => [...new Set([...(collected ? prev : missing), group])]);
         setDocError(data?.message ?? null);
         setDocRequest({ planKey, planName });
         return "awaiting_document";
@@ -433,9 +439,9 @@ export function UpgradeModal({
     setAutoDone(true);
     onAutoSelectSettled?.();
   };
-  const confirmDocument = async (digits: string) => {
+  const confirmDocument = async (collected: BillingInput) => {
     if (!docRequest) return;
-    const result = await handleSelectPlan(docRequest.planKey, docRequest.planName, digits);
+    const result = await handleSelectPlan(docRequest.planKey, docRequest.planName, collected);
     if (result !== "awaiting_document") {
       setDocRequest(null);
       settleAuto();
@@ -789,6 +795,7 @@ export function UpgradeModal({
       open={docRequest !== null}
       loading={pendingPlan !== null}
       initialError={docError}
+        groups={docGroups}
       onConfirm={(digits) => void confirmDocument(digits)}
       onCancel={cancelDocument}
     />

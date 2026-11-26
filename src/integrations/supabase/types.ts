@@ -969,46 +969,64 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string
+          bairro: string | null
           celular: string | null
+          cep: string | null
+          cidade: string | null
           cpf_cnpj: string | null
           created_at: string
           display_name: string | null
           email: string | null
           id: string
           is_first_login: boolean
+          logradouro: string | null
           nome_completo: string | null
           nome_empresa: string | null
+          numero_endereco: string | null
           site_url: string | null
+          uf: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           account_type?: string
+          bairro?: string | null
           celular?: string | null
+          cep?: string | null
+          cidade?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
           is_first_login?: boolean
+          logradouro?: string | null
           nome_completo?: string | null
           nome_empresa?: string | null
+          numero_endereco?: string | null
           site_url?: string | null
+          uf?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           account_type?: string
+          bairro?: string | null
           celular?: string | null
+          cep?: string | null
+          cidade?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
           is_first_login?: boolean
+          logradouro?: string | null
           nome_completo?: string | null
           nome_empresa?: string | null
+          numero_endereco?: string | null
           site_url?: string | null
+          uf?: string | null
           updated_at?: string
           user_id?: string
         }

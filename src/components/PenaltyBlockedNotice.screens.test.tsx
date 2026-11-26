@@ -22,7 +22,7 @@ const session = { user: { id: "u1", email: "c@x.com", user_metadata: { display_n
 // P22: perfil já tem CPF/CNPJ salvo → o pedido do documento é pulado.
 vi.mock("@/components/checkout/CpfCnpjDialog", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/checkout/CpfCnpjDialog")>()),
-  loadOwnDocument: async () => "52998224725",
+  loadOwnDocument: async () => [],
 }));
 vi.mock("@/integrations/supabase/client", () => {
   const q: Record<string, unknown> = {};

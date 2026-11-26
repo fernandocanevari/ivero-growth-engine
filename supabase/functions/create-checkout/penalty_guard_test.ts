@@ -35,7 +35,7 @@ async function run(rows: Record<string, unknown>[], accountType = "individual") 
     if (url.hostname === "database.invalid") {
       if (url.pathname === "/auth/v1/user") data = { id: "user-1", aud: "authenticated", role: "authenticated" };
       else if (url.pathname.startsWith("/rest/v1/rpc/")) data = true;
-      else if (url.pathname === "/rest/v1/profiles") data = [{ account_type: accountType }];
+      else if (url.pathname === "/rest/v1/profiles") data = [{ account_type: accountType, celular: "11987654321", cep: "01310100", logradouro: "Avenida Paulista", numero_endereco: "10", bairro: "Bela Vista", cidade: "São Paulo", uf: "SP" }];
       else if (url.pathname === "/rest/v1/agency_brands") data = req.method === "GET" ? [] : null;
       else if (url.pathname === "/rest/v1/assinaturas") {
         if (req.method !== "GET") data = url.searchParams.get("select") === "id" ? [{ id: "row" }] : null; // P22: gravação condicional do cliente
@@ -48,7 +48,7 @@ async function run(rows: Record<string, unknown>[], accountType = "individual") 
       // P22: cliente do Asaas criado/reaproveitado antes do checkout.
       else if (url.pathname === "/api/v3/customers" && req.method === "GET") data = { data: [] };
       else if (url.pathname === "/api/v3/customers" && req.method === "POST") data = { id: "cus_new" };
-      else if (/^\/api\/v3\/customers\/[^/]+$/.test(url.pathname) && req.method === "GET") data = { id: url.pathname.split("/").pop(), cpfCnpj: "52998224725" };
+      else if (/^\/api\/v3\/customers\/[^/]+$/.test(url.pathname) && req.method === "GET") data = { id: url.pathname.split("/").pop(), cpfCnpj: "52998224725", postalCode: "01310100", address: "Avenida Paulista", addressNumber: "10", province: "Bela Vista", phone: "11987654321" };
       else throw new Error(`Unexpected mocked provider path: ${req.method} ${url.pathname}`);
     } else throw new Error("Network escape forbidden");
     return new Response(data === null ? null : JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });

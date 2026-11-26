@@ -18,7 +18,8 @@ import { PRICING_COPY, AGENCY_COPY } from "@/content/landing";
 import { getAgencyWhatsappUrl } from "@/lib/support";
 import { isPenaltyBlocked } from "@/lib/penalty";
 import { PenaltyBlockedNotice } from "@/components/PenaltyBlockedNotice";
-import { CpfCnpjDialog, isDocumentReason, loadOwnDocument } from "@/components/checkout/CpfCnpjDialog";
+import type { BillingGroup, BillingInput } from "@/lib/billing-profile";
+import { CpfCnpjDialog, isDocumentReason, loadOwnDocument, billingGroupForReason, ALL_BILLING_GROUPS } from "@/components/checkout/CpfCnpjDialog";
 
 const SELECTED_PLAN_STORAGE_KEY = "ivero_selected_plan";
 // O ciclo escolhido aqui precisa sobreviver ao signup: o trigger de trial lê
@@ -58,6 +59,7 @@ const InvestSection = () => {
   // P22: CPF/CNPJ pedido antes de abrir o pagamento (só se o perfil não tiver).
   const [docOpen, setDocOpen] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
+  const [docGroups, setDocGroups] = useState<BillingGroup[]>(ALL_BILLING_GROUPS);
   
   const [submitting, setSubmitting] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
@@ -142,7 +144,7 @@ const InvestSection = () => {
 
 
 
-  const handleConfirmCheckout = async (cpfCnpj?: string) => {
+  const handleConfirmCheckout = async (collected?: BillingInput) => {
     if (!selectedPlano) return;
     if (!nome.trim()) {
       toast.error("Preencha todos os campos para continuar.");
@@ -158,13 +160,15 @@ const InvestSection = () => {
         return;
       }
 
-      if (!cpfCnpj && !(await loadOwnDocument())) {
+      const missing = collected ? [] : await loadOwnDocument();
+      if (missing.length) {
+        setDocGroups(missing);
         setDocError(null);
         setDocOpen(true);
         return;
       }
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plano: selectedPlano, nome, ciclo: isAnnual ? "anual" : "mensal", ...(cpfCnpj ? { cpfCnpj } : {}) },
+        body: { plano: selectedPlano, nome, ciclo: isAnnual ? "anual" : "mensal", ...(collected ?? {}) },
       });
 
       if (error) {
@@ -172,6 +176,8 @@ const InvestSection = () => {
         return;
       }
       if (isDocumentReason(data)) {
+        const group = billingGroupForReason(data);
+        if (group) setDocGroups((prev) => [...new Set([...(collected ? prev : missing), group])]);
         setDocError(data?.message ?? null);
         setDocOpen(true);
         return;
@@ -584,6 +590,7 @@ const InvestSection = () => {
         open={docOpen}
         loading={submitting}
         initialError={docError}
+        groups={docGroups}
         onConfirm={(digits) => handleConfirmCheckout(digits)}
         onCancel={() => setDocOpen(false)}
       />
