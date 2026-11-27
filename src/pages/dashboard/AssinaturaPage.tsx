@@ -1092,10 +1092,13 @@ function AssinaturaPageContent() {
                 <>
                   {" "}
                   <span className="block mt-3 text-foreground" data-testid="cancel-preview-multa">
-                    Ah, que pena! Como o preço anual é promocional pelo compromisso de{" "}
-                    {compromissoMeses} meses, será gerada uma cobrança única de{" "}
-                    <span className="font-semibold">{formatPenaltyBRL(cancelPreview.valor)}</span>, a
-                    diferença dos meses que você já usou. Conta pra gente o motivo logo abaixo?
+                    Seu plano tem preço promocional com compromisso de{" "}
+                    {compromissoMeses} meses. Cancelando agora, será gerada uma
+                    cobrança única de{" "}
+                    <span className="font-semibold">{formatPenaltyBRL(cancelPreview.valor)}</span>{" "}
+                    — a diferença entre o valor cheio e o promocional dos{" "}
+                    {cancelPreview.ciclos} mês(es) já
+                    utilizados com desconto.
                   </span>
                 </>
               )}
