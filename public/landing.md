@@ -81,7 +81,6 @@ Chamada para ação: **Queremos você como cliente — Comece agora**
 Inclui:
 
 - Score GEO de Visibilidade
-- Relatório semanal por e-mail
 - Monitoramento Multi-IA
 - Prompt Tester
 
@@ -132,11 +131,10 @@ Chamada para ação: **Quero dominar meu setor nas IAs →**
 - Score GEO
 - Monitoramento de IAs
 - Alertas de menções
-- Relatório semanal
 - Suporte prioritário
 - Onboarding Ivero
 
-Sem fidelidade • Cancele quando quiser • Evolua conforme sua operação cresce
+Mensal sem fidelidade • Anual com compromisso de 12 meses • Evolua conforme sua operação cresce
 
 ### Para agências e consultorias: Atende várias marcas?
 

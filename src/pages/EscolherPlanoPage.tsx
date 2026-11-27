@@ -300,8 +300,12 @@ const EscolherPlanoPage = () => {
             {trialExpirado
               ? "Você já sabe que sua marca aparece nas IAs com a Ivero. Assine agora para aparecer ainda mais e na frente do seu concorrente."
               : trialElegivel
-                ? "Comece com 7 dias grátis. Cancele quando quiser."
-                : "A cobrança é feita agora. Cancele quando quiser."}
+                ? isAnnual
+                  ? "Comece com 7 dias grátis. O plano anual tem compromisso de 12 meses no preço promocional."
+                  : "Comece com 7 dias grátis. No plano mensal, cancele quando quiser."
+                : isAnnual
+                  ? "A cobrança é feita agora. O plano anual tem compromisso de 12 meses no preço promocional."
+                  : "A cobrança é feita agora. No plano mensal, cancele quando quiser."}
           </p>
 
 
@@ -497,7 +501,9 @@ const EscolherPlanoPage = () => {
             <DialogTitle>Confirmar assinatura</DialogTitle>
             <DialogDescription>
               {trialElegivel
-                ? "Você terá 7 dias grátis antes da primeira cobrança. Cancele quando quiser."
+                ? isAnnual
+                  ? "Você terá 7 dias grátis antes da primeira cobrança, e cancelar nesse período não custa nada. Depois, o plano anual tem compromisso de 12 meses no preço promocional."
+                  : "Você terá 7 dias grátis antes da primeira cobrança. No plano mensal, cancele quando quiser."
                 : `A cobrança do plano ${
                     selectedPlano ? PLANOS[selectedPlano].name : ""
                   } será feita agora, no valor de ${
@@ -508,7 +514,9 @@ const EscolherPlanoPage = () => {
                             : PLANOS[selectedPlano].monthlyPrice,
                         )
                       : ""
-                  }. Cancele quando quiser.`}
+                  }${isAnnual
+                    ? " por mês. O plano anual tem compromisso de 12 meses no preço promocional."
+                    : ". No plano mensal, cancele quando quiser."}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">

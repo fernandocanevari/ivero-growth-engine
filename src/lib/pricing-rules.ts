@@ -38,7 +38,6 @@ export const PLANOS: Record<PlanoSugerido, PlanoInfo> = {
     inheritsFrom: null,
     highlights: [
       "Score GEO de Visibilidade",
-      "Relatório semanal por e-mail",
       "Monitoramento Multi-IA",
       "Prompt Tester",
     ],

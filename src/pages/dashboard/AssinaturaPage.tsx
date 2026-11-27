@@ -1001,10 +1001,7 @@ function AssinaturaPageContent() {
               Quando a primeira cobrança acontece?
             </AccordionTrigger>
             <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-              Ao escolher um plano você é levado à página segura de pagamento. Se
-              ainda estiver no teste, a primeira cobrança é agendada para o fim
-              dos 7 dias — e nada é cobrado antes disso. Depois, a renovação é
-              mensal e automática no cartão cadastrado.
+              Ao escolher um plano, você é levado à página segura de pagamento. Se ainda está no teste, a primeira cobrança fica para o fim dos 7 dias e nada é cobrado antes. Se o teste já terminou, a cobrança é feita na hora. Se você cancelou e ainda tem dias pagos, a cobrança só começa quando esses dias acabarem. Depois, a renovação é mensal e automática no cartão cadastrado.
             </AccordionContent>
           </AccordionItem>
 
@@ -1017,9 +1014,7 @@ function AssinaturaPageContent() {
             </AccordionTrigger>
             <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
               Clique em <span className="font-medium text-foreground">Mudar plano</span>{" "}
-              e escolha o novo plano. A alteração é imediata no acesso e o novo
-              valor passa a valer nas próximas cobranças — não há cobrança
-              proporcional retroativa nem multa.
+              e escolha o novo. Se for um plano maior, você paga só a diferença dos dias que faltam no ciclo. Assim que o pagamento é confirmado, o novo plano é liberado. Até a confirmação, você continua normalmente no plano que tem hoje. Se for um plano menor, o novo valor passa a valer nas próximas cobranças. No plano anual, por causa do compromisso de 12 meses, a redução a gente combina com você: é só chamar.
             </AccordionContent>
           </AccordionItem>
 
