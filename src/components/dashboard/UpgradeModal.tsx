@@ -139,7 +139,24 @@ export function UpgradeModal({
   // Confirmação do pedido de upgrade (substitui toast + abertura automática).
   const [upgradeConfirm, setUpgradeConfirm] = useState<{
     title: string; planName: string; currentName: string; diferenca: number; dueDate: string | null; invoiceUrl: string;
+    targetKey: string | null; fromKey: string | null;
   } | null>(null);
+  // P54: a diferença foi paga com o diálogo aberto (o plano do hook virou o pedido).
+  const [upgradePaid, setUpgradePaid] = useState(false);
+  useEffect(() => {
+    setUpgradePaid(false);
+  }, [upgradeConfirm]);
+  useEffect(() => {
+    if (
+      upgradeConfirm !== null &&
+      !isLoading &&
+      upgradeConfirm.targetKey !== null &&
+      plano !== upgradeConfirm.fromKey &&
+      plano === upgradeConfirm.targetKey
+    ) {
+      setUpgradePaid(true);
+    }
+  }, [plano, isLoading, upgradeConfirm]);
   // Escolha manual do cliente nunca é sobrescrita pela sincronização tardia.
   const userPickedCiclo = useRef(false);
   // Ressincroniza a cada abertura do modal (e quando o dado da assinatura chega),
@@ -200,6 +217,8 @@ export function UpgradeModal({
       diferenca: Number(data.diferenca ?? 0),
       dueDate: (data.dueDate as string | null | undefined) ?? null,
       invoiceUrl: data.invoiceUrl as string,
+      targetKey: typeof data.planoPendente === "string" ? data.planoPendente : null,
+      fromKey: plano ?? null,
     });
   };
 
@@ -764,7 +783,20 @@ export function UpgradeModal({
 
     </Dialog>
     <Dialog open={upgradeConfirm !== null} onOpenChange={(o) => { if (!o) setUpgradeConfirm(null); }}>
-      {upgradeConfirm && (
+      {upgradeConfirm && upgradePaid && (
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold">Deu tudo certo!</DialogTitle>
+            <DialogDescription className="text-base text-foreground leading-relaxed">
+              Seu pagamento foi confirmado e o plano {upgradeConfirm.planName} já está liberado. Aproveite!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button onClick={() => setUpgradeConfirm(null)}>Ótimo</Button>
+          </div>
+        </DialogContent>
+      )}
+      {upgradeConfirm && !upgradePaid && (
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-bold">{upgradeConfirm.title}</DialogTitle>
