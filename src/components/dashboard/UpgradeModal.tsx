@@ -96,6 +96,7 @@ export function UpgradeModal({
     effectiveStatus,
     hasAsaasSubscription,
     cicloContratado,
+    cicloPretendido,
     ciclosPagos,
     compromissoMeses,
     countedPaymentIds,
@@ -107,6 +108,9 @@ export function UpgradeModal({
   const go = useSafeNavigate();
   // Default do toggle segue o ciclo real do cliente — nunca assume "anual".
   const [isAnnualPicked, setIsAnnual] = useState(false);
+  // P59: trial com cartão no Anual guarda a escolha em ciclo_pretendido.
+  const cicloEfetivo: "anual" | "mensal" =
+    !isLoading && effectiveStatus === "trial" && hasAsaasSubscription && cicloPretendido ? cicloPretendido : cicloContratado;
   // Contrato anual vivo: o servidor ignora o ciclo enviado, então não há seletor.
   const lockAnnual =
     !isLoading &&
@@ -168,8 +172,8 @@ export function UpgradeModal({
       return;
     }
     if (isLoading || userPickedCiclo.current) return;
-    setIsAnnual(cicloContratado === "anual");
-  }, [open, isLoading, cicloContratado]);
+    setIsAnnual(cicloEfetivo === "anual");
+  }, [open, isLoading, cicloContratado, cicloEfetivo]);
 
   const pickCiclo = (annual: boolean) => {
     userPickedCiclo.current = true;
@@ -186,7 +190,7 @@ export function UpgradeModal({
     (effectiveStatus === "ativo" || effectiveStatus === "inadimplente" || effectiveStatus === "trial");
   // Trocar só o ciclo (mesmo plano) é mudança real de preço: o botão do plano
   // atual precisa ficar clicável nesse caso.
-  const cicloChanged = !isLoading && (isAnnual ? "anual" : "mensal") !== cicloContratado;
+  const cicloChanged = !isLoading && (isAnnual ? "anual" : "mensal") !== cicloEfetivo;
   // Cancelou uma assinatura paga e ainda tem dias de acesso: nada é cobrado
   // hoje, a 1ª cobrança do novo contrato fica no fim do acesso atual.
   const paidResumeUntil =
