@@ -247,7 +247,7 @@ export const PRICING_COPY = {
     ],
     footnoteParts: [
       "Mensal sem fidelidade",
-      "Anual com compromisso de 12 meses",
+      "Anual com compromisso de 12 meses (renova a cada ano)",
       "Evolua conforme sua operação cresce",
     ],
   },

@@ -50,8 +50,8 @@ const cases = [
   },
   {
     trial: true, annual: true,
-    subtitle: "Comece com 7 dias grátis. O plano anual tem compromisso de 12 meses no preço promocional.",
-    description: "Você terá 7 dias grátis antes da primeira cobrança, e cancelar nesse período não custa nada. Depois, o plano anual tem compromisso de 12 meses no preço promocional.",
+    subtitle: "Comece com 7 dias grátis. O plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra.",
+    description: "Você terá 7 dias grátis antes da primeira cobrança, e cancelar nesse período não custa nada. Depois, o plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra.",
   },
   {
     trial: false, annual: false,
@@ -60,8 +60,8 @@ const cases = [
   },
   {
     trial: false, annual: true,
-    subtitle: "A cobrança é feita agora. O plano anual tem compromisso de 12 meses no preço promocional.",
-    description: "A cobrança do plano Presença será feita agora, no valor de R$ 397 por mês. O plano anual tem compromisso de 12 meses no preço promocional.",
+    subtitle: "A cobrança é feita agora. O plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra.",
+    description: "A cobrança do plano Presença será feita agora, no valor de R$ 397 por mês. O plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra.",
   },
 ];
 
@@ -78,6 +78,9 @@ describe("P55 — escolha e confirmação", () => {
     const descriptionElement = within(dialog).getByText(description);
     expect(descriptionElement).toBeInTheDocument();
     expect(`${subtitleElement.textContent} ${descriptionElement.textContent}`).not.toMatch(/bordo|multa/i);
+    if (annual) expect(`${subtitleElement.textContent} ${descriptionElement.textContent}`).toMatch(/se renova a cada 12 meses/);
+    else expect(`${subtitleElement.textContent} ${descriptionElement.textContent}`).not.toMatch(/renova/);
+    expect(`${subtitleElement.textContent} ${descriptionElement.textContent}`).not.toMatch(/voo/i);
     expect(navigateMock).not.toHaveBeenCalled();
   });
 

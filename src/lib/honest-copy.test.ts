@@ -20,11 +20,12 @@ describe("P55 — planos e benefícios aprovados", () => {
 
   it("explicita os dois contratos sem palavras proibidas", () => {
     expect(PRICING_COPY.guarantee.footnoteParts).toEqual([
-      "Mensal sem fidelidade", "Anual com compromisso de 12 meses",
+      "Mensal sem fidelidade", "Anual com compromisso de 12 meses (renova a cada ano)",
       "Evolua conforme sua operação cresce",
     ]);
     const texts = [...PLANOS.presenca.highlights, ...PRICING_COPY.guarantee.benefits,
       ...PRICING_COPY.guarantee.footnoteParts].join(" ");
-    expect(texts).not.toMatch(/bordo|multa/i);
+    expect(texts).not.toMatch(/bordo|multa|voo/i);
+    expect(PRICING_COPY.guarantee.footnoteParts[1]).toMatch(/renova/);
   });
 });

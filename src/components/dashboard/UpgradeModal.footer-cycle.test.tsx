@@ -23,7 +23,7 @@ vi.mock("@/hooks/useAccountType", () => ({
 import { UpgradeModal } from "./UpgradeModal";
 
 /** P39-fix1: rodapé, aba destacada e preços seguem o mesmo ciclo visível desde o 1º render. */
-const ANUAL_TXT = "✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional";
+const ANUAL_TXT = "✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano";
 const MENSAL_TXT = "✦ Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser";
 const text = () => (document.body.textContent ?? "").replace(/\u00a0/g, " ");
 const base = { plano: "influencia", isLoading: false, isAdmin: false, ciclosPagos: 0, countedPaymentIds: [], multaPendente: null };

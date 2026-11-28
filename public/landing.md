@@ -134,7 +134,7 @@ Chamada para ação: **Quero dominar meu setor nas IAs →**
 - Suporte prioritário
 - Onboarding Ivero
 
-Mensal sem fidelidade • Anual com compromisso de 12 meses • Evolua conforme sua operação cresce
+Mensal sem fidelidade • Anual com compromisso de 12 meses (renova a cada ano) • Evolua conforme sua operação cresce
 
 ### Para agências e consultorias: Atende várias marcas?
 

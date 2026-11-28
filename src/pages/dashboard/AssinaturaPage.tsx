@@ -501,6 +501,32 @@ function AssinaturaPageContent() {
         );
       })()}
 
+      {effectiveStatus === "ativo" && isAnual && !(penaltyBlocksReactivation && multaPendente) && compromissoMeses > 0 &&
+        (ciclosPagos === compromissoMeses - 1 || ciclosPagos >= compromissoMeses) && (
+        <Card className="p-6 border-primary/30 bg-primary/5 space-y-4" data-testid="renewal-notice">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground min-w-0">
+              <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              {ciclosPagos >= compromissoMeses
+                ? `Você completou seus ${compromissoMeses} meses`
+                : `Falta pouco para completar seus ${compromissoMeses} meses`}
+            </h2>
+            {ciclosPagos >= compromissoMeses && (
+              <Button variant="outline" onClick={() => setCancelOpen(true)} data-testid="renewal-cancel">
+                Cancelar plano
+              </Button>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {ciclosPagos >= compromissoMeses
+              ? next
+                ? `Na próxima cobrança, em ${formatDate(next.dueDate)} (${formatBRL(next.value)}), começa um novo compromisso de ${compromissoMeses} meses, no mesmo valor. Se preferir não continuar, você pode cancelar até essa data sem nenhuma cobrança extra.`
+                : `Na próxima cobrança começa um novo compromisso de ${compromissoMeses} meses, no mesmo valor. Se preferir não continuar, você pode cancelar antes dela sem nenhuma cobrança extra.`
+              : `Você já pagou ${compromissoMeses - 1} dos ${compromissoMeses} meses do seu compromisso. Depois do ${compromissoMeses}º pagamento, seu plano continua no mesmo valor e, na cobrança do ${compromissoMeses + 1}º mês, começa um novo compromisso de ${compromissoMeses} meses. A gente avisa por aqui de novo quando chegar a hora.`}
+          </p>
+        </Card>
+      )}
+
       {chosenPlanInfo && (
         <Card className="p-6 border-primary/30 bg-primary/5 space-y-4" data-testid="chosen-plan-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -594,7 +620,7 @@ function AssinaturaPageContent() {
                   </span>
                   {ciclosPagos > 0 && (
                     <>
-                      {" "}— {ciclosPagos} de {compromissoMeses} ciclos pagos
+                      {" "}— {Math.min(ciclosPagos, compromissoMeses)} de {compromissoMeses} ciclos pagos
                       {ciclosRestantes > 0 && `, faltam ${ciclosRestantes}`}
                     </>
                   )}
@@ -634,7 +660,7 @@ function AssinaturaPageContent() {
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-muted-foreground">Compromisso</span>
                     <span className="font-medium text-foreground">
-                      {ciclosPagos} de {compromissoMeses} meses
+                      {Math.min(ciclosPagos, compromissoMeses)} de {compromissoMeses} meses
                     </span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-surface-1 overflow-hidden">
@@ -1015,6 +1041,18 @@ function AssinaturaPageContent() {
             <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
               Clique em <span className="font-medium text-foreground">Mudar plano</span>{" "}
               e escolha o novo. Se for um plano maior, você paga só a diferença dos dias que faltam no ciclo. Assim que o pagamento é confirmado, o novo plano é liberado. Até a confirmação, você continua normalmente no plano que tem hoje. Se for um plano menor, o novo valor passa a valer nas próximas cobranças. No plano anual, por causa do compromisso de 12 meses, a redução a gente combina com você: é só chamar.
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="renovacao">
+            <AccordionTrigger
+              className="text-sm font-medium text-left"
+              onClick={() => track("billing_faq_opened", { question: "renovacao_anual" })}
+            >
+              O que acontece quando completo os 12 meses do plano anual?
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+              Seu compromisso é cumprido e, na cobrança seguinte, começa um novo compromisso de 12 meses, no mesmo valor. Até o dia dessa cobrança você pode cancelar sem nenhuma cobrança extra. A partir do 11º pagamento mostramos um aviso aqui na tela.
             </AccordionContent>
           </AccordionItem>
 

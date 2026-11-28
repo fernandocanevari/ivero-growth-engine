@@ -301,10 +301,10 @@ const EscolherPlanoPage = () => {
               ? "Você já sabe que sua marca aparece nas IAs com a Ivero. Assine agora para aparecer ainda mais e na frente do seu concorrente."
               : trialElegivel
                 ? isAnnual
-                  ? "Comece com 7 dias grátis. O plano anual tem compromisso de 12 meses no preço promocional."
+                  ? "Comece com 7 dias grátis. O plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra."
                   : "Comece com 7 dias grátis. No plano mensal, cancele quando quiser."
                 : isAnnual
-                  ? "A cobrança é feita agora. O plano anual tem compromisso de 12 meses no preço promocional."
+                  ? "A cobrança é feita agora. O plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra."
                   : "A cobrança é feita agora. No plano mensal, cancele quando quiser."}
           </p>
 
@@ -502,7 +502,7 @@ const EscolherPlanoPage = () => {
             <DialogDescription>
               {trialElegivel
                 ? isAnnual
-                  ? "Você terá 7 dias grátis antes da primeira cobrança, e cancelar nesse período não custa nada. Depois, o plano anual tem compromisso de 12 meses no preço promocional."
+                  ? "Você terá 7 dias grátis antes da primeira cobrança, e cancelar nesse período não custa nada. Depois, o plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra."
                   : "Você terá 7 dias grátis antes da primeira cobrança. No plano mensal, cancele quando quiser."
                 : `A cobrança do plano ${
                     selectedPlano ? PLANOS[selectedPlano].name : ""
@@ -515,7 +515,7 @@ const EscolherPlanoPage = () => {
                         )
                       : ""
                   }${isAnnual
-                    ? " por mês. O plano anual tem compromisso de 12 meses no preço promocional."
+                    ? " por mês. O plano anual tem compromisso de 12 meses no preço promocional e se renova a cada 12 meses; antes de cada renovação você pode cancelar sem cobrança extra."
                     : ". No plano mensal, cancele quando quiser."}`}
             </DialogDescription>
           </DialogHeader>
