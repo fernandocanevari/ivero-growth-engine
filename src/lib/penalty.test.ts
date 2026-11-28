@@ -22,7 +22,7 @@ describe("P26 — multa de cancelamento pendente", () => {
   });
   it("mensagem de bloqueio traz o valor com centavos", () => {
     expect(penaltyBlockedMessage(600).replace(/\u00a0/g, " ")).toBe(
-      "Antes de assinar de novo, falta pagar a multa do cancelamento anterior: R$ 600,00.",
+      "Para assinar de novo, falta pagar a diferença do desconto anual do plano anterior: R$ 600,00.",
     );
   });
 });

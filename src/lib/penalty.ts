@@ -32,9 +32,9 @@ export function isPenaltyBlocked(data: unknown): data is { ok: false; reason: "m
 }
 
 export const penaltyBlockedMessage = (valor: number) =>
-  `Antes de assinar de novo, falta pagar a multa do cancelamento anterior: ${formatPenaltyBRL(valor)}.`;
+  `Para assinar de novo, falta pagar a diferença do desconto anual do plano anterior: ${formatPenaltyBRL(valor)}.`;
 
 export const PENALTY_UNAVAILABLE_MESSAGE = "Não conseguimos abrir a cobrança agora. Tente de novo em instantes.";
 /** Texto colado ao botão "Reativar plano" desabilitado por multa pendente. */
 export const reactivateBlockedHelper = (valor: number) =>
-  `Para reativar, pague antes a multa de ${formatPenaltyBRL(valor)}.`;
+  `Para reativar, pague antes a diferença de ${formatPenaltyBRL(valor)}.`;

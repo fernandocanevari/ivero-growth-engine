@@ -31,7 +31,7 @@ import { useBillingInvoices, INVOICE_STATUS_LABEL } from "@/hooks/useBillingInvo
 const INVOICE_KIND_LABEL: Record<"monthly" | "difference" | "penalty", string> = {
   monthly: "Mensalidade",
   difference: "Diferença da mudança de plano",
-  penalty: "Multa do cancelamento",
+  penalty: "Diferença do desconto anual",
 };
 import { PLANOS, formatBRL } from "@/lib/pricing-rules";
 import { reconcilePendingPayment } from "@/lib/reconcile-pending";
@@ -437,9 +437,9 @@ function AssinaturaPageContent() {
             : "Seu acesso permanece até o fim do período já pago.",
           (data?.multa as { value?: number } | null)?.value
             ? (data.multa as { error?: string }).error
-              ? `A multa de cancelamento de ${formatPenaltyBRL(
+              ? `A diferença do desconto anual, de ${formatPenaltyBRL(
                   (data.multa as { value: number }).value,
-                )} pode ser paga nesta página.`
+                )}, pode ser paga nesta página.`
               : `Geramos a cobrança da diferença de fidelidade: ${formatBRL(
                   (data.multa as { value: number }).value,
                 )}.`
@@ -719,7 +719,7 @@ function AssinaturaPageContent() {
               className={status === "cancelado" ? "gap-1.5 w-full" : "gap-1.5"}
               disabled={penaltyBlocksReactivation}
               aria-describedby={penaltyBlocksReactivation ? "multa-explicacao" : undefined}
-              title={penaltyBlocksReactivation ? "Pague a multa para reativar" : undefined}
+              title={penaltyBlocksReactivation ? "Pague a diferença para reativar" : undefined}
             >
               {penaltyBlocksReactivation && (
                 <Lock className="w-3.5 h-3.5" aria-hidden="true" data-testid="reativar-lock" />
@@ -745,7 +745,7 @@ function AssinaturaPageContent() {
                 Antes de voltar
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Multa de cancelamento</p>
+            <p className="text-sm text-muted-foreground">Diferença do desconto anual</p>
             <p className="text-[28px] leading-tight font-medium text-foreground mb-3" data-testid="penalty-value">
               {formatPenaltyBRL(multaPendente.valor)}
             </p>

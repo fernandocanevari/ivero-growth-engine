@@ -57,6 +57,6 @@ describe("INVOICE-HISTORY: histórico de faturas", () => {
     expect(rows).toHaveLength(3);
     expect(within(rows[0]).getByText("Mensalidade")).toBeTruthy();
     expect(within(rows[1]).getByText("Diferença da mudança de plano")).toBeTruthy();
-    expect(within(rows[2]).getByText("Multa do cancelamento")).toBeTruthy();
+    expect(within(rows[2]).getByText("Diferença do desconto anual")).toBeTruthy();
   });
 });

@@ -79,7 +79,7 @@ describe("Cancelada com multa pendente", () => {
     render(<AssinaturaPage />);
     const btn = reativar();
     expect(btn).toBeDisabled();
-    expect(btn).toHaveAttribute("title", "Pague a multa para reativar");
+    expect(btn).toHaveAttribute("title", "Pague a diferença para reativar");
     expect(within(btn).getByTestId("reativar-lock")).toBeInTheDocument();
     const describedBy = btn.getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();

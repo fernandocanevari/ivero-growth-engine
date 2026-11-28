@@ -55,7 +55,7 @@ export const formatPenaltyBRL = (valor: number) =>
 export const PENALTY_UNAVAILABLE_MESSAGE = "Não conseguimos abrir a cobrança agora. Tente de novo em instantes.";
 
 export const penaltyBlockedMessage = (valor: number) =>
-  `Antes de assinar de novo, falta pagar a multa do cancelamento anterior: ${formatPenaltyBRL(valor)}.`;
+  `Para assinar de novo, falta pagar a diferença do desconto anual do plano anterior: ${formatPenaltyBRL(valor)}.`;
 
 // ── P26-fix2 — multa = desconto anual realmente usufruído ───────────────────
 // Fonte ÚNICA do valor da multa: manage-subscription usa em "cancel" (grava) e

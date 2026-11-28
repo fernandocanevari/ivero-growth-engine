@@ -25,8 +25,8 @@ export async function payPenaltyAndOpen(): Promise<PayPenaltyOutcome> {
     invalidateAccessCache();
     toast.success(
       data.paid
-        ? "Pagamento da multa confirmado. Você já pode assinar de novo."
-        : "Não há multa pendente. Você já pode assinar de novo.",
+        ? "Diferença paga. Você já pode assinar de novo."
+        : "Não há diferença pendente. Você já pode assinar de novo.",
     );
     return "cleared";
   }
@@ -38,6 +38,6 @@ export async function payPenaltyAndOpen(): Promise<PayPenaltyOutcome> {
 export function showPenaltyBlocked(data: { valor?: unknown }) {
   toast(penaltyBlockedMessage(Number(data.valor ?? 0)), {
     duration: 15_000,
-    action: { label: "Pagar multa", onClick: () => void payPenaltyAndOpen() },
+    action: { label: "Pagar diferença", onClick: () => void payPenaltyAndOpen() },
   });
 }

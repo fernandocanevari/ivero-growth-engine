@@ -26,7 +26,7 @@ export function PenaltyBlockedNotice({ valor, className = "" }: { valor: number;
       </div>
       <Button size="sm" className="mt-3" onClick={() => void pay()} disabled={paying}>
         {paying ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="mr-1.5 h-3.5 w-3.5" />}
-        Pagar multa
+        Pagar diferença
       </Button>
     </div>
   );

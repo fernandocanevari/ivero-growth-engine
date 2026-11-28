@@ -72,8 +72,8 @@ const BLOCKED = { data: { ok: false, reason: "multa_pendente", valor: 200, messa
 
 const expectFixedNotice = async () => {
   const notice = await screen.findByTestId("penalty-blocked-notice");
-  expect(notice.textContent?.replace(/\u00a0/g, " ")).toContain("falta pagar a multa do cancelamento anterior: R$ 200,00");
-  expect(screen.getByRole("button", { name: /Pagar multa/ })).toBeInTheDocument();
+  expect(notice.textContent?.replace(/\u00a0/g, " ")).toContain("falta pagar a diferença do desconto anual do plano anterior: R$ 200,00");
+  expect(screen.getByRole("button", { name: /Pagar diferença/ })).toBeInTheDocument();
   // Nenhum toast para este caso.
   expect(sonner).not.toHaveBeenCalled();
 };
@@ -134,7 +134,7 @@ describe("aviso fixo de multa pendente (sem toast)", () => {
     const open = vi.spyOn(window, "open").mockImplementation(() => null);
     render(<UpgradeModal open onOpenChange={() => {}} intent="contratar" />);
     fireEvent.click(await screen.findByRole("button", { name: /Ampliar influência/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /Pagar multa/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Pagar diferença/ }));
     await waitFor(() => expect(invoke).toHaveBeenLastCalledWith("manage-subscription", { body: { action: "pay_penalty" } }));
     await waitFor(() => expect(open).toHaveBeenCalledWith("https://invoice.test/1", "_blank", "noopener"));
     open.mockRestore();

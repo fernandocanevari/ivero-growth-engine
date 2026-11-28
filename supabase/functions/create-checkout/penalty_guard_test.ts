@@ -84,7 +84,7 @@ function cancelledRow(extra: Record<string, unknown> = {}) {
     ...extra,
   };
 }
-const MESSAGE = "Antes de assinar de novo, falta pagar a multa do cancelamento anterior: R$ 600,00.";
+const MESSAGE = "Para assinar de novo, falta pagar a diferença do desconto anual do plano anterior: R$ 600,00.";
 
 Deno.test("multa pendente (cobrança criada) → 200 multa_pendente, sem trava nem sessão de checkout", async () => {
   const r = await run([cancelledRow({ multa_pendente_valor: 600, multa_pendente_ciclos: 3, multa_pendente_payment_id: "pay_multa" })]);
