@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, Sparkles, Target, TrendingUp, AlertCircle, CheckCircle2, Brain, Zap } from "lucide-react";
+import { ArrowRight, Loader2, Target, TrendingUp, AlertCircle, CheckCircle2, Brain, Zap, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -147,7 +147,7 @@ export default function IveroAnalysisPage() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <ScanSearch className="h-5 w-5 text-primary" />
             <span className="text-xs uppercase tracking-widest text-muted-foreground">Ivero · Análise GEO</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold font-display tracking-tight">

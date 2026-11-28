@@ -1,7 +1,7 @@
 import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, AlertTriangle, Clock } from "lucide-react";
+import { X, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./UpgradeModal";
 import { formatDateBR } from "@/lib/date-display";
@@ -86,7 +86,7 @@ export function TrialBanner({
     ? "bg-amber-200/60 text-amber-700"
     : "bg-primary/20 text-primary";
 
-  const Icon = expired ? AlertTriangle : endingSoon ? Clock : Sparkles;
+  const Icon = expired ? AlertTriangle : endingSoon ? Clock : CalendarDays;
 
   return (
     <>

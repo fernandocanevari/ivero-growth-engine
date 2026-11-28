@@ -14,10 +14,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ArrowRight, Search, Globe, Brain, Bot, Zap, BarChart3,
-  AlertTriangle, TrendingUp, CheckCircle2, Sparkles, Loader2,
+  AlertTriangle, TrendingUp, CheckCircle2, Loader2,
   Lock, Unlock, Target, Eye, Rocket, Download, Mail,
   Activity, ShieldCheck, LineChart, MessageSquare, Gauge, Radio,
   Phone,
+  Compass, ScanSearch,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { identifyLead, track } from "@/lib/analytics";
@@ -179,7 +180,7 @@ function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       recBad: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas.",
     },
     Relevância: {
-      icon: Sparkles,
+      icon: Compass,
       summaryGood: "Sua marca é citada em contextos altamente relevantes ao seu nicho.",
       summaryMid: "Relevância parcial — sua marca aparece em alguns contextos do setor.",
       summaryBad: "Baixa relevância contextual — IAs não associam sua marca ao seu nicho.",
@@ -1493,7 +1494,7 @@ function DiagnosticReport({ siteUrl, aiEngines, geoScore, scoreIsReal = true, dy
             <AnimatedSection delay={0.68}>
               <PremiumCard glow>
                 <div className="space-y-6">
-                  <SectionHeader icon={Sparkles} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
+                  <SectionHeader icon={TrendingUp} title="🚀 Construa influência real nas respostas das IAs." subtitle="A Ivero posiciona você como referência — não apenas como mais uma opção." />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {iveroFeatures.map((feat, i) => {
                       const Icon = feat.icon;
@@ -1657,7 +1658,7 @@ function PreScanUrlModal({ open, onSubmit }: { open: boolean; onSubmit: (url: st
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-ivero-gradient">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
+              <ScanSearch className="w-5 h-5 text-primary-foreground" />
             </div>
             <DialogTitle className="font-display text-xl">
               {submitting ? "Preparando sua auditoria…" : "Antes de começar a auditoria"}

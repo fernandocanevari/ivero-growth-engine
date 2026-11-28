@@ -34,7 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CheckCheck, Plus, Trash2, Sparkles } from "lucide-react";
+import { CheckCheck, Plus, Trash2, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBrandSettings } from "@/hooks/useBrandSettings";
 import { EmptyStatePage } from "@/components/dashboard/EmptyStatePage";
@@ -428,7 +428,7 @@ export default function AcoesPage() {
                             variant="outline"
                             className="text-[10px] border-primary/40 text-primary gap-1"
                           >
-                            <Sparkles className="h-2.5 w-2.5" />
+                            <Lightbulb className="h-2.5 w-2.5" />
                             Sugerido pelo diagnóstico
                           </Badge>
                         )}

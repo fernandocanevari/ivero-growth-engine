@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { ArrowRight, Eye, EyeOff, Sparkles, ArrowLeft } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, ArrowLeft, ArrowRightCircle } from "lucide-react";
 import { identifyUser, track } from "@/lib/analytics";
 import { formatPhoneBR } from "@/lib/format-phone";
 import { adoptPreviewSnapshot } from "@/lib/existing-diagnostic";
@@ -540,7 +540,7 @@ export default function AuthPage() {
               )}
               {hasPrefilledLead && !isLogin && (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <ArrowRightCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div className="space-y-0.5">
                     <p className="text-xs font-semibold text-foreground">Continuando seu diagnóstico</p>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">

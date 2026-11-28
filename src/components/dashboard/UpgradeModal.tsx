@@ -671,7 +671,7 @@ export function UpgradeModal({
                     </motion.div>
                     {isAnnual && (
                       <p className="text-primary text-[11px] font-semibold mt-0.5">
-                        ✦ Economia de {saving}/ano
+                        Economia de {saving}/ano
                       </p>
                     )}
                   </div>
@@ -779,8 +779,8 @@ export function UpgradeModal({
 
           <p className="text-center text-[11px] text-muted-foreground mt-6">
             {isAnnual
-              ? "✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano"
-              : "✦ Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser"}
+              ? "Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano"
+              : "Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser"}
           </p>
         </div>
       </DialogContent>

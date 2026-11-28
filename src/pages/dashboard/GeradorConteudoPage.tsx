@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { marked } from "marked";
 import {
   PenLine,
-  Sparkles,
   Copy,
   Download,
   FileText,
@@ -13,6 +12,7 @@ import {
   CheckCircle2,
   History,
   Lock,
+  Infinity as InfinityIcon, FileSearch,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -227,7 +227,7 @@ export default function GeradorConteudoPage() {
         <div className="flex items-center gap-2">
           {quota.unlimited ? (
             <Badge variant="secondary" className="gap-1">
-              <Sparkles className="h-3 w-3" /> Ilimitado
+              <InfinityIcon className="h-3 w-3" /> Ilimitado
             </Badge>
           ) : (
             <Badge
@@ -315,7 +315,7 @@ export default function GeradorConteudoPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4" /> Gerar Conteúdo
+                    <PenLine className="h-4 w-4" /> Gerar Conteúdo
                   </>
                 )}
               </Button>
@@ -329,7 +329,7 @@ export default function GeradorConteudoPage() {
             {/* Right column — context */}
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <FileSearch className="h-3.5 w-3.5 text-primary" />
                 Contexto do diagnóstico
               </h3>
               <p className="text-xs text-muted-foreground mt-1">

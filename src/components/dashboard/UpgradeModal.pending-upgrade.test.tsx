@@ -175,19 +175,19 @@ describe("P37 item 5", () => {
     statusMock = { ...ATIVO, effectiveStatus: "cancelado", hasAsaasSubscription: false };
     render(<UpgradeModal open onOpenChange={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /Anual/ }));
-    expect(text()).toContain("✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano");
+    expect(text()).toContain("Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano");
     expect(text()).not.toContain("Sem contrato");
   });
   it("P39 trial escolhe Anual: rodapé de compromisso", () => {
     statusMock = { ...ATIVO, effectiveStatus: "trial", hasAsaasSubscription: false };
     render(<UpgradeModal open onOpenChange={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /Anual/ }));
-    expect(text()).toContain("✦ Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano");
+    expect(text()).toContain("Cada plano inclui todos os recursos do anterior · Compromisso de 12 meses no preço promocional, renovado a cada ano");
   });
   it("P39 trial no Mensal: rodapé sem contrato", () => {
     statusMock = { ...ATIVO, effectiveStatus: "trial", hasAsaasSubscription: false };
     render(<UpgradeModal open onOpenChange={() => {}} />);
-    expect(text()).toContain("✦ Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser");
+    expect(text()).toContain("Cada plano inclui todos os recursos do anterior · Sem contrato · Cancele quando quiser");
     expect(text()).not.toContain("Compromisso de 12 meses");
   });
   it("(item 2) autoSelectPlan dispara o mesmo change_plan e abre 'Pedido registrado'", async () => {

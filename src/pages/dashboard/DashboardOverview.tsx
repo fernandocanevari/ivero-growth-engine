@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap, Settings, BarChart3, Bell, Search, Target, Brain, Sparkles } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowRight, CheckCircle2, AlertTriangle, Info, CheckCheck, Zap, Settings, BarChart3, Bell, Search, Target, Brain } from "lucide-react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

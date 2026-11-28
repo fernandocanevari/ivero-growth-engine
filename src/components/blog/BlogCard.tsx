@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Clock, Sparkles } from "lucide-react";
+import { ArrowUpRight, Clock, Bookmark } from "lucide-react";
 import { motion } from "framer-motion";
 import type { BlogPost } from "@/content/blog/types";
 import { readingMinutes } from "@/content/blog/types";
@@ -56,7 +56,7 @@ export function BlogCard({ post, featured, index }: Props) {
 
           {featured && (
             <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-foreground text-background shadow-md">
-              <Sparkles className="w-3 h-3" />
+              <Bookmark className="w-3 h-3" />
               Pilar
             </span>
           )}

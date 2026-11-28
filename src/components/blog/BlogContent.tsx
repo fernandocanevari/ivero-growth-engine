@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Info, AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { Block } from "@/content/blog/types";
 import { KeywordHighlight } from "./KeywordHighlight";
 import { track } from "@/lib/analytics";
@@ -114,7 +114,7 @@ export function BlogContent({ blocks, keywords, postSlug }: Props) {
                 />
                 <div className="relative flex flex-col sm:flex-row sm:items-center gap-6">
                   <div className="shrink-0 flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30">
-                    <Sparkles className="w-7 h-7 text-primary-foreground" />
+                    <ArrowRight className="w-7 h-7 text-primary-foreground" />
                   </div>
                   <div className="flex-1">
                     <p className="text-xl sm:text-2xl font-display font-bold text-foreground leading-tight mb-4">

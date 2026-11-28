@@ -2,7 +2,7 @@ import { useUpgradeEntry } from "@/hooks/useUpgradeEntry";
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Lock, ArrowRight, Sparkles, Check } from "lucide-react";
+import { Lock, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./UpgradeModal";
 import { type PlanoTier, tierLabel } from "@/lib/access-control";
@@ -62,7 +62,7 @@ export function TrialLockedPage({ title, description, requiredTier }: TrialLocke
             </motion.div>
 
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full mb-3">
-              <Sparkles className="w-3 h-3" />
+              <Lock className="w-3 h-3" />
               {badgeLabel}
             </span>
 

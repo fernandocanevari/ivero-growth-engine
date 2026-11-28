@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, CheckCircle2, AlertTriangle, XCircle, ArrowRight, FileSearch, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, XCircle, ArrowRight, FileSearch, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -297,7 +297,7 @@ export function DiagnosticoTab({ initialUrl, onUrlChange, onGoToGerador }: Props
               <Card className="p-5 bg-primary/5 border-primary/20">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
                   <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                    <Wrench className="h-5 w-5 text-primary mt-0.5" />
                     <p className="text-sm font-medium text-foreground">
                       Quer corrigir esses problemas automaticamente?
                     </p>

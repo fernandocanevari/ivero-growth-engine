@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Building2, Megaphone, ShoppingBag, Store, Search, Send, Sparkles } from "lucide-react";
+import { Building2, Megaphone, ShoppingBag, Store, Search, Send, Bot } from "lucide-react";
 import { useEffect, useState } from "react";
 import productNike from "@/assets/product-nike.png";
 import productAdidas from "@/assets/product-adidas.png";
@@ -160,12 +160,7 @@ const AudienceSection = () => {
 
               <div className="flex items-center gap-2 mb-3 sm:mb-4 px-1">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-ivero-gradient flex items-center justify-center">
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-primary-foreground" />
-                  </motion.div>
+                  <Bot className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-primary-foreground" />
                 </div>
                 <span className="text-xs font-semibold text-ivero-purple">IA recomenda</span>
               </div>

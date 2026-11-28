@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Quote, MessageSquare, Sparkles, Bot } from "lucide-react";
+import { Quote, MessageSquare, Bot, TrendingUp } from "lucide-react";
 import type { KeywordCloudEntry, KeywordSentiment } from "@/lib/keyword-cloud";
 
 interface Props {
@@ -100,7 +100,7 @@ export function KeywordDetailSheet({ open, onOpenChange, entry, totalModels = 5 
                         {m.model}
                         {isTop && (
                           <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-                            <Sparkles className="h-3 w-3" /> mais forte
+                            <TrendingUp className="h-3 w-3" /> mais forte
                           </span>
                         )}
                       </span>

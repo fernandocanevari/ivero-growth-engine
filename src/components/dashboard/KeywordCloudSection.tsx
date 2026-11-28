@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Cloud, Sparkles } from "lucide-react";
+import { Cloud } from "lucide-react";
 import { KeywordDetailSheet } from "@/components/dashboard/KeywordDetailSheet";
 import {
   asKeywordCloud,
@@ -117,7 +117,7 @@ export function KeywordCloudSection({ cloudsInPeriod, previousCloud, totalModels
           {aggregated.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-10 gap-3">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-muted-foreground" />
+                <Cloud className="h-5 w-5 text-muted-foreground" />
               </div>
               <p className="text-sm font-semibold text-foreground">Nenhuma nuvem disponível ainda</p>
               <p className="text-xs text-muted-foreground max-w-sm">

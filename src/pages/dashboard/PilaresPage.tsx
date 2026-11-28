@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Eye, ShieldCheck, Target, Rocket, Sparkles,
+  Eye, ShieldCheck, Target, Rocket,
   CheckCircle2, AlertTriangle, TrendingUp, TrendingDown,
   Info, LineChart as LineChartIcon,
+  Compass, Circle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,14 +25,17 @@ const fade = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, tr
 
 /* ── Icon resolution from pillar_details[].icon.displayName ── */
 const ICON_MAP: Record<string, typeof Eye> = {
-  Eye, ShieldCheck, Target, Rocket, Sparkles,
+  Eye, ShieldCheck, Target, Rocket,
+  // "Sparkles" kept as a key: older saved diagnostics store that icon name.
+  Sparkles: Compass,
+  Compass,
 };
 const DEFAULT_PILLAR_ICON: Record<string, typeof Eye> = {
   Clareza: Eye,
   Autoridade: ShieldCheck,
   Conversão: Target,
   Posicionamento: Rocket,
-  Relevância: Sparkles,
+  Relevância: Compass,
 };
 
 /* ── Criterios shape (from PreviewPage / simulate-ai) ── */
@@ -375,7 +379,7 @@ export default function PilaresPage({ embedded }: { embedded?: boolean } = {}) {
     const details = (latestReport?.pillar_details ?? []) as PillarDetail[];
     return details.map((d) => {
       const iconName = d.icon?.displayName;
-      const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_PILLAR_ICON[d.name] || Sparkles;
+      const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_PILLAR_ICON[d.name] || Circle;
       const col = PILLAR_DB_COLUMN[d.name];
       const previousScore = col && previousAnalysis ? (previousAnalysis[col] as number) ?? d.score : d.score;
 

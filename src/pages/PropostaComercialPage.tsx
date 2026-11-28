@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, ArrowRight, Clock, Sparkles, Target, ShieldCheck, MessageCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowRight, Clock, Target, ShieldCheck, MessageCircle, XCircle } from "lucide-react";
 import { PLANOS, type PlanoSugerido } from "@/lib/pricing-rules";
 import { RecusaModal } from "@/components/proposta/RecusaModal";
 import { toast } from "@/hooks/use-toast";

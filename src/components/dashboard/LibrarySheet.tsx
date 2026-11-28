@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Search, BookOpen, Sparkles } from "lucide-react";
+import { ArrowRight, Search, BookOpen, Info } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -250,7 +250,7 @@ export function LibrarySheet() {
         <div className="p-5 space-y-6">
           {pendingUrls.size > 0 && !query && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
-              <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <p className="text-xs text-foreground/80">
                 Páginas com <span className="font-semibold text-primary">destaque</span> são
                 seus próximos passos sugeridos no onboarding.
@@ -288,7 +288,7 @@ export function LibrarySheet() {
                             variant="outline"
                             className="border-primary/40 bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wide gap-1 shrink-0"
                           >
-                            <Sparkles className="h-2.5 w-2.5" />
+                            <ArrowRight className="h-2.5 w-2.5" />
                             Próximo passo
                           </Badge>
                         )}

@@ -388,7 +388,7 @@ const InvestSection = () => {
                       <ul className="space-y-1">
                         {plan.highlights.map((highlight) => (
                           <li key={highlight} className="flex items-start gap-2 text-[13px] leading-snug text-foreground font-semibold">
-                            <span className="text-accent shrink-0">✦</span>
+                            <Check className="text-accent shrink-0 h-3.5 w-3.5 mt-0.5" />
                             <span>{highlight}</span>
                           </li>
                         ))}

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Cpu, Bell, Search, BarChart2, Loader2, Sparkles, Bot } from "lucide-react";
+import { Cpu, Bell, Search, BarChart2, Loader2, Bot, CalendarCheck, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -279,7 +279,7 @@ const EscolherPlanoPage = () => {
         >
           {!trialExpirado && trialElegivel && (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-accent/10 border-accent/20 text-accent text-xs font-semibold mb-4">
-              <Sparkles className="w-3.5 h-3.5" />
+              <CalendarCheck className="w-3.5 h-3.5" />
               7 dias grátis — sem cobrança imediata
             </div>
           )}
@@ -413,7 +413,6 @@ const EscolherPlanoPage = () => {
                       </div>
                       {isAnnual && (
                         <span className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[11px] sm:text-xs font-semibold">
-                          <span className="text-[10px]">✦</span>
                           Economia de {saving}/ano
                         </span>
                       )}
@@ -455,13 +454,11 @@ const EscolherPlanoPage = () => {
                             key={highlight}
                             className="flex items-start gap-2 text-[13px] leading-snug text-foreground font-semibold"
                           >
-                            <span
-                              className={`shrink-0 mt-0.5 text-sm font-bold ${
+                            <Check
+                              className={`shrink-0 mt-0.5 h-3.5 w-3.5 ${
                                 plan.highlighted ? "text-accent" : "text-ivero-purple-light"
                               }`}
-                            >
-                              ✦
-                            </span>
+                            />
                             <span>{highlight}</span>
                           </li>
                         ))}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Circle, ArrowRight, Sparkles, X, ListChecks } from "lucide-react";
+import { Check, Circle, ArrowRight, X, ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -140,7 +140,7 @@ export function OnboardingChecklistCard() {
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary" />
+                <ListChecks className="h-4 w-4 text-primary" />
               </div>
               <div>
                 <h3 className="text-base font-semibold font-display text-foreground">

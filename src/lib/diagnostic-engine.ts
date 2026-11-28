@@ -13,7 +13,7 @@ import { getBrandScope, brandWriteFields } from "@/lib/brand-scope";
  * monta o payload de exibição/persistência.
  */
 import type React from "react";
-import { Eye, ShieldCheck, Target, Rocket, Sparkles } from "lucide-react";
+import { Eye, ShieldCheck, Target, Rocket, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPerceptionSnapshot } from "@/lib/perception-tags";
 
@@ -135,7 +135,7 @@ export function buildPillarDetails(pillarResults: PillarAnalysis[]) {
       recBad: "Adicione elementos aspiracionais e storytelling à comunicação para que IAs gerem respostas mais humanizadas.",
     },
     Relevância: {
-      icon: Sparkles,
+      icon: Compass,
       summaryGood: "Sua marca é citada em contextos altamente relevantes ao seu nicho.",
       summaryMid: "Relevância parcial — sua marca aparece em alguns contextos do setor.",
       summaryBad: "Baixa relevância contextual — IAs não associam sua marca ao seu nicho.",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -93,7 +93,7 @@ export default function OnboardingWizard({ onComplete, onDismiss }: { onComplete
         {/* Header */}
         <div className="px-8 pt-8 pb-4">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <ClipboardList className="h-5 w-5 text-primary" />
             <span className="text-sm font-semibold text-primary">Diagnóstico Ivero</span>
           </div>
           <p className="text-xs text-muted-foreground">

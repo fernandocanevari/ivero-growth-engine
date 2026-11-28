@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Brain, Lock, Unlock, Eye, ShieldCheck, Target, Rocket, Sparkles,
+  Brain, Lock, Unlock, Eye, ShieldCheck, Target, Rocket,
   CheckCircle2, AlertTriangle, Phone, ArrowRight, RefreshCw, Clock, CalendarDays,
+  Compass,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ const PILLAR_ICON_MAP: Record<string, typeof Eye> = {
   Autoridade: ShieldCheck,
   Posicionamento: Rocket,
   Conversão: Target,
-  Relevância: Sparkles,
+  Relevância: Compass,
 };
 
 /* ── Score band helper (5 faixas oficiais — score-rubric) ── */
