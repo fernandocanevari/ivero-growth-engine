@@ -39,7 +39,7 @@ class IO { observe() {} unobserve() {} disconnect() {} }
 
 import BemVindoPage from "./BemVindoPage";
 
-const CONFIRMING = /Confirmando seu pagamento/;
+const CONFIRMING = /Confirmando seu cartão…/;
 const CONFIRMED = /Pagamento confirmado/;
 const PROCESSING = /Pagamento em processamento/;
 const row = (status: string, id: string | null = "sub_new") => ({

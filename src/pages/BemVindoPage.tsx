@@ -302,7 +302,7 @@ const BemVindoPage = () => {
             >
               <Loader2 className="h-12 w-12 text-accent animate-spin mb-5" />
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-2">
-                {resumeWaiting ? "Confirmando seu cartão…" : "Confirmando seu pagamento..."}
+                Confirmando seu cartão…
               </h2>
               <p className="text-muted-foreground">Isso pode levar alguns segundos.</p>
             </motion.div>
@@ -407,7 +407,7 @@ const BemVindoPage = () => {
                   <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                   Nada foi cobrado hoje
                 </span>
-                <p className="text-base sm:text-lg text-muted-foreground mb-5 leading-relaxed">{copy.sentence}</p>
+                <p className="text-base sm:text-lg text-muted-foreground mb-5 leading-relaxed text-balance">{copy.sentence}</p>
                 {!copy.same && (
                   <div className="w-full mb-5 text-left">
                     <BillingInfoBlocks
@@ -483,7 +483,7 @@ const BemVindoPage = () => {
                   <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                   Nada foi cobrado hoje
                 </span>
-                  <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed" data-testid="trial-card-sentence">
+                  <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed text-balance" data-testid="trial-card-sentence">
                     {trialCardSentence}
                   </p>
                 </div>
@@ -539,7 +539,7 @@ const BemVindoPage = () => {
                   <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                   Nada foi cobrado hoje
                 </span>
-                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed text-center" data-testid="trial-card-sentence">
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed text-center text-balance" data-testid="trial-card-sentence">
                     {trialCardSentence}
                   </p>
                 </div>
