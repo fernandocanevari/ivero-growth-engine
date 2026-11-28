@@ -101,7 +101,7 @@ function AssinaturaPageContent() {
     plano, status, canceladoAcessoAte, dataVencimento, trialEndsAt,
     effectiveStatus, isLoading: statusLoading, refresh: refreshStatus,
     cicloContratado, ciclosPagos, compromissoMeses, carenciaAte, isPaid, multaPendente,
-    upgradePendente, planoPretendido,
+    upgradePendente, planoPretendido, hasAsaasSubscription, cicloPretendido,
   } = useSubscriptionStatus();
   // Pedido de upgrade aguardando a diferença: só para conta individual ativa,
   // dentro do prazo e com link de pagamento.
@@ -146,9 +146,16 @@ function AssinaturaPageContent() {
   // Compromisso anual: valor promocional em troca de 12 ciclos. Cancelar antes
   // gera cobrança da diferença dos meses já usufruídos com desconto.
   const isAnual = cicloContratado === "anual";
+  // Trial que já cadastrou o cartão escolhendo o Anual: o ciclo só vira
+  // "anual" no 1º pagamento, mas a cobrança agendada já é a do Anual.
+  const trialAnualComCartao =
+    effectiveStatus === "trial" && !!hasAsaasSubscription && cicloPretendido === "anual" && !!planoInfo;
   const valorMensalAtual = planoInfo
-    ? isAnual ? planoInfo.annualPrice : planoInfo.monthlyPrice
+    ? trialAnualComCartao ? planoInfo.annualPrice : isAnual ? planoInfo.annualPrice : planoInfo.monthlyPrice
     : null;
+  // Convite e botão grande para "Mudar plano" (só quando há plano acima).
+  const promoteChangePlan =
+    status !== "cancelado" && (effectiveStatus === "trial" || effectiveStatus === "ativo") && plano !== "autoridade";
   const ciclosRestantes = Math.max(0, compromissoMeses - ciclosPagos);
 
   // P26-fix2: o valor da multa no diálogo vem SEMPRE do servidor
@@ -611,6 +618,13 @@ function AssinaturaPageContent() {
           )}
 
           {planoInfo && status !== "cancelado" && (
+            trialAnualComCartao ? (
+            <p className="text-xs text-muted-foreground mb-4" data-testid="trial-annual-note">
+              {chosenStartDay
+                ? `Seu compromisso de ${compromissoMeses} meses começa na primeira cobrança, em ${formatDate(chosenStartDay)}. Até lá, se mudar de ideia, é só cancelar, sem custo.`
+                : `Seu compromisso de ${compromissoMeses} meses começa na primeira cobrança. Até lá, se mudar de ideia, é só cancelar, sem custo.`}
+            </p>
+            ) : (
             <p className="text-xs text-muted-foreground mb-4">
               {isAnual ? (
                 <>
@@ -630,6 +644,7 @@ function AssinaturaPageContent() {
                 <>Cobrança mensal sem compromisso — cancele quando quiser.</>
               )}
             </p>
+            )
           )}
 
           {canceladoAcessoAte && status !== "cancelado" && (
@@ -677,6 +692,24 @@ function AssinaturaPageContent() {
             </div>
           )}
 
+          {promoteChangePlan ? (
+          <div className="flex flex-col">
+            <p className="rounded-md bg-primary/10 text-primary text-sm px-3 py-2 mb-3" data-testid="change-plan-invite">
+              Quer ir mais longe? Veja o que cada plano libera para a sua marca.
+            </p>
+            <Button size="lg" onClick={handleChangePlan} className="gap-1.5 w-full">
+              Mudar plano
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="link"
+              onClick={() => setCancelOpen(true)}
+              className="self-center mt-1 text-xs text-muted-foreground underline"
+            >
+              Cancelar
+            </Button>
+          </div>
+          ) : (
           <div
             className={status === "cancelado" ? "flex flex-wrap items-center gap-x-3 gap-y-2 mt-auto" : "flex flex-wrap items-center gap-x-3 gap-y-2"}
             data-testid={status === "cancelado" ? "reactivate-cta" : undefined}
@@ -700,6 +733,7 @@ function AssinaturaPageContent() {
               </Button>
             )}
           </div>
+          )}
         </Card>
 
         {/* P28 — multa pendente: um único card no lugar de "Próxima cobrança" */}

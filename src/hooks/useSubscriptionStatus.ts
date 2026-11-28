@@ -15,6 +15,7 @@ interface AssinaturaRow {
   data_vencimento: string | null;
   asaas_subscription_id: string | null;
   ciclo_contratado: string | null;
+  ciclo_pretendido?: string | null;
   ciclos_pagos: number | null;
   counted_payment_ids?: string[] | null;
   compromisso_inicio: string | null;
@@ -110,7 +111,7 @@ export function useSubscriptionStatus() {
         "plano, status, carencia_ate, trial_ends_at, data_vencimento, asaas_subscription_id, " +
           "ciclo_contratado, ciclos_pagos, counted_payment_ids, compromisso_inicio, compromisso_meses, " +
           "multa_pendente_valor, multa_pendente_ciclos, multa_pendente_payment_id, multa_pendente_invoice_url, multa_ultimo_payment_id, " +
-          "plano_pretendido, upgrade_pendente_plano, upgrade_pendente_diferenca, upgrade_pendente_invoice_url, upgrade_pendente_em",
+          "plano_pretendido, ciclo_pretendido, upgrade_pendente_plano, upgrade_pendente_diferenca, upgrade_pendente_invoice_url, upgrade_pendente_em",
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -283,6 +284,10 @@ export function useSubscriptionStatus() {
     cicloContratado: (assinatura?.ciclo_contratado === "mensal" ? "mensal" : "anual") as
       | "mensal"
       | "anual",
+    /** Ciclo escolhido para a próxima cobrança (trial com cartão: promovido no 1º pagamento). */
+    cicloPretendido: (assinatura?.ciclo_pretendido === "anual" || assinatura?.ciclo_pretendido === "mensal"
+      ? assinatura.ciclo_pretendido
+      : null) as "anual" | "mensal" | null,
     /** Mensalidades já confirmadas — base da multa de fidelidade. */
     ciclosPagos: assinatura?.ciclos_pagos ?? 0,
     countedPaymentIds: assinatura?.counted_payment_ids ?? [],
