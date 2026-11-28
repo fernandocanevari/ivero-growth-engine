@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./UpgradeModal";
+import { formatDateBR } from "@/lib/date-display";
 import {
   isTrialExpired,
   isTrialEndingSoon,
@@ -31,6 +32,8 @@ interface TrialBannerProps {
   /** Só mostramos o banner quando a assinatura é (ou era) um trial. */
   isTrial?: boolean;
   isTrialExpired?: boolean;
+  /** Trial que já cadastrou o cartão (assinatura Asaas vinculada). */
+  hasCard?: boolean;
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -45,6 +48,7 @@ export function TrialBanner({
   trialEndsAt,
   isTrial,
   isTrialExpired: expiredProp,
+  hasCard = false,
 }: TrialBannerProps) {
   const dismissKey = userId ? `${DISMISS_SESSION_KEY}:${userId}` : null;
   const [dismissed, setDismissed] = useState(() =>
@@ -54,6 +58,7 @@ export function TrialBanner({
   const { openUpgrade } = useUpgradeEntry(useCallback(() => setModalOpen(true), []));
 
   const expired = expiredProp ?? isTrialExpired(trialEndsAt);
+  const hasCardTrial = hasCard === true && !expired;
   const endingSoon = isTrialEndingSoon(trialEndsAt);
   const daysLeft = trialDaysLeft(trialEndsAt);
   const hoursLeft = trialHoursLeft(trialEndsAt);
@@ -121,10 +126,18 @@ export function TrialBanner({
                           : `${daysLeft} de 7 ${daysLeft === 1 ? "dia restante" : "dias restantes"}`}
                       </span>
                     )}
-                    <span className="text-muted-foreground hidden md:inline">
-                      {" "}— acesso completo aos recursos do plano{" "}
-                      <span className="text-foreground font-medium">{planLabel}</span>.
-                    </span>
+                    {hasCardTrial ? (
+                      <span className="text-muted-foreground hidden md:inline" data-testid="trial-banner-card-note">
+                        {trialEndsAt
+                          ? ` — cartão cadastrado, primeira cobrança em ${formatDateBR(trialEndsAt).slice(0, 5)}.`
+                          : " — cartão cadastrado."}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground hidden md:inline">
+                        {" "}— acesso completo aos recursos do plano{" "}
+                        <span className="text-foreground font-medium">{planLabel}</span>.
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
@@ -135,7 +148,7 @@ export function TrialBanner({
                 onClick={() => openUpgrade()}
                 className="text-xs h-7 px-3 shrink-0"
               >
-                {expired ? "Assinar agora" : endingSoon ? "Assinar agora" : "Ver planos"}
+                {expired ? "Assinar agora" : hasCardTrial ? "Mudar plano" : endingSoon ? "Assinar agora" : "Ver planos"}
               </Button>
 
               {!expired && (
@@ -153,8 +166,8 @@ export function TrialBanner({
         )}
       </AnimatePresence>
 
-      {/* Banner de trial = conversão: sempre checkout real, nunca troca local. */}
-      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} intent="contratar" />
+      {/* Trial com cartão troca de plano (change_plan); trial sem cartão converte (checkout real). */}
+      <UpgradeModal open={modalOpen} onOpenChange={setModalOpen} intent={hasCardTrial ? "trocar_plano" : "contratar"} />
     </>
   );
 }

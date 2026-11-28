@@ -27,7 +27,7 @@ import { isAgencyAccountRoute } from "@/lib/subscription-status";
 
 export default function DashboardLayout() {
   
-  const { isPaid, isAdmin, isTrial, plano, trialEndsAt, isTrialExpired, isLoading: subscriptionLoading } = useSubscriptionStatus();
+  const { isPaid, isAdmin, isTrial, plano, trialEndsAt, isTrialExpired, hasAsaasSubscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const location = useLocation();
   const { isAgency } = useAccountType();
   const { isPendingCheckout } = useSubscriptionGate();
@@ -106,6 +106,7 @@ export default function DashboardLayout() {
               trialEndsAt={trialEndsAt}
               isTrial={isTrial}
               isTrialExpired={isTrialExpired}
+              hasCard={isTrial && hasAsaasSubscription}
             />
 
             {/* Banner inline removido — substituído pelo BrandProfileReminderBanner acima do conteúdo. */}
