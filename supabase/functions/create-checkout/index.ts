@@ -79,6 +79,10 @@ const DOC_MESSAGES = {
   documento_necessario: "Para abrir o pagamento, precisamos do CPF ou CNPJ de quem vai pagar.",
   documento_invalido: "Esse CPF ou CNPJ não parece válido. Confere os números e tenta de novo.",
 } as const;
+export const CHECKOUT_ANTERIOR_EM_CONFERENCIA_MSG =
+  "Estamos conferindo o último cadastro do seu cartão, o que costuma levar poucos minutos. Se daqui a pouco este aviso continuar aparecendo, fale com a gente que resolvemos.";
+export const CHECKOUT_ANTERIOR_NAO_ENCERRADO_MSG =
+  "Não conseguimos encerrar o seu pedido anterior agora. Tente de novo em alguns minutos. Se continuar, fale com a gente.";
 const CLIENTE_INDISPONIVEL_MSG =
   "Não conseguimos preparar o seu pagamento agora. Tente de novo em alguns minutos. Se continuar, fale com a gente.";
 
@@ -554,7 +558,7 @@ Deno.serve(async (req) => {
       const action = previousCheckoutAction(anterior, { value, plano, ciclo });
       console.log("create-checkout: checkout anterior", anterior.asaas_checkout_id, "status:", anterior.status, "acao:", action);
       if (action === "blocked") {
-        return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "A conclusão do pagamento anterior está sendo conferida." }),
+        return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: CHECKOUT_ANTERIOR_EM_CONFERENCIA_MSG }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (action === "reuse") {
@@ -599,7 +603,7 @@ Deno.serve(async (req) => {
         // Só uma confirmação HTTP bem-sucedida permite trocar a sessão; erros não são prova de cancelamento.
         const canceled = await fetch(`${ASAAS_BASE_URL}/checkouts/${encodeURIComponent(anterior.asaas_checkout_id)}/cancel`, { method: "POST", headers: asaasHeaders });
         console.log("create-checkout: cancelar checkout anterior", anterior.asaas_checkout_id, canceled.status);
-        if (!canceled.ok) return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: "Não foi possível confirmar o encerramento do pagamento anterior." }),
+        if (!canceled.ok) return new Response(JSON.stringify({ error: "checkout_anterior_ativo", message: CHECKOUT_ANTERIOR_NAO_ENCERRADO_MSG }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
