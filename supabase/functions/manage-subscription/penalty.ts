@@ -21,9 +21,9 @@ export type FetchAsaas = (path: string, init?: RequestInit) => Promise<{
 
 /** Reserva sem cobrança gravada vale por 60s (duplo clique / pedidos simultâneos). */
 export const PENALTY_RESERVA_MS = 60_000;
-export const PENALTY_IN_PROGRESS_MESSAGE = "Já estamos abrindo a cobrança da multa. Tente de novo em instantes.";
+export const PENALTY_IN_PROGRESS_MESSAGE = "Já estamos abrindo a cobrança da diferença. Tente de novo em instantes.";
 export const PENALTY_IN_ANALYSIS_MESSAGE =
-  "Recebemos o pagamento da multa e ele está em análise. Assim que for confirmado, a pendência sai daqui.";
+  "Recebemos o pagamento da diferença e ele está em análise. Assim que for confirmado, a pendência sai daqui.";
 
 const PAID = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
 const OPEN = ["PENDING", "OVERDUE"];
