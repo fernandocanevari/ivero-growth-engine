@@ -161,7 +161,7 @@ describe("BemVindoPage — sem a flag, como antes do P40", () => {
     row = { status: "trial", asaas_subscription_id: "sub_1", plano: "presenca", checkout_context: { completed: true } };
     subState = {};
     render(<BemVindoPage />);
-    expect(await screen.findByText("Pagamento confirmado")).toBeTruthy();
+    expect(await screen.findByText("Cartão cadastrado")).toBeTruthy();
   });
 
   it("conta nova: jornada", async () => {

@@ -92,6 +92,12 @@ const BemVindoPage = () => {
   // Reativação paga com dias restantes (null = qualquer outro fluxo).
   const [resumeInfo, setResumeInfo] = useState<ResumeInfo | null>(null);
   const [resumeWaiting, setResumeWaiting] = useState(false);
+  // P60: liberado por status "trial" (cartão cadastrado, nada cobrado hoje).
+  const [trialCard, setTrialCard] = useState(false);
+  const [trialCardDate, setTrialCardDate] = useState<string | null>(null);
+  const trialCardSentence = trialCardDate
+    ? `A primeira cobrança é em ${formatDateBR(trialCardDate).slice(0, 5)}, quando o seu teste termina. Até lá, tudo segue como está.`
+    : "A primeira cobrança é no fim do seu teste. Até lá, tudo segue como está.";
   const [resumeFlow] = useState(() => new URLSearchParams(window.location.search).get("retomada") === "1");
 
   // Reativação com plano maior escolhido: aviso único (não mexe no polling).
@@ -178,7 +184,7 @@ const BemVindoPage = () => {
         if (cancelled) return;
         const { data } = await supabase
           .from("assinaturas")
-          .select("status, asaas_subscription_id, plano, plano_pretendido, data_vencimento, ciclos_pagos")
+          .select("status, asaas_subscription_id, plano, plano_pretendido, data_vencimento, ciclos_pagos, trial_ends_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -217,7 +223,13 @@ const BemVindoPage = () => {
         // webhook vincula o id no CHECKOUT_PAID/SUBSCRIPTION_CREATED, antes
         // do pagamento confirmado (finding 45).
         if (data?.status === "ativo" || data?.status === "trial") {
-          if (!cancelled) setStatus("active");
+          if (!cancelled) {
+            if (data.status === "trial") {
+              setTrialCard(true);
+              setTrialCardDate(data.trial_ends_at ?? null);
+            }
+            setStatus("active");
+          }
           try {
             sessionStorage.removeItem("ivero_checkout_url");
           } catch { /* noop */ }
@@ -462,12 +474,29 @@ const BemVindoPage = () => {
               className="text-center max-w-lg"
             >
               <CheckCircle2 className="mx-auto text-ivero-purple mb-6" size={56} />
-              <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#1A1A2E] mb-3">
-                Pagamento confirmado
-              </h1>
-              <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed">
-                Seu plano já está ativo. Tudo pronto para continuar de onde você parou.
-              </p>
+              {trialCard ? (
+                <div data-testid="trial-card-notice">
+                  <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#1A1A2E] mb-3">
+                    Cartão cadastrado
+                  </h1>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 text-sm font-medium mb-4" data-testid="trial-card-pill">
+                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                  Nada foi cobrado hoje
+                </span>
+                  <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed" data-testid="trial-card-sentence">
+                    {trialCardSentence}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#1A1A2E] mb-3">
+                    Pagamento confirmado
+                  </h1>
+                  <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed">
+                    Seu plano já está ativo. Tudo pronto para continuar de onde você parou.
+                  </p>
+                </>
+              )}
               <Button
                 size="lg"
                 onClick={() => navigate("/dashboard")}
@@ -504,6 +533,17 @@ const BemVindoPage = () => {
                 A partir de agora, vamos trabalhar juntos para garantir que quando o seu
                 cliente perguntar para uma IA — sua marca seja a resposta.
               </p>
+              {trialCard && (
+                <div className="mt-6 flex flex-col items-center">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 text-sm font-medium mb-4" data-testid="trial-card-pill">
+                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                  Nada foi cobrado hoje
+                </span>
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed text-center" data-testid="trial-card-sentence">
+                    {trialCardSentence}
+                  </p>
+                </div>
+              )}
             </motion.section>
 
             <motion.section

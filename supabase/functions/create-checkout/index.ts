@@ -40,6 +40,20 @@ export function resumeItemDescription(base: string, resumeDueDay: string | null)
   return combined.length > ITEM_DESCRIPTION_MAX ? sentences : combined;
 }
 
+/**
+ * P60: dia da 1ª cobrança a exibir na descrição do item. Só individual com
+ * cobrança futura por teste (trial concedido) ou retomada (teste ou paga);
+ * nos demais casos null → descrição idêntica à de antes.
+ */
+export function firstChargeDescriptionDay(
+  isAgency: boolean,
+  trialConcedido: boolean,
+  hasResume: boolean,
+  nextDueDate: string,
+): string | null {
+  return !isAgency && (trialConcedido === true || hasResume) ? nextDueDate : null;
+}
+
 interface CheckoutBody {
   plano: "presenca" | "influencia" | "autoridade";
   nome: string;
@@ -643,7 +657,7 @@ Deno.serve(async (req) => {
               : ciclo === "anual"
                 ? `Plano ${planDisplayName(plano)} com mensalidade promocional e compromisso de ${COMPROMISSO_MESES} meses.`
                 : `Plano ${planDisplayName(plano)} com mensalidade sem compromisso.`,
-            resume?.isPaid ? nextDueDate : null,
+            firstChargeDescriptionDay(!!agencyQuote, trialConcedido, !!resume, nextDueDate),
           ),
           quantity: 1,
           value,
