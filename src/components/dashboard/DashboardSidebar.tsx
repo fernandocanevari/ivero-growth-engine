@@ -107,7 +107,7 @@ const adminGroup: MenuGroup = {
 export function DashboardSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data: settings } = useBrandSettings();
+  const { data: settings, isLoading: settingsLoading } = useBrandSettings();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const { isPaid, isTrial, plano, isLoading: subscriptionLoading } = useSubscriptionStatus();
 
@@ -122,6 +122,11 @@ export function DashboardSidebar() {
   const planLabel = isAdmin ? "Admin" : isPaid ? "Plano Pago" : isTrial ? "Trial" : "Gratuito";
   // Não mostra cadeados enquanto a primeira validação de role/assinatura roda.
   const showLockState = !isAdmin && !validating;
+  const planLabelLoading = validating;
+  const nameLoading = !!settingsLoading && !settings;
+  const footerTooltip = [nameLoading ? null : displayName, planLabelLoading ? null : planLabel]
+    .filter(Boolean)
+    .join(" · ");
 
   const { isAgency, isLoading: accountTypeLoading } = useAccountType();
   // Agência: "Todas as marcas" no topo do menu (clientes individuais não veem).
@@ -352,26 +357,40 @@ export function DashboardSidebar() {
 
       <SidebarFooter className="p-3 border-t border-border">
         <div className={`flex items-center gap-3 ${collapsed ? "flex-col" : ""}`}>
-          {collapsed ? (
+          {collapsed && nameLoading && planLabelLoading ? (
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground cursor-default" />
+          ) : collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground cursor-default">
-                  {displayName.charAt(0).toUpperCase()}
+                  {nameLoading ? null : displayName.charAt(0).toUpperCase()}
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs">
-                {displayName} · {planLabel}
+                {footerTooltip}
               </TooltipContent>
             </Tooltip>
           ) : (
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0">
-              {displayName.charAt(0).toUpperCase()}
+              {nameLoading ? null : displayName.charAt(0).toUpperCase()}
             </div>
           )}
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-foreground truncate leading-tight">{displayName}</p>
-              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{planLabel}</p>
+              <p className="text-[13px] font-medium text-foreground truncate leading-tight">
+                {nameLoading ? (
+                  <span data-testid="sidebar-name-loading" className="block h-3 w-24 rounded bg-muted animate-pulse" />
+                ) : (
+                  displayName
+                )}
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                {planLabelLoading ? (
+                  <span data-testid="sidebar-plan-loading" className="block h-2.5 w-14 rounded bg-muted animate-pulse mt-1" />
+                ) : (
+                  planLabel
+                )}
+              </p>
             </div>
           )}
           <Tooltip>

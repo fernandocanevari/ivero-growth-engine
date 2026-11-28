@@ -454,6 +454,46 @@ function AssinaturaPageContent() {
     void reload();
   };
 
+  if (statusLoading) {
+    return (
+      <div className="space-y-6" data-testid="assinatura-status-loading">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold font-display text-foreground">
+              Assinatura & Pagamento
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gerencie seu plano, forma de pagamento e histórico de faturas.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="p-6">
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          </Card>
+          <Card className="p-6">
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          </Card>
+        </div>
+        <Card className="p-6">
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -904,7 +944,9 @@ function AssinaturaPageContent() {
           </Button>
         </div>
 
-        {next?.billingType === "CREDIT_CARD" ? (
+        {invoicesLoading ? (
+          <Skeleton className="h-16 w-full" data-testid="payment-method-loading" />
+        ) : next?.billingType === "CREDIT_CARD" ? (
           <div className="rounded-lg border border-border p-4 flex items-center gap-3">
             <CreditCard className="w-5 h-5 text-muted-foreground" />
             <div>
