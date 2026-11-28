@@ -83,7 +83,7 @@ describe("BemVindoPage — liberação fora da retomada", () => {
     rows = [row("trial", null)];
     render(<BemVindoPage />);
     await flush(); await flush(100);
-    expect(screen.getByText(CONFIRMED)).toBeTruthy();
+    expect(screen.getByText("Cartão cadastrado")).toBeTruthy();
   });
   it("(e) cancelado + id que vira ativo só libera depois", async () => {
     rows = [row("cancelado"), row("cancelado"), row("ativo")];

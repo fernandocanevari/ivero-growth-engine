@@ -424,7 +424,7 @@ Deno.test("P37 4) retomada paga: descrição do item ganha a frase com a data da
 
 Deno.test("P37 4) demais ramos: descrição exatamente igual à de antes", async () => {
   const trial = await run(cancelledTrialRow(at(4 * DAY)));
-  assertEquals(trial.checkout!.body.items[0].description, OLD_MENSAL);
+  assertEquals(trial.checkout!.body.items[0].description, `Nada é cobrado hoje. A primeira cobrança é em ${brDMY(trial.checkout!.body.subscription.nextDueDate)}. ${OLD_MENSAL}`);
   const expired = await run(cancelledTrialRow(at(-2 * DAY)));
   assertEquals(expired.checkout!.body.items[0].description, OLD_MENSAL);
   const today = await run(paidCancelledRow({ data_vencimento: endOfTodayBR() }));
