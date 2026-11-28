@@ -443,7 +443,7 @@ const InvestSection = () => {
                 </div>
 
                 {/* Grid horizontal de benefícios */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 flex-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 flex-1">
                   {PRICING_COPY.guarantee.benefits.map((label, i) => {
                     const Icon = GUARANTEE_ICONS[i] ?? Gauge;
                     return (
